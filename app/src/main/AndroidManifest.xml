@@ -22,8 +22,22 @@
         <activity android:name=".SettingsActivity" />
         <activity
             android:name=".ObservationDetailActivity"
+            android:parentActivityName=".MainActivity"
             android:label="@string/title_activity_observation_detail"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".MainActivity" />
+        </activity>
+        <activity
+            android:name=".ObservationModifyActivity"
+            android:parentActivityName=".ObservationDetailActivity"
+            android:label="@string/title_activity_observation_modify"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value=".ObservationDetailActivity" />
+        </activity>
     </application>
 
 </manifest>

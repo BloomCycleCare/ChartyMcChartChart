@@ -1,20 +1,19 @@
 package com.roamingroths.cmcc;
 
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.CollapsingToolbarLayout;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.view.Menu;
 import android.view.View;
-import android.widget.TextView;
-
-import com.roamingroths.cmcc.R;
 
 public class ObservationDetailActivity extends AppCompatActivity {
 
   private CollapsingToolbarLayout mToolbarLayout;
+  private int mIndex;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -22,25 +21,33 @@ public class ObservationDetailActivity extends AppCompatActivity {
     setContentView(R.layout.activity_observation_detail);
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
     mToolbarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
-    mToolbarLayout.setTitle("Foo");
 
     Intent intentThatStartedThisActivity = getIntent();
-    if (intentThatStartedThisActivity != null) {
-      if (intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
-        int index = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
-        mToolbarLayout.setTitle("Item #" + index);
-      }
+    if (intentThatStartedThisActivity != null
+        && intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
+      mIndex = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
+      mToolbarLayout.setTitle("Item #" + mIndex);
     }
 
     FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-            .setAction("Action", null).show();
+        Context context = ObservationDetailActivity.this;
+        Intent startModifyActivity = new Intent(context, ObservationModifyActivity.class);
+        startModifyActivity.putExtra(Intent.EXTRA_INDEX, mIndex);
+        startActivity(startModifyActivity);
       }
     });
+  }
+
+  @Override
+  public boolean onCreateOptionsMenu(Menu menu) {
+    // Inflate the menu; this adds items to the action bar if it is present.
+    getMenuInflater().inflate(R.menu.menu_observation_detail, menu);
+    return true;
   }
 }
