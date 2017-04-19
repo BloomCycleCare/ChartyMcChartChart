@@ -49,8 +49,7 @@ public class ObservationModifyActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      Intent startSave = new Intent(this, ObservationDetailActivity.class);
-      startActivity(startSave);
+      finish();
       return true;
     }
 
