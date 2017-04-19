@@ -8,10 +8,77 @@
     tools:context="com.roamingroths.cmcc.ObservationModifyActivity"
     tools:showIn="@layout/activity_observation_modify">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:paddingTop="10dp"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/text_margin"
-        android:text="@string/large_text" />
+        android:orientation="vertical">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_width="60dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="20dp"
+                android:layout_height="match_parent"
+                app:srcCompat="@drawable/ic_assignment_black_24dp" />
+
+            <EditText
+                android:id="@+id/et_modify_observation_value"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Observation text" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <ImageView
+                android:layout_width="60dp"
+                android:layout_height="match_parent"
+                android:paddingRight="10dp"
+                app:srcCompat="@drawable/ic_peak_black_24dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingLeft="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:text="Peak Day"
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+
+                <Switch
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="right" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_width="60dp"
+                android:paddingLeft="10dp"
+                android:paddingRight="20dp"
+                android:layout_height="match_parent"
+                app:srcCompat="@drawable/ic_note_black_24dp" />
+
+            <EditText
+                android:id="@+id/et_modify_observation_note"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="Note" />
+        </LinearLayout>
+
+    </LinearLayout>
 </android.support.v4.widget.NestedScrollView>
