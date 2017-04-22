@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.data;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.data.Observation.Flow;
@@ -22,6 +23,8 @@ public class ObservationBuilder {
   public Occurrences occurrences;
   public String note = "";
 
+  private static final Joiner ON_SPACE = Joiner.on(", ");
+  static final String VALID_OCCURRENCES_STR = ON_SPACE.join(Occurrences.values());
   static final Set<MucusType> TYPES_ALLOWING_MODIFIERS =
       ImmutableSet.of(MucusType.STICKY, MucusType.STRETCHY, MucusType.TACKY);
 
@@ -90,8 +93,13 @@ public class ObservationBuilder {
       }
     }
     if (occurrences == null) {
-      throw new InvalidObservationException(
-          "Could not determine number of occurrences for: " + observation);
+      if (observationWithoutModifiers.isEmpty()) {
+        throw new InvalidObservationException("Missing one of: " + VALID_OCCURRENCES_STR);
+      } else {
+        throw new InvalidObservationException(
+            String.format("Occurrence %s is not one of: %s",
+                observationWithoutModifiers, VALID_OCCURRENCES_STR));
+      }
     }
     String shouldBeEmptyString =
         StringUtil.consumePrefix(observationWithoutModifiers, occurrences.name());

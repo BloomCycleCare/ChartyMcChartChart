@@ -101,8 +101,22 @@ public class ObservationBuilderTest {
   public void fromString_missingOccurrences() throws Exception {
     try {
       createAndTestToString("10WL");
-      fail("Missing required occurences");
+      fail("Missing required occurrences");
     } catch (ObservationBuilder.InvalidObservationException expected) {
+      String expectedMessage = "Missing one of: " + ObservationBuilder.VALID_OCCURRENCES_STR;
+      assertEquals(expectedMessage, expected.getMessage());
+    }
+  }
+
+  @Test
+  public void fromString_invalidOccurrences() throws Exception {
+    try {
+      createAndTestToString("10WLAP");
+      fail("Missing required occurrences");
+    } catch (ObservationBuilder.InvalidObservationException expected) {
+      String expectedMessage =
+          "Occurrence AP is not one of: " + ObservationBuilder.VALID_OCCURRENCES_STR;
+      assertEquals(expectedMessage, expected.getMessage());
     }
   }
 

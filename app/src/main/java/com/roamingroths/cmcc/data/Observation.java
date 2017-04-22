@@ -143,17 +143,17 @@ public class Observation {
     }
   }
 
-  public enum MucusType {
+  public enum MucusType { // NOTE: enum values ordered to support inorder prefix matching
     DRY("0", "Dry"),
-    DAMP_WO_LUB("2", "Damp without lubrication"),
     WET_WO_LUB("2W", "Wet without lubrication"),
+    DAMP_WO_LUB("2", "Damp without lubrication"),
     SHINY_WO_LUB("4", "Shiny without lubrication"),
     STICKY("6", "Sticky 1/4 inch", "Sticky 0.5 cm"),
     TACKY("8", "Tacky 1/2 - 3/4 inch", "Tacky 1.0 - 2.0 cm"),
-    STRETCHY("10", "Stretchy 1 inch +", "Stretchy 2.5 cm or more"),
     DAMP_W_LUB("10DL", "Damp with lubrication"),
     WET_W_LUB("10SL", "Wet with lubrication"),
-    SHINY_W_LUB("10WL", "Shiny with lubrication");
+    SHINY_W_LUB("10WL", "Shiny with lubrication"),
+    STRETCHY("10", "Stretchy 1 inch +", "Stretchy 2.5 cm or more");
 
     private String mCode;
     private String mDescriptionMetric;

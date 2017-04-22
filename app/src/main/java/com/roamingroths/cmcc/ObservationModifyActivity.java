@@ -2,19 +2,41 @@ package com.roamingroths.cmcc;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.TextView;
+
+import com.roamingroths.cmcc.data.ObservationBuilder;
 
 public class ObservationModifyActivity extends AppCompatActivity {
 
   private int mIndex;
+  private TextInputEditText mObservationEditText;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_observation_modify);
+
+    mObservationEditText = (TextInputEditText) findViewById(R.id.et_modify_observation_value);
+    mObservationEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+      @Override
+      public void onFocusChange(View v, boolean hasFocus) {
+        if (!hasFocus) {
+          String observationStr = ((TextView) v).getText().toString();
+          try {
+            ObservationBuilder.fromString(observationStr).build();
+            mObservationEditText.setError(null);
+          } catch (ObservationBuilder.InvalidObservationException ioe) {
+            mObservationEditText.setError(ioe.getMessage());
+          }
+        }
+      }
+    });
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);

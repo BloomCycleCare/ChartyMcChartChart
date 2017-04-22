@@ -25,11 +25,16 @@
                 android:layout_height="match_parent"
                 app:srcCompat="@drawable/ic_assignment_black_24dp" />
 
-            <EditText
-                android:id="@+id/et_modify_observation_value"
+            <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Observation text" />
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/et_modify_observation_value"
+                    android:hint="Observation text"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 
         <LinearLayout
