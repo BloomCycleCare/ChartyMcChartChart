@@ -6,12 +6,12 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 import com.roamingroths.cmcc.data.ObservationContract.ObservationEntry;
 
-public class ObservationDbHelper extends SQLiteOpenHelper {
+public class DbHelper extends SQLiteOpenHelper {
 
-  public static final String DATABASE_NAME = "weather.db";
-  private static final int DATABASE_VERSION = 3;
+  public static final String DATABASE_NAME = "cmcc.db";
+  private static final int DATABASE_VERSION = 4;
 
-  public ObservationDbHelper(Context context) {
+  public DbHelper(Context context) {
     super(context, DATABASE_NAME, null, DATABASE_VERSION);
   }
 
