@@ -7,7 +7,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -63,7 +62,7 @@ public class ObservationAdapter extends RecyclerView.Adapter<ObservationAdapter.
   @Override
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
-    holder.mEntryDataTextView.setText("Entry #" + position);
+    holder.mEntryDataTextView.setText("ChartEntry #" + position);
   }
 
   @Override

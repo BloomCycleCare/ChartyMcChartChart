@@ -1,9 +1,9 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.common.collect.ImmutableSet;
+import com.roamingroths.cmcc.data.Observation.DischargeType;
 import com.roamingroths.cmcc.data.Observation.Flow;
 import com.roamingroths.cmcc.data.Observation.MucusModifier;
-import com.roamingroths.cmcc.data.Observation.MucusType;
 import com.roamingroths.cmcc.data.Observation.Occurrences;
 
 import org.junit.Test;
@@ -45,15 +45,32 @@ public class ObservationBuilderTest {
 
   @Test
   public void fromString_light() throws Exception {
-    Observation observation = createAndTestToString("L0AD");
-    assertEquals("0", observation.mucusSummary.getCode());
-    assertEquals(MucusType.DRY, observation.mucusSummary.mType);
+    Observation observation = createAndTestToString("L6AD");
+    assertEquals("6", observation.mucusSummary.getCode());
+    assertEquals(DischargeType.STICKY, observation.mucusSummary.mType);
     assertEquals(Occurrences.AD, observation.occurrences);
   }
 
   @Test
+  public void fromString_lightMissingDischarge() throws Exception {
+    try {
+      createAndTestToString("LAD");
+      fail("Missing discharge for L flow not allowed.");
+    } catch (ObservationBuilder.InvalidObservationException expected) {
+    }
+  }
+
+  @Test
+  public void fromString_lightInvalidDischargeType() throws Exception {
+    try {
+      createAndTestToString("L0AD");
+      fail("DischargeType DRY not allowed for for L flow.");
+    } catch (ObservationBuilder.InvalidObservationException expected) {
+    }
+  }
+  @Test
   public void fromString_withModifier() throws Exception {
-    for (MucusType type : MucusType.values()) {
+    for (DischargeType type : DischargeType.values()) {
       boolean modifiersAllowed = ObservationBuilder.TYPES_ALLOWING_MODIFIERS.contains(type);
       for (MucusModifier modifier : MucusModifier.values()) {
         try {
@@ -138,29 +155,9 @@ public class ObservationBuilderTest {
     }
   }
 
-  public void withNote_nonEmptyString() throws Exception {
-    Observation observation =
-        ObservationBuilder.fromString("0AD").withNote("Foo").build();
-    assertEquals("Foo", observation.note);
-  }
-
-  public void withNote_emptyString() throws Exception {
-    Observation observation =
-        ObservationBuilder.fromString("0AD").withNote("").build();
-    assertEquals("Foo", observation.note);
-  }
-
-  public void withNote_null() throws Exception {
-    try {
-      ObservationBuilder.fromString("0AD").withNote("").build();
-      fail("Note cannot be null");
-    } catch (NullPointerException expected) {
-    }
-  }
-
   private Observation createAndTestToString(String observationStr) throws Exception {
     Observation observation = ObservationBuilder.fromString(observationStr).build();
-    assertEquals(observationStr, observation.toString());
+    assertEquals(observationStr, observation.toString().replace(" ", ""));
     return observation;
   }
 }

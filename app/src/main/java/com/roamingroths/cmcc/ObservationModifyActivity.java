@@ -29,7 +29,8 @@ public class ObservationModifyActivity extends AppCompatActivity {
         if (!hasFocus) {
           String observationStr = ((TextView) v).getText().toString();
           try {
-            ObservationBuilder.fromString(observationStr).build();
+            mObservationEditText.setText(
+                ObservationBuilder.fromString(observationStr).build().toString());
             mObservationEditText.setError(null);
           } catch (ObservationBuilder.InvalidObservationException ioe) {
             mObservationEditText.setError(ioe.getMessage());

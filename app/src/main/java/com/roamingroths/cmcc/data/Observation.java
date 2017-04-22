@@ -10,25 +10,23 @@ import java.util.Set;
 public class Observation {
 
   public final Flow flow;
-  public final MucusSummary mucusSummary;
+  public final DischargeSummary mucusSummary;
   public final Occurrences occurrences;
-  public final String note;
 
   public Observation(ObservationBuilder builder) {
     flow = builder.flow;
     mucusSummary = builder.mucusSummary;
     occurrences = builder.occurrences;
-    note = builder.note;
   }
 
   @Override
   public String toString() {
     StringBuilder str = new StringBuilder();
     if (flow != null) {
-      str.append(flow.name());
+      str.append(flow.name()).append(" ");
     }
     if (mucusSummary != null) {
-      str.append(mucusSummary.getCode());
+      str.append(mucusSummary.getCode().toUpperCase()).append(" ");
     }
     if (occurrences != null) {
       str.append(occurrences.name());
@@ -70,15 +68,15 @@ public class Observation {
     }
   }
 
-  public static class MucusSummary {
-    public final MucusType mType;
+  public static class DischargeSummary {
+    public final DischargeType mType;
     public final Set<MucusModifier> mModifiers;
 
-    public MucusSummary(MucusType type) {
+    public DischargeSummary(DischargeType type) {
       this(type, new HashSet<MucusModifier>());
     }
 
-    public MucusSummary(MucusType type, Set<MucusModifier> modifiers) {
+    public DischargeSummary(DischargeType type, Set<MucusModifier> modifiers) {
       mType = type;
       mModifiers = modifiers;
     }
@@ -143,30 +141,36 @@ public class Observation {
     }
   }
 
-  public enum MucusType { // NOTE: enum values ordered to support inorder prefix matching
-    DRY("0", "Dry"),
-    WET_WO_LUB("2W", "Wet without lubrication"),
-    DAMP_WO_LUB("2", "Damp without lubrication"),
-    SHINY_WO_LUB("4", "Shiny without lubrication"),
-    STICKY("6", "Sticky 1/4 inch", "Sticky 0.5 cm"),
-    TACKY("8", "Tacky 1/2 - 3/4 inch", "Tacky 1.0 - 2.0 cm"),
-    DAMP_W_LUB("10DL", "Damp with lubrication"),
-    WET_W_LUB("10SL", "Wet with lubrication"),
-    SHINY_W_LUB("10WL", "Shiny with lubrication"),
-    STRETCHY("10", "Stretchy 1 inch +", "Stretchy 2.5 cm or more");
+  public enum DischargeType { // NOTE: enum values ordered to support inorder prefix matching
+    DRY("0", false, "Dry"),
+    WET_WO_LUB("2W", false, "Wet without lubrication"),
+    DAMP_WO_LUB("2", false, "Damp without lubrication"),
+    SHINY_WO_LUB("4", false, "Shiny without lubrication"),
+    STICKY("6", true, "Sticky 1/4 inch", "Sticky 0.5 cm"),
+    TACKY("8", true, "Tacky 1/2 - 3/4 inch", "Tacky 1.0 - 2.0 cm"),
+    DAMP_W_LUB("10DL", true, "Damp with lubrication"),
+    WET_W_LUB("10SL", true, "Wet with lubrication"),
+    SHINY_W_LUB("10WL", true, "Shiny with lubrication"),
+    STRETCHY("10", true, "Stretchy 1 inch +", "Stretchy 2.5 cm or more");
 
     private String mCode;
     private String mDescriptionMetric;
     private String mDescriptionImperial;
+    private boolean mHasMucus;
 
-    MucusType(String code, String description) {
-      this(code, description, description);
+    DischargeType(String code, boolean hasMucus, String description) {
+      this(code, hasMucus, description, description);
     }
 
-    MucusType(String code, String metricDescription, String imperialDescription) {
+    DischargeType(String code, boolean hasMucus, String metricDescription, String imperialDescription) {
       mCode = code;
+      mHasMucus = hasMucus;
       mDescriptionMetric = metricDescription;
       mDescriptionImperial = imperialDescription;
+    }
+
+    public boolean hasMucus() {
+      return mHasMucus;
     }
 
     public String getCode() {

@@ -1,12 +1,11 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.roamingroths.cmcc.data.Observation.DischargeSummary;
+import com.roamingroths.cmcc.data.Observation.DischargeType;
 import com.roamingroths.cmcc.data.Observation.Flow;
 import com.roamingroths.cmcc.data.Observation.MucusModifier;
-import com.roamingroths.cmcc.data.Observation.MucusSummary;
-import com.roamingroths.cmcc.data.Observation.MucusType;
 import com.roamingroths.cmcc.data.Observation.Occurrences;
 import com.roamingroths.cmcc.utils.StringUtil;
 
@@ -18,26 +17,19 @@ import java.util.Set;
  */
 
 public class ObservationBuilder {
-  public Flow flow;
-  public MucusSummary mucusSummary;
-  public Occurrences occurrences;
-  public String note = "";
+  Flow flow;
+  DischargeSummary mucusSummary;
+  Occurrences occurrences;
 
   private static final Joiner ON_SPACE = Joiner.on(", ");
   static final String VALID_OCCURRENCES_STR = ON_SPACE.join(Occurrences.values());
-  static final Set<MucusType> TYPES_ALLOWING_MODIFIERS =
-      ImmutableSet.of(MucusType.STICKY, MucusType.STRETCHY, MucusType.TACKY);
+  static final Set<DischargeType> TYPES_ALLOWING_MODIFIERS =
+      ImmutableSet.of(DischargeType.STICKY, DischargeType.STRETCHY, DischargeType.TACKY);
 
-  private ObservationBuilder(Flow flow, MucusSummary mucusSummary, Occurrences occurrences) {
+  private ObservationBuilder(Flow flow, DischargeSummary mucusSummary, Occurrences occurrences) {
     this.flow = flow;
     this.mucusSummary = mucusSummary;
     this.occurrences = occurrences;
-  }
-
-  public ObservationBuilder withNote(String note) {
-    Preconditions.checkNotNull(note);
-    note = note;
-    return this;
   }
 
   public Observation build() {
@@ -59,31 +51,35 @@ public class ObservationBuilder {
         ? sanitizedObservation : StringUtil.consumePrefix(sanitizedObservation, flow.name());
     if (flow == Flow.H || flow == Flow.M) {
       if (!observationWithoutFlow.isEmpty()) {
-        throw new InvalidObservationException("Extra info after flow.");
+        throw new InvalidObservationException("H or M do not require extra info.");
       }
       return new ObservationBuilder(flow, null, null);
     }
 
-    MucusType mucusType = null;
-    for (MucusType t : MucusType.values()) {
+    DischargeType dischargeType = null;
+    for (DischargeType t : DischargeType.values()) {
       if (observationWithoutFlow.startsWith(t.getCode())) {
-        mucusType = t;
+        dischargeType = t;
         break;
       }
     }
-    if (mucusType == null) {
-      throw new InvalidObservationException("Could not determine MucusType for: " + observation);
+    if (dischargeType == null) {
+      throw new InvalidObservationException("Could not determine DischargeType for: " + observation);
     }
-    String observationWithoutMucusType =
-        StringUtil.consumePrefix(observationWithoutFlow, mucusType.getCode());
+    if (flow != null && !dischargeType.hasMucus()) {
+      throw new InvalidObservationException(
+          "Only discharge types with mucus are valid for L and VL flows.");
+    }
+    String observationWithoutDischargeType =
+        StringUtil.consumePrefix(observationWithoutFlow, dischargeType.getCode());
 
     Set<MucusModifier> mucusModifiers = new LinkedHashSet<>();
     String observationWithoutModifiers =
-        consumeMucusModifiers(observationWithoutMucusType, mucusModifiers);
-    if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(mucusType)) {
-      throw new InvalidObservationException(mucusType.name() + " does not allow modifiers");
+        consumeMucusModifiers(observationWithoutDischargeType, mucusModifiers);
+    if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
+      throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
     }
-    MucusSummary mucusSummary = new MucusSummary(mucusType, mucusModifiers);
+    DischargeSummary mucusSummary = new DischargeSummary(dischargeType, mucusModifiers);
 
     Occurrences occurrences = null;
     for (Occurrences o : Occurrences.values()) {
@@ -120,7 +116,7 @@ public class ObservationBuilder {
   }
 
   public static class InvalidObservationException extends Exception {
-    public InvalidObservationException(String reason) {
+    InvalidObservationException(String reason) {
       super(reason);
     }
   }
