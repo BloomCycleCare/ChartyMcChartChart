@@ -1,6 +1,10 @@
 package com.roamingroths.cmcc.data;
 
+import com.google.common.base.Joiner;
+
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -8,6 +12,9 @@ import java.util.Set;
  */
 
 public class Observation {
+
+  private static final Joiner ON_SPACE = Joiner.on(' ');
+  private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
   public final Flow flow;
   public final DischargeSummary mucusSummary;
@@ -21,17 +28,40 @@ public class Observation {
 
   @Override
   public String toString() {
-    StringBuilder str = new StringBuilder();
+    List<String> strs = new ArrayList<>();
     if (flow != null) {
-      str.append(flow.name()).append(" ");
+      strs.add(flow.name());
     }
     if (mucusSummary != null) {
-      str.append(mucusSummary.getCode().toUpperCase()).append(" ");
+      strs.add(mucusSummary.getCode().toUpperCase());
     }
     if (occurrences != null) {
-      str.append(occurrences.name());
+      strs.add(occurrences.name());
     }
-    return str.toString();
+    return ON_SPACE.join(strs);
+  }
+
+  public String getDescription() {
+    return getDescription(ON_SPACE);
+  }
+
+  public String getMultiLineDescription() {
+    return getDescription(ON_NEW_LINE);
+  }
+
+  private String getDescription(Joiner joiner) {
+    List<String> strs = new ArrayList<>();
+    if (flow != null) {
+      strs.add(flow.getDescription());
+    }
+    if (mucusSummary != null) {
+      // TODO: Get unit system preference
+      strs.add(mucusSummary.getMetricDesciption(joiner));
+    }
+    if (occurrences != null) {
+      strs.add(occurrences.getDescription());
+    }
+    return joiner.join(strs);
   }
 
   public enum Occurrences {
@@ -96,27 +126,28 @@ public class Observation {
       return code.toString();
     }
 
-    public String getImperialDesciption() {
-      return getDescription(mType.getImperialDescription());
+    public String getImperialDesciption(Joiner joiner) {
+      return getDescription(joiner, mType.getImperialDescription());
     }
 
-    public String getMetricDesciption() {
-      return getDescription(mType.getMetricDescription());
+    public String getMetricDesciption(Joiner joiner) {
+      return getDescription(joiner, mType.getMetricDescription());
     }
 
-    private String getDescription(String typeDescription) {
+    private String getDescription(Joiner joiner, String typeDescription) {
       StringBuilder description = new StringBuilder().append(typeDescription);
+
+      List<String> modifierStrs = new ArrayList<>();
       switch (mType) {
         case STICKY:
         case TACKY:
         case STRETCHY:
           for (MucusModifier modifier : mModifiers) {
-            description.append(modifier.getDescription()).append(" ");
+            modifierStrs.add(modifier.getDescription());
           }
           break;
-
       }
-      return description.toString();
+      return joiner.join(typeDescription, ON_SPACE.join(modifierStrs));
     }
   }
 
@@ -146,12 +177,12 @@ public class Observation {
     WET_WO_LUB("2W", false, "Wet without lubrication"),
     DAMP_WO_LUB("2", false, "Damp without lubrication"),
     SHINY_WO_LUB("4", false, "Shiny without lubrication"),
-    STICKY("6", true, "Sticky 1/4 inch", "Sticky 0.5 cm"),
-    TACKY("8", true, "Tacky 1/2 - 3/4 inch", "Tacky 1.0 - 2.0 cm"),
+    STICKY("6", true, "Sticky", "1/4 inch", "0.5 cm"),
+    TACKY("8", true, "Tacky", "1/2 - 3/4 inch", "1.0 - 2.0 cm"),
     DAMP_W_LUB("10DL", true, "Damp with lubrication"),
     WET_W_LUB("10SL", true, "Wet with lubrication"),
     SHINY_W_LUB("10WL", true, "Shiny with lubrication"),
-    STRETCHY("10", true, "Stretchy 1 inch +", "Stretchy 2.5 cm or more");
+    STRETCHY("10", true, "Stretchy", "1 inch +", "2.5 cm or more");
 
     private String mCode;
     private String mDescriptionMetric;
@@ -159,14 +190,14 @@ public class Observation {
     private boolean mHasMucus;
 
     DischargeType(String code, boolean hasMucus, String description) {
-      this(code, hasMucus, description, description);
+      this(code, hasMucus, description, "", "");
     }
 
-    DischargeType(String code, boolean hasMucus, String metricDescription, String imperialDescription) {
+    DischargeType(String code, boolean hasMucus, String description, String metricExtraDescription, String imperialExtraDescription) {
       mCode = code;
       mHasMucus = hasMucus;
-      mDescriptionMetric = metricDescription;
-      mDescriptionImperial = imperialDescription;
+      mDescriptionMetric = String.format("%s (%s)", description, metricExtraDescription);
+      mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
     }
 
     public boolean hasMucus() {
