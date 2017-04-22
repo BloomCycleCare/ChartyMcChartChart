@@ -38,7 +38,7 @@ public class ObservationBuilder {
 
   public static ObservationBuilder fromString(String observation)
       throws InvalidObservationException {
-    String sanitizedObservation = observation.toUpperCase();
+    String sanitizedObservation = observation.toUpperCase().replace(" ", "");
 
     Flow flow = null;
     for (Flow f : Flow.values()) {

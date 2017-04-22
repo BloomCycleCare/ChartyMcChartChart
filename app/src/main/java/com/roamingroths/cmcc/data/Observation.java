@@ -196,8 +196,16 @@ public class Observation {
     DischargeType(String code, boolean hasMucus, String description, String metricExtraDescription, String imperialExtraDescription) {
       mCode = code;
       mHasMucus = hasMucus;
-      mDescriptionMetric = String.format("%s (%s)", description, metricExtraDescription);
-      mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
+      if (metricExtraDescription.isEmpty()) {
+        mDescriptionMetric = description;
+      } else {
+        mDescriptionMetric = String.format("%s (%s)", description, metricExtraDescription);
+      }
+      if (imperialExtraDescription.isEmpty()) {
+        mDescriptionImperial = description;
+      } else {
+        mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
+      }
     }
 
     public boolean hasMucus() {
