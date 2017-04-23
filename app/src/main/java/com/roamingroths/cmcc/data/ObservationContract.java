@@ -4,7 +4,7 @@ import android.provider.BaseColumns;
 
 public class ObservationContract {
 
-  public static final class ObservationEntry implements BaseColumns {
+  public static final class Entry implements BaseColumns {
 
     public static final String TABLE_NAME = "observation";
 

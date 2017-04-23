@@ -7,11 +7,11 @@ import android.database.sqlite.SQLiteDatabase;
  * Created by parkeroth on 4/20/17.
  */
 
-public class ObservationDataSource {
+public class ChartEntryDataSource {
   private SQLiteDatabase db;
   private final DbHelper helper;
 
-  public ObservationDataSource(Context context) {
+  public ChartEntryDataSource(Context context) {
     db = null;
     helper = new DbHelper(context);
   }
