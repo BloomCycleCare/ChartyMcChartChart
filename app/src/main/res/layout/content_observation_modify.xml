@@ -53,17 +53,20 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:layout_width="60dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
                 android:paddingRight="10dp"
                 app:srcCompat="@drawable/ic_peak_black_24dp" />
 
             <LinearLayout
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
                 android:paddingLeft="5dp">
 
                 <TextView
@@ -86,17 +89,55 @@
             android:layout_height="wrap_content">
 
             <ImageView
+                android:layout_gravity="center_vertical"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:paddingRight="10dp"
+                app:srcCompat="@drawable/ic_heart_black_24dp" />
+
+            <LinearLayout
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:text="Intercourse"
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+
+                <Switch
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="right" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
                 android:layout_width="60dp"
                 android:paddingLeft="10dp"
                 android:paddingRight="20dp"
                 android:layout_height="match_parent"
                 app:srcCompat="@drawable/ic_note_black_24dp" />
 
-            <EditText
-                android:id="@+id/et_modify_observation_note"
+            <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="Note" />
+                android:layout_height="wrap_content">
+
+                <android.support.design.widget.TextInputEditText
+                    android:id="@+id/et_modify_observation_note"
+                    android:hint="Note"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 
     </LinearLayout>
