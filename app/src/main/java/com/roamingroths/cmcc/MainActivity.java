@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity implements
   @Override
   public void onClick(int itemNum) {
     Context context = this;
-    Class destinationClass = ObservationDetailActivity.class;
+    Class destinationClass = ObservationModifyActivity.class;
     Intent intentToStartDetailActivity = new Intent(context, destinationClass);
     intentToStartDetailActivity.putExtra(Intent.EXTRA_INDEX, itemNum);
     startActivity(intentToStartDetailActivity);
