@@ -16,9 +16,9 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
 
   private int mNumEntries;
   private final Context mContext;
-  private final ObservationAdapterOnClickHandler mClickHandler;
+  private final ChartEntryAdapterOnClickHandler mClickHandler;
 
-  public ChartEntryAdapter(Context context, ObservationAdapterOnClickHandler clickHandler) {
+  public ChartEntryAdapter(Context context, ChartEntryAdapterOnClickHandler clickHandler) {
     mNumEntries = 20;
     mContext = context;
     mClickHandler = clickHandler;
@@ -70,7 +70,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
     return mNumEntries;
   }
 
-  public interface ObservationAdapterOnClickHandler {
+  public interface ChartEntryAdapterOnClickHandler {
     void onClick(int itemNum);
   }
 

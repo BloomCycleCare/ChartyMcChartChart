@@ -18,7 +18,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
-    ChartEntryAdapter.ObservationAdapterOnClickHandler {
+        ChartEntryAdapter.ChartEntryAdapterOnClickHandler {
 
   public static final int RC_SIGN_IN = 1;
 
