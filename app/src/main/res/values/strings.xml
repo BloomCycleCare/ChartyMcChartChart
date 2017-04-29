@@ -98,4 +98,5 @@
     <string name="title_activity_observation_modify">ObservationModifyActivity</string>
     <string name="title_activity_main2">Main2Activity</string>
     <string name="section_format">Hello World from section: %1$d</string>
+    <string name="title_activity_cycle_list">CycleListActivity</string>
 </resources>

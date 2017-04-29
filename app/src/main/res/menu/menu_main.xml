@@ -1,7 +1,14 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.roamingroths.cmcc.MainActivity">
+      xmlns:app="http://schemas.android.com/apk/res-auto"
+      xmlns:tools="http://schemas.android.com/tools"
+      tools:context="com.roamingroths.cmcc.ChartEntryListActivity">
+    <item
+        android:id="@+id/action_list_cycles"
+        android:icon="@drawable/ic_list_black_24dp"
+        android:orderInCategory="1"
+        android:title="Cycles"
+        android:titleCondensed="Cycles"
+        app:showAsAction="always|withText"/>
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
