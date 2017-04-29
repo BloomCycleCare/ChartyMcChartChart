@@ -16,7 +16,7 @@ import android.widget.TextView;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Observation;
 
-public class ObservationModifyActivity extends AppCompatActivity {
+public class ChartEntryModifyActivity extends AppCompatActivity {
 
   private int mIndex;
   private TextInputEditText mObservationEditText;

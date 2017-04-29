@@ -12,13 +12,13 @@ import android.widget.TextView;
  * Created by parkeroth on 4/18/17.
  */
 
-public class ObservationAdapter extends RecyclerView.Adapter<ObservationAdapter.EntryAdapterViewHolder> {
+public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
 
   private int mNumEntries;
   private final Context mContext;
   private final ObservationAdapterOnClickHandler mClickHandler;
 
-  public ObservationAdapter(Context context, ObservationAdapterOnClickHandler clickHandler) {
+  public ChartEntryAdapter(Context context, ObservationAdapterOnClickHandler clickHandler) {
     mNumEntries = 20;
     mContext = context;
     mClickHandler = clickHandler;

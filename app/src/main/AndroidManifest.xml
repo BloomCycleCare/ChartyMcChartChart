@@ -21,7 +21,7 @@
         </activity>
         <activity android:name=".SettingsActivity" />
         <activity
-            android:name=".ObservationModifyActivity"
+            android:name=".ChartEntryModifyActivity"
             android:label="@string/title_activity_observation_modify"
             android:parentActivityName=".MainActivity"
             android:theme="@style/AppTheme.NoActionBar">

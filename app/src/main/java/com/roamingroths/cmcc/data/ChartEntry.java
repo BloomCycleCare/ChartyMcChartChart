@@ -15,9 +15,13 @@ public class ChartEntry implements Parcelable {
 
   private static final Joiner ON_COMMA = Joiner.on(',');
 
-  public final Observation observation;
-  public final boolean peakDay;
-  public final boolean intercourse;
+  public Observation observation;
+  public boolean peakDay;
+  public boolean intercourse;
+
+  public ChartEntry() {
+    // Required for DataSnapshot.getValue(ChartEntry.class)
+  }
 
   public ChartEntry(Observation observation, boolean peakDay, boolean intercourse) {
     this.observation = Preconditions.checkNotNull(observation);

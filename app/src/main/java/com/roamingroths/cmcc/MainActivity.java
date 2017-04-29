@@ -18,14 +18,14 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 
 public class MainActivity extends AppCompatActivity implements
-    ObservationAdapter.ObservationAdapterOnClickHandler {
+    ChartEntryAdapter.ObservationAdapterOnClickHandler {
 
   public static final int RC_SIGN_IN = 1;
 
   private static final String ANONYMOUS = "anonymous";
 
   private RecyclerView mRecyclerView;
-  private ObservationAdapter mObservationAdapter;
+  private ChartEntryAdapter mChartEntryAdapter;
   private String mUsername = ANONYMOUS;
 
   // Firebase stuff
@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity implements
     // Init Firebase stuff
     mFirebaseAuth = FirebaseAuth.getInstance();
 
-    mObservationAdapter = new ObservationAdapter(this, this);
+    mChartEntryAdapter = new ChartEntryAdapter(this, this);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -48,14 +48,14 @@ public class MainActivity extends AppCompatActivity implements
         = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
-    mRecyclerView.setAdapter(mObservationAdapter);
+    mRecyclerView.setAdapter(mChartEntryAdapter);
 
 
     FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        mObservationAdapter.notifyItemInserted(mObservationAdapter.addEntry());
+        mChartEntryAdapter.notifyItemInserted(mChartEntryAdapter.addEntry());
       }
     });
 
@@ -127,7 +127,7 @@ public class MainActivity extends AppCompatActivity implements
   @Override
   public void onClick(int itemNum) {
     Context context = this;
-    Class destinationClass = ObservationModifyActivity.class;
+    Class destinationClass = ChartEntryModifyActivity.class;
     Intent intentToStartDetailActivity = new Intent(context, destinationClass);
     intentToStartDetailActivity.putExtra(Intent.EXTRA_INDEX, itemNum);
     startActivity(intentToStartDetailActivity);
