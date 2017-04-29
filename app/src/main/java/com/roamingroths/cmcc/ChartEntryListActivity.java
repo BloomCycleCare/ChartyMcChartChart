@@ -8,6 +8,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -37,10 +38,17 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
+    int index = 1;
+    Intent intentThatStartedThisActivity = getIntent();
+    if (intentThatStartedThisActivity != null
+        && intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
+      index = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
+    }
+
     // Init Firebase stuff
     mFirebaseAuth = FirebaseAuth.getInstance();
 
-    mChartEntryAdapter = new ChartEntryAdapter(this, this);
+    mChartEntryAdapter = new ChartEntryAdapter(this, this, index);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -50,7 +58,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
-
     FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
@@ -58,6 +65,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         mChartEntryAdapter.notifyItemInserted(mChartEntryAdapter.addEntry());
       }
     });
+
+    /*Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+    setSupportActionBar(toolbar);
+    getSupportActionBar().setTitle("Cycle #" + index);*/
 
     mAuthStateListener = new FirebaseAuth.AuthStateListener() {
       @Override
@@ -118,6 +129,12 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     if (id == R.id.action_settings) {
       Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
       startActivity(startSettingsActivity);
+      return true;
+    }
+
+    if (id == R.id.action_list_cycles) {
+      Intent startCycleList = new Intent(this, CycleListActivity.class);
+      startActivity(startCycleList);
       return true;
     }
 

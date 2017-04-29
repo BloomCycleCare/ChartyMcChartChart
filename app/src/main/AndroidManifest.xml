@@ -19,6 +19,11 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
+        <activity
+            android:name=".CycleListActivity"
+            android:label="@string/title_activity_cycle_list"
+            android:launchMode="singleTop">
+        </activity>
         <activity android:name=".SettingsActivity"/>
         <activity
             android:name=".ChartEntryModifyActivity"
@@ -28,11 +33,6 @@
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value=".ChartEntryListActivity"/>
-        </activity>
-        <activity
-            android:name=".CycleListActivity"
-            android:label="@string/title_activity_cycle_list"
-            android:theme="@style/AppTheme.NoActionBar">
         </activity>
     </application>
 

@@ -12,14 +12,14 @@ import android.widget.TextView;
  * Created by parkeroth on 4/18/17.
  */
 
-public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
+public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder> {
 
   private int mNumEntries;
   private final Context mContext;
-  private final ChartEntryAdapterOnClickHandler mClickHandler;
+  private final OnClickHandler mClickHandler;
 
-  public ChartEntryAdapter(Context context, ChartEntryAdapterOnClickHandler clickHandler, int num) {
-    mNumEntries = num;
+  public CycleAdapter(Context context, OnClickHandler clickHandler) {
+    mNumEntries = 20;
     mContext = context;
     mClickHandler = clickHandler;
   }
@@ -35,18 +35,18 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
    * @param parent   The ViewGroup that these ViewHolders are contained within.
    * @param viewType If your RecyclerView has more than one type of item (which ours doesn't) you
    *                 can use this viewType integer to provide a different layout. See
-   *                 {@link android.support.v7.widget.RecyclerView.Adapter#getItemViewType(int)}
+   *                 {@link RecyclerView.Adapter#getItemViewType(int)}
    *                 for more details.
    * @return A new EntryAdapterViewHolder that holds the View for each list item
    */
   @Override
-  public EntryAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-    int layoutIdForListItem = R.layout.observation_list_item;
+  public CycleAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    int layoutIdForListItem = R.layout.cycle_list_item;
     LayoutInflater inflater = LayoutInflater.from(mContext);
     boolean shouldAttachToParentImmediately = false;
 
     View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
-    return new EntryAdapterViewHolder(view);
+    return new CycleAdapterViewHolder(view);
   }
 
   /**
@@ -60,9 +60,9 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
    * @param position The position of the item within the adapter's data set.
    */
   @Override
-  public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
+  public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
-    holder.mEntryDataTextView.setText("ChartEntry #" + position);
+    holder.mCycleDataTextView.setText("Cycle #" + position);
   }
 
   @Override
@@ -70,17 +70,17 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
     return mNumEntries;
   }
 
-  public interface ChartEntryAdapterOnClickHandler {
+  public interface OnClickHandler {
     void onClick(int itemNum);
   }
 
-  public class EntryAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
-    public final TextView mEntryDataTextView;
+  public class CycleAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
+    public final TextView mCycleDataTextView;
 
-    public EntryAdapterViewHolder(View itemView) {
+    public CycleAdapterViewHolder(View itemView) {
       super(itemView);
       itemView.setOnClickListener(this);
-      mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
+      mCycleDataTextView = (TextView) itemView.findViewById(R.id.tv_cycle_data);
     }
 
     @Override
