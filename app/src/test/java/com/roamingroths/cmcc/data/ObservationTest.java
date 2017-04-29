@@ -1,10 +1,8 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.data.Observation.DischargeType;
-import com.roamingroths.cmcc.data.Observation.Flow;
-import com.roamingroths.cmcc.data.Observation.MucusModifier;
-import com.roamingroths.cmcc.data.Observation.Occurrences;
+import com.roamingroths.cmcc.data.DischargeSummary.DischargeType;
+import com.roamingroths.cmcc.data.DischargeSummary.MucusModifier;
 
 import org.junit.Test;
 
@@ -17,12 +15,12 @@ import static org.junit.Assert.fail;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class ObservationBuilderTest {
+public class ObservationTest {
   @Test
   public void fromString_heavy() throws Exception {
     Observation observation = createAndTestToString("H");
     assertEquals(Flow.H, observation.flow);
-    assertNull(observation.mucusSummary);
+    assertNull(observation.dischargeSummary);
     assertNull(observation.occurrences);
   }
 
@@ -31,7 +29,7 @@ public class ObservationBuilderTest {
     try {
       Observation observation = createAndTestToString("H10CAD");
       fail("Heavy flow cannot have a mucus observation");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
     }
   }
 
@@ -39,15 +37,15 @@ public class ObservationBuilderTest {
   public void fromString_medium() throws Exception {
     Observation observation = createAndTestToString("M");
     assertEquals(Flow.M, observation.flow);
-    assertNull(observation.mucusSummary);
+    assertNull(observation.dischargeSummary);
     assertNull(observation.occurrences);
   }
 
   @Test
   public void fromString_light() throws Exception {
     Observation observation = createAndTestToString("L6AD");
-    assertEquals("6", observation.mucusSummary.getCode());
-    assertEquals(DischargeType.STICKY, observation.mucusSummary.mType);
+    assertEquals("6", observation.dischargeSummary.getCode());
+    assertEquals(DischargeSummary.DischargeType.STICKY, observation.dischargeSummary.mType);
     assertEquals(Occurrences.AD, observation.occurrences);
   }
 
@@ -56,7 +54,7 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("LAD");
       fail("Missing discharge for L flow not allowed.");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
     }
   }
 
@@ -65,24 +63,24 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("L0AD");
       fail("DischargeType DRY not allowed for for L flow.");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
     }
   }
   @Test
   public void fromString_withModifier() throws Exception {
-    for (DischargeType type : DischargeType.values()) {
-      boolean modifiersAllowed = ObservationBuilder.TYPES_ALLOWING_MODIFIERS.contains(type);
-      for (MucusModifier modifier : MucusModifier.values()) {
+    for (DischargeType type : DischargeSummary.DischargeType.values()) {
+      boolean modifiersAllowed = Observation.TYPES_ALLOWING_MODIFIERS.contains(type);
+      for (MucusModifier modifier : DischargeSummary.MucusModifier.values()) {
         try {
-          Observation observation = ObservationBuilder.fromString(
-              type.getCode() + modifier.name() + "AD").build();
+          Observation observation = Observation.fromString(
+              type.getCode() + modifier.name() + "AD");
           if (modifiersAllowed) {
-            assertEquals(type, observation.mucusSummary.mType);
-            assertEquals(ImmutableSet.of(modifier), observation.mucusSummary.mModifiers);
+            assertEquals(type, observation.dischargeSummary.mType);
+            assertEquals(ImmutableSet.of(modifier), observation.dischargeSummary.mModifiers);
           } else {
             fail(type.name() + " should not allow modifiers");
           }
-        } catch (ObservationBuilder.InvalidObservationException maybeExpected) {
+        } catch (Observation.InvalidObservationException maybeExpected) {
           if (modifiersAllowed) {
             fail();
           }
@@ -95,21 +93,21 @@ public class ObservationBuilderTest {
   public void fromString_withModifiers() throws Exception {
     Observation observation = createAndTestToString("8CPX3");
     assertEquals(
-        ImmutableSet.of(MucusModifier.C, MucusModifier.P), observation.mucusSummary.mModifiers);
+        ImmutableSet.of(DischargeSummary.MucusModifier.C, DischargeSummary.MucusModifier.P), observation.dischargeSummary.mModifiers);
   }
 
   @Test
   public void fromString_expectNoInfoAfterFlow() throws Exception {
     String[] validObservations = {"H", "M"};
     for (String observation : validObservations) {
-      ObservationBuilder.fromString(observation).build();
+      Observation.fromString(observation);
     }
     String[] invalidObservations = {"L", "VL"};
     for (String observation : invalidObservations) {
       try {
-        ObservationBuilder.fromString(observation).build();
+        Observation.fromString(observation);
         fail();
-      } catch (ObservationBuilder.InvalidObservationException expected) {
+      } catch (Observation.InvalidObservationException expected) {
       }
     }
   }
@@ -119,8 +117,8 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("10WL");
       fail("Missing required occurrences");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
-      String expectedMessage = "Missing one of: " + ObservationBuilder.VALID_OCCURRENCES_STR;
+    } catch (Observation.InvalidObservationException expected) {
+      String expectedMessage = "Missing one of: " + Observation.VALID_OCCURRENCES_STR;
       assertEquals(expectedMessage, expected.getMessage());
     }
   }
@@ -130,9 +128,9 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("10WLAP");
       fail("Missing required occurrences");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
       String expectedMessage =
-          "Occurrence AP is not one of: " + ObservationBuilder.VALID_OCCURRENCES_STR;
+          "Occurrence AP is not one of: " + Observation.VALID_OCCURRENCES_STR;
       assertEquals(expectedMessage, expected.getMessage());
     }
   }
@@ -142,7 +140,7 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("HFoo");
       fail("Foo should not be allowed to follow H");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
     }
   }
 
@@ -151,12 +149,12 @@ public class ObservationBuilderTest {
     try {
       createAndTestToString("0ADFoo");
       fail("Foo should not be allowed to follow AD");
-    } catch (ObservationBuilder.InvalidObservationException expected) {
+    } catch (Observation.InvalidObservationException expected) {
     }
   }
 
   private Observation createAndTestToString(String observationStr) throws Exception {
-    Observation observation = ObservationBuilder.fromString(observationStr).build();
+    Observation observation = Observation.fromString(observationStr);
     assertEquals(observationStr, observation.toString().replace(" ", ""));
     return observation;
   }

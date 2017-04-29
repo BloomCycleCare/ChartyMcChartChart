@@ -1,9 +1,15 @@
 package com.roamingroths.cmcc.data;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.common.base.Joiner;
+import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableSet;
+import com.roamingroths.cmcc.utils.StringUtil;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -11,29 +17,37 @@ import java.util.Set;
  * Created by parkeroth on 4/20/17.
  */
 
-public class Observation {
+public class Observation implements Parcelable {
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
   private static final Joiner ON_NEW_LINE = Joiner.on('\n');
+  static final String VALID_OCCURRENCES_STR = ON_SPACE.join(Occurrences.values());
+  static final Set<DischargeSummary.DischargeType> TYPES_ALLOWING_MODIFIERS =
+      ImmutableSet.of(DischargeSummary.DischargeType.STICKY, DischargeSummary.DischargeType.STRETCHY, DischargeSummary.DischargeType.TACKY);
 
   public final Flow flow;
-  public final DischargeSummary mucusSummary;
+  public final DischargeSummary dischargeSummary;
   public final Occurrences occurrences;
 
-  public Observation(ObservationBuilder builder) {
-    flow = builder.flow;
-    mucusSummary = builder.mucusSummary;
-    occurrences = builder.occurrences;
+  public Observation(Flow flow, DischargeSummary dischargeSummary, Occurrences occurrences) {
+    this.flow = flow;
+    this.dischargeSummary = dischargeSummary;
+    this.occurrences = occurrences;
   }
 
+  protected Observation(Parcel in) {
+    flow = in.readParcelable(Flow.class.getClassLoader());
+    dischargeSummary = in.readParcelable(DischargeSummary.class.getClassLoader());
+    occurrences = in.readParcelable(Occurrences.class.getClassLoader());
+  }
   @Override
   public String toString() {
     List<String> strs = new ArrayList<>();
     if (flow != null) {
       strs.add(flow.name());
     }
-    if (mucusSummary != null) {
-      strs.add(mucusSummary.getCode().toUpperCase());
+    if (dischargeSummary != null) {
+      strs.add(dischargeSummary.getCode().toUpperCase());
     }
     if (occurrences != null) {
       strs.add(occurrences.name());
@@ -54,9 +68,9 @@ public class Observation {
     if (flow != null) {
       strs.add(flow.getDescription());
     }
-    if (mucusSummary != null) {
+    if (dischargeSummary != null) {
       // TODO: Get unit system preference
-      strs.add(mucusSummary.getMetricDesciption(joiner));
+      strs.add(dischargeSummary.getMetricDesciption(joiner));
     }
     if (occurrences != null) {
       strs.add(occurrences.getDescription());
@@ -64,164 +78,126 @@ public class Observation {
     return joiner.join(strs);
   }
 
-  public enum Occurrences {
-    X1("Seen only once"),
-    X2("Seen twice"),
-    X3("Seen three times"),
-    AD("Seen all day");
-
-    private final String description;
-
-    Occurrences(String description) {
-      this.description = description;
-    }
-
-    public String getDescription() {
-      return description;
-    }
+  @Override
+  public int describeContents() {
+    return 0;
   }
 
-  public enum Flow {
-    H("Heavy flow"),
-    M("Medium flow"),
-    L("Light flow"),
-    VL("Very light flow");
-
-    private final String description;
-
-    Flow(String description) {
-      this.description = description;
-    }
-
-    public String getDescription() {
-      return this.description;
-    }
+  @Override
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeParcelable(flow, flags);
+    dest.writeParcelable(dischargeSummary, flags);
+    dest.writeParcelable(occurrences, flags);
   }
 
-  public static class DischargeSummary {
-    public final DischargeType mType;
-    public final Set<MucusModifier> mModifiers;
-
-    public DischargeSummary(DischargeType type) {
-      this(type, new HashSet<MucusModifier>());
-    }
-
-    public DischargeSummary(DischargeType type, Set<MucusModifier> modifiers) {
-      mType = type;
-      mModifiers = modifiers;
-    }
-
-    public String getCode() {
-      StringBuilder code = new StringBuilder().append(mType.getCode());
-      switch (mType) {
-        case STICKY:
-        case TACKY:
-        case STRETCHY:
-          for (MucusModifier modifier : mModifiers) {
-            code.append(modifier.name());
-          }
-          break;
-
+  @Override
+  public boolean equals(Object o) {
+    if (o instanceof Observation) {
+      Observation that = (Observation) o;
+      if (this.flow != that.flow) {
+        return false;
       }
-      return code.toString();
-    }
-
-    public String getImperialDesciption(Joiner joiner) {
-      return getDescription(joiner, mType.getImperialDescription());
-    }
-
-    public String getMetricDesciption(Joiner joiner) {
-      return getDescription(joiner, mType.getMetricDescription());
-    }
-
-    private String getDescription(Joiner joiner, String typeDescription) {
-      StringBuilder description = new StringBuilder().append(typeDescription);
-
-      List<String> modifierStrs = new ArrayList<>();
-      switch (mType) {
-        case STICKY:
-        case TACKY:
-        case STRETCHY:
-          for (MucusModifier modifier : mModifiers) {
-            modifierStrs.add(modifier.getDescription());
-          }
-          break;
+      if (this.occurrences != that.occurrences) {
+        return false;
       }
-      return joiner.join(typeDescription, ON_SPACE.join(modifierStrs));
+      if (this.dischargeSummary != null && that.dischargeSummary != null) {
+        if (!this.dischargeSummary.equals(that.dischargeSummary)) {
+          return false;
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(flow, dischargeSummary, occurrences);
+  }
+
+  public static class InvalidObservationException extends Exception {
+    InvalidObservationException(String reason) {
+      super(reason);
     }
   }
 
-  public enum MucusModifier {
-    CK("Cloudy/clear"), // NOTE: this is listed first to match before C or K
-    C("Cloudy (white)"),
-    K("Clear"),
-    B("Brown (or black) bleeding"),
-    G("Gummy (gluey)"),
-    L("Lubricative"),
-    P("Pasty (creamy)"),
-    Y("Yellow (even pale yellow)");
-
-    private String mDescription;
-
-    MucusModifier(String description) {
-      mDescription = description;
+  public static final Creator<Observation> CREATOR = new Creator<Observation>() {
+    @Override
+    public Observation createFromParcel(Parcel in) {
+      return new Observation(in);
     }
 
-    public String getDescription() {
-      return mDescription;
+    @Override
+    public Observation[] newArray(int size) {
+      return new Observation[size];
     }
-  }
+  };
 
-  public enum DischargeType { // NOTE: enum values ordered to support inorder prefix matching
-    DRY("0", false, "Dry"),
-    WET_WO_LUB("2W", false, "Wet without lubrication"),
-    DAMP_WO_LUB("2", false, "Damp without lubrication"),
-    SHINY_WO_LUB("4", false, "Shiny without lubrication"),
-    STICKY("6", true, "Sticky", "1/4 inch", "0.5 cm"),
-    TACKY("8", true, "Tacky", "1/2 - 3/4 inch", "1.0 - 2.0 cm"),
-    DAMP_W_LUB("10DL", true, "Damp with lubrication"),
-    WET_W_LUB("10SL", true, "Wet with lubrication"),
-    SHINY_W_LUB("10WL", true, "Shiny with lubrication"),
-    STRETCHY("10", true, "Stretchy", "1 inch +", "2.5 cm or more");
+  public static Observation fromString(String observation) throws InvalidObservationException {
+    String sanitizedObservation = observation.toUpperCase().replace(" ", "");
 
-    private String mCode;
-    private String mDescriptionMetric;
-    private String mDescriptionImperial;
-    private boolean mHasMucus;
-
-    DischargeType(String code, boolean hasMucus, String description) {
-      this(code, hasMucus, description, "", "");
+    Flow flow = null;
+    for (Flow f : Flow.values()) {
+      if (sanitizedObservation.startsWith(f.name())) {
+        flow = f;
+        break;
+      }
+    }
+    String observationWithoutFlow = (flow == null)
+        ? sanitizedObservation : StringUtil.consumePrefix(sanitizedObservation, flow.name());
+    if (flow == Flow.H || flow == Flow.M) {
+      if (!observationWithoutFlow.isEmpty()) {
+        throw new InvalidObservationException("H or M do not require extra info.");
+      }
+      return new Observation(flow, null, null);
     }
 
-    DischargeType(String code, boolean hasMucus, String description, String metricExtraDescription, String imperialExtraDescription) {
-      mCode = code;
-      mHasMucus = hasMucus;
-      if (metricExtraDescription.isEmpty()) {
-        mDescriptionMetric = description;
+    DischargeSummary.DischargeType dischargeType = null;
+    for (DischargeSummary.DischargeType t : DischargeSummary.DischargeType.values()) {
+      if (observationWithoutFlow.startsWith(t.getCode())) {
+        dischargeType = t;
+        break;
+      }
+    }
+    if (dischargeType == null) {
+      throw new InvalidObservationException("Could not determine DischargeType for: " + observation);
+    }
+    if (flow != null && !dischargeType.hasMucus()) {
+      throw new InvalidObservationException(
+          "Only discharge types with mucus are valid for L and VL flows.");
+    }
+    String observationWithoutDischargeType =
+        StringUtil.consumePrefix(observationWithoutFlow, dischargeType.getCode());
+
+    Set<DischargeSummary.MucusModifier> mucusModifiers = new LinkedHashSet<>();
+    String observationWithoutModifiers = StringUtil.consumeEnum(
+        observationWithoutDischargeType, mucusModifiers, DischargeSummary.MucusModifier.class);
+    if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
+      throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
+    }
+    DischargeSummary mucusSummary = new DischargeSummary(dischargeType, mucusModifiers);
+
+    Occurrences occurrences = null;
+    for (Occurrences o : Occurrences.values()) {
+      if (observationWithoutModifiers.startsWith(o.name())) {
+        occurrences = o;
+        break;
+      }
+    }
+    if (occurrences == null) {
+      if (observationWithoutModifiers.isEmpty()) {
+        throw new InvalidObservationException("Missing one of: " + VALID_OCCURRENCES_STR);
       } else {
-        mDescriptionMetric = String.format("%s (%s)", description, metricExtraDescription);
-      }
-      if (imperialExtraDescription.isEmpty()) {
-        mDescriptionImperial = description;
-      } else {
-        mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
+        throw new InvalidObservationException(
+            String.format("Occurrence %s is not one of: %s",
+                observationWithoutModifiers, VALID_OCCURRENCES_STR));
       }
     }
-
-    public boolean hasMucus() {
-      return mHasMucus;
+    String shouldBeEmptyString =
+        StringUtil.consumePrefix(observationWithoutModifiers, occurrences.name());
+    if (!shouldBeEmptyString.isEmpty()) {
+      throw new InvalidObservationException("Extra info after occurrences.");
     }
-
-    public String getCode() {
-      return mCode;
-    }
-
-    public String getImperialDescription() {
-      return mDescriptionImperial;
-    }
-
-    public String getMetricDescription() {
-      return mDescriptionMetric;
-    }
+    return new Observation(flow, mucusSummary, occurrences);
   }
 }

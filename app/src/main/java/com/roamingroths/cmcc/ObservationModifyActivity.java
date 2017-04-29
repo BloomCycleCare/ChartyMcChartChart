@@ -2,6 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcel;
 import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -12,8 +13,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
+import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Observation;
-import com.roamingroths.cmcc.data.ObservationBuilder;
 
 public class ObservationModifyActivity extends AppCompatActivity {
 
@@ -39,7 +40,7 @@ public class ObservationModifyActivity extends AppCompatActivity {
             mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
             mObservationEditText.setText(observation.toString());
             mObservationEditText.setError(null);
-          } catch (ObservationBuilder.InvalidObservationException ioe) {
+          } catch (Observation.InvalidObservationException ioe) {
             mObservationEditText.setError(ioe.getMessage());
           }
         }
@@ -55,7 +56,7 @@ public class ObservationModifyActivity extends AppCompatActivity {
         try {
           Observation observation = getObservationFromEditText();
           mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
-        } catch (ObservationBuilder.InvalidObservationException ioe) {
+        } catch (Observation.InvalidObservationException ioe) {
           mObservationDescriptionTextView.setText(null);
         }
       }
@@ -78,14 +79,14 @@ public class ObservationModifyActivity extends AppCompatActivity {
   }
 
   private Observation getObservationFromView(View v)
-      throws ObservationBuilder.InvalidObservationException {
+      throws Observation.InvalidObservationException {
     TextView tv = (TextView) v;
     String observationStr = tv.getText().toString();
-    return ObservationBuilder.fromString(observationStr).build();
+    return Observation.fromString(observationStr);
   }
 
   private Observation getObservationFromEditText()
-      throws ObservationBuilder.InvalidObservationException {
+      throws Observation.InvalidObservationException {
     return getObservationFromView(mObservationEditText);
   }
 
@@ -110,7 +111,14 @@ public class ObservationModifyActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      finish();
+      try {
+        ChartEntry entry = new ChartEntry(getObservationFromEditText(), false, false);
+        Parcel.obtain().writeParcelable(entry, 0);
+      } catch (Observation.InvalidObservationException ioe) {
+
+      } finally {
+        finish();
+      }
       return true;
     }
 
