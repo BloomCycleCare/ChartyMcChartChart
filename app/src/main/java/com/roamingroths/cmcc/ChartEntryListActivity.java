@@ -18,6 +18,7 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.roamingroths.cmcc.data.ChartEntry;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
         ChartEntryAdapter.ChartEntryAdapterOnClickHandler {
@@ -49,7 +50,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     // Init Firebase stuff
     mFirebaseAuth = FirebaseAuth.getInstance();
 
-    mChartEntryAdapter = new ChartEntryAdapter(this, this, index);
+    mChartEntryAdapter = new ChartEntryAdapter(this, this);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -63,7 +64,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        mChartEntryAdapter.notifyItemInserted(mChartEntryAdapter.addEntry());
+        Intent createChartEntry =
+            new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
+        startActivityForResult(
+            createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
       }
     });
 
@@ -88,6 +92,33 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         }
       }
     };
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    switch (requestCode) {
+      case ChartEntryModifyActivity.CREATE_REQUEST:
+        switch (resultCode) {
+          case ChartEntryModifyActivity.OK_RESPONSE:
+            ChartEntry newEntry = (ChartEntry) data.getParcelableExtra(ChartEntry.class.getName());
+            mChartEntryAdapter.addEntry(newEntry);
+            break;
+        }
+        break;
+      case ChartEntryModifyActivity.MODIFY_REQUEST:
+        switch (resultCode) {
+          case ChartEntryModifyActivity.OK_RESPONSE:
+            ChartEntry newEntry = (ChartEntry) data.getParcelableExtra(ChartEntry.class.getName());
+            if (!data.hasExtra(Intent.EXTRA_INDEX)) {
+              throw new IllegalStateException("ChartEntry index missing from Intent");
+            }
+            int index = data.getIntExtra(Intent.EXTRA_INDEX, -1);
+            mChartEntryAdapter.updateEntry(index, newEntry);
+            break;
+        }
+        break;
+    }
   }
 
   private void onSignedInInit(FirebaseUser user) {
@@ -141,11 +172,12 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   }
 
   @Override
-  public void onClick(int itemNum) {
+  public void onClick(ChartEntry entry, int index) {
     Context context = this;
     Class destinationClass = ChartEntryModifyActivity.class;
     Intent intentToStartDetailActivity = new Intent(context, destinationClass);
-    intentToStartDetailActivity.putExtra(Intent.EXTRA_INDEX, itemNum);
-    startActivity(intentToStartDetailActivity);
+    intentToStartDetailActivity.putExtra(ChartEntry.class.getName(), entry);
+    intentToStartDetailActivity.putExtra(Intent.EXTRA_INDEX, index);
+    startActivityForResult(intentToStartDetailActivity, ChartEntryModifyActivity.MODIFY_REQUEST);
   }
 }

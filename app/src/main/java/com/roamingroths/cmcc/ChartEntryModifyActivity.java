@@ -11,16 +11,42 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Observation;
 
+import java.util.Date;
+
 public class ChartEntryModifyActivity extends AppCompatActivity {
 
-  private int mIndex;
+  public static final int CREATE_REQUEST = 1;
+  public static final int MODIFY_REQUEST = 2;
+
+  public static final int OK_RESPONSE = 0;
+  public static final int CANCEL_RESPONSE = 1;
+
   private TextInputEditText mObservationEditText;
   private TextView mObservationDescriptionTextView;
+  private Switch mPeakDaySwitch;
+  private Switch mIntercourseSwitch;
+
+  private Date mEntryDate;
+  private ChartEntry mExistingEntry;
+
+  private void updateUiWithEntry(ChartEntry entry) {
+    updateUiWithObservation(entry.observation);
+    mPeakDaySwitch.setChecked(entry.peakDay);
+    mIntercourseSwitch.setChecked(entry.intercourse);
+  }
+
+  private void updateUiWithObservation(Observation observation) {
+    mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+    mObservationEditText.setText(observation.toString());
+    mObservationEditText.setError(null);
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +62,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
       public void onFocusChange(View v, boolean hasFocus) {
         if (!hasFocus) {
           try {
-            Observation observation = getObservationFromView(v);
-            mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
-            mObservationEditText.setText(observation.toString());
-            mObservationEditText.setError(null);
+            updateUiWithObservation(getObservationFromView(v));
           } catch (Observation.InvalidObservationException ioe) {
             mObservationEditText.setError(ioe.getMessage());
           }
@@ -62,20 +85,27 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
       }
 
       @Override
-      public void afterTextChanged(Editable s) {
-      }
+      public void afterTextChanged(Editable s) {}
     });
+
+    mPeakDaySwitch = (Switch) findViewById(R.id.switch_peak_day);
+
+    mIntercourseSwitch = (Switch) findViewById(R.id.switch_intercourse);
+
+    Intent intent = getIntent();
+    if (intent.hasExtra(ChartEntry.class.getName())) {
+      // Not creating a new entry
+      mExistingEntry = intent.getParcelableExtra(ChartEntry.class.getName());
+      mEntryDate = mExistingEntry.date;
+      updateUiWithEntry(mExistingEntry);
+    } else {
+      mEntryDate = new Date();
+    }
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     getSupportActionBar().setTitle("Monday May 1");
-
-    Intent intentThatStartedThisActivity = getIntent();
-    if (intentThatStartedThisActivity != null
-        && intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
-      mIndex = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
-    }
   }
 
   private Observation getObservationFromView(View v)
@@ -88,6 +118,13 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Observation getObservationFromEditText()
       throws Observation.InvalidObservationException {
     return getObservationFromView(mObservationEditText);
+  }
+
+  private ChartEntry getChartEntryFromUi() throws Observation.InvalidObservationException {
+    Observation observation = getObservationFromEditText();
+    boolean peakDay = mPeakDaySwitch.isChecked();
+    boolean intercourse = mIntercourseSwitch.isChecked();
+    return new ChartEntry(mEntryDate, observation, peakDay, intercourse);
   }
 
   @Override
@@ -112,17 +149,23 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
 
     if (id == R.id.action_save) {
       try {
-        ChartEntry entry = new ChartEntry(getObservationFromEditText(), false, false);
-        Parcel.obtain().writeParcelable(entry, 0);
-      } catch (Observation.InvalidObservationException ioe) {
-
-      } finally {
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(ChartEntry.class.getName(), getChartEntryFromUi());
+        if (getIntent().hasExtra(Intent.EXTRA_INDEX)) {
+          returnIntent.putExtra(
+              Intent.EXTRA_INDEX, getIntent().getIntExtra(Intent.EXTRA_INDEX, -1));
+        }
+        setResult(OK_RESPONSE, returnIntent);
         finish();
+      } catch (Observation.InvalidObservationException ioe) {
+        Toast.makeText(this, "Cannot save invalid observation", Toast.LENGTH_LONG).show();
       }
       return true;
     }
 
     if (id == android.R.id.home) {
+      // TODO: warn about losing data on back press
+      setResult(CANCEL_RESPONSE, null);
       onBackPressed();
       return true;
     }
