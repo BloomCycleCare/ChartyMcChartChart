@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
+import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,24 +9,65 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.roamingroths.cmcc.data.Cycle;
+
+import java.text.SimpleDateFormat;
+
 /**
  * Created by parkeroth on 4/18/17.
  */
 
 public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder> {
 
-  private int mNumEntries;
+  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("E MMM d, yyyy");
+
   private final Context mContext;
   private final OnClickHandler mClickHandler;
+  private final SortedList<Cycle> cycles;
 
   public CycleAdapter(Context context, OnClickHandler clickHandler) {
-    mNumEntries = 20;
     mContext = context;
     mClickHandler = clickHandler;
+    cycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
+      @Override
+      public int compare(Cycle c1, Cycle c2) {
+        return c2.firstDay.compareTo(c1.firstDay);
+      }
+
+      @Override
+      public void onChanged(int position, int count) {
+        notifyItemRangeChanged(position, count);
+      }
+
+      @Override
+      public boolean areContentsTheSame(Cycle oldItem, Cycle newItem) {
+        return oldItem.equals(newItem);
+      }
+
+      @Override
+      public boolean areItemsTheSame(Cycle item1, Cycle item2) {
+        return item1 == item2;
+      }
+
+      @Override
+      public void onInserted(int position, int count) {
+        notifyItemRangeInserted(position, count);
+      }
+
+      @Override
+      public void onRemoved(int position, int count) {
+        notifyItemRangeRemoved(position, count);
+      }
+
+      @Override
+      public void onMoved(int fromPosition, int toPosition) {
+        notifyItemMoved(fromPosition, toPosition);
+      }
+    });
   }
 
-  public int addEntry() {
-    return mNumEntries++;
+  public int addCycle(Cycle cycle) {
+    return cycles.add(cycle);
   }
 
   /**
@@ -62,16 +104,17 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
-    holder.mCycleDataTextView.setText("Cycle #" + position);
+    Cycle cycle = cycles.get(position);
+    holder.mCycleDataTextView.setText("Cycle Starting: " + DATE_FORMAT.format(cycle.firstDay));
   }
 
   @Override
   public int getItemCount() {
-    return mNumEntries;
+    return cycles.size();
   }
 
   public interface OnClickHandler {
-    void onClick(int itemNum);
+    void onClick(Cycle cycle, int itemNum);
   }
 
   public class CycleAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
@@ -86,7 +129,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     @Override
     public void onClick(View v) {
       int adapterPosition = getAdapterPosition();
-      mClickHandler.onClick(adapterPosition);
+      mClickHandler.onClick(cycles.get(adapterPosition), adapterPosition);
     }
   }
 }

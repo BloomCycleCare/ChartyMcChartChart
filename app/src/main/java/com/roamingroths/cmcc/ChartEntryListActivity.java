@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc;
 
-import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -9,7 +8,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -19,6 +17,9 @@ import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.Cycle;
+
+import java.util.Date;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
         ChartEntryAdapter.ChartEntryAdapterOnClickHandler {
@@ -30,6 +31,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
   private String mUsername = ANONYMOUS;
+  private int mIndex;
+  private Date mStartDate;
 
   // Firebase stuff
   private FirebaseAuth mFirebaseAuth;
@@ -39,16 +42,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
-
-    int index = 1;
-    Intent intentThatStartedThisActivity = getIntent();
-    if (intentThatStartedThisActivity != null
-        && intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
-      index = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
-    }
-
-    // Init Firebase stuff
-    mFirebaseAuth = FirebaseAuth.getInstance();
 
     mChartEntryAdapter = new ChartEntryAdapter(this, this);
 
@@ -71,7 +64,24 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       }
     });
 
-    getSupportActionBar().setTitle("Cycle #" + index);
+    mIndex = 1;
+    Intent intentThatStartedThisActivity = getIntent();
+    if (intentThatStartedThisActivity != null) {
+      if (intentThatStartedThisActivity.hasExtra(Intent.EXTRA_INDEX)) {
+        mIndex = intentThatStartedThisActivity.getIntExtra(Intent.EXTRA_INDEX, -1);
+      }
+      if (intentThatStartedThisActivity.hasExtra(Cycle.class.getName())) {
+        Cycle cycle =
+            intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
+        mStartDate = cycle.firstDay;
+        mChartEntryAdapter.installCycle(cycle);
+      }
+    }
+
+    // Init Firebase stuff
+    mFirebaseAuth = FirebaseAuth.getInstance();
+
+    getSupportActionBar().setTitle("Cycle #" + mIndex);
 
     mAuthStateListener = new FirebaseAuth.AuthStateListener() {
       @Override
@@ -101,7 +111,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       case ChartEntryModifyActivity.CREATE_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
-            ChartEntry newEntry = (ChartEntry) data.getParcelableExtra(ChartEntry.class.getName());
+            ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
             mChartEntryAdapter.addEntry(newEntry);
             break;
         }
@@ -109,7 +119,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       case ChartEntryModifyActivity.MODIFY_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
-            ChartEntry newEntry = (ChartEntry) data.getParcelableExtra(ChartEntry.class.getName());
+            ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
             if (!data.hasExtra(Intent.EXTRA_INDEX)) {
               throw new IllegalStateException("ChartEntry index missing from Intent");
             }
@@ -164,6 +174,11 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     if (id == R.id.action_list_cycles) {
       Intent startCycleList = new Intent(this, CycleListActivity.class);
+      startCycleList.putExtra(Intent.EXTRA_INDEX, mIndex);
+      if (mStartDate != null) {
+        Cycle cycle = new Cycle(mStartDate, mChartEntryAdapter.getCurrentEntries());
+        startCycleList.putExtra(Cycle.class.getName(), cycle);
+      }
       startActivity(startCycleList);
       return true;
     }

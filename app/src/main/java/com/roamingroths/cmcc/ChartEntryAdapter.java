@@ -10,13 +10,11 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.Cycle;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -69,6 +67,20 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
       }
     });
 
+  }
+
+  public void installCycle(Cycle cycle) {
+    entries.clear();
+    entries.addAll(cycle.entries);
+  }
+
+  // TODO: Do this better
+  public List<ChartEntry> getCurrentEntries() {
+    List<ChartEntry> outList = new ArrayList<>();
+    for (int i = 0; i < entries.size(); i++) {
+      outList.add(entries.get(i));
+    }
+    return outList;
   }
 
   public void addEntry(ChartEntry entry) {
