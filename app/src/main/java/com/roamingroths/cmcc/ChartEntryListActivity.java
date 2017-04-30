@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -66,9 +67,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       }
     });
 
-    /*Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-    setSupportActionBar(toolbar);
-    getSupportActionBar().setTitle("Cycle #" + index);*/
+    getSupportActionBar().setTitle("Cycle #" + index);
 
     mAuthStateListener = new FirebaseAuth.AuthStateListener() {
       @Override
