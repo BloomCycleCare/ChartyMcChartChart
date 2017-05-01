@@ -16,6 +16,8 @@ import android.widget.Toast;
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 
@@ -37,11 +39,14 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   // Firebase stuff
   private FirebaseAuth mFirebaseAuth;
   private FirebaseAuth.AuthStateListener mAuthStateListener;
+  private DatabaseReference mDatabase;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
+
+    mDatabase = FirebaseDatabase.getInstance().getReference();
 
     mChartEntryAdapter = new ChartEntryAdapter(this, this);
 
@@ -90,6 +95,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         if (user != null) {
           // user signed in
           onSignedInInit(user);
+          mDatabase.child("user-scratch").child(user.getUid()).child("message").setValue("parkeroth");
         } else {
           // user signed out
           onSignedOutCleanup();
