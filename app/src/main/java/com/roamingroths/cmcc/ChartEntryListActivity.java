@@ -20,7 +20,13 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
+import com.roamingroths.cmcc.data.Observation;
 
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 import java.util.Date;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
@@ -95,7 +101,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         if (user != null) {
           // user signed in
           onSignedInInit(user);
-          mDatabase.child("user-scratch").child(user.getUid()).child("message").setValue("parkeroth");
+          try {
+            ChartEntry entry = new ChartEntry(new Date(), Observation.fromString("H"), true, false);
+            mDatabase.child("user-scratch").child(user.getUid()).child("entry").setValue("parkeroth");
+          } catch (Exception e) {}
         } else {
           // user signed out
           onSignedOutCleanup();
@@ -108,7 +117,19 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         }
       }
     };
+
+    try {
+      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
+      keyStore.load(null);
+      if (keyStore.isKeyEntry(PERSONAL_PRIVATE_KEY_ALIAS)) {
+      } else {
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
+
+  private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
 
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {

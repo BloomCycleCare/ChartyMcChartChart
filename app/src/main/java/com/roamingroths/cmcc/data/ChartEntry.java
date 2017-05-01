@@ -12,6 +12,8 @@ import com.google.gson.Gson;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
@@ -60,29 +62,6 @@ public class ChartEntry implements Parcelable {
     intercourse = in.readByte() != 0;
   }
 
-  public static ChartEntry fromEncryptedText(String encryptedText, RSAPrivateKey privateKey)
-      throws Exception {
-    Cipher output = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    output.init(Cipher.DECRYPT_MODE, privateKey);
-
-    String cipherText = encryptedText;
-    CipherInputStream cipherInputStream = new CipherInputStream(
-        new ByteArrayInputStream(Base64.decodeBase64(cipherText)), output);
-    ArrayList<Byte> values = new ArrayList<>();
-    int nextByte;
-    while ((nextByte = cipherInputStream.read()) != -1) {
-      values.add((byte)nextByte);
-    }
-
-    byte[] bytes = new byte[values.size()];
-    for(int i = 0; i < bytes.length; i++) {
-      bytes[i] = values.get(i).byteValue();
-    }
-
-    String decryptedText = new String(bytes, 0, bytes.length, "UTF-8");
-    return new Gson().fromJson(decryptedText, ChartEntry.class);
-  }
-
   public static final Date parseDate(String dateStr) throws ParseException {
     return WIRE_DATE_FORMAT.parse(dateStr);
   }
@@ -126,20 +105,5 @@ public class ChartEntry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(observation, peakDay, intercourse);
-  }
-
-  public String toEncryptedString(RSAPublicKey publicKey) throws Exception {
-    String initialText = new Gson().toJson(this);
-    Cipher input = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-    input.init(Cipher.ENCRYPT_MODE, publicKey);
-
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    CipherOutputStream cipherOutputStream = new CipherOutputStream(
-        outputStream, input);
-    cipherOutputStream.write(initialText.getBytes("UTF-8"));
-    cipherOutputStream.close();
-
-    byte [] vals = outputStream.toByteArray();
-    return Base64.encodeBase64String(vals);
   }
 }

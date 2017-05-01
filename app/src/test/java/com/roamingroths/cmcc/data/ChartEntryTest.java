@@ -4,11 +4,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.data.DischargeSummary.DischargeType;
 import com.roamingroths.cmcc.data.DischargeSummary.MucusModifier;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 
 import org.junit.Test;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.Date;
@@ -33,13 +36,14 @@ public class ChartEntryTest {
     KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
     generator.initialize(2048);
     KeyPair keyPair = generator.generateKeyPair();
-    RSAPublicKey pubKey = (RSAPublicKey) keyPair.getPublic();
-    RSAPrivateKey privKey = (RSAPrivateKey) keyPair.getPrivate();
+    PublicKey pubKey = keyPair.getPublic();
+    PrivateKey privKey = keyPair.getPrivate();
 
     for (String observationStr : OBSERVATION_STRS) {
       ChartEntry entry =
           new ChartEntry(new Date(), Observation.fromString(observationStr), true, false);
-      assertEquals(entry, ChartEntry.fromEncryptedText(entry.toEncryptedString(pubKey), privKey));
+      assertEquals(
+          entry, CryptoUtil.decrypt(CryptoUtil.encrypt(entry, pubKey), privKey, ChartEntry.class));
     }
   }
 }
