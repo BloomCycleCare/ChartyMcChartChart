@@ -14,31 +14,39 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.Observation;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 
 import java.io.IOException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.cert.CertificateException;
 import java.util.Date;
+import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
         ChartEntryAdapter.ChartEntryAdapterOnClickHandler {
 
   public static final int RC_SIGN_IN = 1;
 
-  private static final String ANONYMOUS = "anonymous";
-
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
-  private String mUsername = ANONYMOUS;
+  private FirebaseUser mUser = null;
   private int mIndex;
   private Date mStartDate;
 
@@ -101,10 +109,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         if (user != null) {
           // user signed in
           onSignedInInit(user);
-          try {
-            ChartEntry entry = new ChartEntry(new Date(), Observation.fromString("H"), true, false);
-            mDatabase.child("user-scratch").child(user.getUid()).child("entry").setValue("parkeroth");
-          } catch (Exception e) {}
         } else {
           // user signed out
           onSignedOutCleanup();
@@ -117,16 +121,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         }
       }
     };
-
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-      keyStore.load(null);
-      if (keyStore.isKeyEntry(PERSONAL_PRIVATE_KEY_ALIAS)) {
-      } else {
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }
   }
 
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
@@ -138,8 +132,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       case ChartEntryModifyActivity.CREATE_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
-            ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
-            mChartEntryAdapter.addEntry(newEntry);
+            if (data != null) {
+              ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
+              mChartEntryAdapter.addEntry(newEntry);
+            }
             break;
         }
         break;
@@ -158,9 +154,49 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     }
   }
 
-  private void onSignedInInit(FirebaseUser user) {
-    mUsername = user.getDisplayName();
-    Toast.makeText(this, "Username: " + mUsername, Toast.LENGTH_LONG).show();
+  private void onSignedInInit(final FirebaseUser user) {
+    mUser = user;
+    try {
+      final DatabaseReference currentCycleRef =
+          mDatabase.child("users").child(user.getUid()).child("current-cycle");
+      currentCycleRef.addListenerForSingleValueEvent(new ValueEventListener() {
+        @Override
+        public void onDataChange(DataSnapshot dataSnapshot) {
+          String currentCycleUuid = (String) dataSnapshot.getValue();
+          if (Strings.isNullOrEmpty(currentCycleUuid)) {
+            currentCycleUuid = UUID.randomUUID().toString();
+            DatabaseReference cycleRef = mDatabase.child("cycles").child(currentCycleUuid);
+            cycleRef.child("user").setValue(user.getUid());
+            currentCycleRef.setValue(currentCycleUuid);
+          }
+          DatabaseReference entriesRef =
+              mDatabase.child("cycles").child(currentCycleUuid).child("entries");
+          entriesRef.addChildEventListener(new ChildEventListener() {
+            @Override
+            public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+              String wire = (String) dataSnapshot.getValue();
+            }
+
+            @Override
+            public void onChildChanged(DataSnapshot dataSnapshot, String s) {}
+
+            @Override
+            public void onChildRemoved(DataSnapshot dataSnapshot) {}
+
+            @Override
+            public void onChildMoved(DataSnapshot dataSnapshot, String s) {}
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {}
+          });
+        }
+
+        @Override
+        public void onCancelled(DatabaseError databaseError) {}
+      });
+    } catch (Exception e) {
+      throw new IllegalStateException(e);
+    }
   }
 
   private void onSignedOutCleanup() {
