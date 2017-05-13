@@ -1,29 +1,15 @@
 package com.roamingroths.cmcc.data;
 
-import org.apache.commons.codec.binary.Base64;
-
 import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.gson.Gson;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
 
 /**
  * Created by parkeroth on 4/22/17.
@@ -77,6 +63,10 @@ public class ChartEntry implements Parcelable {
       return new ChartEntry[size];
     }
   };
+
+  public String getDateStr() {
+    return WIRE_DATE_FORMAT.format(date);
+  }
 
   @Override
   public int describeContents() {

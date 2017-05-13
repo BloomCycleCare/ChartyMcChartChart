@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
+import android.support.v4.content.AsyncTaskLoader;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.google.common.util.concurrent.SettableFuture;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 
@@ -22,11 +24,12 @@ import java.util.List;
 
 public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
 
+  private String cycleId;
   private SortedList<ChartEntry> entries;
   private final Context mContext;
-  private final ChartEntryAdapterOnClickHandler mClickHandler;
+  private final OnClickHandler mClickHandler;
 
-  public ChartEntryAdapter(Context context, ChartEntryAdapterOnClickHandler clickHandler) {
+  public ChartEntryAdapter(Context context, OnClickHandler clickHandler) {
     mContext = context;
     mClickHandler = clickHandler;
     entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
@@ -70,8 +73,13 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
   }
 
   public void installCycle(Cycle cycle) {
+    cycleId = cycle.id;
     entries.clear();
     entries.addAll(cycle.entries);
+  }
+
+  public String getCycleId() {
+    return cycleId;
   }
 
   // TODO: Do this better
@@ -137,7 +145,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
     return entries.size();
   }
 
-  public interface ChartEntryAdapterOnClickHandler {
+  public interface OnClickHandler {
     void onClick(ChartEntry entry, int index);
   }
 
@@ -158,6 +166,26 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
     public void onClick(View v) {
       int index = getAdapterPosition();
       mClickHandler.onClick(entries.get(index), index);
+    }
+  }
+
+  public static final int LOADER_ID = 22;
+
+  public class Loader extends AsyncTaskLoader<ChartEntryAdapter> {
+
+    public Loader(Context context) {
+      super(context);
+    }
+
+    @Override
+    public ChartEntryAdapter loadInBackground() {
+      SettableFuture<ChartEntryAdapter> adapterFuture = SettableFuture.create();
+      try {
+        return adapterFuture.get();
+      } catch (Exception e) {
+        e.printStackTrace();
+        return null;
+      }
     }
   }
 }

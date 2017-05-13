@@ -12,8 +12,6 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.widget.DatePicker;
 
-import com.google.common.collect.ImmutableList;
-import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 
 import java.util.Calendar;
@@ -52,7 +50,7 @@ public class CycleListActivity extends AppCompatActivity
           @Override
           public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
             Date date = new Date(year, month, dayOfMonth);
-            mCycleAdapter.addCycle(new Cycle(date, ImmutableList.<ChartEntry>of()));
+            //mCycleAdapter.addCycle(new Cycle(date, ImmutableList.<ChartEntry>of()));
           }
         }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
         datePickerDialog.show();

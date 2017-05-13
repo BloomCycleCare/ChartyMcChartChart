@@ -31,7 +31,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     cycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
       @Override
       public int compare(Cycle c1, Cycle c2) {
-        return c2.firstDay.compareTo(c1.firstDay);
+        return c2.startDate.compareTo(c1.startDate);
       }
 
       @Override
@@ -105,7 +105,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
     Cycle cycle = cycles.get(position);
-    holder.mCycleDataTextView.setText("Cycle Starting: " + DATE_FORMAT.format(cycle.firstDay));
+    holder.mCycleDataTextView.setText("Cycle Starting: " + DATE_FORMAT.format(cycle.startDate));
   }
 
   @Override

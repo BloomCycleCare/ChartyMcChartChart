@@ -1,10 +1,16 @@
 package com.roamingroths.cmcc.data;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.utils.CryptoUtil;
+
+import java.security.PrivateKey;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -16,16 +22,33 @@ public class Cycle implements Parcelable {
 
   private static final SimpleDateFormat WIRE_DATE_FORMAT = new SimpleDateFormat("yyy-MM-dd");
 
-  public Date firstDay;
+  public String id;
+  public Date startDate;
   public List<ChartEntry> entries;
 
-  public Cycle(Date firstDay, List<ChartEntry> entries) {
-    this.firstDay = firstDay;
+  public Cycle(String id, Date startDate, List<ChartEntry> entries) {
+    this.id = id;
+    this.startDate = startDate;
     this.entries = entries;
   }
 
   protected Cycle(Parcel in) {
-    this(readWireDate(in.readString()), in.createTypedArrayList(ChartEntry.CREATOR));
+    this(in.readString(), readWireDate(in.readString()), in.createTypedArrayList(ChartEntry.CREATOR));
+  }
+
+  public static Cycle fromDataSnapshot(Context context, DataSnapshot cycleSnapshot)
+      throws CryptoUtil.CryptoException, ParseException {
+    Date startDate =
+        WIRE_DATE_FORMAT.parse(cycleSnapshot.child("start-date").getValue(String.class));
+    List<ChartEntry> entries = new ArrayList<>();
+    if (cycleSnapshot.hasChild("entries")) {
+      PrivateKey privateKey = CryptoUtil.getPersonalPrivateKey(context);
+      for (DataSnapshot entrySnapshot : cycleSnapshot.child("entries").getChildren()) {
+        String encryptedEntry = entrySnapshot.getValue(String.class);
+        entries.add(CryptoUtil.decrypt(encryptedEntry, privateKey, ChartEntry.class));
+      }
+    }
+    return new Cycle(cycleSnapshot.getKey(), startDate, entries);
   }
 
   private static Date readWireDate(String wireDate) {
@@ -48,6 +71,10 @@ public class Cycle implements Parcelable {
     }
   };
 
+  public String getDateStr() {
+    return WIRE_DATE_FORMAT.format(startDate);
+  }
+
   @Override
   public int describeContents() {
     return 0;
@@ -55,7 +82,7 @@ public class Cycle implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(WIRE_DATE_FORMAT.format(firstDay));
+    dest.writeString(WIRE_DATE_FORMAT.format(startDate));
     dest.writeTypedList(entries);
   }
 }
