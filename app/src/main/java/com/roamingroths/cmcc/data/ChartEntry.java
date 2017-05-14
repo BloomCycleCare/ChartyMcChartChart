@@ -1,14 +1,17 @@
 package com.roamingroths.cmcc.data;
 
+import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
+import java.security.PrivateKey;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
@@ -16,9 +19,6 @@ import java.util.Date;
  */
 
 public class ChartEntry implements Parcelable {
-
-  private static final Joiner ON_COMMA = Joiner.on(',');
-  private static final SimpleDateFormat WIRE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd");
 
   public Date date;
   public Observation observation;
@@ -48,8 +48,18 @@ public class ChartEntry implements Parcelable {
     intercourse = in.readByte() != 0;
   }
 
+  public static ChartEntry fromSnapshot(DataSnapshot snapshot, Context context)
+      throws CryptoUtil.CryptoException {
+    String entryDateStr = snapshot.getKey();
+    String encryptedEntry = snapshot.getValue(String.class);
+    PrivateKey privateKey = CryptoUtil.getPersonalPrivateKey(context);
+    ChartEntry entry = CryptoUtil.decrypt(encryptedEntry, privateKey, ChartEntry.class);
+    Preconditions.checkArgument(entry.getDateStr().equals(entryDateStr));
+    return entry;
+  }
+
   public static final Date parseDate(String dateStr) throws ParseException {
-    return WIRE_DATE_FORMAT.parse(dateStr);
+    return DateUtil.fromWireStr(dateStr);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
@@ -65,7 +75,7 @@ public class ChartEntry implements Parcelable {
   };
 
   public String getDateStr() {
-    return WIRE_DATE_FORMAT.format(date);
+    return DateUtil.toWireStr(date);
   }
 
   @Override
@@ -75,7 +85,7 @@ public class ChartEntry implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(WIRE_DATE_FORMAT.format(date));
+    dest.writeString(DateUtil.toWireStr(date));
     dest.writeParcelable(observation, flags);
     dest.writeByte((byte) (peakDay ? 1 : 0));
     dest.writeByte((byte) (intercourse ? 1 : 0));

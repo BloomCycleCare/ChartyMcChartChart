@@ -1,7 +1,6 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
-import android.support.v4.content.AsyncTaskLoader;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -10,29 +9,36 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
-import com.roamingroths.cmcc.data.Cycle;
+import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Date;
 
 /**
  * Created by parkeroth on 4/18/17.
  */
 
-public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
+public class ChartEntryAdapter
+    extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder>
+    implements ChildEventListener {
 
-  private String cycleId;
-  private SortedList<ChartEntry> entries;
+  private final SortedList<ChartEntry> mEntries;
   private final Context mContext;
   private final OnClickHandler mClickHandler;
+  private Date mCycleStartDate;
+  private String mAttachedCycleId;
 
   public ChartEntryAdapter(Context context, OnClickHandler clickHandler) {
     mContext = context;
     mClickHandler = clickHandler;
-    entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
+    mEntries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
 
       @Override
       public void onInserted(int position, int count) {
@@ -69,34 +75,89 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
         return item1 == item2;
       }
     });
-
   }
 
-  public void installCycle(Cycle cycle) {
-    cycleId = cycle.id;
-    entries.clear();
-    entries.addAll(cycle.entries);
+  public boolean isAttachedToCycle() {
+    return !Strings.isNullOrEmpty(mAttachedCycleId);
   }
 
   public String getCycleId() {
+    Preconditions.checkState(isAttachedToCycle());
+    return mAttachedCycleId;
+  }
+
+  public Date getCycleStartDate() {
+    Preconditions.checkState(isAttachedToCycle());
+    return mCycleStartDate;
+  }
+
+  public void attachToCycle(String cycleId, Date cycleStartDate) {
+    Preconditions.checkState(!isAttachedToCycle());
+    DataStore.attachCycleEntryListener(this, cycleId);
+    mAttachedCycleId = cycleId;
+    mCycleStartDate = cycleStartDate;
+  }
+
+  public String detachFromCycle() {
+    Preconditions.checkState(isAttachedToCycle());
+    DataStore.detatchCycleEntryListener(this, mAttachedCycleId);
+    String cycleId = mAttachedCycleId;
+    mCycleStartDate = null;
+    mAttachedCycleId = null;
     return cycleId;
   }
 
-  // TODO: Do this better
-  public List<ChartEntry> getCurrentEntries() {
-    List<ChartEntry> outList = new ArrayList<>();
-    for (int i = 0; i < entries.size(); i++) {
-      outList.add(entries.get(i));
+  private int findEntry(String dateStr) {
+    for (int i = 0; i < mEntries.size(); i++) {
+      ChartEntry entry = mEntries.get(i);
+      if (entry.getDateStr().equals(dateStr)) {
+        return i;
+      }
     }
-    return outList;
+    return -1;
   }
 
-  public void addEntry(ChartEntry entry) {
-    entries.add(entry);
+  @Override
+  public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+    try {
+      mEntries.add(ChartEntry.fromSnapshot(dataSnapshot, mContext));
+    } catch (CryptoUtil.CryptoException e) {
+      e.printStackTrace();
+    }
   }
 
-  public void updateEntry(int index, ChartEntry entry) {
-    entries.updateItemAt(index, entry);
+  @Override
+  public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+    String dateStr = dataSnapshot.getKey();
+    int entryIndex = findEntry(dateStr);
+    if (entryIndex < 0) {
+      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
+    }
+    try {
+      mEntries.updateItemAt(entryIndex, ChartEntry.fromSnapshot(dataSnapshot, mContext));
+    } catch (CryptoUtil.CryptoException e) {
+      e.printStackTrace();
+    }
+  }
+
+  @Override
+  public void onChildRemoved(DataSnapshot dataSnapshot) {
+    String dateStr = dataSnapshot.getKey();
+    int entryIndex = findEntry(dateStr);
+    if (entryIndex < 0) {
+      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
+    }
+    mEntries.removeItemAt(entryIndex);
+  }
+
+  @Override
+  public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+    throw new IllegalStateException("NOT IMPLEMENTED");
+  }
+
+  @Override
+  public void onCancelled(DatabaseError databaseError) {
+    databaseError.toException().printStackTrace();
   }
 
   /**
@@ -132,7 +193,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
    */
   @Override
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
-    ChartEntry entry = entries.get(position);
+    ChartEntry entry = mEntries.get(position);
     holder.mEntryDataTextView.setText(entry.observation.toString());
     holder.mEntryNumTextView.setText(String.valueOf(position + 1));
     holder.mEntryDateTextView.setText(DATE_FORMAT.format(entry.date));
@@ -142,7 +203,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
 
   @Override
   public int getItemCount() {
-    return entries.size();
+    return mEntries.size();
   }
 
   public interface OnClickHandler {
@@ -165,27 +226,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryAdapter.En
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      mClickHandler.onClick(entries.get(index), index);
-    }
-  }
-
-  public static final int LOADER_ID = 22;
-
-  public class Loader extends AsyncTaskLoader<ChartEntryAdapter> {
-
-    public Loader(Context context) {
-      super(context);
-    }
-
-    @Override
-    public ChartEntryAdapter loadInBackground() {
-      SettableFuture<ChartEntryAdapter> adapterFuture = SettableFuture.create();
-      try {
-        return adapterFuture.get();
-      } catch (Exception e) {
-        e.printStackTrace();
-        return null;
-      }
+      mClickHandler.onClick(mEntries.get(index), index);
     }
   }
 }

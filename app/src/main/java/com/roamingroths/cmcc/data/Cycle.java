@@ -6,10 +6,10 @@ import android.os.Parcelable;
 
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.security.PrivateKey;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,8 +19,6 @@ import java.util.List;
  */
 
 public class Cycle implements Parcelable {
-
-  private static final SimpleDateFormat WIRE_DATE_FORMAT = new SimpleDateFormat("yyy-MM-dd");
 
   public String id;
   public Date startDate;
@@ -39,7 +37,7 @@ public class Cycle implements Parcelable {
   public static Cycle fromDataSnapshot(Context context, DataSnapshot cycleSnapshot)
       throws CryptoUtil.CryptoException, ParseException {
     Date startDate =
-        WIRE_DATE_FORMAT.parse(cycleSnapshot.child("start-date").getValue(String.class));
+        DateUtil.fromWireStr(cycleSnapshot.child("start-date").getValue(String.class));
     List<ChartEntry> entries = new ArrayList<>();
     if (cycleSnapshot.hasChild("entries")) {
       PrivateKey privateKey = CryptoUtil.getPersonalPrivateKey(context);
@@ -53,7 +51,7 @@ public class Cycle implements Parcelable {
 
   private static Date readWireDate(String wireDate) {
     try {
-      return WIRE_DATE_FORMAT.parse(wireDate);
+      return DateUtil.fromWireStr(wireDate);
     } catch (ParseException pe) {
       throw new IllegalArgumentException(pe);
     }
@@ -72,7 +70,7 @@ public class Cycle implements Parcelable {
   };
 
   public String getDateStr() {
-    return WIRE_DATE_FORMAT.format(startDate);
+    return DateUtil.toWireStr(startDate);
   }
 
   @Override
@@ -82,7 +80,7 @@ public class Cycle implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(WIRE_DATE_FORMAT.format(startDate));
+    dest.writeString(DateUtil.toWireStr(startDate));
     dest.writeTypedList(entries);
   }
 }

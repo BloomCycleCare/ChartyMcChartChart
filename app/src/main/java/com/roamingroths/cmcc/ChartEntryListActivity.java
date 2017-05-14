@@ -16,16 +16,14 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
-import com.google.common.collect.ImmutableList;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
-import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 
 import java.util.Calendar;
-import java.util.UUID;
+import java.util.Date;
 
 public class ChartEntryListActivity extends AppCompatActivity
     implements ChartEntryAdapter.OnClickHandler {
@@ -34,6 +32,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   private TextView mErrorView;
   private ProgressBar mProgressBar;
+  private FloatingActionButton mFab;
 
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
@@ -56,25 +55,19 @@ public class ChartEntryListActivity extends AppCompatActivity
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
-    FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-    fab.setOnClickListener(new View.OnClickListener() {
+    mFab = (FloatingActionButton) findViewById(R.id.fab);
+    mFab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
         Intent createChartEntry =
             new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
+        createChartEntry.putExtra(Extras.CYCLE_ID, mChartEntryAdapter.getCycleId());
+        createChartEntry.putExtra(
+            Extras.CYCLE_START_DATE_LONG, mChartEntryAdapter.getCycleStartDate().getTime());
         startActivityForResult(
             createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
       }
     });
-
-    Intent intentThatStartedThisActivity = getIntent();
-    if (intentThatStartedThisActivity != null) {
-      if (intentThatStartedThisActivity.hasExtra(Cycle.class.getName())) {
-        Cycle cycle =
-            intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
-        mChartEntryAdapter.installCycle(cycle);
-      }
-    }
 
     getSupportActionBar().setTitle("Cycle #1");
   }
@@ -86,29 +79,25 @@ public class ChartEntryListActivity extends AppCompatActivity
       case ChartEntryModifyActivity.CREATE_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
-            ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
-            try {
-              DataStore.putChartEntry(this, mChartEntryAdapter.getCycleId(), newEntry);
-              mChartEntryAdapter.addEntry(newEntry);
-            } catch (Exception e) {
-              e.printStackTrace();
-            }
             break;
         }
         break;
       case ChartEntryModifyActivity.MODIFY_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
-            ChartEntry newEntry = data.getParcelableExtra(ChartEntry.class.getName());
-            if (!data.hasExtra(Intent.EXTRA_INDEX)) {
-              throw new IllegalStateException("ChartEntry index missing from Intent");
-            }
-            int index = data.getIntExtra(Intent.EXTRA_INDEX, -1);
-            mChartEntryAdapter.updateEntry(index, newEntry);
             break;
         }
         break;
     }
+  }
+
+  private void attachAdapterToCycle(String cycleId, Date cycleStartDate) {
+    mProgressBar.setVisibility(View.INVISIBLE);
+    mChartEntryAdapter.attachToCycle(cycleId, cycleStartDate);
+  }
+
+  private void detachAdapterFromCycle() {
+    mChartEntryAdapter.detachFromCycle();
   }
 
   @Override
@@ -127,42 +116,71 @@ public class ChartEntryListActivity extends AppCompatActivity
     } else {
       // Find the current cycle
       mProgressBar.setVisibility(View.VISIBLE);
-      DataStore.getCurrentCycle(this, user.getUid(), new DataStore.Callback<Cycle>() {
-        @Override
-        public void acceptData(Cycle data) {
-          mProgressBar.setVisibility(View.INVISIBLE);
-          mChartEntryAdapter.installCycle(data);
-        }
 
-        @Override
-        public void handleNotFound() {
-          Calendar cal = Calendar.getInstance();
-          DatePickerDialog datePickerDialog = new DatePickerDialog(
-              ChartEntryListActivity.this, new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-              Calendar cal = Calendar.getInstance();
-              cal.set(year, month, dayOfMonth);
-              mProgressBar.setVisibility(View.INVISIBLE);
-              mChartEntryAdapter.installCycle(DataStore.createCycle(
-                  user.getUid(), new Cycle(
-                      UUID.randomUUID().toString(), cal.getTime(), ImmutableList.<ChartEntry>of())));
-            }
-          }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
-          datePickerDialog.show();
-        }
+      Intent intentThatStartedThisActivity = getIntent();
+      if (intentThatStartedThisActivity != null
+          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_ID)
+          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_START_DATE_LONG)) {
+        String cycleId = intentThatStartedThisActivity.getStringExtra(Extras.CYCLE_ID);
+        long startDateLong =
+            intentThatStartedThisActivity.getLongExtra(Extras.CYCLE_START_DATE_LONG, 0);
+        Date cycleStartDate = new Date();
+        cycleStartDate.setTime(startDateLong);
+        attachAdapterToCycle(cycleId, cycleStartDate);
+      } else {
+        DataStore.getCurrentCycleId(user.getUid(), new DataStore.Callback<String>() {
+          @Override
+          public void acceptData(final String cycleId) {
+            DataStore.getCycleStartDate(cycleId, new DataStore.Callback<Date>() {
+              @Override
+              public void acceptData(Date cycleStartDate) {
+                attachAdapterToCycle(cycleId, cycleStartDate);
+              }
 
-        @Override
-        public void handleError(DatabaseError error) {
-          error.toException().printStackTrace();
-        }
-      });
+              @Override
+              public void handleNotFound() {
+                throw new IllegalStateException("Could not find start date for cycle: " + cycleId);
+              }
+
+              @Override
+              public void handleError(DatabaseError error) {
+                error.toException().printStackTrace();
+              }
+            });
+          }
+
+          @Override
+          public void handleNotFound() {
+            Calendar cal = Calendar.getInstance();
+            DatePickerDialog datePickerDialog = new DatePickerDialog(
+                ChartEntryListActivity.this, new DatePickerDialog.OnDateSetListener() {
+              @Override
+              public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
+                Calendar cal = Calendar.getInstance();
+                cal.set(year, month, dayOfMonth);
+                String cycleId = DataStore.createEmptyCycle(user.getUid(), cal.getTime(), true);
+                Date cycleStartDate = cal.getTime();
+                attachAdapterToCycle(cycleId, cycleStartDate);
+              }
+            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
+            datePickerDialog.show();
+          }
+
+          @Override
+          public void handleError(DatabaseError error) {
+            // TODO: Improve
+            showError();
+            error.toException().printStackTrace();
+          }
+        });
+      }
     }
   }
 
   @Override
   protected void onPause() {
     super.onPause();
+    detachAdapterFromCycle();
   }
 
   @Override

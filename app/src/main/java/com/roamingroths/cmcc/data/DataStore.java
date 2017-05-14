@@ -4,14 +4,19 @@ import android.content.Context;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.security.PublicKey;
+import java.text.ParseException;
+import java.util.Date;
+import java.util.UUID;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -36,6 +41,28 @@ public class DataStore {
     });
   }
 
+  public static void attachCycleEntryListener(ChildEventListener listener, String cycleId) {
+    DB.getReference("cycles").child(cycleId).child("entries").addChildEventListener(listener);
+  }
+
+  public static void detatchCycleEntryListener(ChildEventListener listener, String cycleId) {
+    DB.getReference("cycles").child(cycleId).child("entries").removeEventListener(listener);
+  }
+
+  public static void getCycleStartDate(String cycleId, final Callback<Date> callback) {
+    DB.getReference("cycles").child(cycleId).child("start-date").addListenerForSingleValueEvent(
+        new SimpleValueEventListener(callback) {
+          @Override
+          public void onDataChange(DataSnapshot dataSnapshot) {
+            try {
+              callback.acceptData(DateUtil.fromWireStr(dataSnapshot.getValue(String.class)));
+            } catch (ParseException pe) {
+              callback.handleError(DatabaseError.fromException(pe));
+            }
+          }
+        });
+  }
+
   public static void getCurrentCycle(
       final Context context, String userId, final Callback<Cycle> callback) {
     getCurrentCycleId(userId, new SimpleCallback<String>(callback) {
@@ -56,26 +83,16 @@ public class DataStore {
     });
   }
 
-  public static Cycle createCycle(final String userId, final Cycle cycle) {
+  public static String createEmptyCycle(final String userId, Date startDate, boolean currentCycle) {
     // TODO: This should probably all be in a transaction...
-    DatabaseReference cycleRef = DB.getReference("cycles").child(cycle.id);
-    cycleRef.child("start-date").setValue(cycle.getDateStr());
+    String cycleId = UUID.randomUUID().toString();
+    DatabaseReference cycleRef = DB.getReference("cycles").child(cycleId);
+    cycleRef.child("start-date").setValue(DateUtil.toWireStr(startDate));
     cycleRef.child("user").setValue(userId);
-    getCurrentCycleId(userId, new Callback<String>() {
-      @Override
-      public void acceptData(String data) {
-      }
-
-      @Override
-      public void handleNotFound() {
-        DB.getReference("users").child(userId).child("current-cycle").setValue(cycle.id);
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-      }
-    });
-    return cycle;
+    if (currentCycle) {
+      DB.getReference("users").child(userId).child("current-cycle").setValue(cycleId);
+    }
+    return cycleId;
   }
 
   public static void putChartEntry(Context context, String cycleId, ChartEntry entry) throws CryptoUtil.CryptoException {
