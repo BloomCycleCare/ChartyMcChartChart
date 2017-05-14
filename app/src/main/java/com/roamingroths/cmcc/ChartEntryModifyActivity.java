@@ -2,7 +2,6 @@ package com.roamingroths.cmcc;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcel;
 import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -16,11 +15,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.Observation;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class ChartEntryModifyActivity extends AppCompatActivity {
+
+  private static final SimpleDateFormat UI_DATE_FORMAT = new SimpleDateFormat("EEE, d MMM yyyy");
 
   public static final int CREATE_REQUEST = 1;
   public static final int MODIFY_REQUEST = 2;
@@ -33,6 +37,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
 
+  private String mCycleId;
+  private Date mCycleStartDate;
   private Date mEntryDate;
   private ChartEntry mExistingEntry;
 
@@ -93,19 +99,31 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mIntercourseSwitch = (Switch) findViewById(R.id.switch_intercourse);
 
     Intent intent = getIntent();
+    if (!intent.hasExtra(Extras.CYCLE_ID)) {
+      throw new IllegalStateException("Missing cycle id");
+    }
+    mCycleId = intent.getStringExtra(Extras.CYCLE_ID);
+    if (!intent.hasExtra(Extras.CYCLE_START_DATE_LONG)) {
+      throw new IllegalStateException("Missing cycle start date");
+    }
+    mCycleStartDate = new Date();
+    mCycleStartDate.setTime(intent.getLongExtra(Extras.CYCLE_START_DATE_LONG, 0));
+    if (!intent.hasExtra(Extras.ENTRY_DATE_LONG)) {
+      throw new IllegalStateException("Missing entry date");
+    }
+    mEntryDate = new Date();
+    mEntryDate.setTime(intent.getLongExtra(Extras.ENTRY_DATE_LONG, 0));
+
     if (intent.hasExtra(ChartEntry.class.getName())) {
       // Not creating a new entry
       mExistingEntry = intent.getParcelableExtra(ChartEntry.class.getName());
-      mEntryDate = mExistingEntry.date;
       updateUiWithEntry(mExistingEntry);
-    } else {
-      mEntryDate = new Date();
     }
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle("Monday May 1");
+    getSupportActionBar().setTitle(UI_DATE_FORMAT.format(mEntryDate));
   }
 
   private Observation getObservationFromView(View v)
@@ -148,17 +166,18 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
+      Intent returnIntent = new Intent();
       try {
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(ChartEntry.class.getName(), getChartEntryFromUi());
-        if (getIntent().hasExtra(Intent.EXTRA_INDEX)) {
-          returnIntent.putExtra(
-              Intent.EXTRA_INDEX, getIntent().getIntExtra(Intent.EXTRA_INDEX, -1));
-        }
+        returnIntent.putExtra(Extras.CYCLE_ID, mCycleId);
+        returnIntent.putExtra(Extras.CYCLE_START_DATE_LONG, mCycleStartDate.getTime());
+        ChartEntry entry = getChartEntryFromUi();
+        DataStore.putChartEntry(this, mCycleId, entry);
         setResult(OK_RESPONSE, returnIntent);
         finish();
       } catch (Observation.InvalidObservationException ioe) {
         Toast.makeText(this, "Cannot save invalid observation", Toast.LENGTH_LONG).show();
+      } catch (CryptoUtil.CryptoException e) {
+        e.printStackTrace();
       }
       return true;
     }

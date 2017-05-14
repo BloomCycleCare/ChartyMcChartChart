@@ -7,4 +7,6 @@ package com.roamingroths.cmcc;
 public class Extras {
   public static String CYCLE_ID = "CycleId";
   public static String CYCLE_START_DATE_LONG = "CycleStartDate";
+
+  public static String ENTRY_DATE_LONG = "EntryDate";
 }

@@ -19,7 +19,10 @@ import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -29,6 +32,7 @@ public class ChartEntryAdapter
     extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder>
     implements ChildEventListener {
 
+  private final Set<ChartEntry> mEntrySet = new HashSet<>();
   private final SortedList<ChartEntry> mEntries;
   private final Context mContext;
   private final OnClickHandler mClickHandler;
@@ -57,7 +61,7 @@ public class ChartEntryAdapter
 
       @Override
       public int compare(ChartEntry e1, ChartEntry e2) {
-        return e1.date.compareTo(e2.date);
+        return e2.date.compareTo(e1.date);
       }
 
       @Override
@@ -86,25 +90,40 @@ public class ChartEntryAdapter
     return mAttachedCycleId;
   }
 
+  public Date getNextEntryDate() {
+    if (mEntries.size() == 0) {
+      return mCycleStartDate;
+    }
+    Calendar cal = Calendar.getInstance();
+    cal.setTime(mEntries.get(0).date);
+    cal.add(Calendar.DATE, 1);
+    return cal.getTime();
+  }
+
   public Date getCycleStartDate() {
     Preconditions.checkState(isAttachedToCycle());
     return mCycleStartDate;
   }
 
   public void attachToCycle(String cycleId, Date cycleStartDate) {
-    Preconditions.checkState(!isAttachedToCycle());
+    if (isAttachedToCycle()) {
+      if (mAttachedCycleId.equals(cycleId)) {
+        return;
+      }
+      detachFromCycle();
+    }
     DataStore.attachCycleEntryListener(this, cycleId);
     mAttachedCycleId = cycleId;
     mCycleStartDate = cycleStartDate;
   }
 
-  public String detachFromCycle() {
-    Preconditions.checkState(isAttachedToCycle());
+  public void detachFromCycle() {
+    if (!isAttachedToCycle()) {
+      return;
+    }
     DataStore.detatchCycleEntryListener(this, mAttachedCycleId);
-    String cycleId = mAttachedCycleId;
     mCycleStartDate = null;
     mAttachedCycleId = null;
-    return cycleId;
   }
 
   private int findEntry(String dateStr) {
@@ -120,7 +139,12 @@ public class ChartEntryAdapter
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
     try {
-      mEntries.add(ChartEntry.fromSnapshot(dataSnapshot, mContext));
+      ChartEntry entry = ChartEntry.fromSnapshot(dataSnapshot, mContext);
+      if (mEntrySet.contains(entry)) {
+        return;
+      }
+      mEntrySet.add(entry);
+      mEntries.add(entry);
     } catch (CryptoUtil.CryptoException e) {
       e.printStackTrace();
     }
@@ -147,6 +171,8 @@ public class ChartEntryAdapter
     if (entryIndex < 0) {
       throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
     }
+    ChartEntry entry = mEntries.get(entryIndex);
+    mEntrySet.remove(entry);
     mEntries.removeItemAt(entryIndex);
   }
 

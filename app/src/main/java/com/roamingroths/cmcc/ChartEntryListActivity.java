@@ -46,6 +46,12 @@ public class ChartEntryListActivity extends AppCompatActivity
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
     mChartEntryAdapter = new ChartEntryAdapter(this, this);
+    mChartEntryAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
+      @Override
+      public void onChanged() {
+        super.onChanged();
+      }
+    });
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -64,6 +70,8 @@ public class ChartEntryListActivity extends AppCompatActivity
         createChartEntry.putExtra(Extras.CYCLE_ID, mChartEntryAdapter.getCycleId());
         createChartEntry.putExtra(
             Extras.CYCLE_START_DATE_LONG, mChartEntryAdapter.getCycleStartDate().getTime());
+        createChartEntry.putExtra(
+            Extras.ENTRY_DATE_LONG, mChartEntryAdapter.getNextEntryDate().getTime());
         startActivityForResult(
             createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
       }

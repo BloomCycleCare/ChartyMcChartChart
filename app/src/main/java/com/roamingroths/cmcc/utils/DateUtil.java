@@ -19,4 +19,12 @@ public class DateUtil {
   public static Date fromWireStr(String dateStr) throws ParseException {
     return WIRE_DATE_FORMAT.parse(dateStr);
   }
+
+  public static Date now() {
+    try {
+      return fromWireStr(toWireStr(new Date()));
+    } catch (ParseException pe) {
+      throw new IllegalStateException(pe);
+    }
+  }
 }

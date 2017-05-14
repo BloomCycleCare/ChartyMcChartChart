@@ -97,13 +97,14 @@ public class ChartEntry implements Parcelable {
       ChartEntry that = (ChartEntry) o;
       return this.observation.equals(that.observation) &&
           this.peakDay == that.peakDay &&
-          this.intercourse == that.intercourse;
+          this.intercourse == that.intercourse &&
+          this.date == that.date;
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(observation, peakDay, intercourse);
+    return Objects.hashCode(observation, peakDay, intercourse, date);
   }
 }
