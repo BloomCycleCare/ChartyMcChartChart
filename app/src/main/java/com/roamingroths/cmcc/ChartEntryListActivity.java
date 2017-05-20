@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.DatePicker;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -59,13 +60,25 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     mFab = (FloatingActionButton) findViewById(R.id.fab);
     mFab.setOnClickListener(new View.OnClickListener() {
+      Toast futureEntryToast;
       @Override
       public void onClick(View view) {
-        Intent createChartEntry =
-            new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
-        fillExtrasForModifyActivity(createChartEntry, mChartEntryAdapter.getNextEntryDate());
-        startActivityForResult(
-            createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
+        LocalDate now = DateUtil.now();
+        LocalDate nextEntryDate = mChartEntryAdapter.getNextEntryDate();
+        if (nextEntryDate.isAfter(now)) {
+          if (futureEntryToast != null) {
+            futureEntryToast.cancel();
+          }
+          futureEntryToast = Toast.makeText(
+              ChartEntryListActivity.this, "Cannot add future entries!", Toast.LENGTH_SHORT);
+          futureEntryToast.show();
+        } else {
+          Intent createChartEntry =
+              new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
+          fillExtrasForModifyActivity(createChartEntry, mChartEntryAdapter.getNextEntryDate());
+          startActivityForResult(
+              createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
+        }
       }
     });
 
@@ -121,7 +134,7 @@ public class ChartEntryListActivity extends AppCompatActivity
                 ChartEntryListActivity.this, new DatePickerDialog.OnDateSetListener() {
               @Override
               public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                LocalDate cycleStartDate = new LocalDate(year, month, dayOfMonth);
+                LocalDate cycleStartDate = new LocalDate(year, month + 1, dayOfMonth);
                 String cycleId = DataStore.createEmptyCycle(user.getUid(), cycleStartDate, true);
                 attachAdapterToCycle(cycleId, cycleStartDate);
               }
