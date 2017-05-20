@@ -90,7 +90,7 @@ public class ChartEntry implements Parcelable {
       return this.observation.equals(that.observation) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
-          this.date.equals(that.observation);
+          this.date.equals(that.date);
     }
     return false;
   }

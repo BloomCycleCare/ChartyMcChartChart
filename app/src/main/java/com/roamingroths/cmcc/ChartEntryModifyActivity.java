@@ -119,7 +119,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     DataStore.getChartEntry(this, mCycleId, entryDateStr, new DataStore.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
-        updateUiWithEntry(data);
+        mExistingEntry = data;
+        updateUiWithEntry(mExistingEntry);
       }
 
       @Override
@@ -218,9 +219,39 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
 
     if (id == android.R.id.home) {
-      // TODO: warn about losing data on back press
-      setResult(CANCEL_RESPONSE, null);
-      onBackPressed();
+      boolean uiDirty = false;
+      if (mExistingEntry != null) {
+        try {
+          ChartEntry entryFromUi = getChartEntryFromUi();
+          uiDirty = !mExistingEntry.equals(entryFromUi);
+        } catch (Observation.InvalidObservationException ioe) {
+          uiDirty = true;
+        }
+      }
+      if (uiDirty) {
+        new AlertDialog.Builder(this)
+            //set message, title, and icon
+            .setTitle("Discard Changes")
+            .setMessage("Some of your changes have not been saved. Do you wish to discard them?")
+            .setPositiveButton("Discard", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int whichButton) {
+                //your deleting code
+                setResult(CANCEL_RESPONSE, null);
+                onBackPressed();
+                dialog.dismiss();
+                finish();
+              }
+            })
+            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+              }
+            })
+            .create().show();
+      } else {
+        setResult(CANCEL_RESPONSE, null);
+        onBackPressed();
+      }
       return true;
     }
 

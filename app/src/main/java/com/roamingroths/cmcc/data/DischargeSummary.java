@@ -77,7 +77,10 @@ public class DischargeSummary implements Parcelable {
   public boolean equals(Object o) {
     if (o instanceof DischargeSummary) {
       DischargeSummary that = (DischargeSummary) o;
-      return this.mType.equals(that.mType) && this.mModifiers.equals(that.mModifiers);
+      if (!this.mType.equals(that.mType)) {
+        return false;
+      }
+      return this.mModifiers.equals(that.mModifiers);
     }
     return false;
   }
