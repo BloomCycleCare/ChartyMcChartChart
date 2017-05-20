@@ -50,6 +50,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     updateUiWithObservation(entry.observation);
     mPeakDaySwitch.setChecked(entry.peakDay);
     mIntercourseSwitch.setChecked(entry.intercourse);
+    mFirstDaySwitch.setChecked(entry.firstDay);
   }
 
   private void updateUiWithObservation(Observation observation) {
