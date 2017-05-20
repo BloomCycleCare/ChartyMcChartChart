@@ -10,9 +10,9 @@ import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.joda.time.LocalDate;
+
 import java.security.PrivateKey;
-import java.text.ParseException;
-import java.util.Date;
 
 /**
  * Created by parkeroth on 4/22/17.
@@ -20,7 +20,7 @@ import java.util.Date;
 
 public class ChartEntry implements Parcelable {
 
-  public Date date;
+  public LocalDate date;
   public Observation observation;
   public boolean peakDay;
   public boolean intercourse;
@@ -29,7 +29,7 @@ public class ChartEntry implements Parcelable {
     // Required for DataSnapshot.getValue(ChartEntry.class)
   }
 
-  public ChartEntry(Date date, Observation observation, boolean peakDay, boolean intercourse) {
+  public ChartEntry(LocalDate date, Observation observation, boolean peakDay, boolean intercourse) {
     this.date = date;
     this.observation = Preconditions.checkNotNull(observation);
     this.peakDay = peakDay;
@@ -37,15 +37,11 @@ public class ChartEntry implements Parcelable {
   }
 
   public ChartEntry(Parcel in) {
-    try {
-      date = parseDate(in.readString());
-    } catch (ParseException pe) {
-      // TODO: Handle ParseException better
-      throw new IllegalStateException(pe);
-    }
-    observation = in.readParcelable(Observation.class.getClassLoader());
-    peakDay = in.readByte() != 0;
-    intercourse = in.readByte() != 0;
+    this(
+        DateUtil.fromWireStr(in.readString()),
+        in.<Observation>readParcelable(Observation.class.getClassLoader()),
+        in.readByte() != 0,
+        in.readByte() != 0);
   }
 
   public static ChartEntry fromSnapshot(DataSnapshot snapshot, Context context)
@@ -56,10 +52,6 @@ public class ChartEntry implements Parcelable {
     ChartEntry entry = CryptoUtil.decrypt(encryptedEntry, privateKey, ChartEntry.class);
     Preconditions.checkArgument(entry.getDateStr().equals(entryDateStr));
     return entry;
-  }
-
-  public static final Date parseDate(String dateStr) throws ParseException {
-    return DateUtil.fromWireStr(dateStr);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
@@ -98,7 +90,7 @@ public class ChartEntry implements Parcelable {
       return this.observation.equals(that.observation) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
-          this.date == that.date;
+          this.date.equals(that.observation);
     }
     return false;
   }

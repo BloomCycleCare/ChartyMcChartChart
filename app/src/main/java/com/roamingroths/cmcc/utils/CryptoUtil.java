@@ -2,16 +2,11 @@ package com.roamingroths.cmcc.utils;
 
 import android.content.Context;
 import android.security.KeyPairGeneratorSpec;
-import android.security.keystore.KeyGenParameterSpec;
-import android.security.keystore.KeyProperties;
 import android.util.Base64;
-
-import com.google.gson.Gson;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.math.BigInteger;
-import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
 import java.security.PrivateKey;
@@ -22,8 +17,6 @@ import java.util.Calendar;
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
 import javax.crypto.CipherOutputStream;
-import javax.crypto.KeyGenerator;
-import javax.crypto.SecretKey;
 import javax.security.auth.x500.X500Principal;
 
 /**
@@ -78,7 +71,7 @@ public class CryptoUtil {
   }
 
   public static String encrypt(Object object, PublicKey publicKey) throws CryptoException {
-    return encrypt(new Gson().toJson(object), publicKey);
+    return encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey);
   }
 
   public static String encrypt(String initialText, PublicKey publicKey) throws CryptoException {
@@ -102,7 +95,7 @@ public class CryptoUtil {
   public static <T> T decrypt(String encryptedText, PrivateKey privateKey, Class<T> clazz)
       throws CryptoException {
     String json = decrypt(encryptedText, privateKey);
-    return new Gson().fromJson(json, clazz);
+    return GsonUtil.getGsonInstance().fromJson(json, clazz);
   }
 
   public static String decrypt(String encryptedText, PrivateKey privateKey) throws CryptoException {
@@ -135,4 +128,5 @@ public class CryptoUtil {
       super(e);
     }
   }
+
 }

@@ -1,8 +1,8 @@
 package com.roamingroths.cmcc.utils;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 /**
  * Created by parkeroth on 5/14/17.
@@ -10,21 +10,18 @@ import java.util.Date;
 
 public class DateUtil {
 
-  private static final SimpleDateFormat WIRE_DATE_FORMAT = new SimpleDateFormat("yyy-MM-dd");
+  private static final String PATTERN = "yyyy-MM-dd";
+  private static final DateTimeFormatter FORMAT = DateTimeFormat.forPattern(PATTERN);
 
-  public static String toWireStr(Date date) {
-    return WIRE_DATE_FORMAT.format(date);
+  public static String toWireStr(LocalDate date) {
+    return FORMAT.print(date);
   }
 
-  public static Date fromWireStr(String dateStr) throws ParseException {
-    return WIRE_DATE_FORMAT.parse(dateStr);
+  public static LocalDate fromWireStr(String dateStr) {
+    return FORMAT.parseLocalDate(dateStr);
   }
 
-  public static Date now() {
-    try {
-      return fromWireStr(toWireStr(new Date()));
-    } catch (ParseException pe) {
-      throw new IllegalStateException(pe);
-    }
+  public static LocalDate now() {
+    return LocalDate.now();
   }
 }

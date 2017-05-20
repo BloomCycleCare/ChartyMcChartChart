@@ -13,9 +13,9 @@ import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.joda.time.LocalDate;
+
 import java.security.PublicKey;
-import java.text.ParseException;
-import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -42,23 +42,21 @@ public class DataStore {
   }
 
   public static void attachCycleEntryListener(ChildEventListener listener, String cycleId) {
-    DB.getReference("cycles").child(cycleId).child("entries").addChildEventListener(listener);
+    DatabaseReference dbRef = DB.getReference("cycles").child(cycleId).child("entries");
+    dbRef.addChildEventListener(listener);
+    dbRef.keepSynced(true);
   }
 
   public static void detatchCycleEntryListener(ChildEventListener listener, String cycleId) {
     DB.getReference("cycles").child(cycleId).child("entries").removeEventListener(listener);
   }
 
-  public static void getCycleStartDate(String cycleId, final Callback<Date> callback) {
+  public static void getCycleStartDate(String cycleId, final Callback<LocalDate> callback) {
     DB.getReference("cycles").child(cycleId).child("start-date").addListenerForSingleValueEvent(
         new SimpleValueEventListener(callback) {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
-            try {
-              callback.acceptData(DateUtil.fromWireStr(dataSnapshot.getValue(String.class)));
-            } catch (ParseException pe) {
-              callback.handleError(DatabaseError.fromException(pe));
-            }
+            callback.acceptData(DateUtil.fromWireStr(dataSnapshot.getValue(String.class)));
           }
         });
   }
@@ -83,7 +81,7 @@ public class DataStore {
     });
   }
 
-  public static String createEmptyCycle(final String userId, Date startDate, boolean currentCycle) {
+  public static String createEmptyCycle(final String userId, LocalDate startDate, boolean currentCycle) {
     // TODO: This should probably all be in a transaction...
     String cycleId = UUID.randomUUID().toString();
     DatabaseReference cycleRef = DB.getReference("cycles").child(cycleId);
@@ -99,6 +97,22 @@ public class DataStore {
     PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
     String encryptedEntry = CryptoUtil.encrypt(entry, publicKey);
     DB.getReference("cycles").child(cycleId).child("entries").child(entry.getDateStr()).setValue(encryptedEntry);
+  }
+
+  public static void getChartEntry(final Context context, String cycleId, String entryDateStr, final Callback<ChartEntry> callback) {
+    DB.getReference("cycles").child(cycleId).child("entries").child(entryDateStr)
+        .addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+          @Override
+          public void onDataChange(DataSnapshot dataSnapshot) {
+            String encryptedEntry = dataSnapshot.getValue(String.class);
+            try {
+              ChartEntry decryptedEntry = CryptoUtil.decrypt(encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class);
+              callback.acceptData(decryptedEntry);
+            } catch (CryptoUtil.CryptoException ce) {
+              callback.handleError(DatabaseError.fromException(ce));
+            }
+          }
+        });
   }
 
   public interface Callback<T> {

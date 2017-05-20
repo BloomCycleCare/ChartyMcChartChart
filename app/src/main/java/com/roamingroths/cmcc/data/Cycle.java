@@ -8,10 +8,11 @@ import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.joda.time.LocalDate;
+
 import java.security.PrivateKey;
 import java.text.ParseException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
 /**
@@ -21,22 +22,22 @@ import java.util.List;
 public class Cycle implements Parcelable {
 
   public String id;
-  public Date startDate;
+  public LocalDate startDate;
   public List<ChartEntry> entries;
 
-  public Cycle(String id, Date startDate, List<ChartEntry> entries) {
+  public Cycle(String id, LocalDate startDate, List<ChartEntry> entries) {
     this.id = id;
     this.startDate = startDate;
     this.entries = entries;
   }
 
   protected Cycle(Parcel in) {
-    this(in.readString(), readWireDate(in.readString()), in.createTypedArrayList(ChartEntry.CREATOR));
+    this(in.readString(), DateUtil.fromWireStr(in.readString()), in.createTypedArrayList(ChartEntry.CREATOR));
   }
 
   public static Cycle fromDataSnapshot(Context context, DataSnapshot cycleSnapshot)
       throws CryptoUtil.CryptoException, ParseException {
-    Date startDate =
+    LocalDate startDate =
         DateUtil.fromWireStr(cycleSnapshot.child("start-date").getValue(String.class));
     List<ChartEntry> entries = new ArrayList<>();
     if (cycleSnapshot.hasChild("entries")) {
@@ -47,14 +48,6 @@ public class Cycle implements Parcelable {
       }
     }
     return new Cycle(cycleSnapshot.getKey(), startDate, entries);
-  }
-
-  private static Date readWireDate(String wireDate) {
-    try {
-      return DateUtil.fromWireStr(wireDate);
-    } catch (ParseException pe) {
-      throw new IllegalArgumentException(pe);
-    }
   }
 
   public static final Creator<Cycle> CREATOR = new Creator<Cycle>() {

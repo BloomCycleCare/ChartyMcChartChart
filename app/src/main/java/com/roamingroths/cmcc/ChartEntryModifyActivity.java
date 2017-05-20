@@ -14,17 +14,18 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.Observation;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import org.joda.time.LocalDate;
 
 public class ChartEntryModifyActivity extends AppCompatActivity {
 
-  private static final SimpleDateFormat UI_DATE_FORMAT = new SimpleDateFormat("EEE, d MMM yyyy");
+  private static final String UI_DATE_FORMAT = "EEE, d MMM yyyy";
 
   public static final int CREATE_REQUEST = 1;
   public static final int MODIFY_REQUEST = 2;
@@ -38,8 +39,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Switch mIntercourseSwitch;
 
   private String mCycleId;
-  private Date mCycleStartDate;
-  private Date mEntryDate;
+  private LocalDate mCycleStartDate;
+  private LocalDate mEntryDate;
   private ChartEntry mExistingEntry;
 
   private void updateUiWithEntry(ChartEntry entry) {
@@ -103,27 +104,37 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
       throw new IllegalStateException("Missing cycle id");
     }
     mCycleId = intent.getStringExtra(Extras.CYCLE_ID);
-    if (!intent.hasExtra(Extras.CYCLE_START_DATE_LONG)) {
+    if (!intent.hasExtra(Extras.CYCLE_START_DATE_STR)) {
       throw new IllegalStateException("Missing cycle start date");
     }
-    mCycleStartDate = new Date();
-    mCycleStartDate.setTime(intent.getLongExtra(Extras.CYCLE_START_DATE_LONG, 0));
-    if (!intent.hasExtra(Extras.ENTRY_DATE_LONG)) {
+    mCycleStartDate = DateUtil.fromWireStr(intent.getStringExtra(Extras.CYCLE_START_DATE_STR));
+    if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
       throw new IllegalStateException("Missing entry date");
     }
-    mEntryDate = new Date();
-    mEntryDate.setTime(intent.getLongExtra(Extras.ENTRY_DATE_LONG, 0));
+    String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
+    mEntryDate = DateUtil.fromWireStr(entryDateStr);
 
-    if (intent.hasExtra(ChartEntry.class.getName())) {
-      // Not creating a new entry
-      mExistingEntry = intent.getParcelableExtra(ChartEntry.class.getName());
-      updateUiWithEntry(mExistingEntry);
-    }
+    DataStore.getChartEntry(this, mCycleId, entryDateStr, new DataStore.Callback<ChartEntry>() {
+      @Override
+      public void acceptData(ChartEntry data) {
+        updateUiWithEntry(data);
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException("Could not load ChartEntry");
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+        error.toException().printStackTrace();
+      }
+    });
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle(UI_DATE_FORMAT.format(mEntryDate));
+    getSupportActionBar().setTitle(mEntryDate.toString(UI_DATE_FORMAT));
   }
 
   private Observation getObservationFromView(View v)
@@ -169,7 +180,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
       Intent returnIntent = new Intent();
       try {
         returnIntent.putExtra(Extras.CYCLE_ID, mCycleId);
-        returnIntent.putExtra(Extras.CYCLE_START_DATE_LONG, mCycleStartDate.getTime());
+        returnIntent.putExtra(Extras.CYCLE_START_DATE_STR, DateUtil.toWireStr(mCycleStartDate));
         ChartEntry entry = getChartEntryFromUi();
         DataStore.putChartEntry(this, mCycleId, entry);
         setResult(OK_RESPONSE, returnIntent);

@@ -17,10 +17,10 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import org.joda.time.LocalDate;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -32,16 +32,18 @@ public class ChartEntryAdapter
     extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder>
     implements ChildEventListener {
 
-  private final Set<ChartEntry> mEntrySet = new HashSet<>();
+  private final Set<String> mSeenDates = new HashSet<>();
   private final SortedList<ChartEntry> mEntries;
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private Date mCycleStartDate;
+  private final OnItemAddedHandler mAddedHandler;
+  private LocalDate mCycleStartDate;
   private String mAttachedCycleId;
 
-  public ChartEntryAdapter(Context context, OnClickHandler clickHandler) {
+  public ChartEntryAdapter(Context context, OnClickHandler clickHandler, OnItemAddedHandler addedHandler) {
     mContext = context;
     mClickHandler = clickHandler;
+    mAddedHandler = addedHandler;
     mEntries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
 
       @Override
@@ -90,22 +92,19 @@ public class ChartEntryAdapter
     return mAttachedCycleId;
   }
 
-  public Date getNextEntryDate() {
+  public LocalDate getNextEntryDate() {
     if (mEntries.size() == 0) {
       return mCycleStartDate;
     }
-    Calendar cal = Calendar.getInstance();
-    cal.setTime(mEntries.get(0).date);
-    cal.add(Calendar.DATE, 1);
-    return cal.getTime();
+    return mEntries.get(0).date.plusDays(1);
   }
 
-  public Date getCycleStartDate() {
+  public LocalDate getCycleStartDate() {
     Preconditions.checkState(isAttachedToCycle());
     return mCycleStartDate;
   }
 
-  public void attachToCycle(String cycleId, Date cycleStartDate) {
+  public void attachToCycle(String cycleId, LocalDate cycleStartDate) {
     if (isAttachedToCycle()) {
       if (mAttachedCycleId.equals(cycleId)) {
         return;
@@ -140,11 +139,12 @@ public class ChartEntryAdapter
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
     try {
       ChartEntry entry = ChartEntry.fromSnapshot(dataSnapshot, mContext);
-      if (mEntrySet.contains(entry)) {
+      if (mSeenDates.contains(entry.getDateStr())) {
         return;
       }
-      mEntrySet.add(entry);
-      mEntries.add(entry);
+      mSeenDates.add(entry.getDateStr());
+      int index = mEntries.add(entry);
+      mAddedHandler.onItemAdded(entry, index);
     } catch (CryptoUtil.CryptoException e) {
       e.printStackTrace();
     }
@@ -172,7 +172,7 @@ public class ChartEntryAdapter
       throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
     }
     ChartEntry entry = mEntries.get(entryIndex);
-    mEntrySet.remove(entry);
+    mSeenDates.remove(entry.getDateStr());
     mEntries.removeItemAt(entryIndex);
   }
 
@@ -221,11 +221,9 @@ public class ChartEntryAdapter
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     ChartEntry entry = mEntries.get(position);
     holder.mEntryDataTextView.setText(entry.observation.toString());
-    holder.mEntryNumTextView.setText(String.valueOf(position + 1));
-    holder.mEntryDateTextView.setText(DATE_FORMAT.format(entry.date));
+    holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
+    holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
   }
-
-  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("MM-dd-yyyy");
 
   @Override
   public int getItemCount() {
@@ -234,6 +232,10 @@ public class ChartEntryAdapter
 
   public interface OnClickHandler {
     void onClick(ChartEntry entry, int index);
+  }
+
+  public interface OnItemAddedHandler {
+    void onItemAdded(ChartEntry entry, int index);
   }
 
   public class EntryAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {

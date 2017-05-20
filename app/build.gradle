@@ -38,6 +38,7 @@ dependencies {
     compile 'com.google.firebase:firebase-database:10.2.4'
     compile 'com.google.firebase:firebase-auth:10.2.4'
     compile 'com.firebaseui:firebase-ui:1.2.0'
+    compile 'joda-time:joda-time:2.9.4'
     testCompile 'junit:junit:4.12'
 }
 

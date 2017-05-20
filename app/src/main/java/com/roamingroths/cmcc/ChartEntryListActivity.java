@@ -21,12 +21,14 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.DateUtil;
+
+import org.joda.time.LocalDate;
 
 import java.util.Calendar;
-import java.util.Date;
 
 public class ChartEntryListActivity extends AppCompatActivity
-    implements ChartEntryAdapter.OnClickHandler {
+    implements ChartEntryAdapter.OnClickHandler, ChartEntryAdapter.OnItemAddedHandler {
 
   public static final int RC_SIGN_IN = 1;
 
@@ -45,13 +47,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
-    mChartEntryAdapter = new ChartEntryAdapter(this, this);
-    mChartEntryAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
-      @Override
-      public void onChanged() {
-        super.onChanged();
-      }
-    });
+    mChartEntryAdapter = new ChartEntryAdapter(this, this, this);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -67,50 +63,13 @@ public class ChartEntryListActivity extends AppCompatActivity
       public void onClick(View view) {
         Intent createChartEntry =
             new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
-        createChartEntry.putExtra(Extras.CYCLE_ID, mChartEntryAdapter.getCycleId());
-        createChartEntry.putExtra(
-            Extras.CYCLE_START_DATE_LONG, mChartEntryAdapter.getCycleStartDate().getTime());
-        createChartEntry.putExtra(
-            Extras.ENTRY_DATE_LONG, mChartEntryAdapter.getNextEntryDate().getTime());
+        fillExtrasForModifyActivity(createChartEntry, mChartEntryAdapter.getNextEntryDate());
         startActivityForResult(
             createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
       }
     });
 
     getSupportActionBar().setTitle("Cycle #1");
-  }
-
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-    switch (requestCode) {
-      case ChartEntryModifyActivity.CREATE_REQUEST:
-        switch (resultCode) {
-          case ChartEntryModifyActivity.OK_RESPONSE:
-            break;
-        }
-        break;
-      case ChartEntryModifyActivity.MODIFY_REQUEST:
-        switch (resultCode) {
-          case ChartEntryModifyActivity.OK_RESPONSE:
-            break;
-        }
-        break;
-    }
-  }
-
-  private void attachAdapterToCycle(String cycleId, Date cycleStartDate) {
-    mProgressBar.setVisibility(View.INVISIBLE);
-    mChartEntryAdapter.attachToCycle(cycleId, cycleStartDate);
-  }
-
-  private void detachAdapterFromCycle() {
-    mChartEntryAdapter.detachFromCycle();
-  }
-
-  @Override
-  protected void onResume() {
-    super.onResume();
 
     // Init Firebase stuff
     final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -128,20 +87,18 @@ public class ChartEntryListActivity extends AppCompatActivity
       Intent intentThatStartedThisActivity = getIntent();
       if (intentThatStartedThisActivity != null
           && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_ID)
-          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_START_DATE_LONG)) {
+          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_START_DATE_STR)) {
         String cycleId = intentThatStartedThisActivity.getStringExtra(Extras.CYCLE_ID);
-        long startDateLong =
-            intentThatStartedThisActivity.getLongExtra(Extras.CYCLE_START_DATE_LONG, 0);
-        Date cycleStartDate = new Date();
-        cycleStartDate.setTime(startDateLong);
-        attachAdapterToCycle(cycleId, cycleStartDate);
+        String startDateStr =
+            intentThatStartedThisActivity.getStringExtra(Extras.CYCLE_START_DATE_STR);
+        attachAdapterToCycle(cycleId, DateUtil.fromWireStr(startDateStr));
       } else {
         DataStore.getCurrentCycleId(user.getUid(), new DataStore.Callback<String>() {
           @Override
           public void acceptData(final String cycleId) {
-            DataStore.getCycleStartDate(cycleId, new DataStore.Callback<Date>() {
+            DataStore.getCycleStartDate(cycleId, new DataStore.Callback<LocalDate>() {
               @Override
-              public void acceptData(Date cycleStartDate) {
+              public void acceptData(LocalDate cycleStartDate) {
                 attachAdapterToCycle(cycleId, cycleStartDate);
               }
 
@@ -164,10 +121,8 @@ public class ChartEntryListActivity extends AppCompatActivity
                 ChartEntryListActivity.this, new DatePickerDialog.OnDateSetListener() {
               @Override
               public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                Calendar cal = Calendar.getInstance();
-                cal.set(year, month, dayOfMonth);
-                String cycleId = DataStore.createEmptyCycle(user.getUid(), cal.getTime(), true);
-                Date cycleStartDate = cal.getTime();
+                LocalDate cycleStartDate = new LocalDate(year, month, dayOfMonth);
+                String cycleId = DataStore.createEmptyCycle(user.getUid(), cycleStartDate, true);
                 attachAdapterToCycle(cycleId, cycleStartDate);
               }
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
@@ -186,9 +141,60 @@ public class ChartEntryListActivity extends AppCompatActivity
   }
 
   @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    switch (requestCode) {
+      case ChartEntryModifyActivity.CREATE_REQUEST:
+        switch (resultCode) {
+          case ChartEntryModifyActivity.OK_RESPONSE:
+            mRecyclerView.scrollToPosition(0);
+            break;
+        }
+        break;
+      case ChartEntryModifyActivity.MODIFY_REQUEST:
+        switch (resultCode) {
+          case ChartEntryModifyActivity.OK_RESPONSE:
+            break;
+        }
+        break;
+    }
+  }
+
+  private Intent fillExtrasForModifyActivity(Intent intent, LocalDate entryDate) {
+    String entryDateStr = DateUtil.toWireStr(entryDate);
+    return fillExtrasForModifyActivity(intent, entryDateStr);
+  }
+
+  private Intent fillExtrasForModifyActivity(Intent intent, String entryDateStr) {
+    intent.putExtra(Extras.CYCLE_ID, mChartEntryAdapter.getCycleId());
+    intent.putExtra(Extras.ENTRY_DATE_STR, entryDateStr);
+
+    String cycleStartDateStr =
+        DateUtil.toWireStr(mChartEntryAdapter.getCycleStartDate());
+    intent.putExtra(Extras.CYCLE_START_DATE_STR, cycleStartDateStr);
+
+    return intent;
+  }
+
+  private void attachAdapterToCycle(String cycleId, LocalDate cycleStartDate) {
+    mChartEntryAdapter.attachToCycle(cycleId, cycleStartDate);
+    mProgressBar.setVisibility(View.INVISIBLE);
+  }
+
+  private void detachAdapterFromCycle() {
+    mChartEntryAdapter.detachFromCycle();
+  }
+
+  @Override
+  protected void onResume() {
+    super.onResume();
+    mRecyclerView.scrollToPosition(0);
+  }
+
+  @Override
   protected void onPause() {
     super.onPause();
-    detachAdapterFromCycle();
+    //detachAdapterFromCycle();
   }
 
   @Override
@@ -224,10 +230,9 @@ public class ChartEntryListActivity extends AppCompatActivity
   public void onClick(ChartEntry entry, int index) {
     Context context = this;
     Class destinationClass = ChartEntryModifyActivity.class;
-    Intent intentToStartDetailActivity = new Intent(context, destinationClass);
-    intentToStartDetailActivity.putExtra(ChartEntry.class.getName(), entry);
-    intentToStartDetailActivity.putExtra(Intent.EXTRA_INDEX, index);
-    startActivityForResult(intentToStartDetailActivity, ChartEntryModifyActivity.MODIFY_REQUEST);
+    Intent intent = new Intent(context, destinationClass);
+    fillExtrasForModifyActivity(intent, entry.getDateStr());
+    startActivityForResult(intent, ChartEntryModifyActivity.MODIFY_REQUEST);
   }
 
   private void showError() {
@@ -238,5 +243,10 @@ public class ChartEntryListActivity extends AppCompatActivity
   private void showList() {
     mErrorView.setVisibility(View.INVISIBLE);
     mRecyclerView.setVisibility(View.VISIBLE);
+  }
+
+  @Override
+  public void onItemAdded(ChartEntry entry, int index) {
+    mRecyclerView.scrollToPosition(index);
   }
 }
