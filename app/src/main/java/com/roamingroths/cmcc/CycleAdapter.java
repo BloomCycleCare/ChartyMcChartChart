@@ -9,23 +9,32 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.google.firebase.database.ChildEventListener;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.text.SimpleDateFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by parkeroth on 4/18/17.
  */
 
-public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder> {
+public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder>
+    implements ChildEventListener {
 
   private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("E MMM d, yyyy");
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
+  private final Set<Cycle> seenCycles;
   private final SortedList<Cycle> cycles;
 
   public CycleAdapter(Context context, OnClickHandler clickHandler) {
+    seenCycles = new HashSet<>();
     mContext = context;
     mClickHandler = clickHandler;
     cycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
@@ -105,12 +114,61 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
     Cycle cycle = cycles.get(position);
-    holder.mCycleDataTextView.setText("Cycle Starting: " + DATE_FORMAT.format(cycle.startDate));
+    holder.mCycleDataTextView.setText("Cycle Starting: " + DateUtil.toWireStr(cycle.startDate));
   }
 
   @Override
   public int getItemCount() {
     return cycles.size();
+  }
+
+  private int findCycle(String cycleId) {
+    for (int i = 0; i < cycles.size(); i++) {
+      Cycle curCycle = cycles.get(i);
+      if (curCycle.id.equals(cycleId)) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
+  @Override
+  public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+    Cycle cycle = Cycle.fromSnapshot(dataSnapshot);
+    if (seenCycles.contains(cycle)) {
+      return;
+    }
+    seenCycles.add(cycle);
+    cycles.add(cycle);
+  }
+
+  @Override
+  public void onChildChanged(DataSnapshot dataSnapshot, String s) {
+    Cycle cycle = Cycle.fromSnapshot(dataSnapshot);
+    int index = findCycle(cycle.id);
+    if (index < 0) {
+      throw new IllegalStateException("Couldn't find cycle for update!");
+    }
+    cycles.updateItemAt(index, cycle);
+  }
+
+  @Override
+  public void onChildRemoved(DataSnapshot dataSnapshot) {
+    int index = findCycle(dataSnapshot.getKey());
+    if (index < 0) {
+      throw new IllegalStateException("Couldn't find cycle for update!");
+    }
+    cycles.removeItemAt(index);
+  }
+
+  @Override
+  public void onChildMoved(DataSnapshot dataSnapshot, String s) {
+    throw new IllegalStateException("NOT IMPLEMENTED");
+  }
+
+  @Override
+  public void onCancelled(DatabaseError databaseError) {
+    databaseError.toException().printStackTrace();
   }
 
   public interface OnClickHandler {

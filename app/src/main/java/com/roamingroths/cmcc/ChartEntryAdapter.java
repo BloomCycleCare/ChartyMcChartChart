@@ -10,11 +10,11 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -37,8 +37,7 @@ public class ChartEntryAdapter
   private final Context mContext;
   private final OnClickHandler mClickHandler;
   private final OnItemAddedHandler mAddedHandler;
-  private LocalDate mCycleStartDate;
-  private String mAttachedCycleId;
+  private Cycle mCycle;
 
   public ChartEntryAdapter(Context context, OnClickHandler clickHandler, OnItemAddedHandler addedHandler) {
     mContext = context;
@@ -84,45 +83,38 @@ public class ChartEntryAdapter
   }
 
   public boolean isAttachedToCycle() {
-    return !Strings.isNullOrEmpty(mAttachedCycleId);
+    return mCycle != null;
   }
 
-  public String getCycleId() {
+  public Cycle getCycle() {
     Preconditions.checkState(isAttachedToCycle());
-    return mAttachedCycleId;
+    return mCycle;
   }
 
   public LocalDate getNextEntryDate() {
     if (mEntries.size() == 0) {
-      return mCycleStartDate;
+      return mCycle.startDate;
     }
     return mEntries.get(0).date.plusDays(1);
   }
 
-  public LocalDate getCycleStartDate() {
-    Preconditions.checkState(isAttachedToCycle());
-    return mCycleStartDate;
-  }
-
-  public void attachToCycle(String cycleId, LocalDate cycleStartDate) {
+  public void attachToCycle(Cycle cycle) {
     if (isAttachedToCycle()) {
-      if (mAttachedCycleId.equals(cycleId)) {
+      if (mCycle.equals(cycle)) {
         return;
       }
       detachFromCycle();
     }
-    DataStore.attachCycleEntryListener(this, cycleId);
-    mAttachedCycleId = cycleId;
-    mCycleStartDate = cycleStartDate;
+    DataStore.attachCycleEntryListener(this, cycle);
+    mCycle = cycle;
   }
 
   public void detachFromCycle() {
     if (!isAttachedToCycle()) {
       return;
     }
-    DataStore.detatchCycleEntryListener(this, mAttachedCycleId);
-    mCycleStartDate = null;
-    mAttachedCycleId = null;
+    DataStore.detatchCycleEntryListener(this, mCycle);
+    mCycle = null;
   }
 
   private int findEntry(String dateStr) {

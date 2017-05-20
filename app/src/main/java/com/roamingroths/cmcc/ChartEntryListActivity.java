@@ -21,6 +21,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -99,32 +100,14 @@ public class ChartEntryListActivity extends AppCompatActivity
 
       Intent intentThatStartedThisActivity = getIntent();
       if (intentThatStartedThisActivity != null
-          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_ID)
-          && intentThatStartedThisActivity.hasExtra(Extras.CYCLE_START_DATE_STR)) {
-        String cycleId = intentThatStartedThisActivity.getStringExtra(Extras.CYCLE_ID);
-        String startDateStr =
-            intentThatStartedThisActivity.getStringExtra(Extras.CYCLE_START_DATE_STR);
-        attachAdapterToCycle(cycleId, DateUtil.fromWireStr(startDateStr));
+          && intentThatStartedThisActivity.hasExtra(Cycle.class.getName())) {
+        Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
+        attachAdapterToCycle(cycle);
       } else {
-        DataStore.getCurrentCycleId(user.getUid(), new DataStore.Callback<String>() {
+        DataStore.getCurrentCycle(user.getUid(), new DataStore.Callback<Cycle>() {
           @Override
-          public void acceptData(final String cycleId) {
-            DataStore.getCycleStartDate(cycleId, new DataStore.Callback<LocalDate>() {
-              @Override
-              public void acceptData(LocalDate cycleStartDate) {
-                attachAdapterToCycle(cycleId, cycleStartDate);
-              }
-
-              @Override
-              public void handleNotFound() {
-                throw new IllegalStateException("Could not find start date for cycle: " + cycleId);
-              }
-
-              @Override
-              public void handleError(DatabaseError error) {
-                error.toException().printStackTrace();
-              }
-            });
+          public void acceptData(Cycle cycle) {
+            attachAdapterToCycle(cycle);
           }
 
           @Override
@@ -135,8 +118,8 @@ public class ChartEntryListActivity extends AppCompatActivity
               @Override
               public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
                 LocalDate cycleStartDate = new LocalDate(year, month + 1, dayOfMonth);
-                String cycleId = DataStore.createEmptyCycle(user.getUid(), cycleStartDate, true);
-                attachAdapterToCycle(cycleId, cycleStartDate);
+                Cycle cycle = DataStore.createInitialCycle(user.getUid(), cycleStartDate);
+                attachAdapterToCycle(cycle);
               }
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
             datePickerDialog.show();
@@ -179,18 +162,13 @@ public class ChartEntryListActivity extends AppCompatActivity
   }
 
   private Intent fillExtrasForModifyActivity(Intent intent, String entryDateStr) {
-    intent.putExtra(Extras.CYCLE_ID, mChartEntryAdapter.getCycleId());
     intent.putExtra(Extras.ENTRY_DATE_STR, entryDateStr);
-
-    String cycleStartDateStr =
-        DateUtil.toWireStr(mChartEntryAdapter.getCycleStartDate());
-    intent.putExtra(Extras.CYCLE_START_DATE_STR, cycleStartDateStr);
-
+    intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
     return intent;
   }
 
-  private void attachAdapterToCycle(String cycleId, LocalDate cycleStartDate) {
-    mChartEntryAdapter.attachToCycle(cycleId, cycleStartDate);
+  private void attachAdapterToCycle(Cycle cycle) {
+    mChartEntryAdapter.attachToCycle(cycle);
     mProgressBar.setVisibility(View.INVISIBLE);
   }
 

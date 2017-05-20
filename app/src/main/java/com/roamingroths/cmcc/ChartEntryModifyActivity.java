@@ -18,6 +18,7 @@ import android.widget.Toast;
 
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.Observation;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -40,8 +41,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
 
-  private String mCycleId;
-  private LocalDate mCycleStartDate;
+  private Cycle mCycle;
   private LocalDate mEntryDate;
   private ChartEntry mExistingEntry;
 
@@ -102,21 +102,17 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mIntercourseSwitch = (Switch) findViewById(R.id.switch_intercourse);
 
     Intent intent = getIntent();
-    if (!intent.hasExtra(Extras.CYCLE_ID)) {
-      throw new IllegalStateException("Missing cycle id");
+    if (!intent.hasExtra(Cycle.class.getName())) {
+      throw new IllegalStateException("Missing Cycle");
     }
-    mCycleId = intent.getStringExtra(Extras.CYCLE_ID);
-    if (!intent.hasExtra(Extras.CYCLE_START_DATE_STR)) {
-      throw new IllegalStateException("Missing cycle start date");
-    }
-    mCycleStartDate = DateUtil.fromWireStr(intent.getStringExtra(Extras.CYCLE_START_DATE_STR));
+    mCycle = intent.getParcelableExtra(Cycle.class.getName());
     if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
       throw new IllegalStateException("Missing entry date");
     }
     String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
 
-    DataStore.getChartEntry(this, mCycleId, entryDateStr, new DataStore.Callback<ChartEntry>() {
+    DataStore.getChartEntry(this, mCycle.id, entryDateStr, new DataStore.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
@@ -182,10 +178,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     if (id == R.id.action_save) {
       Intent returnIntent = new Intent();
       try {
-        returnIntent.putExtra(Extras.CYCLE_ID, mCycleId);
-        returnIntent.putExtra(Extras.CYCLE_START_DATE_STR, DateUtil.toWireStr(mCycleStartDate));
+        returnIntent.putExtra(Cycle.class.getName(), mCycle);
         ChartEntry entry = getChartEntryFromUi();
-        DataStore.putChartEntry(this, mCycleId, entry);
+        DataStore.putChartEntry(this, mCycle.id, entry);
         setResult(OK_RESPONSE, returnIntent);
         finish();
       } catch (Observation.InvalidObservationException ioe) {
@@ -205,7 +200,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
               //your deleting code
-              DataStore.deleteChartEntry(mCycleId, mEntryDate);
+              DataStore.deleteChartEntry(mCycle.id, mEntryDate);
               dialog.dismiss();
               finish();
             }
