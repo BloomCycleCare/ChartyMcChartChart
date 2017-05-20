@@ -223,6 +223,7 @@ public class ChartEntryAdapter
     holder.mEntryDataTextView.setText(entry.observation.toString());
     holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
+    holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource());
   }
 
   @Override
@@ -242,6 +243,7 @@ public class ChartEntryAdapter
     public final TextView mEntryNumTextView;
     public final TextView mEntryDateTextView;
     public final TextView mEntryDataTextView;
+    public final View mEntryBackgroundView;
 
     public EntryAdapterViewHolder(View itemView) {
       super(itemView);
@@ -249,6 +251,7 @@ public class ChartEntryAdapter
       mEntryNumTextView = (TextView) itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = (TextView) itemView.findViewById(R.id.tv_entry_date);
       mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
+      mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
     }
 
     @Override

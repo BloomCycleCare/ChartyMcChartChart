@@ -7,6 +7,7 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -98,5 +99,15 @@ public class ChartEntry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(observation, peakDay, intercourse, date);
+  }
+
+  public int getEntryColorResource() {
+    if (observation.flow != null) {
+      return R.color.entryRed;
+    }
+    if (observation.dischargeSummary.mType == DischargeSummary.DischargeType.DRY) {
+      return R.color.entryGreen;
+    }
+    return R.color.entryWhite;
   }
 }
