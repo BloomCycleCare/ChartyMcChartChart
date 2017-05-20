@@ -1,8 +1,10 @@
 package com.roamingroths.cmcc;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TextInputEditText;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -191,6 +193,28 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
         e.printStackTrace();
       }
       return true;
+    }
+
+    if (id == R.id.action_delete) {
+      new AlertDialog.Builder(this)
+          //set message, title, and icon
+          .setTitle("Delete")
+          .setMessage("Do you want to permanently delete this entry?")
+          .setIcon(R.drawable.ic_delete_forever_black_24dp)
+          .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+              //your deleting code
+              DataStore.deleteChartEntry(mCycleId, mEntryDate);
+              dialog.dismiss();
+              finish();
+            }
+          })
+          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+            }
+          })
+          .create().show();
     }
 
     if (id == android.R.id.home) {

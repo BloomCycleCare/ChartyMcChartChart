@@ -99,6 +99,11 @@ public class DataStore {
     DB.getReference("cycles").child(cycleId).child("entries").child(entry.getDateStr()).setValue(encryptedEntry);
   }
 
+  public static void deleteChartEntry(String cycleId, LocalDate entryDate) {
+    String entryDateStr = DateUtil.toWireStr(entryDate);
+    DB.getReference("cycles").child(cycleId).child("entries").child(entryDateStr).removeValue();
+  }
+
   public static void getChartEntry(final Context context, String cycleId, String entryDateStr, final Callback<ChartEntry> callback) {
     DB.getReference("cycles").child(cycleId).child("entries").child(entryDateStr)
         .addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
