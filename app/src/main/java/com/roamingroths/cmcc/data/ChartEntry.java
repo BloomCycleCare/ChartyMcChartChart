@@ -25,22 +25,25 @@ public class ChartEntry implements Parcelable {
   public Observation observation;
   public boolean peakDay;
   public boolean intercourse;
+  public boolean firstDay;
 
   public ChartEntry() {
     // Required for DataSnapshot.getValue(ChartEntry.class)
   }
 
-  public ChartEntry(LocalDate date, Observation observation, boolean peakDay, boolean intercourse) {
+  public ChartEntry(LocalDate date, Observation observation, boolean peakDay, boolean intercourse, boolean firstDay) {
     this.date = date;
     this.observation = Preconditions.checkNotNull(observation);
     this.peakDay = peakDay;
     this.intercourse = intercourse;
+    this.firstDay = firstDay;
   }
 
   public ChartEntry(Parcel in) {
     this(
         DateUtil.fromWireStr(in.readString()),
         in.<Observation>readParcelable(Observation.class.getClassLoader()),
+        in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0);
   }
@@ -82,6 +85,7 @@ public class ChartEntry implements Parcelable {
     dest.writeParcelable(observation, flags);
     dest.writeByte((byte) (peakDay ? 1 : 0));
     dest.writeByte((byte) (intercourse ? 1 : 0));
+    dest.writeByte((byte) (firstDay ? 1 : 0));
   }
 
   @Override
@@ -91,14 +95,15 @@ public class ChartEntry implements Parcelable {
       return this.observation.equals(that.observation) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
-          this.date.equals(that.date);
+          this.date.equals(that.date) &&
+          this.firstDay == that.firstDay;
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(observation, peakDay, intercourse, date);
+    return Objects.hashCode(observation, peakDay, intercourse, date, firstDay);
   }
 
   public int getEntryColorResource() {

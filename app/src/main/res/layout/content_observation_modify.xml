@@ -124,6 +124,40 @@
             android:layout_height="wrap_content">
 
             <ImageView
+                android:layout_gravity="center_vertical"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:paddingRight="10dp"
+                app:srcCompat="@drawable/ic_new_cycle_black_24dp"/>
+
+            <LinearLayout
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:text="1st Day of New Cycle"
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
+
+                <Switch
+                    android:id="@+id/switch_new_cycle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="right"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
                 android:layout_width="60dp"
                 android:paddingLeft="10dp"
                 android:paddingRight="20dp"

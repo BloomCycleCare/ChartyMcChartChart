@@ -40,6 +40,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private TextView mObservationDescriptionTextView;
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
+  private Switch mFirstDaySwitch;
 
   private Cycle mCycle;
   private LocalDate mEntryDate;
@@ -98,8 +99,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     });
 
     mPeakDaySwitch = (Switch) findViewById(R.id.switch_peak_day);
-
     mIntercourseSwitch = (Switch) findViewById(R.id.switch_intercourse);
+    mFirstDaySwitch = (Switch) findViewById(R.id.switch_new_cycle);
 
     Intent intent = getIntent();
     if (!intent.hasExtra(Cycle.class.getName())) {
@@ -152,7 +153,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     Observation observation = getObservationFromEditText();
     boolean peakDay = mPeakDaySwitch.isChecked();
     boolean intercourse = mIntercourseSwitch.isChecked();
-    return new ChartEntry(mEntryDate, observation, peakDay, intercourse);
+    boolean firstDay = mFirstDaySwitch.isChecked();
+    return new ChartEntry(mEntryDate, observation, peakDay, intercourse, firstDay);
   }
 
   @Override
