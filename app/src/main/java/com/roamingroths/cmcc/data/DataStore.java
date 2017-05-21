@@ -7,22 +7,19 @@ import android.util.Log;
 
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
-import com.google.common.base.Preconditions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
+import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.EventListeners.SimpleValueEventListener;
 
 import org.joda.time.LocalDate;
 
 import java.security.PublicKey;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -75,10 +72,11 @@ public class DataStore {
   public static Cycle createCycle(
       final Context context, String userId, final LocalDate startDate, final @Nullable LocalDate endDate) {
     final DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
+    Cycle cycle = new Cycle(cycleRef.getKey(), startDate, endDate);
     if (endDate != null) {
       cycleRef.child("end-date").setValue(DateUtil.toWireStr(endDate));
     }
-    cycleRef.child("start-date").setValue(DateUtil.toWireStr(startDate)).addOnCompleteListener(
+    cycleRef.child("start-date").setValue(cycle.startDateStr).addOnCompleteListener(
         new OnCompleteListener<Void>() {
           @Override
           public void onComplete(@NonNull Task<Void> task) {
@@ -94,21 +92,45 @@ public class DataStore {
 
   private static void createEmptyEntries(
       Context context, String cycleId, LocalDate startDate, @Nullable LocalDate endDate) throws CryptoUtil.CryptoException {
+    final DatabaseReference ref = DB.getReference("entries").child(cycleId);
     endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
-    Map<String, Object> updateMap = new HashMap<>();
     PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
-      ChartEntry entry = ChartEntry.emptyEntry(date);
-      String encryptedEntry = CryptoUtil.encrypt(entry, publicKey);
-      updateMap.put(DateUtil.toWireStr(date), encryptedEntry);
+      final ChartEntry entry = ChartEntry.emptyEntry(date);
+      CryptoUtil.encrypt(entry, publicKey, new Callback<String>() {
+        @Override
+        public void acceptData(String encryptedEntry) {
+          ref.child(entry.getDateStr()).setValue(encryptedEntry);
+        }
+
+        @Override
+        public void handleNotFound() {
+        }
+
+        @Override
+        public void handleError(DatabaseError error) {
+        }
+      });
     }
-    DB.getReference("entries").child(cycleId).updateChildren(updateMap);
   }
 
-  public static void putChartEntry(Context context, String cycleId, ChartEntry entry) throws CryptoUtil.CryptoException {
+  public static void putChartEntry(Context context, final String cycleId, final ChartEntry entry)
+      throws CryptoUtil.CryptoException {
     PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
-    String encryptedEntry = CryptoUtil.encrypt(entry, publicKey);
-    DB.getReference("entries").child(cycleId).child(entry.getDateStr()).setValue(encryptedEntry);
+    CryptoUtil.encrypt(entry, publicKey, new Callback<String>() {
+      @Override
+      public void acceptData(String encryptedEntry) {
+        DB.getReference("entries").child(cycleId).child(entry.getDateStr()).setValue(encryptedEntry);
+      }
+
+      @Override
+      public void handleNotFound() {
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+      }
+    });
   }
 
   public static void deleteChartEntry(String cycleId, LocalDate entryDate) {
@@ -123,53 +145,12 @@ public class DataStore {
           public void onDataChange(DataSnapshot dataSnapshot) {
             String encryptedEntry = dataSnapshot.getValue(String.class);
             try {
-              ChartEntry decryptedEntry = CryptoUtil.decrypt(encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class);
-              callback.acceptData(decryptedEntry);
+              CryptoUtil.decrypt(
+                  encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class, callback);
             } catch (CryptoUtil.CryptoException ce) {
               callback.handleError(DatabaseError.fromException(ce));
             }
           }
         });
-  }
-
-  public interface Callback<T> {
-    void acceptData(T data);
-
-    void handleNotFound();
-
-    void handleError(DatabaseError error);
-  }
-
-  private static abstract class SimpleCallback<T> implements Callback<T> {
-
-    private final Callback<?> mCallback;
-
-    public SimpleCallback(Callback<?> callback) {
-      mCallback = callback;
-    }
-
-    @Override
-    public void handleNotFound() {
-      mCallback.handleNotFound();
-    }
-
-    @Override
-    public void handleError(DatabaseError databaseError) {
-      mCallback.handleError(databaseError);
-    }
-  }
-
-  private static abstract class SimpleValueEventListener implements ValueEventListener {
-
-    private final Callback<?> mCallback;
-
-    public SimpleValueEventListener(Callback<?> callback) {
-      mCallback = Preconditions.checkNotNull(callback);
-    }
-
-    @Override
-    public void onCancelled(DatabaseError databaseError) {
-      mCallback.handleError(databaseError);
-    }
   }
 }

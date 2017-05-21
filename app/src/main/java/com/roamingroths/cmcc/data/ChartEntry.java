@@ -6,15 +6,14 @@ import android.os.Parcelable;
 import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
-
-import java.security.PrivateKey;
 
 /**
  * Created by parkeroth on 4/22/17.
@@ -53,14 +52,16 @@ public class ChartEntry implements Parcelable {
     return new ChartEntry(date, null, false, false, false);
   }
 
-  public static ChartEntry fromSnapshot(DataSnapshot snapshot, Context context)
-      throws CryptoUtil.CryptoException {
+  public static void fromSnapshot(
+      DataSnapshot snapshot, Context context, Callbacks.Callback<ChartEntry> callback) {
     String entryDateStr = snapshot.getKey();
     String encryptedEntry = snapshot.getValue(String.class);
-    PrivateKey privateKey = CryptoUtil.getPersonalPrivateKey(context);
-    ChartEntry entry = CryptoUtil.decrypt(encryptedEntry, privateKey, ChartEntry.class);
-    Preconditions.checkArgument(entry.getDateStr().equals(entryDateStr));
-    return entry;
+    try {
+      CryptoUtil.decrypt(
+          encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class, callback);
+    } catch (CryptoUtil.CryptoException ce) {
+      callback.handleError(DatabaseError.fromException(ce));
+    }
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {

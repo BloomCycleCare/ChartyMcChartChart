@@ -21,6 +21,7 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -58,8 +59,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
-    getSupportActionBar().setTitle("Cycle #1");
-
     // Init Firebase stuff
     final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
@@ -80,7 +79,7 @@ public class ChartEntryListActivity extends AppCompatActivity
         Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
         attachAdapterToCycle(cycle);
       } else {
-        DataStore.getCurrentCycle(user.getUid(), new DataStore.Callback<Cycle>() {
+        DataStore.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
           @Override
           public void acceptData(Cycle cycle) {
             attachAdapterToCycle(cycle);
@@ -149,9 +148,11 @@ public class ChartEntryListActivity extends AppCompatActivity
   }
 
   private void attachAdapterToCycle(Cycle cycle) {
-    Log.v("ChartEntryListActivity", "Attaching to cycle starting " + DateUtil.toWireStr(cycle.startDate));
+    getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
+    Log.v("ChartEntryListActivity", "Attaching to cycle starting " + cycle.startDateStr);
     mChartEntryAdapter.attachToCycle(cycle);
     mProgressBar.setVisibility(View.INVISIBLE);
+    Log.v("ChartEntryListActivity", "Attached to cycle starting " + cycle.startDateStr);
   }
 
   private void detachAdapterFromCycle() {

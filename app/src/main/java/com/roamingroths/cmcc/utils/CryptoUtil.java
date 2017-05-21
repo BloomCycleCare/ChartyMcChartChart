@@ -1,8 +1,12 @@
 package com.roamingroths.cmcc.utils;
 
 import android.content.Context;
+import android.os.AsyncTask;
 import android.security.KeyPairGeneratorSpec;
 import android.util.Base64;
+
+import com.google.common.base.Function;
+import com.google.firebase.database.DatabaseError;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -13,6 +17,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -25,9 +31,11 @@ import javax.security.auth.x500.X500Principal;
 
 public class CryptoUtil {
 
+
   private static final String TRANSFORMATION = "RSA/ECB/PKCS1Padding";
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
   private static final String KEY_STORE = "AndroidKeyStore";
+  private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
 
   private static void createPersonalPrivateKey(Context context) throws CryptoException {
     try {
@@ -70,57 +78,91 @@ public class CryptoUtil {
     return getPersonalPrivateKeyEntry(context).getPrivateKey();
   }
 
-  public static String encrypt(Object object, PublicKey publicKey) throws CryptoException {
-    return encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey);
+  public static void encrypt(
+      Object object, PublicKey publicKey, Callbacks.Callback<String> callback) {
+    encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey, callback);
   }
 
-  public static String encrypt(String initialText, PublicKey publicKey) throws CryptoException {
-    try {
-      Cipher input = Cipher.getInstance(TRANSFORMATION);
-      input.init(Cipher.ENCRYPT_MODE, publicKey);
+  public static void encrypt(
+      String initialText, final PublicKey publicKey, final Callbacks.Callback<String> callback) {
+    new AsyncTask<String, Integer, String>() {
+      @Override
+      protected String doInBackground(String... params) {
+        String rawText = params[0];
+        try {
+          Cipher input = Cipher.getInstance(TRANSFORMATION);
+          input.init(Cipher.ENCRYPT_MODE, publicKey);
 
-      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-      CipherOutputStream cipherOutputStream = new CipherOutputStream(
-          outputStream, input);
-      cipherOutputStream.write(initialText.getBytes("UTF-8"));
-      cipherOutputStream.close();
+          ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+          CipherOutputStream cipherOutputStream = new CipherOutputStream(
+              outputStream, input);
+          cipherOutputStream.write(rawText.getBytes("UTF-8"));
+          cipherOutputStream.close();
 
-      byte[] vals = outputStream.toByteArray();
-      return new String(Base64.encodeToString(vals, Base64.DEFAULT));
-    } catch (Exception e) {
-      throw new CryptoException(e);
-    }
-  }
-
-  public static <T> T decrypt(String encryptedText, PrivateKey privateKey, Class<T> clazz)
-      throws CryptoException {
-    String json = decrypt(encryptedText, privateKey);
-    return GsonUtil.getGsonInstance().fromJson(json, clazz);
-  }
-
-  public static String decrypt(String encryptedText, PrivateKey privateKey) throws CryptoException {
-    try {
-      Cipher output = Cipher.getInstance(TRANSFORMATION);
-      output.init(Cipher.DECRYPT_MODE, privateKey);
-
-      String cipherText = encryptedText;
-      CipherInputStream cipherInputStream = new CipherInputStream(
-          new ByteArrayInputStream(Base64.decode(cipherText, Base64.DEFAULT)), output);
-      ArrayList<Byte> values = new ArrayList<>();
-      int nextByte;
-      while ((nextByte = cipherInputStream.read()) != -1) {
-        values.add((byte)nextByte);
+          byte[] vals = outputStream.toByteArray();
+          return new String(Base64.encodeToString(vals, Base64.DEFAULT));
+        } catch (Exception e) {
+          callback.handleError(DatabaseError.fromException(e));
+        }
+        return null;
       }
 
-      byte[] bytes = new byte[values.size()];
-      for(int i = 0; i < bytes.length; i++) {
-        bytes[i] = values.get(i).byteValue();
+      @Override
+      protected void onPostExecute(String s) {
+        super.onPostExecute(s);
+        callback.acceptData(s);
+      }
+    }.executeOnExecutor(EXECUTOR, initialText);
+  }
+
+  public static <T> void decrypt(
+      String encryptedText, PrivateKey privateKey, final Class<T> clazz, Callbacks.Callback<T> callback) {
+    Function<String, T> transformer = new Function<String, T>() {
+      @Override
+      public T apply(String decryptedStr) {
+        return GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+      }
+    };
+    decrypt(encryptedText, privateKey, new Callbacks.TransformingCallback<String, T>(callback, transformer));
+  }
+
+  public static void decrypt(
+      String encryptedText, final PrivateKey privateKey, final Callbacks.Callback<String> callback) {
+    new AsyncTask<String, Integer, String>() {
+      @Override
+      protected String doInBackground(String... params) {
+        try {
+          String encryptedText = params[0];
+          Cipher output = Cipher.getInstance(TRANSFORMATION);
+          output.init(Cipher.DECRYPT_MODE, privateKey);
+
+          String cipherText = encryptedText;
+          CipherInputStream cipherInputStream = new CipherInputStream(
+              new ByteArrayInputStream(Base64.decode(cipherText, Base64.DEFAULT)), output);
+          ArrayList<Byte> values = new ArrayList<>();
+          int nextByte;
+          while ((nextByte = cipherInputStream.read()) != -1) {
+            values.add((byte) nextByte);
+          }
+
+          byte[] bytes = new byte[values.size()];
+          for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = values.get(i).byteValue();
+          }
+
+          return new String(bytes, 0, bytes.length, "UTF-8");
+        } catch (Exception e) {
+          callback.handleError(DatabaseError.fromException(e));
+        }
+        return null;
       }
 
-      return new String(bytes, 0, bytes.length, "UTF-8");
-    } catch (Exception e) {
-      throw new CryptoException(e);
-    }
+      @Override
+      protected void onPostExecute(String s) {
+        super.onPostExecute(s);
+        callback.acceptData(s);
+      }
+    }.executeOnExecutor(EXECUTOR, encryptedText);
   }
 
   public static class CryptoException extends Exception {

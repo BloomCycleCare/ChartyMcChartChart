@@ -16,7 +16,7 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
-import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -129,31 +129,52 @@ public class ChartEntryAdapter
 
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-    try {
-      ChartEntry entry = ChartEntry.fromSnapshot(dataSnapshot, mContext);
-      if (mSeenDates.contains(entry.getDateStr())) {
-        return;
+    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.Callback<ChartEntry>() {
+      @Override
+      public void acceptData(ChartEntry entry) {
+        if (mSeenDates.contains(entry.getDateStr())) {
+          return;
+        }
+        mSeenDates.add(entry.getDateStr());
+        int index = mEntries.add(entry);
+        mAddedHandler.onItemAdded(entry, index);
       }
-      mSeenDates.add(entry.getDateStr());
-      int index = mEntries.add(entry);
-      mAddedHandler.onItemAdded(entry, index);
-    } catch (CryptoUtil.CryptoException e) {
-      e.printStackTrace();
-    }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException();
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+        error.toException().printStackTrace();
+      }
+    });
   }
 
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
     String dateStr = dataSnapshot.getKey();
-    int entryIndex = findEntry(dateStr);
+    final int entryIndex = findEntry(dateStr);
     if (entryIndex < 0) {
       throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
     }
-    try {
-      mEntries.updateItemAt(entryIndex, ChartEntry.fromSnapshot(dataSnapshot, mContext));
-    } catch (CryptoUtil.CryptoException e) {
-      e.printStackTrace();
-    }
+    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.Callback<ChartEntry>() {
+      @Override
+      public void acceptData(ChartEntry entry) {
+        mEntries.updateItemAt(entryIndex, entry);
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException();
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+        error.toException().printStackTrace();
+      }
+    });
   }
 
   @Override

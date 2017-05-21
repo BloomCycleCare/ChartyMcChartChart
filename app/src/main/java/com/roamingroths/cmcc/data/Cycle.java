@@ -16,8 +16,9 @@ import org.joda.time.LocalDate;
 public class Cycle implements Parcelable {
 
   public String id;
-  public LocalDate startDate;
-  public LocalDate endDate;
+  public final LocalDate startDate;
+  public final LocalDate endDate;
+  public final String startDateStr;
 
   public static Cycle fromSnapshot(DataSnapshot snapshot) {
     LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
@@ -31,6 +32,7 @@ public class Cycle implements Parcelable {
   public Cycle(String id, LocalDate startDate, LocalDate endDate) {
     this.id = id;
     this.startDate = startDate;
+    this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
   }
 
@@ -58,7 +60,7 @@ public class Cycle implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(id);
-    dest.writeString(DateUtil.toWireStr(startDate));
+    dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
   }
 
@@ -66,9 +68,9 @@ public class Cycle implements Parcelable {
   public boolean equals(Object o) {
     if (o instanceof Cycle) {
       Cycle that = (Cycle) o;
-      return this.id.equals(that.id) &&
-          this.startDate.equals(that.startDate) &&
-          this.endDate.equals(that.endDate);
+      return Objects.equal(this.id, that.id) &&
+          Objects.equal(this.startDate, that.startDate) &&
+          Objects.equal(this.endDate, that.endDate);
     }
     return false;
   }

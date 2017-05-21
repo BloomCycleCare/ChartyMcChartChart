@@ -12,21 +12,20 @@ import org.joda.time.format.DateTimeFormatter;
 
 public class DateUtil {
 
-  private static final String PATTERN = "yyyy-MM-dd";
-  private static final DateTimeFormatter FORMAT = DateTimeFormat.forPattern(PATTERN);
+  private static final DateTimeFormatter WIRE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
 
   public static String toWireStr(LocalDate date) {
     if (date == null) {
       return null;
     }
-    return FORMAT.print(date);
+    return WIRE_FORMAT.print(date);
   }
 
   public static LocalDate fromWireStr(String dateStr) {
     if (Strings.isNullOrEmpty(dateStr)) {
       return null;
     }
-    return FORMAT.parseLocalDate(dateStr);
+    return WIRE_FORMAT.parseLocalDate(dateStr);
   }
 
   public static LocalDate now() {

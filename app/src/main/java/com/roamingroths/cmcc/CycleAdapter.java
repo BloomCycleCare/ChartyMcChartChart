@@ -13,7 +13,6 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
-import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.text.SimpleDateFormat;
 import java.util.HashSet;
@@ -114,7 +113,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
     Cycle cycle = cycles.get(position);
-    holder.mCycleDataTextView.setText("Cycle Starting: " + DateUtil.toWireStr(cycle.startDate));
+    holder.mCycleDataTextView.setText("Cycle Starting: " + cycle.startDateStr);
   }
 
   @Override

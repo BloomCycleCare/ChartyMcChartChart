@@ -22,6 +22,7 @@ import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.Observation;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -119,7 +120,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
 
-    DataStore.getChartEntry(this, mCycle.id, entryDateStr, new DataStore.Callback<ChartEntry>() {
+    DataStore.getChartEntry(this, mCycle.id, entryDateStr, new Callbacks.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
