@@ -9,7 +9,6 @@ import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -19,8 +18,6 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.EventListeners.SimpleValueEventListener;
 
 import org.joda.time.LocalDate;
-
-import java.security.PublicKey;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -95,10 +92,9 @@ public class DataStore {
       Context context, String cycleId, LocalDate startDate, @Nullable LocalDate endDate) throws CryptoUtil.CryptoException {
     final DatabaseReference ref = DB.getReference("entries").child(cycleId);
     endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
-    PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
       final ChartEntry entry = ChartEntry.emptyEntry(date);
-      CryptoUtil.encrypt(entry, publicKey, new Callbacks.HaltingCallback<String>() {
+      CryptoUtil.encrypt(entry, context, new Callbacks.HaltingCallback<String>() {
         @Override
         public void acceptData(String encryptedEntry) {
           ref.child(entry.getDateStr()).setValue(encryptedEntry);
@@ -109,8 +105,7 @@ public class DataStore {
 
   public static void putChartEntry(Context context, final String cycleId, final ChartEntry entry)
       throws CryptoUtil.CryptoException {
-    PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
-    CryptoUtil.encrypt(entry, publicKey, new Callbacks.HaltingCallback<String>() {
+    CryptoUtil.encrypt(entry, context, new Callbacks.HaltingCallback<String>() {
       @Override
       public void acceptData(String encryptedEntry) {
         DB.getReference("entries").child(cycleId).child(entry.getDateStr()).setValue(encryptedEntry);
@@ -129,12 +124,7 @@ public class DataStore {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
             String encryptedEntry = dataSnapshot.getValue(String.class);
-            try {
-              CryptoUtil.decrypt(
-                  encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class, callback);
-            } catch (CryptoUtil.CryptoException ce) {
-              callback.handleError(DatabaseError.fromException(ce));
-            }
+            CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
           }
         });
   }

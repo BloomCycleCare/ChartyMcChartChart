@@ -46,6 +46,8 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
+    Log.v("ChartEntryListActivity", "onCreate: start");
+
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
@@ -114,6 +116,7 @@ public class ChartEntryListActivity extends AppCompatActivity
         });
       }
     }
+    Log.v("ChartEntryListActivity", "onCreate: start");
   }
 
   @Override
@@ -162,6 +165,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
+    Log.v("ChartEntryListActivity", "onResume");
     mRecyclerView.scrollToPosition(0);
   }
 
@@ -169,6 +173,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   protected void onPause() {
     super.onPause();
     //detachAdapterFromCycle();
+    Log.v("ChartEntryListActivity", "onPause");
   }
 
   @Override
@@ -222,5 +227,11 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   public void onItemAdded(ChartEntry entry, int index) {
     mRecyclerView.scrollToPosition(index);
+  }
+
+  @Override
+  protected void onDestroy() {
+    super.onDestroy();
+    Log.v("ChartEntryListActivity", "onDestroy");
   }
 }

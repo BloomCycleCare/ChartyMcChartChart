@@ -38,6 +38,17 @@ public class CryptoUtil {
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
   private static final String KEY_STORE = "AndroidKeyStore";
   private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
+  private static PublicKey PUBLIC_KEY = null;
+  private static PrivateKey PRIVATE_KEY = null;
+
+  public static void init(Context context) throws CryptoException {
+    if (PUBLIC_KEY == null) {
+      PUBLIC_KEY = getPersonalPublicKey(context);
+    }
+    if (PRIVATE_KEY == null) {
+      PRIVATE_KEY = getPersonalPrivateKey(context);
+    }
+  }
 
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
@@ -75,18 +86,17 @@ public class CryptoUtil {
     }
   }
 
-  public static PublicKey getPersonalPublicKey(Context context) throws CryptoException {
+  private static PublicKey getPersonalPublicKey(Context context) throws CryptoException {
     return getPersonalPrivateKeyEntry(context).getCertificate().getPublicKey();
   }
 
-  public static PrivateKey getPersonalPrivateKey(Context context) throws CryptoException {
+  private static PrivateKey getPersonalPrivateKey(Context context) throws CryptoException {
     return getPersonalPrivateKeyEntry(context).getPrivateKey();
   }
 
-  public static void encrypt(
-      final Object object, PublicKey publicKey, final Callbacks.Callback<String> callback) {
+  public static void encrypt(final Object object, Context context, final Callbacks.Callback<String> callback) {
     Log.v("CryptoUtil", "Encrypting " + object.getClass().getName());
-    encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey,
+    encrypt(GsonUtil.getGsonInstance().toJson(object), context,
         new Callbacks.ErrorForwardingCallback<String>(callback) {
           @Override
           public void acceptData(String encryptedText) {
@@ -96,15 +106,17 @@ public class CryptoUtil {
         });
   }
 
-  public static void encrypt(
-      String initialText, final PublicKey publicKey, final Callbacks.Callback<String> callback) {
+  public static void encrypt(String initialText, final Context context, final Callbacks.Callback<String> callback) {
     new AsyncTask<String, Integer, String>() {
       @Override
       protected String doInBackground(String... params) {
         String rawText = params[0];
         try {
           Cipher input = Cipher.getInstance(TRANSFORMATION);
-          input.init(Cipher.ENCRYPT_MODE, publicKey);
+          if (PUBLIC_KEY == null) {
+            init(context);
+          }
+          input.init(Cipher.ENCRYPT_MODE, PUBLIC_KEY);
 
           ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
           CipherOutputStream cipherOutputStream = new CipherOutputStream(
@@ -129,7 +141,7 @@ public class CryptoUtil {
   }
 
   public static <T> void decrypt(
-      final String encryptedText, PrivateKey privateKey, final Class<T> clazz, Callbacks.Callback<T> callback) {
+      final String encryptedText, Context context, final Class<T> clazz, Callbacks.Callback<T> callback) {
     Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
     if (cachedObject != null) {
       Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
@@ -144,18 +156,23 @@ public class CryptoUtil {
         return decryptedObject;
       }
     };
-    decrypt(encryptedText, privateKey, new Callbacks.TransformingCallback<String, T>(callback, transformer));
+    decrypt(encryptedText, context, new Callbacks.TransformingCallback<String, T>(callback, transformer));
   }
 
-  public static void decrypt(
-      String encryptedText, final PrivateKey privateKey, final Callbacks.Callback<String> callback) {
+  public static void decrypt(String encryptedText, final Context context, final Callbacks.Callback<String> callback) {
+    Log.v("CryptoUtil", "Scheduled decryption");
+
     new AsyncTask<String, Integer, String>() {
       @Override
       protected String doInBackground(String... params) {
         try {
+          Log.v("CryptoUtil", "Begin decryption");
           String encryptedText = params[0];
           Cipher output = Cipher.getInstance(TRANSFORMATION);
-          output.init(Cipher.DECRYPT_MODE, privateKey);
+          if (PRIVATE_KEY == null) {
+            init(context);
+          }
+          output.init(Cipher.DECRYPT_MODE, PRIVATE_KEY);
 
           String cipherText = encryptedText;
           CipherInputStream cipherInputStream = new CipherInputStream(
@@ -171,7 +188,9 @@ public class CryptoUtil {
             bytes[i] = values.get(i).byteValue();
           }
 
-          return new String(bytes, 0, bytes.length, "UTF-8");
+          String outText = new String(bytes, 0, bytes.length, "UTF-8");
+          Log.v("CryptoUtil", "Finish decryption");
+          return outText;
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }

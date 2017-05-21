@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -54,14 +53,8 @@ public class ChartEntry implements Parcelable {
 
   public static void fromSnapshot(
       DataSnapshot snapshot, Context context, Callbacks.Callback<ChartEntry> callback) {
-    String entryDateStr = snapshot.getKey();
     String encryptedEntry = snapshot.getValue(String.class);
-    try {
-      CryptoUtil.decrypt(
-          encryptedEntry, CryptoUtil.getPersonalPrivateKey(context), ChartEntry.class, callback);
-    } catch (CryptoUtil.CryptoException ce) {
-      callback.handleError(DatabaseError.fromException(ce));
-    }
+    CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
