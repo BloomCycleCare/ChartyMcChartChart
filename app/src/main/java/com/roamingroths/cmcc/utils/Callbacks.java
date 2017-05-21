@@ -17,6 +17,18 @@ public class Callbacks {
     void handleError(DatabaseError error);
   }
 
+  public static abstract class HaltingCallback<T> implements Callback<T> {
+    @Override
+    public void handleNotFound() {
+      throw new IllegalStateException("Not Found");
+    }
+
+    @Override
+    public void handleError(DatabaseError error) {
+      throw new IllegalStateException(error.toException());
+    }
+  }
+
   public static abstract class ErrorForwardingCallback<T> implements Callback<T> {
     private final Callback<T> mDelegate;
 

@@ -12,6 +12,7 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -97,18 +98,10 @@ public class DataStore {
     PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
       final ChartEntry entry = ChartEntry.emptyEntry(date);
-      CryptoUtil.encrypt(entry, publicKey, new Callback<String>() {
+      CryptoUtil.encrypt(entry, publicKey, new Callbacks.HaltingCallback<String>() {
         @Override
         public void acceptData(String encryptedEntry) {
           ref.child(entry.getDateStr()).setValue(encryptedEntry);
-        }
-
-        @Override
-        public void handleNotFound() {
-        }
-
-        @Override
-        public void handleError(DatabaseError error) {
         }
       });
     }
@@ -117,18 +110,10 @@ public class DataStore {
   public static void putChartEntry(Context context, final String cycleId, final ChartEntry entry)
       throws CryptoUtil.CryptoException {
     PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
-    CryptoUtil.encrypt(entry, publicKey, new Callback<String>() {
+    CryptoUtil.encrypt(entry, publicKey, new Callbacks.HaltingCallback<String>() {
       @Override
       public void acceptData(String encryptedEntry) {
         DB.getReference("entries").child(cycleId).child(entry.getDateStr()).setValue(encryptedEntry);
-      }
-
-      @Override
-      public void handleNotFound() {
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
       }
     });
   }

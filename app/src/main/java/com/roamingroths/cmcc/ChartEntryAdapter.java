@@ -129,7 +129,7 @@ public class ChartEntryAdapter
 
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.Callback<ChartEntry>() {
+    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry entry) {
         if (mSeenDates.contains(entry.getDateStr())) {
@@ -138,16 +138,6 @@ public class ChartEntryAdapter
         mSeenDates.add(entry.getDateStr());
         int index = mEntries.add(entry);
         mAddedHandler.onItemAdded(entry, index);
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException();
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        error.toException().printStackTrace();
       }
     });
   }
@@ -159,20 +149,10 @@ public class ChartEntryAdapter
     if (entryIndex < 0) {
       throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
     }
-    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.Callback<ChartEntry>() {
+    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry entry) {
         mEntries.updateItemAt(entryIndex, entry);
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException();
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        error.toException().printStackTrace();
       }
     });
   }
