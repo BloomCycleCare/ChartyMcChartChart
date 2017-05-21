@@ -102,10 +102,7 @@ public class Observation implements Parcelable {
       if (this.occurrences != that.occurrences) {
         return false;
       }
-      if (!Objects.equal(this.dischargeSummary, that.dischargeSummary)) {
-        return false;
-      }
-      return true;
+      return Objects.equal(this.dischargeSummary, that.dischargeSummary);
     }
     return false;
   }
@@ -166,10 +163,6 @@ public class Observation implements Parcelable {
     }
     if (dischargeType == null) {
       throw new InvalidObservationException("Could not determine DischargeType for: " + observation);
-    }
-    if (flow != null && !dischargeType.hasMucus()) {
-      throw new InvalidObservationException(
-          "Only discharge types with mucus are valid for L and VL flows.");
     }
     String observationWithoutDischargeType =
         StringUtil.consumePrefix(observationWithoutFlow, dischargeType.getCode());

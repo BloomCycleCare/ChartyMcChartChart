@@ -11,10 +11,8 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.DatePicker;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
@@ -23,7 +21,6 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
-import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -60,30 +57,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
-
-    mFab = (FloatingActionButton) findViewById(R.id.fab);
-    mFab.setOnClickListener(new View.OnClickListener() {
-      Toast futureEntryToast;
-      @Override
-      public void onClick(View view) {
-        LocalDate now = DateUtil.now();
-        LocalDate nextEntryDate = mChartEntryAdapter.getNextEntryDate();
-        if (nextEntryDate.isAfter(now)) {
-          if (futureEntryToast != null) {
-            futureEntryToast.cancel();
-          }
-          futureEntryToast = Toast.makeText(
-              ChartEntryListActivity.this, "Cannot add future entries!", Toast.LENGTH_SHORT);
-          futureEntryToast.show();
-        } else {
-          Intent createChartEntry =
-              new Intent(ChartEntryListActivity.this, ChartEntryModifyActivity.class);
-          fillExtrasForModifyActivity(createChartEntry, mChartEntryAdapter.getNextEntryDate());
-          startActivityForResult(
-              createChartEntry, ChartEntryModifyActivity.CREATE_REQUEST);
-        }
-      }
-    });
 
     getSupportActionBar().setTitle("Cycle #1");
 
