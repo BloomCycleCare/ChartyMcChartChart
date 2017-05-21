@@ -212,7 +212,7 @@ public class ChartEntryAdapter
   @Override
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     ChartEntry entry = mEntries.get(position);
-    holder.mEntryDataTextView.setText(entry.observation.toString());
+    holder.mEntryDataTextView.setText(entry.getListUiText());
     holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
     holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource());

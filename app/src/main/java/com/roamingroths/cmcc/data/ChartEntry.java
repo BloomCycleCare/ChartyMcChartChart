@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.data;
 import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -22,7 +23,7 @@ import java.security.PrivateKey;
 public class ChartEntry implements Parcelable {
 
   public LocalDate date;
-  public Observation observation;
+  @Nullable public Observation observation;
   public boolean peakDay;
   public boolean intercourse;
   public boolean firstDay;
@@ -31,9 +32,9 @@ public class ChartEntry implements Parcelable {
     // Required for DataSnapshot.getValue(ChartEntry.class)
   }
 
-  public ChartEntry(LocalDate date, Observation observation, boolean peakDay, boolean intercourse, boolean firstDay) {
+  public ChartEntry(LocalDate date, @Nullable Observation observation, boolean peakDay, boolean intercourse, boolean firstDay) {
     this.date = date;
-    this.observation = Preconditions.checkNotNull(observation);
+    this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
     this.firstDay = firstDay;
@@ -46,6 +47,10 @@ public class ChartEntry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0);
+  }
+
+  public static ChartEntry emptyEntry(LocalDate date) {
+    return new ChartEntry(date, null, false, false, false);
   }
 
   public static ChartEntry fromSnapshot(DataSnapshot snapshot, Context context)
@@ -70,6 +75,13 @@ public class ChartEntry implements Parcelable {
     }
   };
 
+  public String getListUiText() {
+    if (observation == null) {
+      return "----";
+    }
+    return observation.toString();
+  }
+
   public String getDateStr() {
     return DateUtil.toWireStr(date);
   }
@@ -92,10 +104,10 @@ public class ChartEntry implements Parcelable {
   public boolean equals(Object o) {
     if (o instanceof ChartEntry) {
       ChartEntry that = (ChartEntry) o;
-      return this.observation.equals(that.observation) &&
+      return Objects.equal(this.observation, that.observation) &&
+          Objects.equal(this.date, that.date) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
-          this.date.equals(that.date) &&
           this.firstDay == that.firstDay;
     }
     return false;
@@ -107,6 +119,9 @@ public class ChartEntry implements Parcelable {
   }
 
   public int getEntryColorResource() {
+    if (observation == null) {
+      return R.color.entryGrey;
+    }
     if (observation.flow != null) {
       return R.color.entryRed;
     }

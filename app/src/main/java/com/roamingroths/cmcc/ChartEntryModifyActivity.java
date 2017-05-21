@@ -3,6 +3,7 @@ package com.roamingroths.cmcc;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -53,10 +54,12 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mFirstDaySwitch.setChecked(entry.firstDay);
   }
 
-  private void updateUiWithObservation(Observation observation) {
-    mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
-    mObservationEditText.setText(observation.toString());
-    mObservationEditText.setError(null);
+  private void updateUiWithObservation(@Nullable Observation observation) {
+    if (observation != null) {
+      mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+      mObservationEditText.setText(observation.toString());
+      mObservationEditText.setError(null);
+    }
   }
 
   @Override
@@ -89,7 +92,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
       public void onTextChanged(CharSequence s, int start, int before, int count) {
         try {
           Observation observation = getObservationFromEditText();
-          mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+          if (observation != null) {
+            mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+          }
         } catch (Observation.InvalidObservationException ioe) {
           mObservationDescriptionTextView.setText(null);
         }

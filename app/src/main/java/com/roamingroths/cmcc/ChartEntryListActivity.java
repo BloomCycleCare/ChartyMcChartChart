@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc;
 
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -8,6 +7,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -23,7 +23,9 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
 
@@ -88,6 +90,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     // Init Firebase stuff
     final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
+      Log.d(ChartEntryListActivity.class.getName(), "No existing user");
       startActivityForResult(
           AuthUI.getInstance().createSignInIntentBuilder()
               .setProviders(AuthUI.GOOGLE_PROVIDER)
@@ -112,17 +115,22 @@ public class ChartEntryListActivity extends AppCompatActivity
 
           @Override
           public void handleNotFound() {
+            Log.v("ChartEntryListActivity", "Prompting for start of first cycle.");
             Calendar cal = Calendar.getInstance();
-            DatePickerDialog datePickerDialog = new DatePickerDialog(
-                ChartEntryListActivity.this, new DatePickerDialog.OnDateSetListener() {
-              @Override
-              public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-                LocalDate cycleStartDate = new LocalDate(year, month + 1, dayOfMonth);
-                Cycle cycle = DataStore.createInitialCycle(user.getUid(), cycleStartDate);
-                attachAdapterToCycle(cycle);
-              }
-            }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
-            datePickerDialog.show();
+            DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
+                new DatePickerDialog.OnDateSetListener() {
+                  @Override
+                  public void onDateSet(
+                      DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
+                    LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
+                    Cycle cycle = DataStore.createCycle(
+                        ChartEntryListActivity.this, user.getUid(), cycleStartDate, null);
+                    attachAdapterToCycle(cycle);
+                  }
+                });
+            datePickerDialog.setTitle("First day of current cycle");
+            datePickerDialog.setMaxDate(Calendar.getInstance());
+            datePickerDialog.show(getFragmentManager(), "datepickerdialog");
           }
 
           @Override
@@ -168,6 +176,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   }
 
   private void attachAdapterToCycle(Cycle cycle) {
+    Log.v("ChartEntryListActivity", "Attaching to cycle starting " + DateUtil.toWireStr(cycle.startDate));
     mChartEntryAdapter.attachToCycle(cycle);
     mProgressBar.setVisibility(View.INVISIBLE);
   }

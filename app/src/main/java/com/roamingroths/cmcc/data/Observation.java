@@ -2,9 +2,11 @@ package com.roamingroths.cmcc.data;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.utils.StringUtil;
 
@@ -100,10 +102,8 @@ public class Observation implements Parcelable {
       if (this.occurrences != that.occurrences) {
         return false;
       }
-      if (this.dischargeSummary != null && that.dischargeSummary != null) {
-        if (!this.dischargeSummary.equals(that.dischargeSummary)) {
-          return false;
-        }
+      if (!Objects.equal(this.dischargeSummary, that.dischargeSummary)) {
+        return false;
       }
       return true;
     }
@@ -133,7 +133,12 @@ public class Observation implements Parcelable {
     }
   };
 
+  @Nullable
   public static Observation fromString(String observation) throws InvalidObservationException {
+    if (Strings.isNullOrEmpty(observation)) {
+      return null;
+    }
+
     String sanitizedObservation = observation.toUpperCase().replace(" ", "");
 
     Flow flow = null;

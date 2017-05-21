@@ -1,7 +1,12 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+import android.util.Log;
 
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
@@ -16,6 +21,8 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 
 import java.security.PublicKey;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -27,18 +34,20 @@ public class DataStore {
 
   public static void getCurrentCycle(String userId, final Callback<Cycle> callback) {
     DatabaseReference ref = DB.getReference("cycles").child(userId);
-    Query query = ref.orderByChild("start-date").limitToLast(1);
-    query.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+    ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
-        if (dataSnapshot == null || !dataSnapshot.exists()) {
-          callback.handleNotFound();
-          return;
+        // TODO: Optimize
+        Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
+        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+          if (!snapshot.hasChild("end-date")) {
+            Log.v("DataSource", "Found current cycle");
+            callback.acceptData(Cycle.fromSnapshot(snapshot));
+            return;
+          }
         }
-        if (dataSnapshot.getChildrenCount() != 1) {
-          throw new IllegalStateException("Received wrong number of Cycle snapshots.");
-        }
-        callback.acceptData(Cycle.fromSnapshot(dataSnapshot.getChildren().iterator().next()));
+        Log.v("DataSource", "Could not find current cycle");
+        callback.handleNotFound();
       }
     });
   }
@@ -63,10 +72,37 @@ public class DataStore {
     DB.getReference("entries").child(cycle.id).removeEventListener(listener);
   }
 
-  public static Cycle createInitialCycle(final String userId, LocalDate startDate) {
-    DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
-    cycleRef.child("start-date").setValue(DateUtil.toWireStr(startDate));
-    return new Cycle(cycleRef.getKey(), startDate, null);
+  public static Cycle createCycle(
+      final Context context, String userId, final LocalDate startDate, final @Nullable LocalDate endDate) {
+    final DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
+    if (endDate != null) {
+      cycleRef.child("end-date").setValue(DateUtil.toWireStr(endDate));
+    }
+    cycleRef.child("start-date").setValue(DateUtil.toWireStr(startDate)).addOnCompleteListener(
+        new OnCompleteListener<Void>() {
+          @Override
+          public void onComplete(@NonNull Task<Void> task) {
+            try {
+              createEmptyEntries(context, cycleRef.getKey(), startDate, endDate);
+            } catch (CryptoUtil.CryptoException ce) {
+              ce.printStackTrace();
+            }
+          }
+        });
+    return new Cycle(cycleRef.getKey(), startDate, endDate);
+  }
+
+  private static void createEmptyEntries(
+      Context context, String cycleId, LocalDate startDate, @Nullable LocalDate endDate) throws CryptoUtil.CryptoException {
+    endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
+    Map<String, Object> updateMap = new HashMap<>();
+    PublicKey publicKey = CryptoUtil.getPersonalPublicKey(context);
+    for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
+      ChartEntry entry = ChartEntry.emptyEntry(date);
+      String encryptedEntry = CryptoUtil.encrypt(entry, publicKey);
+      updateMap.put(DateUtil.toWireStr(date), encryptedEntry);
+    }
+    DB.getReference("entries").child(cycleId).updateChildren(updateMap);
   }
 
   public static void putChartEntry(Context context, String cycleId, ChartEntry entry) throws CryptoUtil.CryptoException {
