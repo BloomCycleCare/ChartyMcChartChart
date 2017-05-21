@@ -17,6 +17,25 @@ public class Callbacks {
     void handleError(DatabaseError error);
   }
 
+  public static abstract class ErrorForwardingCallback<T> implements Callback<T> {
+    private final Callback<T> mDelegate;
+
+    public ErrorForwardingCallback(Callback<T> delegate) {
+      mDelegate = delegate;
+    }
+
+    @Override
+    public void handleNotFound() {
+      mDelegate.handleNotFound();
+    }
+
+    @Override
+    public void handleError(DatabaseError error) {
+      mDelegate.handleError(error);
+    }
+  }
+
+  // TODO: remember how to make this extend ErrorForwardingCallback
   public static class TransformingCallback<I, O> implements Callback<I> {
     private final Function<I, O> mDataTransformer;
     private final Callback<O> mDelegate;

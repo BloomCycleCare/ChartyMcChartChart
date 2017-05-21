@@ -4,8 +4,11 @@ import android.content.Context;
 import android.os.AsyncTask;
 import android.security.KeyPairGeneratorSpec;
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.common.base.Function;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
 
 import java.io.ByteArrayInputStream;
@@ -31,11 +34,13 @@ import javax.security.auth.x500.X500Principal;
 
 public class CryptoUtil {
 
-
   private static final String TRANSFORMATION = "RSA/ECB/PKCS1Padding";
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
   private static final String KEY_STORE = "AndroidKeyStore";
   private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
+
+  private static final Cache<Integer, Object> OBJECT_CACHE =
+      CacheBuilder.newBuilder().maximumSize(100).build();
 
   private static void createPersonalPrivateKey(Context context) throws CryptoException {
     try {
@@ -79,8 +84,16 @@ public class CryptoUtil {
   }
 
   public static void encrypt(
-      Object object, PublicKey publicKey, Callbacks.Callback<String> callback) {
-    encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey, callback);
+      final Object object, PublicKey publicKey, final Callbacks.Callback<String> callback) {
+    Log.v("CryptoUtil", "Encrypting " + object.getClass().getName());
+    encrypt(GsonUtil.getGsonInstance().toJson(object), publicKey,
+        new Callbacks.ErrorForwardingCallback<String>(callback) {
+          @Override
+          public void acceptData(String encryptedText) {
+            callback.acceptData(encryptedText);
+            OBJECT_CACHE.put(encryptedText.hashCode(), object);
+          }
+        });
   }
 
   public static void encrypt(
@@ -116,11 +129,19 @@ public class CryptoUtil {
   }
 
   public static <T> void decrypt(
-      String encryptedText, PrivateKey privateKey, final Class<T> clazz, Callbacks.Callback<T> callback) {
+      final String encryptedText, PrivateKey privateKey, final Class<T> clazz, Callbacks.Callback<T> callback) {
+    Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
+    if (cachedObject != null) {
+      Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
+      callback.acceptData((T) cachedObject);
+    }
     Function<String, T> transformer = new Function<String, T>() {
       @Override
       public T apply(String decryptedStr) {
-        return GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+        Log.v("CryptoUtil", "Decrypting " + clazz.getName());
+        T decryptedObject = GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+        OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
+        return decryptedObject;
       }
     };
     decrypt(encryptedText, privateKey, new Callbacks.TransformingCallback<String, T>(callback, transformer));
