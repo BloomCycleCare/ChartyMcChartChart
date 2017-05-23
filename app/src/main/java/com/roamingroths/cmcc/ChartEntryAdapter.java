@@ -1,12 +1,14 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
+import android.graphics.Typeface;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
@@ -214,6 +216,12 @@ public class ChartEntryAdapter
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     ChartEntry entry = mEntries.get(position);
     holder.mEntryDataTextView.setText(entry.getListUiText());
+    if (entry.intercourse) {
+      holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
+    }
+    if (entry.observation == null || entry.observation.flow != null) {
+      holder.mBabyImageView.setVisibility(View.INVISIBLE);
+    }
     holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
     holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource());
@@ -236,6 +244,8 @@ public class ChartEntryAdapter
     public final TextView mEntryNumTextView;
     public final TextView mEntryDateTextView;
     public final TextView mEntryDataTextView;
+    public final TextView mEntryPeakTextView;
+    public final ImageView mBabyImageView;
     public final View mEntryBackgroundView;
 
     public EntryAdapterViewHolder(View itemView) {
@@ -244,6 +254,8 @@ public class ChartEntryAdapter
       mEntryNumTextView = (TextView) itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = (TextView) itemView.findViewById(R.id.tv_entry_date);
       mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
+      mEntryPeakTextView = (TextView) itemView.findViewById(R.id.tv_peak_day);
+      mBabyImageView = (ImageView) itemView.findViewById(R.id.baby_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
     }
 
