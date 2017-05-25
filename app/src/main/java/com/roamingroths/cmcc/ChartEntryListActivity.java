@@ -78,12 +78,15 @@ public class ChartEntryListActivity extends AppCompatActivity
       Intent intentThatStartedThisActivity = getIntent();
       if (intentThatStartedThisActivity != null
           && intentThatStartedThisActivity.hasExtra(Cycle.class.getName())) {
+        Log.v("ChartEntryListActivity", "Using Cycle from Intent");
         Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
         attachAdapterToCycle(cycle);
       } else {
+        Log.v("ChartEntryListActivity", "Looking up current cycle from DB.");
         DataStore.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
           @Override
           public void acceptData(Cycle cycle) {
+            Log.v("ChartEntryListActivity", "Received current cycle from DB.");
             attachAdapterToCycle(cycle);
           }
 
@@ -97,6 +100,8 @@ public class ChartEntryListActivity extends AppCompatActivity
                   public void onDateSet(
                       DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
                     LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
+                    Log.v("ChartEntryListActivity",
+                        "Starting new cycle on " + cycleStartDate.toString());
                     Cycle cycle = DataStore.createCycle(
                         ChartEntryListActivity.this, user.getUid(), cycleStartDate, null);
                     attachAdapterToCycle(cycle);

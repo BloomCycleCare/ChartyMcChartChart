@@ -226,10 +226,8 @@ public class ChartEntryAdapter
   }
 
   private static boolean shouldShowBaby(ChartEntry entry) {
-    if (entry.observation == null) {
-      if (entry.observation.dischargeSummary.mType.hasMucus()) {
-        return true;
-      }
+    if (entry.observation != null && entry.observation.hasMucus()) {
+      return true;
     }
     return false;
   }

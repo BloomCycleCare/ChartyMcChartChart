@@ -42,6 +42,10 @@ public class Observation implements Parcelable {
     dischargeSummary = in.readParcelable(DischargeSummary.class.getClassLoader());
     occurrences = in.readParcelable(Occurrences.class.getClassLoader());
   }
+
+  public boolean hasMucus() {
+    return dischargeSummary != null && dischargeSummary.mType.hasMucus();
+  }
   @Override
   public String toString() {
     List<String> strs = new ArrayList<>();
