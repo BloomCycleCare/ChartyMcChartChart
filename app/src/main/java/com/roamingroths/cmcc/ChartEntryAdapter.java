@@ -219,13 +219,21 @@ public class ChartEntryAdapter
     if (entry.intercourse) {
       holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
     }
-    if (entry.observation == null || entry.observation.flow != null) {
-      holder.mBabyImageView.setVisibility(View.INVISIBLE);
-    }
+    holder.mBabyImageView.setVisibility(shouldShowBaby(entry) ? View.VISIBLE : View.INVISIBLE);
     holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
     holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource());
   }
+
+  private static boolean shouldShowBaby(ChartEntry entry) {
+    if (entry.observation == null) {
+      if (entry.observation.dischargeSummary.mType.hasMucus()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
 
   @Override
   public int getItemCount() {
