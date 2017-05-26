@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent">
 
     <EditTextPreference
         android:defaultValue=""
@@ -9,5 +9,13 @@
         android:key="@string/pref_practitioner_name_key"
         android:singleLine="true"
         android:title="@string/pref_practitioner_name_label" />
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="enable_pre_peak_yellow_stickers"
+        android:title="Pre-peak Yellow Stickers"/>
+    <SwitchPreferenceCompat
+        android:defaultValue="false"
+        android:key="enable_post_peak_yellow_stickers"
+        android:title="Post-peak Yellow Stickers"/>
 
 </PreferenceScreen>

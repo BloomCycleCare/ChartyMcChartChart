@@ -1,18 +1,14 @@
 package com.roamingroths.cmcc;
 
-import android.app.Activity;
 import android.content.SharedPreferences;
-import android.preference.PreferenceFragment;
-import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
 import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
+import android.support.v7.preference.SwitchPreferenceCompat;
+import android.util.Log;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -22,7 +18,9 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
   private void setPreferenceSummary(Preference preference, Object value) {
     String stringValue = value.toString();
-
+    if (preference instanceof SwitchPreferenceCompat) {
+      return;
+    }
     if (preference instanceof ListPreference) {
       // For list preferences, look up the correct display value in
       // the preference's 'entries' list (since they have separate labels/values).
@@ -44,27 +42,27 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
     SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
     PreferenceScreen prefScreen = getPreferenceScreen();
     int count = prefScreen.getPreferenceCount();
+    Log.v("SettingsFragment", "Loading " + count + " preferences");
     for (int i = 0; i < count; i++) {
       Preference p = prefScreen.getPreference(i);
+      if (p instanceof SwitchPreferenceCompat) {
+        setPreferenceSummary(p, sharedPreferences.getBoolean(p.getKey(), false));
+        continue;
+      }
       if (!(p instanceof CheckBoxPreference)) {
-        String value = sharedPreferences.getString(p.getKey(), "");
-        setPreferenceSummary(p, value);
+        setPreferenceSummary(p, sharedPreferences.getString(p.getKey(), ""));
+        continue;
       }
     }
   }
 
   @Override
   public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-    Activity activity = getActivity();
-
-        /*if (key.equals(getString(R.string.pref_location_key))) {
-            // we've changed the location
-            // Wipe out any potential PlacePicker latlng values so that we can use this text entry.
-            SunshinePreferences.resetLocationCoordinates(activity);
-        }*/
     Preference preference = findPreference(key);
     if (null != preference) {
-      if (!(preference instanceof CheckBoxPreference)) {
+      if (preference instanceof SwitchPreferenceCompat) {
+        setPreferenceSummary(preference, sharedPreferences.getBoolean(key, false));
+      } else if (!(preference instanceof CheckBoxPreference)) {
         setPreferenceSummary(preference, sharedPreferences.getString(key, ""));
       }
     }
