@@ -1,9 +1,11 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
+import android.support.v7.preference.PreferenceManager;
 
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
@@ -51,10 +53,14 @@ public class ChartEntry implements Parcelable {
     return new ChartEntry(date, null, false, false, false);
   }
 
+  public static void fromEncryptedString(
+      String encryptedEntry, Context context, Callbacks.Callback<ChartEntry> callback) {
+    CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
+  }
+
   public static void fromSnapshot(
       DataSnapshot snapshot, Context context, Callbacks.Callback<ChartEntry> callback) {
-    String encryptedEntry = snapshot.getValue(String.class);
-    CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
+    fromEncryptedString(snapshot.getValue(String.class), context, callback);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
@@ -112,7 +118,7 @@ public class ChartEntry implements Parcelable {
     return Objects.hashCode(observation, peakDay, intercourse, date, firstDay);
   }
 
-  public int getEntryColorResource() {
+  public int getEntryColorResource(Context context) {
     if (observation == null) {
       return R.color.entryGrey;
     }
@@ -121,6 +127,13 @@ public class ChartEntry implements Parcelable {
     }
     if (observation.dischargeSummary.mType == DischargeSummary.DischargeType.DRY) {
       return R.color.entryGreen;
+    }
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+    boolean useYellowPrepeak = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
+    boolean useYellowPostPeak = preferences.getBoolean("enable_post_peak_yellow_stickers", false);
+    // TODO: real implementation
+    if (useYellowPostPeak) {
+      return R.color.entryYellow;
     }
     return R.color.entryWhite;
   }

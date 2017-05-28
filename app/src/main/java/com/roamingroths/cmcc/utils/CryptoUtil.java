@@ -146,6 +146,7 @@ public class CryptoUtil {
     if (cachedObject != null) {
       Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
       callback.acceptData((T) cachedObject);
+      return;
     }
     Function<String, T> transformer = new Function<String, T>() {
       @Override

@@ -11,8 +11,6 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import static org.junit.Assert.assertEquals;
-
 /**
  * Example local unit test, which will execute on the development machine (host).
  *
@@ -34,7 +32,7 @@ public class ChartEntryTest {
 
     for (String observationStr : OBSERVATION_STRS) {
       ChartEntry entry =
-          new ChartEntry(LocalDate.now(), Observation.fromString(observationStr), true, false);
+          new ChartEntry(LocalDate.now(), Observation.fromString(observationStr), true, false, false);
       assertEquals(
           entry, CryptoUtil.decrypt(CryptoUtil.encrypt(entry, pubKey), privKey, ChartEntry.class));
     }

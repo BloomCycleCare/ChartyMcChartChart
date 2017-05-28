@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -12,34 +13,35 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  * Created by parkeroth on 4/18/17.
  */
 
 public class ChartEntryAdapter
-    extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder>
-    implements ChildEventListener {
+    extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
 
-  private final Set<String> mSeenDates = new HashSet<>();
+  private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
+  private final Set<LocalDate> mSeenDates = new HashSet<>();
   private final SortedList<ChartEntry> mEntries;
   private final Context mContext;
   private final OnClickHandler mClickHandler;
   private final OnItemAddedHandler mAddedHandler;
   private Cycle mCycle;
+  private ChartEntryListener mEntryListener;
 
   public ChartEntryAdapter(Context context, OnClickHandler clickHandler, OnItemAddedHandler addedHandler) {
     mContext = context;
@@ -84,6 +86,42 @@ public class ChartEntryAdapter
     });
   }
 
+  public void addEntry(ChartEntry entry) {
+    maybeUpdatePeakDays(entry);
+    if (mSeenDates.contains(entry.date)) {
+      return;
+    }
+    mSeenDates.add(entry.date);
+    int index = mEntries.add(entry);
+    mAddedHandler.onItemAdded(entry, index);
+  }
+
+  public void changeEntry(String dateStr, String encryptedPayload) {
+    final int entryIndex = findEntry(dateStr);
+    if (entryIndex < 0) {
+      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
+    }
+    ChartEntry.fromEncryptedString(
+        encryptedPayload, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
+          @Override
+          public void acceptData(ChartEntry entry) {
+            maybeUpdatePeakDays(entry);
+            mEntries.updateItemAt(entryIndex, entry);
+          }
+    });
+  }
+
+  public void removeEntry(String dateStr) {
+    int entryIndex = findEntry(dateStr);
+    if (entryIndex < 0) {
+      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
+    }
+    ChartEntry entry = mEntries.get(entryIndex);
+    maybeUpdatePeakDays(entry);
+    mSeenDates.remove(entry.date);
+    mEntries.removeItemAt(entryIndex);
+  }
+
   public boolean isAttachedToCycle() {
     return mCycle != null;
   }
@@ -100,23 +138,34 @@ public class ChartEntryAdapter
     return mEntries.get(0).date.plusDays(1);
   }
 
-  public void attachToCycle(Cycle cycle) {
+  public void attachToCycle(Cycle cycle, final Callbacks.Callback<Void> doneCallback) {
     if (isAttachedToCycle()) {
       if (mCycle.equals(cycle)) {
+        doneCallback.acceptData(null);
         return;
       }
       detachFromCycle();
     }
-    DataStore.attachCycleEntryListener(this, cycle);
+    mEntryListener = new ChartEntryListener(mContext, this);
     mCycle = cycle;
+    DataStore.fillCycleEntryAdapter(
+        mCycle, mContext, this, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
+          @Override
+          public void acceptData(Void data) {
+            Log.v("ChartEntryAdapter", "Attaching ChartEntryListener");
+            DataStore.attachCycleEntryListener(mEntryListener, mCycle);
+            doneCallback.acceptData(null);
+          }
+        });
   }
 
   public void detachFromCycle() {
     if (!isAttachedToCycle()) {
       return;
     }
-    DataStore.detatchCycleEntryListener(this, mCycle);
+    DataStore.detatchCycleEntryListener(mEntryListener, mCycle);
     mCycle = null;
+    mEntryListener = null;
   }
 
   private int findEntry(String dateStr) {
@@ -129,56 +178,12 @@ public class ChartEntryAdapter
     return -1;
   }
 
-  @Override
-  public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
-      @Override
-      public void acceptData(ChartEntry entry) {
-        if (mSeenDates.contains(entry.getDateStr())) {
-          return;
-        }
-        mSeenDates.add(entry.getDateStr());
-        int index = mEntries.add(entry);
-        mAddedHandler.onItemAdded(entry, index);
-      }
-    });
-  }
-
-  @Override
-  public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-    String dateStr = dataSnapshot.getKey();
-    final int entryIndex = findEntry(dateStr);
-    if (entryIndex < 0) {
-      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
+  private void maybeUpdatePeakDays(ChartEntry entry) {
+    if (entry.peakDay) {
+      mPeakDays.add(entry.date);
+    } else {
+      mPeakDays.remove(entry.date);
     }
-    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
-      @Override
-      public void acceptData(ChartEntry entry) {
-        mEntries.updateItemAt(entryIndex, entry);
-      }
-    });
-  }
-
-  @Override
-  public void onChildRemoved(DataSnapshot dataSnapshot) {
-    String dateStr = dataSnapshot.getKey();
-    int entryIndex = findEntry(dateStr);
-    if (entryIndex < 0) {
-      throw new IllegalStateException("Couldn't find entry for update! " + dateStr);
-    }
-    ChartEntry entry = mEntries.get(entryIndex);
-    mSeenDates.remove(entry.getDateStr());
-    mEntries.removeItemAt(entryIndex);
-  }
-
-  @Override
-  public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-    throw new IllegalStateException("NOT IMPLEMENTED");
-  }
-
-  @Override
-  public void onCancelled(DatabaseError databaseError) {
-    databaseError.toException().printStackTrace();
   }
 
   /**
@@ -216,22 +221,65 @@ public class ChartEntryAdapter
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     ChartEntry entry = mEntries.get(position);
     holder.mEntryDataTextView.setText(entry.getListUiText());
-    if (entry.intercourse) {
-      holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
-    }
-    holder.mBabyImageView.setVisibility(shouldShowBaby(entry) ? View.VISIBLE : View.INVISIBLE);
+    holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource(mContext));
     holder.mEntryNumTextView.setText(String.valueOf(mEntries.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
-    holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource());
+    holder.mEntryPeakTextView.setText(getPeakDayViewText(entry, mPeakDays));
+    if (entry.intercourse) {
+      holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
+    } else {
+      holder.mEntryDateTextView.setTypeface(Typeface.DEFAULT);
+    }
+    if (shouldShowBaby(entry)) {
+      holder.mBabyImageView.setVisibility(View.VISIBLE);
+    } else {
+      holder.mBabyImageView.setVisibility(View.INVISIBLE);
+    }
+  }
+
+  private static String getPeakDayViewText(ChartEntry entry, SortedSet<LocalDate> peakDays) {
+    if (entry == null) {
+      return "";
+    }
+    LocalDate closestPeakDay = null;
+    for (LocalDate peakDay : peakDays) {
+      if (peakDay.isAfter(entry.date)) {
+        continue;
+      }
+      if (closestPeakDay == null) {
+        closestPeakDay = peakDay;
+      }
+      if (closestPeakDay.isBefore(peakDay)) {
+
+        closestPeakDay = peakDay;
+      }
+    }
+    if (closestPeakDay == null) {
+      return "";
+    }
+    return getPeakDayViewText(entry, closestPeakDay);
+  }
+
+  private static String getPeakDayViewText(ChartEntry entry, LocalDate peakDay) {
+    if (entry.date.isBefore(peakDay)) {
+      return "";
+    }
+    if (entry.date.equals(peakDay)) {
+      return "P";
+    }
+    int daysAfterPeak = Days.daysBetween(peakDay, entry.date).getDays();
+    if (daysAfterPeak < 4) {
+      return String.valueOf(daysAfterPeak);
+    }
+    return "";
   }
 
   private static boolean shouldShowBaby(ChartEntry entry) {
-    if (entry.observation != null && entry.observation.hasMucus()) {
-      return true;
+    if (entry == null) {
+      return false;
     }
-    return false;
+    return entry.observation != null && entry.observation.hasMucus();
   }
-
 
   @Override
   public int getItemCount() {

@@ -11,6 +11,7 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.ChartEntryAdapter;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -18,6 +19,8 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.EventListeners.SimpleValueEventListener;
 
 import org.joda.time.LocalDate;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -55,6 +58,37 @@ public class DataStore {
 
   public static void detachCycleListener(ChildEventListener listener, String userId) {
     DB.getReference("cycles").child(userId).removeEventListener(listener);
+  }
+
+  public static void fillCycleEntryAdapter(
+      Cycle cycle, final Context context, final ChartEntryAdapter adapter,
+      final Callback<Void> doneCallback) {
+    Log.v("DataStore", "Begin filling ChartEntryAdapter");
+    DatabaseReference dbRef = DB.getReference("entries").child(cycle.id);
+    dbRef.keepSynced(true);
+    dbRef.addListenerForSingleValueEvent(new SimpleValueEventListener(doneCallback) {
+      @Override
+      public void onDataChange(DataSnapshot entriesSnapshot) {
+        final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
+        for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
+          ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
+              new Callbacks.ErrorForwardingCallback<ChartEntry>(doneCallback) {
+
+                @Override
+                public void acceptData(ChartEntry entry) {
+                  adapter.addEntry(entry);
+                  long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
+                  if (numLeftToDecrypt < 1) {
+                    Log.v("DataStore", "Done filling ChartEntryAdapter");
+                    doneCallback.acceptData(null);
+                  } else {
+                    Log.v("DataStore", "Still waiting for " + numLeftToDecrypt + " decryptions");
+                  }
+                }
+              });
+        }
+      }
+    });
   }
 
   public static void attachCycleEntryListener(ChildEventListener listener, Cycle cycle) {
@@ -118,13 +152,13 @@ public class DataStore {
     DB.getReference("entries").child(cycleId).child(entryDateStr).removeValue();
   }
 
-  public static void getChartEntry(final Context context, String cycleId, String entryDateStr, final Callback<ChartEntry> callback) {
+  public static void getChartEntry(
+      final Context context, String cycleId, String entryDateStr, final Callback<ChartEntry> callback) {
     DB.getReference("entries").child(cycleId).child(entryDateStr)
         .addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
-            String encryptedEntry = dataSnapshot.getValue(String.class);
-            CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
+            ChartEntry.fromSnapshot(dataSnapshot, context, callback);
           }
         });
   }

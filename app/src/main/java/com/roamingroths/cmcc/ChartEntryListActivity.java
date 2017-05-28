@@ -2,9 +2,11 @@ package com.roamingroths.cmcc;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -29,8 +31,9 @@ import org.joda.time.LocalDate;
 
 import java.util.Calendar;
 
-public class ChartEntryListActivity extends AppCompatActivity
-    implements ChartEntryAdapter.OnClickHandler, ChartEntryAdapter.OnItemAddedHandler {
+public class ChartEntryListActivity extends AppCompatActivity implements
+    ChartEntryAdapter.OnClickHandler, ChartEntryAdapter.OnItemAddedHandler,
+    SharedPreferences.OnSharedPreferenceChangeListener {
 
   public static final int RC_SIGN_IN = 1;
 
@@ -73,7 +76,7 @@ public class ChartEntryListActivity extends AppCompatActivity
           RC_SIGN_IN);
     } else {
       // Find the current cycle
-      mProgressBar.setVisibility(View.VISIBLE);
+      showProgress();
 
       Intent intentThatStartedThisActivity = getIntent();
       if (intentThatStartedThisActivity != null
@@ -122,6 +125,20 @@ public class ChartEntryListActivity extends AppCompatActivity
       }
     }
     Log.v("ChartEntryListActivity", "onCreate: start");
+    PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+  }
+
+  @Override
+  public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+    if (key.equals("enable_pre_peak_yellow_stickers")
+        || key.equals("enable_post_peak_yellow_stickers")) {
+      runOnUiThread(new Runnable() {
+        @Override
+        public void run() {
+          mChartEntryAdapter.notifyDataSetChanged();
+        }
+      });
+    }
   }
 
   @Override
@@ -158,8 +175,13 @@ public class ChartEntryListActivity extends AppCompatActivity
   private void attachAdapterToCycle(Cycle cycle) {
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
     Log.v("ChartEntryListActivity", "Attaching to cycle starting " + cycle.startDateStr);
-    mChartEntryAdapter.attachToCycle(cycle);
-    mProgressBar.setVisibility(View.INVISIBLE);
+    mChartEntryAdapter.attachToCycle(cycle, Callbacks.singleUse(new Callbacks.HaltingCallback<Void>() {
+      @Override
+      public void acceptData(Void unused) {
+        Log.v("ChartEntryListActivity", "Hiding progress bar");
+        showList();
+      }
+    }));
     Log.v("ChartEntryListActivity", "Attached to cycle starting " + cycle.startDateStr);
   }
 
@@ -222,11 +244,19 @@ public class ChartEntryListActivity extends AppCompatActivity
   private void showError() {
     mErrorView.setVisibility(View.VISIBLE);
     mRecyclerView.setVisibility(View.INVISIBLE);
+    mProgressBar.setVisibility(View.INVISIBLE);
   }
 
   private void showList() {
-    mErrorView.setVisibility(View.INVISIBLE);
     mRecyclerView.setVisibility(View.VISIBLE);
+    mErrorView.setVisibility(View.INVISIBLE);
+    mProgressBar.setVisibility(View.INVISIBLE);
+  }
+
+  private void showProgress() {
+    mProgressBar.setVisibility(View.VISIBLE);
+    mRecyclerView.setVisibility(View.INVISIBLE);
+    mErrorView.setVisibility(View.INVISIBLE);
   }
 
   @Override
