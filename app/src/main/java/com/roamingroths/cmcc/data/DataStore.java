@@ -21,6 +21,7 @@ import com.roamingroths.cmcc.utils.EventListeners.SimpleValueEventListener;
 import org.joda.time.LocalDate;
 
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -62,7 +63,7 @@ public class DataStore {
 
   public static void fillCycleEntryAdapter(
       Cycle cycle, final Context context, final ChartEntryAdapter adapter,
-      final Callback<Void> doneCallback) {
+      final Callback<LocalDate> doneCallback) {
     Log.v("DataStore", "Begin filling ChartEntryAdapter");
     DatabaseReference dbRef = DB.getReference("entries").child(cycle.id);
     dbRef.keepSynced(true);
@@ -70,7 +71,12 @@ public class DataStore {
       @Override
       public void onDataChange(DataSnapshot entriesSnapshot) {
         final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
+        final AtomicReference<LocalDate> lastEntryDate = new AtomicReference<>();
         for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
+          LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
+          if (lastEntryDate.get() == null || lastEntryDate.get().isBefore(entryDate)) {
+            lastEntryDate.set(entryDate);
+          }
           ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
               new Callbacks.ErrorForwardingCallback<ChartEntry>(doneCallback) {
 
@@ -80,7 +86,7 @@ public class DataStore {
                   long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
                   if (numLeftToDecrypt < 1) {
                     Log.v("DataStore", "Done filling ChartEntryAdapter");
-                    doneCallback.acceptData(null);
+                    doneCallback.acceptData(lastEntryDate.get());
                   } else {
                     Log.v("DataStore", "Still waiting for " + numLeftToDecrypt + " decryptions");
                   }
@@ -122,11 +128,12 @@ public class DataStore {
     return new Cycle(cycleRef.getKey(), startDate, endDate);
   }
 
-  private static void createEmptyEntries(
+  public static void createEmptyEntries(
       Context context, String cycleId, LocalDate startDate, @Nullable LocalDate endDate) throws CryptoUtil.CryptoException {
     final DatabaseReference ref = DB.getReference("entries").child(cycleId);
     endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
+      Log.v("DataStore", "Creating empty entry for " + cycleId + " " + date);
       final ChartEntry entry = ChartEntry.emptyEntry(date);
       CryptoUtil.encrypt(entry, context, new Callbacks.HaltingCallback<String>() {
         @Override

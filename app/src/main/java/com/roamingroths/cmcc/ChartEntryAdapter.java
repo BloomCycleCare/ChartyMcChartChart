@@ -13,10 +13,12 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
+import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.Days;
@@ -138,7 +140,7 @@ public class ChartEntryAdapter
     return mEntries.get(0).date.plusDays(1);
   }
 
-  public void attachToCycle(Cycle cycle, final Callbacks.Callback<Void> doneCallback) {
+  public void attachToCycle(final Cycle cycle, final Callbacks.Callback<Void> doneCallback) {
     if (isAttachedToCycle()) {
       if (mCycle.equals(cycle)) {
         doneCallback.acceptData(null);
@@ -149,9 +151,16 @@ public class ChartEntryAdapter
     mEntryListener = new ChartEntryListener(mContext, this);
     mCycle = cycle;
     DataStore.fillCycleEntryAdapter(
-        mCycle, mContext, this, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
+        mCycle, mContext, this, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
           @Override
-          public void acceptData(Void data) {
+          public void acceptData(LocalDate lastEntryDate) {
+            if (cycle.endDate == null && lastEntryDate.isBefore(DateUtil.now())) {
+              try {
+                DataStore.createEmptyEntries(mContext, cycle.id, lastEntryDate, null);
+              } catch (CryptoUtil.CryptoException ce) {
+                doneCallback.handleError(DatabaseError.fromException(ce));
+              }
+            }
             Log.v("ChartEntryAdapter", "Attaching ChartEntryListener");
             DataStore.attachCycleEntryListener(mEntryListener, mCycle);
             doneCallback.acceptData(null);
