@@ -222,6 +222,7 @@ public class DataStore {
                     }
                   });
             }
+            mergedCycleCallback.acceptData(previousCycle);
           }
         });
       }
