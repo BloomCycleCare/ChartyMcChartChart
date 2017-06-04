@@ -24,6 +24,7 @@ import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -106,7 +107,21 @@ public class ChartEntryListActivity extends AppCompatActivity implements
                     Log.v("ChartEntryListActivity",
                         "Starting new cycle on " + cycleStartDate.toString());
                     Cycle cycle = DataStore.createCycle(
-                        ChartEntryListActivity.this, user.getUid(), cycleStartDate, null);
+                        ChartEntryListActivity.this,
+                        user.getUid(),
+                        null,
+                        null,
+                        cycleStartDate,
+                        null);
+                    try {
+                      DataStore.createEmptyEntries(
+                          ChartEntryListActivity.this,
+                          cycle.id,
+                          cycle.startDate,
+                          cycle.endDate);
+                    } catch (CryptoUtil.CryptoException ce) {
+                      handleError(DatabaseError.fromException(ce));
+                    }
                     attachAdapterToCycle(cycle);
                   }
                 });

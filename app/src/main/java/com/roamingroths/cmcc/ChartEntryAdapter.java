@@ -237,7 +237,7 @@ public class ChartEntryAdapter
     if (entry.intercourse) {
       holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
     } else {
-      holder.mEntryDateTextView.setTypeface(Typeface.DEFAULT);
+      holder.mEntryDateTextView.setTypeface(null, Typeface.NORMAL);
     }
     if (shouldShowBaby(entry)) {
       holder.mBabyImageView.setVisibility(View.VISIBLE);

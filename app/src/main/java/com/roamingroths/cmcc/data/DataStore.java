@@ -1,16 +1,17 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.google.android.gms.tasks.OnCompleteListener;
-import com.google.android.gms.tasks.Task;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.ChartEntryAdapter;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
@@ -30,6 +31,19 @@ import java.util.concurrent.atomic.AtomicReference;
 public class DataStore {
 
   private static final FirebaseDatabase DB = FirebaseDatabase.getInstance();
+
+  public static void getCycle(String userId, @Nullable String cycleId, final Callback<Cycle> callback) {
+    if (Strings.isNullOrEmpty(cycleId)) {
+      callback.acceptData(null);
+      return;
+    }
+    DB.getReference("cycles").child(userId).child(cycleId).addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+      @Override
+      public void onDataChange(DataSnapshot dataSnapshot) {
+        callback.acceptData(Cycle.fromSnapshot(dataSnapshot));
+      }
+    });
+  }
 
   public static void getCurrentCycle(String userId, final Callback<Cycle> callback) {
     DatabaseReference ref = DB.getReference("cycles").child(userId);
@@ -108,24 +122,26 @@ public class DataStore {
   }
 
   public static Cycle createCycle(
-      final Context context, String userId, final LocalDate startDate, final @Nullable LocalDate endDate) {
+      final Context context,
+      String userId,
+      @Nullable Cycle previousCycle,
+      @Nullable Cycle nextCycle,
+      final LocalDate startDate,
+      final @Nullable LocalDate endDate) {
     final DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
-    Cycle cycle = new Cycle(cycleRef.getKey(), startDate, endDate);
-    if (endDate != null) {
+    Cycle cycle = new Cycle(
+        cycleRef.getKey(),
+        (previousCycle == null) ? null : previousCycle.id,
+        (nextCycle == null) ? null : nextCycle.id,
+        startDate,
+        endDate);
+    if (cycle.endDate != null) {
       cycleRef.child("end-date").setValue(DateUtil.toWireStr(endDate));
     }
-    cycleRef.child("start-date").setValue(cycle.startDateStr).addOnCompleteListener(
-        new OnCompleteListener<Void>() {
-          @Override
-          public void onComplete(@NonNull Task<Void> task) {
-            try {
-              createEmptyEntries(context, cycleRef.getKey(), startDate, endDate);
-            } catch (CryptoUtil.CryptoException ce) {
-              ce.printStackTrace();
-            }
-          }
-        });
-    return new Cycle(cycleRef.getKey(), startDate, endDate);
+    cycleRef.child("previous-cycle-id").setValue(cycle.previousCycleId);
+    cycleRef.child("next-cycle-id").setValue(cycle.nextCycleId);
+    cycleRef.child("start-date").setValue(cycle.startDateStr);
+    return cycle;
   }
 
   public static void createEmptyEntries(
@@ -168,5 +184,107 @@ public class DataStore {
             ChartEntry.fromSnapshot(dataSnapshot, context, callback);
           }
         });
+  }
+
+  public static void combineCycles(
+      final Cycle currentCycle,
+      final String userId,
+      final Callback<Cycle> mergedCycleCallback) {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(currentCycle.previousCycleId));
+    getCycle(userId, currentCycle.previousCycleId, new Callbacks.ErrorForwardingCallback<Cycle>(mergedCycleCallback) {
+      @Override
+      public void acceptData(final Cycle previousCycle) {
+        DatabaseReference previousCycleRef =
+            DB.getReference("cycles").child(userId).child(previousCycle.id);
+        previousCycleRef.child("next-cycle-id").setValue(currentCycle.nextCycleId);
+        previousCycleRef.child("end-date").setValue(DateUtil.toWireStr(currentCycle.endDate));
+        if (currentCycle.nextCycleId != null) {
+          DatabaseReference nextCycleRef =
+              DB.getReference("cycles").child(userId).child(currentCycle.nextCycleId);
+          nextCycleRef.child("previous-cycle-id").setValue(previousCycle.id);
+        }
+        DB.getReference("cycles").child(userId).child(currentCycle.id).removeValue();
+        final DatabaseReference currentEntriesRef =
+            DB.getReference("entries").child(currentCycle.id);
+        currentEntriesRef.addListenerForSingleValueEvent(new SimpleValueEventListener(mergedCycleCallback) {
+          @Override
+          public void onDataChange(DataSnapshot entrySnapshots) {
+            DatabaseReference previousEntriesRef =
+                DB.getReference("entries").child(previousCycle.id);
+            for (DataSnapshot entrySnapshot : entrySnapshots.getChildren()) {
+              final String entryDateStr = entrySnapshot.getKey();
+              previousEntriesRef.child(entryDateStr).setValue(
+                  entrySnapshot.getValue(String.class), new DatabaseReference.CompletionListener() {
+                    @Override
+                    public void onComplete(
+                        DatabaseError databaseError, DatabaseReference databaseReference) {
+                      currentEntriesRef.child(entryDateStr).removeValue();
+                    }
+                  });
+            }
+          }
+        });
+      }
+    });
+  }
+
+  public static void splitCycle(
+      final Context context,
+      final String userId,
+      final Cycle currentCycle,
+      final ChartEntry firstEntry,
+      final Callback<Cycle> newCycleCallback) {
+    final DatabaseReference currentCycleRef =
+        DB.getReference("cycles").child(userId).child(currentCycle.id);
+    getCycle(userId, currentCycle.nextCycleId, new Callbacks.ErrorForwardingCallback<Cycle>(newCycleCallback) {
+      @Override
+      public void acceptData(@Nullable Cycle nextCycle) {
+        final Cycle newCycle = createCycle(
+            context, userId, currentCycle, nextCycle, firstEntry.date, currentCycle.endDate);
+        currentCycleRef.child("next-cycle-id").setValue(newCycle.id);
+        if (nextCycle != null) {
+          DB.getReference("cycles").child(userId).child(nextCycle.id).child("previous-cycle-id")
+              .setValue(newCycle.id);
+        }
+
+        LocalDate currentCycleEndDate = firstEntry.date.minusDays(1);
+        currentCycleRef.child("end-date").setValue(DateUtil.toWireStr(currentCycleEndDate));
+
+        // Move the entries
+        final DatabaseReference currentEntriesRef =
+            DB.getReference("entries").child(currentCycle.id);
+        final DatabaseReference newEntriesRef =
+            DB.getReference("entries").child(newCycle.id);
+        currentEntriesRef.addListenerForSingleValueEvent(new ValueEventListener() {
+          @Override
+          public void onDataChange(DataSnapshot entrySnapshots) {
+            for (DataSnapshot entrySnapshot : entrySnapshots.getChildren()) {
+              final String entryDateStr = entrySnapshot.getKey();
+              LocalDate entryDate = DateUtil.fromWireStr(entryDateStr);
+              String encryptedEntry = entrySnapshot.getValue(String.class);
+              if (entryDate.equals(firstEntry.date) || entryDate.isAfter(firstEntry.date)) {
+                Log.v(
+                    "DataStore",
+                    "Moving " + entryDateStr + " from " + currentCycle.id + " to " + newCycle.id);
+                newEntriesRef.child(entryDateStr).setValue(
+                    encryptedEntry, new DatabaseReference.CompletionListener() {
+                      @Override
+                      public void onComplete(
+                          DatabaseError databaseError, DatabaseReference databaseReference) {
+                        currentEntriesRef.child(entryDateStr).removeValue();
+                      }
+                    });
+              }
+            }
+            newCycleCallback.acceptData(newCycle);
+          }
+
+          @Override
+          public void onCancelled(DatabaseError databaseError) {
+            newCycleCallback.handleError(databaseError);
+          }
+        });
+      }
+    });
   }
 }

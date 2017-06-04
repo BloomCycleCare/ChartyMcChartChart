@@ -17,6 +17,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.common.base.Strings;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
@@ -185,13 +187,62 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      Intent returnIntent = new Intent();
+      final Intent returnIntent = new Intent();
       try {
         returnIntent.putExtra(Cycle.class.getName(), mCycle);
-        ChartEntry entry = getChartEntryFromUi();
-        DataStore.putChartEntry(this, mCycle.id, entry);
-        setResult(OK_RESPONSE, returnIntent);
-        finish();
+        final ChartEntry entry = getChartEntryFromUi();
+        if (mExistingEntry.firstDay != entry.firstDay) {
+          String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+          if (entry.firstDay) {
+            // Try and split the current cycle
+            DataStore.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
+              @Override
+              public void acceptData(Cycle newCycle) {
+                try {
+                  DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+                  returnIntent.putExtra(Cycle.class.getName(), newCycle);
+                  setResult(OK_RESPONSE, returnIntent);
+                  finish();
+                } catch (CryptoUtil.CryptoException ce) {
+                  ce.printStackTrace();
+                }
+              }
+            });
+          } else {
+            // Try and this and the previous cycle
+            if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
+              AlertDialog.Builder builder = new AlertDialog.Builder(this);
+              builder.setTitle("No Previous Cycle");
+              builder.setMessage("Please add cycle before this entry to proceed.");
+              builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                  mFirstDaySwitch.setChecked(true);
+                  dialog.dismiss();
+                }
+              });
+              builder.create().show();
+            } else {
+              DataStore.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
+                @Override
+                public void acceptData(Cycle newCycle) {
+                  try {
+                    DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+                    returnIntent.putExtra(Cycle.class.getName(), newCycle);
+                    setResult(OK_RESPONSE, returnIntent);
+                    finish();
+                  } catch (CryptoUtil.CryptoException ce) {
+                    ce.printStackTrace();
+                  }
+                }
+              });
+            }
+          }
+        } else {
+          DataStore.putChartEntry(this, mCycle.id, entry);
+          setResult(OK_RESPONSE, returnIntent);
+          finish();
+        }
       } catch (Observation.InvalidObservationException ioe) {
         Toast.makeText(this, "Cannot save invalid observation", Toast.LENGTH_LONG).show();
       } catch (CryptoUtil.CryptoException e) {

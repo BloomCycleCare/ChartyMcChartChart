@@ -15,29 +15,40 @@ import org.joda.time.LocalDate;
 
 public class Cycle implements Parcelable {
 
-  public String id;
+  public final String id;
+  public final String previousCycleId;
+  public final String nextCycleId;
   public final LocalDate startDate;
   public final LocalDate endDate;
   public final String startDateStr;
 
   public static Cycle fromSnapshot(DataSnapshot snapshot) {
+    String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);
+    String nextCycleId = snapshot.child("next-cycle-id").getValue(String.class);
     LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
     LocalDate endDate = null;
     if (snapshot.hasChild("end-date")) {
       endDate = DateUtil.fromWireStr(snapshot.child("end-date").getValue(String.class));
     }
-    return new Cycle(snapshot.getKey(), startDate, endDate);
+    return new Cycle(snapshot.getKey(), previousCycleId, nextCycleId, startDate, endDate);
   }
 
-  public Cycle(String id, LocalDate startDate, LocalDate endDate) {
+  public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate) {
     this.id = id;
+    this.previousCycleId = previousCycleId;
+    this.nextCycleId = nextCycleId;
     this.startDate = startDate;
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
   }
 
   protected Cycle(Parcel in) {
-    this(in.readString(), DateUtil.fromWireStr(in.readString()), DateUtil.fromWireStr(in.readString()));
+    this(
+        in.readString(),
+        in.readString(),
+        in.readString(),
+        DateUtil.fromWireStr(in.readString()),
+        DateUtil.fromWireStr(in.readString()));
   }
 
   public static final Creator<Cycle> CREATOR = new Creator<Cycle>() {
@@ -60,6 +71,8 @@ public class Cycle implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(id);
+    dest.writeString(previousCycleId);
+    dest.writeString(nextCycleId);
     dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
   }
