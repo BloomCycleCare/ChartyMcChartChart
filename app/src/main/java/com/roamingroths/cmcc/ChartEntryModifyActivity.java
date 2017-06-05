@@ -28,6 +28,7 @@ import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.Observation;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
@@ -46,11 +47,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
   private Switch mFirstDaySwitch;
-  private Switch mSamenessSwitch;
+  private Switch mPointOfChangeSwitch;
 
   private boolean usingPrePeakYellowStickers;
-  private boolean isPrePeak;
-  private ChartEntry mPreviousEntry;
   private Cycle mCycle;
   private LocalDate mEntryDate;
   private ChartEntry mExistingEntry;
@@ -60,6 +59,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mPeakDaySwitch.setChecked(entry.peakDay);
     mIntercourseSwitch.setChecked(entry.intercourse);
     mFirstDaySwitch.setChecked(entry.firstDay);
+    mPointOfChangeSwitch.setChecked(entry.pointOfChange);
   }
 
   private void updateUiWithObservation(@Nullable Observation observation) {
@@ -115,28 +115,20 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mPeakDaySwitch = (Switch) findViewById(R.id.switch_peak_day);
     mIntercourseSwitch = (Switch) findViewById(R.id.switch_intercourse);
     mFirstDaySwitch = (Switch) findViewById(R.id.switch_new_cycle);
-    mSamenessSwitch = (Switch) findViewById(R.id.switch_sameness);
-
+    mPointOfChangeSwitch = (Switch) findViewById(R.id.switch_point_of_change);
 
     Intent intent = getIntent();
     if (!intent.hasExtra(Cycle.class.getName())) {
       throw new IllegalStateException("Missing Cycle");
     }
     mCycle = intent.getParcelableExtra(Cycle.class.getName());
-    if (!intent.hasExtra(Extras.IS_PRE_PEAK)) {
-      throw new IllegalStateException("Missing isPrePeak");
+    if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
+      throw new IllegalStateException("Missing entry date");
     }
-    isPrePeak = intent.getBooleanExtra(Extras.IS_PRE_PEAK, false);
-    if (!intent.hasExtra(Extras.CURRENT_ENTRY)) {
-      throw new IllegalStateException("Missing current entry");
-    }
-    ChartEntry currentEntry = intent.getParcelableExtra(Extras.CURRENT_ENTRY);
-    mEntryDate = currentEntry.date;
-    if (intent.hasExtra(Extras.PREVIOUS_ENTRY)) {
-      mPreviousEntry = intent.getParcelableExtra(Extras.PREVIOUS_ENTRY);
-    }
+    String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
+    mEntryDate = DateUtil.fromWireStr(entryDateStr);
 
-    DataStore.getChartEntry(this, mCycle.id, currentEntry.getDateStr(), new Callbacks.Callback<ChartEntry>() {
+    DataStore.getChartEntry(this, mCycle.id, entryDateStr, new Callbacks.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
@@ -163,13 +155,10 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   @Override
   protected void onResume() {
     super.onResume();
-    View samenessLayout = findViewById(R.id.sameness_question_layout);
+    View pointOfChangeLayout = findViewById(R.id.point_of_change_layout);
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
     usingPrePeakYellowStickers = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
-
-    boolean showSameness = usingPrePeakYellowStickers && isPrePeak;
-    if (mPreviousEntry.observation != null)
-      samenessLayout.setVisibility(showSameness ? View.VISIBLE : View.GONE);
+    pointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
   }
 
   private Observation getObservationFromView(View v)
@@ -189,14 +178,8 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     boolean peakDay = mPeakDaySwitch.isChecked();
     boolean intercourse = mIntercourseSwitch.isChecked();
     boolean firstDay = mFirstDaySwitch.isChecked();
-    ChartEntry.EssentialSamenessAnswer samenessAnswer;
-    if (mSamenessSwitch.getVisibility() == View.VISIBLE) {
-      samenessAnswer = mSamenessSwitch.isChecked()
-          ? ChartEntry.EssentialSamenessAnswer.Y : ChartEntry.EssentialSamenessAnswer.N;
-    } else {
-      samenessAnswer = ChartEntry.EssentialSamenessAnswer.NA;
-    }
-    return new ChartEntry(mEntryDate, observation, peakDay, intercourse, firstDay, samenessAnswer);
+    boolean pointOfChange = mPointOfChangeSwitch.isChecked();
+    return new ChartEntry(mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange);
   }
 
   @Override

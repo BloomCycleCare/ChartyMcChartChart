@@ -120,7 +120,7 @@
         </LinearLayout>
 
         <LinearLayout
-            android:id="@+id/sameness_question_layout"
+            android:id="@+id/point_of_change_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -142,11 +142,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="match_parent"
                     android:layout_gravity="center_vertical"
-                    android:text="Essentially the same?"
+                    android:text="Point of change?"
                     android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
 
                 <Switch
-                    android:id="@+id/switch_sameness"
+                    android:id="@+id/switch_point_of_change"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"

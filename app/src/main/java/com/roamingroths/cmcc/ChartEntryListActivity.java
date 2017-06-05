@@ -242,15 +242,11 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   }
 
   @Override
-  public void onClick(ChartEntry entry, int index, boolean isPrePeak, @Nullable ChartEntry previousEntry) {
+  public void onClick(ChartEntry entry, int index) {
     Context context = this;
     Class destinationClass = ChartEntryModifyActivity.class;
     Intent intent = new Intent(context, destinationClass);
-    intent.putExtra(Extras.CURRENT_ENTRY, entry);
-    intent.putExtra(Extras.IS_PRE_PEAK, isPrePeak);
-    if (previousEntry != null) {
-      intent.putExtra(Extras.PREVIOUS_ENTRY, previousEntry);
-    }
+    intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
     intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
     startActivityForResult(intent, ChartEntryModifyActivity.MODIFY_REQUEST);
   }
