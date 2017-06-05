@@ -253,7 +253,7 @@ public class DataStore {
                           if (outstandingRemovals.decrementAndGet() == 0) {
                             if (shouldDropCycle) {
                               DB.getReference("cycles").child(userId).child(fromCycle.id).removeValue(
-                                  Callbacks.asCompletionListener(callback));
+                                  Listeners.completionListener(callback));
                             }
                             callback.acceptData(null);
                           }
@@ -284,12 +284,12 @@ public class DataStore {
         Map<String, Object> updates = new HashMap<>();
         updates.put("next-cycle-id", currentCycle.nextCycleId);
         updates.put("end-date", DateUtil.toWireStr(currentCycle.endDate));
-        previousCycleRef.updateChildren(updates, Callbacks.asCompletionListener(this));
+        previousCycleRef.updateChildren(updates, Listeners.completionListener(this));
         if (currentCycle.nextCycleId != null) {
           DatabaseReference nextCycleRef =
               DB.getReference("cycles").child(userId).child(currentCycle.nextCycleId);
           nextCycleRef.child("previous-cycle-id").setValue(
-              previousCycle.id, Callbacks.asCompletionListener(this));
+              previousCycle.id, Listeners.completionListener(this));
         }
         moveEntries(
             currentCycle,
@@ -330,13 +330,13 @@ public class DataStore {
           public void acceptData(final Cycle newCycle) {
             if (nextCycle != null) {
               DB.getReference("cycles").child(userId).child(nextCycle.id).child("previous-cycle-id")
-                  .setValue(newCycle.id, Callbacks.asCompletionListener(this));
+                  .setValue(newCycle.id, Listeners.completionListener(this));
             }
             Map<String, Object> updates = new HashMap<>();
             updates.put("next-cycle-id", newCycle.id);
             updates.put("end-date", DateUtil.toWireStr(firstEntry.date.minusDays(1)));
             DB.getReference("cycles").child(userId).child(currentCycle.id).updateChildren(
-                updates, Callbacks.asCompletionListener(this));
+                updates, Listeners.completionListener(this));
             moveEntries(currentCycle, newCycle, userId, new Predicate<LocalDate>() {
               @Override
               public boolean apply(LocalDate entryDate) {

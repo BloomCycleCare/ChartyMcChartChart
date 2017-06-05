@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.utils;
 
 import com.google.common.base.Preconditions;
+import com.google.common.util.concurrent.Runnables;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.ValueEventListener;
@@ -23,6 +24,11 @@ public class Listeners {
     public void onCancelled(DatabaseError databaseError) {
       mCallback.handleError(databaseError);
     }
+  }
+
+  public static DatabaseReference.CompletionListener completionListener(
+      Callbacks.Callback<?> callback) {
+    return completionListener(callback, Runnables.doNothing());
   }
 
   public static DatabaseReference.CompletionListener completionListener(
