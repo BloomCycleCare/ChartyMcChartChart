@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
@@ -24,7 +25,6 @@ import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -44,6 +44,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
+
+  private Cycle savedCycle;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -106,23 +108,23 @@ public class ChartEntryListActivity extends AppCompatActivity implements
                     LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
                     Log.v("ChartEntryListActivity",
                         "Starting new cycle on " + cycleStartDate.toString());
-                    Cycle cycle = DataStore.createCycle(
-                        ChartEntryListActivity.this,
-                        user.getUid(),
-                        null,
-                        null,
-                        cycleStartDate,
-                        null);
-                    try {
-                      DataStore.createEmptyEntries(
-                          ChartEntryListActivity.this,
-                          cycle.id,
-                          cycle.startDate,
-                          cycle.endDate);
-                    } catch (CryptoUtil.CryptoException ce) {
-                      handleError(DatabaseError.fromException(ce));
-                    }
-                    attachAdapterToCycle(cycle);
+                    Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
+                      @Override
+                      public void acceptData(final Cycle cycle) {
+                        DataStore.createEmptyEntries(
+                            ChartEntryListActivity.this,
+                            cycle.id,
+                            cycle.startDate,
+                            cycle.endDate,
+                            new Callbacks.HaltingCallback<Void>() {
+                              @Override
+                              public void acceptData(Void data) {
+                                attachAdapterToCycle(cycle);
+                              }
+                            });
+                      }
+                    };
+                    DataStore.createCycle(ChartEntryListActivity.this, user.getUid(), null, null, cycleStartDate, null, cycleCallback);
                   }
                 });
             datePickerDialog.setTitle("First day of current cycle");
@@ -160,16 +162,14 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     switch (requestCode) {
-      case ChartEntryModifyActivity.CREATE_REQUEST:
-        switch (resultCode) {
-          case ChartEntryModifyActivity.OK_RESPONSE:
-            mRecyclerView.scrollToPosition(0);
-            break;
-        }
-        break;
       case ChartEntryModifyActivity.MODIFY_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
+            if (data.hasExtra(Cycle.class.getName())) {
+              showProgress();
+              Log.v("ChartEntryListActivity", "Attaching to new cycle");
+              attachAdapterToCycle((Cycle) data.getParcelableExtra(Cycle.class.getName()));
+            }
             break;
         }
         break;
@@ -188,6 +188,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   }
 
   private void attachAdapterToCycle(Cycle cycle) {
+    savedCycle = cycle;
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
     Log.v("ChartEntryListActivity", "Attaching to cycle starting " + cycle.startDateStr);
     mChartEntryAdapter.attachToCycle(cycle, Callbacks.singleUse(new Callbacks.HaltingCallback<Void>() {
@@ -200,21 +201,26 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     Log.v("ChartEntryListActivity", "Attached to cycle starting " + cycle.startDateStr);
   }
 
-  private void detachAdapterFromCycle() {
-    mChartEntryAdapter.detachFromCycle();
+  @Nullable
+  private Cycle detachAdapterFromCycle() {
+    return mChartEntryAdapter.detachFromCycle();
   }
 
   @Override
   protected void onResume() {
     super.onResume();
     Log.v("ChartEntryListActivity", "onResume");
+    if (savedCycle != null) {
+      Log.v("ChartEntryListActivity", "Attaching to saved cycle: " + savedCycle.startDateStr);
+      attachAdapterToCycle(savedCycle);
+    }
     mRecyclerView.scrollToPosition(0);
   }
 
   @Override
   protected void onPause() {
     super.onPause();
-    //detachAdapterFromCycle();
+    savedCycle = detachAdapterFromCycle();
     Log.v("ChartEntryListActivity", "onPause");
   }
 

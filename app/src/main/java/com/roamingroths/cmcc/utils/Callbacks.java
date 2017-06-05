@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.utils;
 
 import com.google.common.base.Function;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
 
 /**
  * Created by parkeroth on 5/21/17.
@@ -15,6 +16,18 @@ public class Callbacks {
     void handleNotFound();
 
     void handleError(DatabaseError error);
+  }
+
+  public static DatabaseReference.CompletionListener asCompletionListener(
+      final Callback<?> callback) {
+    return new DatabaseReference.CompletionListener() {
+      @Override
+      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        if (databaseError != null) {
+          callback.handleError(databaseError);
+        }
+      }
+    };
   }
 
   public static <T> Callback<T> singleUse(Callback<T> delegate) {

@@ -2,6 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.Context;
 import android.graphics.Typeface;
+import android.support.annotation.Nullable;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -13,12 +14,10 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.Days;
@@ -155,26 +154,27 @@ public class ChartEntryAdapter
           @Override
           public void acceptData(LocalDate lastEntryDate) {
             if (cycle.endDate == null && lastEntryDate.isBefore(DateUtil.now())) {
-              try {
-                DataStore.createEmptyEntries(mContext, cycle.id, lastEntryDate, null);
-              } catch (CryptoUtil.CryptoException ce) {
-                doneCallback.handleError(DatabaseError.fromException(ce));
-              }
+              DataStore.createEmptyEntries(mContext, cycle.id, lastEntryDate, null, this);
             }
             Log.v("ChartEntryAdapter", "Attaching ChartEntryListener");
-            DataStore.attachCycleEntryListener(mEntryListener, mCycle);
+            DataStore.attachCycleEntryListener(mEntryListener, cycle);
             doneCallback.acceptData(null);
           }
         });
   }
 
-  public void detachFromCycle() {
+  @Nullable
+  public Cycle detachFromCycle() {
     if (!isAttachedToCycle()) {
-      return;
+      return null;
     }
     DataStore.detatchCycleEntryListener(mEntryListener, mCycle);
+    Cycle cycle = mCycle;
     mCycle = null;
     mEntryListener = null;
+    mEntries.clear();
+    mSeenDates.clear();
+    return cycle;
   }
 
   private int findEntry(String dateStr) {

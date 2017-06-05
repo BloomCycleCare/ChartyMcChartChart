@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -34,6 +35,7 @@ public class Cycle implements Parcelable {
   }
 
   public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate) {
+    Preconditions.checkNotNull(startDate);
     this.id = id;
     this.previousCycleId = previousCycleId;
     this.nextCycleId = nextCycleId;
