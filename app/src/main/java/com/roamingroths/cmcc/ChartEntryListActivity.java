@@ -25,7 +25,6 @@ import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.DateUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
@@ -176,17 +175,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     }
   }
 
-  private Intent fillExtrasForModifyActivity(Intent intent, LocalDate entryDate) {
-    String entryDateStr = DateUtil.toWireStr(entryDate);
-    return fillExtrasForModifyActivity(intent, entryDateStr);
-  }
-
-  private Intent fillExtrasForModifyActivity(Intent intent, String entryDateStr) {
-    intent.putExtra(Extras.ENTRY_DATE_STR, entryDateStr);
-    intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
-    return intent;
-  }
-
   private void attachAdapterToCycle(Cycle cycle) {
     savedCycle = cycle;
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
@@ -254,11 +242,16 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   }
 
   @Override
-  public void onClick(ChartEntry entry, int index) {
+  public void onClick(ChartEntry entry, int index, boolean isPrePeak, @Nullable ChartEntry previousEntry) {
     Context context = this;
     Class destinationClass = ChartEntryModifyActivity.class;
     Intent intent = new Intent(context, destinationClass);
-    fillExtrasForModifyActivity(intent, entry.getDateStr());
+    intent.putExtra(Extras.CURRENT_ENTRY, entry);
+    intent.putExtra(Extras.IS_PRE_PEAK, isPrePeak);
+    if (previousEntry != null) {
+      intent.putExtra(Extras.PREVIOUS_ENTRY, previousEntry);
+    }
+    intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
     startActivityForResult(intent, ChartEntryModifyActivity.MODIFY_REQUEST);
   }
 

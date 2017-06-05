@@ -296,7 +296,7 @@ public class ChartEntryAdapter
   }
 
   public interface OnClickHandler {
-    void onClick(ChartEntry entry, int index);
+    void onClick(ChartEntry entry, int index, boolean isPrePeak, ChartEntry previousEntry);
   }
 
   public interface OnItemAddedHandler {
@@ -325,7 +325,18 @@ public class ChartEntryAdapter
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      mClickHandler.onClick(mEntries.get(index), index);
+      int previousEntryIndex = index + 1;
+      ChartEntry currentEntry = mEntries.get(index);
+      ChartEntry previousEntry =
+          (previousEntryIndex < mEntries.size()) ? mEntries.get(previousEntryIndex) : null;
+      boolean isPrePeak = true;
+      for (LocalDate peakDay : mPeakDays) {
+        if (peakDay.equals(currentEntry.date) || peakDay.isBefore(currentEntry.date)) {
+          isPrePeak = false;
+          break;
+        }
+      }
+      mClickHandler.onClick(currentEntry, index, isPrePeak, previousEntry);
     }
   }
 }

@@ -11,4 +11,9 @@ public class Extras {
   public static String ENTRY_DATE_STR = "EntryDate";
 
   public static String USER_ID = "UserId";
+
+  public static String CURRENT_ENTRY = "CurrentEntry";
+  public static String PREVIOUS_ENTRY = "PreviousEntry";
+
+  public static String IS_PRE_PEAK = "IsPrePeak";
 }

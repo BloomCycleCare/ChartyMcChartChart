@@ -8,6 +8,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.preference.PreferenceManager;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Strings;
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -27,17 +28,25 @@ public class ChartEntry implements Parcelable {
   public boolean peakDay;
   public boolean intercourse;
   public boolean firstDay;
+  public EssentialSamenessAnswer samenessAnswer;
 
   public ChartEntry() {
     // Required for DataSnapshot.getValue(ChartEntry.class)
   }
 
-  public ChartEntry(LocalDate date, @Nullable Observation observation, boolean peakDay, boolean intercourse, boolean firstDay) {
+  public ChartEntry(
+      LocalDate date,
+      @Nullable Observation observation,
+      boolean peakDay,
+      boolean intercourse,
+      boolean firstDay,
+      EssentialSamenessAnswer samenessAnswer) {
     this.date = date;
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
     this.firstDay = firstDay;
+    this.samenessAnswer = samenessAnswer;
   }
 
   public ChartEntry(Parcel in) {
@@ -46,11 +55,12 @@ public class ChartEntry implements Parcelable {
         in.<Observation>readParcelable(Observation.class.getClassLoader()),
         in.readByte() != 0,
         in.readByte() != 0,
-        in.readByte() != 0);
+        in.readByte() != 0,
+        in.<EssentialSamenessAnswer>readParcelable(EssentialSamenessAnswer.class.getClassLoader()));
   }
 
   public static ChartEntry emptyEntry(LocalDate date) {
-    return new ChartEntry(date, null, false, false, false);
+    return new ChartEntry(date, null, false, false, false, EssentialSamenessAnswer.NA);
   }
 
   public static void fromEncryptedString(
@@ -98,6 +108,7 @@ public class ChartEntry implements Parcelable {
     dest.writeByte((byte) (peakDay ? 1 : 0));
     dest.writeByte((byte) (intercourse ? 1 : 0));
     dest.writeByte((byte) (firstDay ? 1 : 0));
+    dest.writeParcelable(samenessAnswer, flags);
   }
 
   @Override
@@ -108,14 +119,15 @@ public class ChartEntry implements Parcelable {
           Objects.equal(this.date, that.date) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
-          this.firstDay == that.firstDay;
+          this.firstDay == that.firstDay &&
+          this.samenessAnswer == that.samenessAnswer;
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(observation, peakDay, intercourse, date, firstDay);
+    return Objects.hashCode(observation, peakDay, intercourse, date, firstDay, samenessAnswer);
   }
 
   public int getEntryColorResource(Context context) {
@@ -136,5 +148,37 @@ public class ChartEntry implements Parcelable {
       return R.color.entryYellow;
     }
     return R.color.entryWhite;
+  }
+
+  public enum EssentialSamenessAnswer implements Parcelable {
+    Y,
+    N,
+    NA;
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+      dest.writeString(name());
+    }
+
+    @Override
+    public int describeContents() {
+      return 0;
+    }
+
+    public static final Creator<Flow> CREATOR = new Creator<Flow>() {
+      @Override
+      public Flow createFromParcel(Parcel in) {
+        String name = in.readString();
+        if (Strings.isNullOrEmpty(name)) {
+          return null;
+        }
+        return Flow.valueOf(name);
+      }
+
+      @Override
+      public Flow[] newArray(int size) {
+        return new Flow[size];
+      }
+    };
   }
 }

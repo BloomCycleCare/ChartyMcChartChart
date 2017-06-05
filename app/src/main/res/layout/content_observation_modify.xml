@@ -120,6 +120,41 @@
         </LinearLayout>
 
         <LinearLayout
+            android:id="@+id/sameness_question_layout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <ImageView
+                android:layout_gravity="center_vertical"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:paddingRight="10dp"
+                app:srcCompat="@drawable/ic_same_black_24dp"/>
+
+            <LinearLayout
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingLeft="5dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center_vertical"
+                    android:text="Essentially the same?"
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
+
+                <Switch
+                    android:id="@+id/switch_sameness"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:gravity="right"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
