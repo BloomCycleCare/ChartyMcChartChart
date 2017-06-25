@@ -128,24 +128,4 @@ public class ChartEntry implements Parcelable {
   public int hashCode() {
     return Objects.hashCode(observation, peakDay, intercourse, date, firstDay, pointOfChange);
   }
-
-  public int getEntryColorResource(Context context) {
-    if (observation == null) {
-      return R.color.entryGrey;
-    }
-    if (observation.flow != null) {
-      return R.color.entryRed;
-    }
-    if (observation.dischargeSummary.mType == DischargeSummary.DischargeType.DRY) {
-      return R.color.entryGreen;
-    }
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-    boolean useYellowPrepeak = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
-    boolean useYellowPostPeak = preferences.getBoolean("enable_post_peak_yellow_stickers", false);
-    // TODO: real implementation
-    if (useYellowPostPeak) {
-      return R.color.entryYellow;
-    }
-    return R.color.entryWhite;
-  }
 }

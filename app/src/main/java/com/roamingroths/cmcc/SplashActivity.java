@@ -58,6 +58,7 @@ public class SplashActivity extends AppCompatActivity {
 
   private void preloadCycleData(final Cycle cycle) {
     log("Preload cycle data: start");
+    updateStatus("Decrypting cycle data");
     ChartEntryList.builder(cycle).build().initialize(getApplicationContext(), new Callbacks.HaltingCallback<Void>() {
       @Override
       public void acceptData(Void data) {
@@ -72,6 +73,7 @@ public class SplashActivity extends AppCompatActivity {
 
   private void promptForStartOfCurrentCycle(final FirebaseUser user) {
     log("Prompting for start of first cycle.");
+    updateStatus("Creating first cycle");
     DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
         new DatePickerDialog.OnDateSetListener() {
           @Override
@@ -104,7 +106,7 @@ public class SplashActivity extends AppCompatActivity {
   }
 
   private void getCurrentCycleForUser(final FirebaseUser user) {
-    updateStatus("Loading current cycle");
+    updateStatus("Fetching current cycle");
     DataStore.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
       @Override
       public void acceptData(Cycle cycle) {

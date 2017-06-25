@@ -1,18 +1,22 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.data.DischargeSummary;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -46,6 +50,7 @@ public class ChartEntryList {
   private final SortedList<ChartEntry> mEntries;
   private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
+  private LocalDate mPointOfChange;
 
   public static Builder builder(Cycle cycle) {
     return new Builder(cycle);
@@ -60,15 +65,19 @@ public class ChartEntryList {
     if (mInitialized.compareAndSet(false, true)) {
       fillFromDb(context, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
         @Override
-        public void acceptData(LocalDate lastEntryDate) {
-          if (mCycle.endDate == null && lastEntryDate.isBefore(DateUtil.now())) {
+        public void acceptData(@Nullable LocalDate lastEntryDate) {
+          if (mCycle.endDate == null
+              && (lastEntryDate == null || lastEntryDate.isBefore(DateUtil.now()))) {
             LocalDate endDate = null;
-            createEmptyEntries(context, lastEntryDate, endDate, this);
+            LocalDate startDate = lastEntryDate == null ? mCycle.startDate : lastEntryDate;
+            createEmptyEntries(context, startDate, endDate, true, doneCallback);
           } else {
             doneCallback.acceptData(null);
           }
         }
       });
+    } else {
+      doneCallback.handleError(DatabaseError.fromException(new IllegalStateException()));
     }
   }
 
@@ -81,10 +90,21 @@ public class ChartEntryList {
     if (entry.peakDay) {
       mPeakDays.add(entry.date);
     }
+    // Maybe set point of change
+    if (entry.pointOfChange) {
+      setPointOfChange(entry.date);
+    }
     // Add entry to list
     mEntries.add(entry);
     mEntryIndex.put(entry.date, entry);
     return;
+  }
+
+  private void setPointOfChange(LocalDate date) {
+    if (mPointOfChange != null && !mPointOfChange.equals(date)) {
+      throw new IllegalStateException("Cannot have two points of change!");
+    }
+    mPointOfChange = date;
   }
 
   public synchronized void changeEntry(ChartEntry entry) {
@@ -96,6 +116,11 @@ public class ChartEntryList {
       mPeakDays.add(entry.date);
     } else {
       mPeakDays.remove(entry.date);
+    }
+    if (entry.pointOfChange) {
+      setPointOfChange(entry.date);
+    } else {
+      mPointOfChange = null;
     }
     int entryIndex = getEntryIndex(entry.date);
     if (entryIndex < 0) {
@@ -110,6 +135,9 @@ public class ChartEntryList {
   }
 
   public synchronized void removeEntry(ChartEntry entry) {
+    if (entry.pointOfChange) {
+      mPointOfChange = null;
+    }
     // Maybe remove peak day from set
     mEntryIndex.remove(entry.date);
     mPeakDays.remove(entry.date);
@@ -133,9 +161,33 @@ public class ChartEntryList {
     return mEntries.get(index);
   }
 
-  public boolean shouldShowBaby(ChartEntry entry) {
+  public boolean shouldShowBaby(ChartEntry entry, Context context) {
     if (entry == null) {
       return false;
+    }
+    if (entry.observation != null) {
+      if (entry.observation.flow != null
+          || entry.observation.dischargeSummary.mModifiers.contains(
+              DischargeSummary.MucusModifier.B)) {
+        return false;
+      }
+    }
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+    if (preferences.getBoolean("enable_pre_peak_yellow_stickers", false)
+        && isPreakPeak(entry)
+        && isBeforePointOfChange(entry)) {
+      return false;
+    }
+    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
+    if (mostRecentPeakDay != null) {
+      if (mostRecentPeakDay.minusDays(1).isBefore(entry.date)
+          && mostRecentPeakDay.plusDays(4).isAfter(entry.date)) {
+        return true;
+      }
+      if (preferences.getBoolean("enable_post_peak_yellow_stickers", false)
+          && entry.date.isAfter(mostRecentPeakDay.plusDays(3))) {
+        return false;
+      }
     }
     return entry.observation != null && entry.observation.hasMucus();
   }
@@ -144,23 +196,74 @@ public class ChartEntryList {
     if (entry == null) {
       return "";
     }
-    LocalDate closestPeakDay = null;
+    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
+    if (mostRecentPeakDay == null) {
+      return "";
+    }
+    return getPeakDayViewText(entry, mostRecentPeakDay);
+  }
+
+  public int getEntryColorResource(ChartEntry entry, Context context) {
+    if (entry.observation == null) {
+      return R.color.entryGrey;
+    }
+    if (entry.observation.flow != null) {
+      return R.color.entryRed;
+    }
+    if (entry.observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
+      return R.color.entryRed;
+    }
+    if (entry.observation.dischargeSummary.mType == DischargeSummary.DischargeType.DRY) {
+      return R.color.entryGreen;
+    }
+    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+    if (preferences.getBoolean("enable_pre_peak_yellow_stickers", false)) {
+      // Prepeak yellow stickers enabled
+      if (isPreakPeak(entry) && isBeforePointOfChange(entry)) {
+        return R.color.entryYellow;
+      }
+    }
+    if (preferences.getBoolean("enable_post_peak_yellow_stickers", false)) {
+      // Postpeak yellow stickers enabled
+      if (isPostPeak(entry)) {
+        return R.color.entryYellow;
+      }
+    }
+    return R.color.entryWhite;
+  }
+
+  private boolean isPostPeak(ChartEntry entry) {
+    Preconditions.checkNotNull(entry);
+    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
+    return mostRecentPeakDay != null && mostRecentPeakDay.isBefore(entry.date);
+  }
+
+  private boolean isPreakPeak(ChartEntry entry) {
+    Preconditions.checkNotNull(entry);
+    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
+    return mostRecentPeakDay == null || mostRecentPeakDay.isAfter(entry.date);
+  }
+
+  private boolean isBeforePointOfChange(ChartEntry entry) {
+    Preconditions.checkNotNull(entry);
+    return mPointOfChange == null || mPointOfChange.isAfter(entry.date);
+  }
+
+  @Nullable
+  private LocalDate getMostRecentPeakDay(ChartEntry entry) {
+    LocalDate mostRecentPeakDay = null;
     for (LocalDate peakDay : mPeakDays) {
       if (peakDay.isAfter(entry.date)) {
         continue;
       }
-      if (closestPeakDay == null) {
-        closestPeakDay = peakDay;
+      if (mostRecentPeakDay == null) {
+        mostRecentPeakDay = peakDay;
       }
-      if (closestPeakDay.isBefore(peakDay)) {
-
-        closestPeakDay = peakDay;
+      if (mostRecentPeakDay.isBefore(peakDay)) {
+        mostRecentPeakDay = peakDay;
       }
     }
-    if (closestPeakDay == null) {
-      return "";
-    }
-    return getPeakDayViewText(entry, closestPeakDay);
+    return mostRecentPeakDay;
   }
 
   private String getPeakDayViewText(ChartEntry entry, LocalDate peakDay) {
@@ -261,6 +364,11 @@ public class ChartEntryList {
       @Override
       public void onDataChange(DataSnapshot entriesSnapshot) {
         final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
+        Log.v("ChartEntryList", "Found " + entriesToDecrypt.get() + " entries.");
+        if (entriesToDecrypt.get() == 0) {
+          Log.v("ChartEntryList", "Done filling");
+          lastDateAddedCallback.acceptData(null);
+        }
         final AtomicReference<LocalDate> lastEntryDate = new AtomicReference<>();
         for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
           LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
@@ -275,10 +383,10 @@ public class ChartEntryList {
                   addEntry(entry);
                   long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
                   if (numLeftToDecrypt < 1) {
-                    Log.v("DataStore", "Done filling ChartEntryAdapter");
+                    Log.v("ChartEntryList", "Done filling");
                     lastDateAddedCallback.acceptData(lastEntryDate.get());
                   } else {
-                    Log.v("DataStore", "Still waiting for " + numLeftToDecrypt + " decryptions");
+                    Log.v("ChartEntryList", "Still waiting for " + numLeftToDecrypt + " decryptions");
                   }
                 }
               });
@@ -291,6 +399,7 @@ public class ChartEntryList {
       Context context,
       LocalDate startDate,
       @Nullable LocalDate endDate,
+      final boolean waitForServerResponse,
       final Callbacks.Callback<?> callback) {
     String cycleId = mCycle.id;
     final DatabaseReference ref =
@@ -301,6 +410,7 @@ public class ChartEntryList {
       dates.add(date);
     }
     final AtomicLong entriesRemaining = new AtomicLong(dates.size());
+    Log.v("ChartEntryList", "Creating " + entriesRemaining.get() + " entries");
     for (LocalDate date : dates) {
       Log.v("ChartEntryList", "Creating empty entry for " + cycleId + " " + date);
       final ChartEntry entry = ChartEntry.emptyEntry(date);
@@ -311,15 +421,19 @@ public class ChartEntryList {
             @Override
             public void run() {
               addEntry(entry);
-              if (entriesRemaining.decrementAndGet() == 0) {
+              if (entriesRemaining.decrementAndGet() == 0 && waitForServerResponse) {
                 callback.acceptData(null);
               }
+              Log.v("ChartEntryList", "Still waiting for " + entriesRemaining.get() + " creations");
             }
           };
           ref.child(entry.getDateStr()).setValue(
               encryptedEntry, Listeners.completionListener(callback, runnable));
         }
       }));
+    }
+    if (!waitForServerResponse) {
+      callback.acceptData(null);
     }
   }
 }

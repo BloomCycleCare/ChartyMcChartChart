@@ -108,7 +108,8 @@ public class ChartEntryAdapter
   public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
     ChartEntry entry = mChartEntryList.get(position);
     holder.mEntryDataTextView.setText(entry.getListUiText());
-    holder.mEntryBackgroundView.setBackgroundResource(entry.getEntryColorResource(mContext));
+    holder.mEntryBackgroundView.setBackgroundResource(
+        mChartEntryList.getEntryColorResource(entry, mContext));
     holder.mEntryNumTextView.setText(String.valueOf(mChartEntryList.size() - position));
     holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
     holder.mEntryPeakTextView.setText(mChartEntryList.getPeakDayViewText(entry));
@@ -117,13 +118,12 @@ public class ChartEntryAdapter
     } else {
       holder.mEntryDateTextView.setTypeface(null, Typeface.NORMAL);
     }
-    if (mChartEntryList.shouldShowBaby(entry)) {
+    if (mChartEntryList.shouldShowBaby(entry, mContext)) {
       holder.mBabyImageView.setVisibility(View.VISIBLE);
     } else {
       holder.mBabyImageView.setVisibility(View.INVISIBLE);
     }
   }
-
 
   @Override
   public int getItemCount() {
