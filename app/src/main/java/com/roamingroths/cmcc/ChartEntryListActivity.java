@@ -18,6 +18,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
@@ -51,8 +52,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
-    Log.v("ChartEntryListActivity", "onCreate: start");
-
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
@@ -67,80 +66,16 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
     // Init Firebase stuff
-    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    if (user == null) {
-      Log.d(ChartEntryListActivity.class.getName(), "No existing user");
-      startActivityForResult(
-          AuthUI.getInstance().createSignInIntentBuilder()
-              .setProviders(AuthUI.GOOGLE_PROVIDER)
-              .setIsSmartLockEnabled(false)
-              .build(),
-          RC_SIGN_IN);
-    } else {
-      // Find the current cycle
-      showProgress();
+    final FirebaseUser user =
+        Preconditions.checkNotNull(FirebaseAuth.getInstance().getCurrentUser());
+    // Find the current cycle
+    showProgress();
 
-      Intent intentThatStartedThisActivity = getIntent();
-      if (intentThatStartedThisActivity != null
-          && intentThatStartedThisActivity.hasExtra(Cycle.class.getName())) {
-        Log.v("ChartEntryListActivity", "Using Cycle from Intent");
-        Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
-        attachAdapterToCycle(cycle);
-      } else {
-        Log.v("ChartEntryListActivity", "Looking up current cycle from DB.");
-        DataStore.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
-          @Override
-          public void acceptData(Cycle cycle) {
-            Log.v("ChartEntryListActivity", "Received current cycle from DB.");
-            attachAdapterToCycle(cycle);
-          }
+    Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
+    Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
+    Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
+    attachAdapterToCycle(cycle);
 
-          @Override
-          public void handleNotFound() {
-            Log.v("ChartEntryListActivity", "Prompting for start of first cycle.");
-            Calendar cal = Calendar.getInstance();
-            DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
-                new DatePickerDialog.OnDateSetListener() {
-                  @Override
-                  public void onDateSet(
-                      DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
-                    LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
-                    Log.v("ChartEntryListActivity",
-                        "Starting new cycle on " + cycleStartDate.toString());
-                    Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
-                      @Override
-                      public void acceptData(final Cycle cycle) {
-                        DataStore.createEmptyEntries(
-                            ChartEntryListActivity.this,
-                            cycle.id,
-                            cycle.startDate,
-                            cycle.endDate,
-                            new Callbacks.HaltingCallback<Void>() {
-                              @Override
-                              public void acceptData(Void data) {
-                                attachAdapterToCycle(cycle);
-                              }
-                            });
-                      }
-                    };
-                    DataStore.createCycle(ChartEntryListActivity.this, user.getUid(), null, null, cycleStartDate, null, cycleCallback);
-                  }
-                });
-            datePickerDialog.setTitle("First day of current cycle");
-            datePickerDialog.setMaxDate(Calendar.getInstance());
-            datePickerDialog.show(getFragmentManager(), "datepickerdialog");
-          }
-
-          @Override
-          public void handleError(DatabaseError error) {
-            // TODO: Improve
-            showError();
-            error.toException().printStackTrace();
-          }
-        });
-      }
-    }
-    Log.v("ChartEntryListActivity", "onCreate: start");
     PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
   }
 
@@ -166,7 +101,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
           case ChartEntryModifyActivity.OK_RESPONSE:
             if (data.hasExtra(Cycle.class.getName())) {
               showProgress();
-              Log.v("ChartEntryListActivity", "Attaching to new cycle");
+              log("Attaching to new cycle");
               attachAdapterToCycle((Cycle) data.getParcelableExtra(Cycle.class.getName()));
             }
             break;
@@ -178,15 +113,15 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private void attachAdapterToCycle(Cycle cycle) {
     savedCycle = cycle;
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
-    Log.v("ChartEntryListActivity", "Attaching to cycle starting " + cycle.startDateStr);
+    log("Attaching to cycle starting " + cycle.startDateStr);
     mChartEntryAdapter.attachToCycle(cycle, Callbacks.singleUse(new Callbacks.HaltingCallback<Void>() {
       @Override
       public void acceptData(Void unused) {
-        Log.v("ChartEntryListActivity", "Hiding progress bar");
+        log("Hiding progress bar");
         showList();
       }
     }));
-    Log.v("ChartEntryListActivity", "Attached to cycle starting " + cycle.startDateStr);
+    log("Attached to cycle starting " + cycle.startDateStr);
   }
 
   @Nullable
@@ -197,9 +132,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onResume() {
     super.onResume();
-    Log.v("ChartEntryListActivity", "onResume");
+    log("onResume");
     if (savedCycle != null) {
-      Log.v("ChartEntryListActivity", "Attaching to saved cycle: " + savedCycle.startDateStr);
+      log("Attaching to saved cycle: " + savedCycle.startDateStr);
       attachAdapterToCycle(savedCycle);
     }
     mRecyclerView.scrollToPosition(0);
@@ -208,8 +143,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onPause() {
     super.onPause();
+    log("onPause");
     savedCycle = detachAdapterFromCycle();
-    Log.v("ChartEntryListActivity", "onPause");
   }
 
   @Override
@@ -234,6 +169,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     if (id == R.id.action_list_cycles) {
       Intent startCycleList = new Intent(this, CycleListActivity.class);
+      finish();
       startActivity(startCycleList);
       return true;
     }
@@ -277,6 +213,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onDestroy() {
     super.onDestroy();
-    Log.v("ChartEntryListActivity", "onDestroy");
+    log("onDestroy");
+  }
+
+  private void log(String message) {
+    Log.v(ChartEntryListActivity.class.getName(), message);
   }
 }

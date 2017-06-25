@@ -7,6 +7,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
@@ -152,7 +153,8 @@ public class CryptoUtil {
       @Override
       public T apply(String decryptedStr) {
         Log.v("CryptoUtil", "Decrypting " + clazz.getName());
-        T decryptedObject = GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+        T decryptedObject = Preconditions.checkNotNull(
+            GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz));
         OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
         return decryptedObject;
       }
