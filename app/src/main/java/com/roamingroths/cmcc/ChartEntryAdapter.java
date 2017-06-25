@@ -14,6 +14,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
@@ -27,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -35,61 +38,50 @@ import java.util.TreeSet;
 public class ChartEntryAdapter
     extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
 
-  private final Set<LocalDate> mSeenDates = new HashSet<>();
   private final Context mContext;
   private final OnClickHandler mClickHandler;
   private final OnItemAddedHandler mAddedHandler;
-
+  private final ChartEntryListener mListener;
+  private final AtomicBoolean mEntryListenerAttached;
+  private final DatabaseReference mEntriesDbRef;
   private ChartEntryList mChartEntryList;
 
-  public ChartEntryAdapter(Context context, Cycle cycle, OnClickHandler clickHandler, OnItemAddedHandler addedHandler) {
+  public ChartEntryAdapter(
+      Context context,
+      Cycle cycle,
+      OnClickHandler clickHandler,
+      OnItemAddedHandler addedHandler,
+      FirebaseDatabase db,
+      Callbacks.Callback<Void> initializationCompleteCallback) {
+    mEntriesDbRef = db.getReference("entries").child(cycle.id);
+    mEntriesDbRef.keepSynced(true);
+    mEntryListenerAttached = new AtomicBoolean(false);
     mContext = context;
     mClickHandler = clickHandler;
     mAddedHandler = addedHandler;
+    mChartEntryList = ChartEntryList.builder(cycle).withAdapter(this).build();
+    mListener = new ChartEntryListener(context, mChartEntryList);
+    mChartEntryList.initialize(context, initializationCompleteCallback);
+  }
 
-    SortedList<ChartEntry> entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
-      @Override
-      public void onInserted(int position, int count) {
-        notifyItemRangeInserted(position, count);
-      }
+  public synchronized void attachListener() {
+    if (mEntryListenerAttached.compareAndSet(false, true)) {
+      mEntriesDbRef.addChildEventListener(mListener);
+    } else {
+      Log.w("ChartEntryAdapter", "Already attached!");
+    }
+  }
 
-      @Override
-      public void onRemoved(int position, int count) {
-        notifyItemRangeRemoved(position, count);
-      }
+  public synchronized void detachListener() {
+    if (mEntryListenerAttached.compareAndSet(true, false)) {
+      mEntriesDbRef.removeEventListener(mListener);
+    } else {
+      Log.w("ChartEntryAdapter", "Not attached!");
+    }
+  }
 
-      @Override
-      public void onMoved(int fromPosition, int toPosition) {
-        notifyItemMoved(fromPosition, toPosition);
-      }
-
-      @Override
-      public int compare(ChartEntry e1, ChartEntry e2) {
-        return e2.date.compareTo(e1.date);
-      }
-
-      @Override
-      public void onChanged(int position, int count) {
-        notifyItemRangeChanged(position, count);
-      }
-
-      @Override
-      public boolean areContentsTheSame(ChartEntry oldItem, ChartEntry newItem) {
-        return oldItem.equals(newItem);
-      }
-
-      @Override
-      public boolean areItemsTheSame(ChartEntry item1, ChartEntry item2) {
-        return item1 == item2;
-      }
-    });
-
-    mChartEntryList = ChartEntryList.create(cycle, entries, context, new Callbacks.HaltingCallback<ChartEntryList>() {
-      @Override
-      public void acceptData(ChartEntryList mChartEntryList) {
-        // Do nothing
-      }
-    });
+  public Cycle getCycle() {
+    return mChartEntryList.mCycle;
   }
 
   @Override

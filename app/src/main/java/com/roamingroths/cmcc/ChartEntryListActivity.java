@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
@@ -44,9 +45,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
-  private ChartEntryList mChartEntryList;
-
-  private Cycle savedCycle;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -56,7 +54,25 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
-    mChartEntryAdapter = new ChartEntryAdapter(this, this, this);
+    final FirebaseUser user =
+        Preconditions.checkNotNull(FirebaseAuth.getInstance().getCurrentUser());
+    FirebaseDatabase db = FirebaseDatabase.getInstance();
+
+    Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
+    Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
+    Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
+
+    getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
+
+    Callbacks.Callback<Void> adapterInitialzationCallback = new Callbacks.HaltingCallback<Void>() {
+      @Override
+      public void acceptData(Void data) {
+        showList();
+      }
+    };
+
+    mChartEntryAdapter = new ChartEntryAdapter(
+        getApplicationContext(), cycle, this, this, db, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -66,18 +82,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
-    // Init Firebase stuff
-    final FirebaseUser user =
-        Preconditions.checkNotNull(FirebaseAuth.getInstance().getCurrentUser());
-    // Find the current cycle
-    showProgress();
-
-    Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
-    Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
-    Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
-    attachAdapterToCycle(cycle);
-
     PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+
+    showProgress();
   }
 
   @Override
@@ -97,50 +104,18 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     switch (requestCode) {
-      case RC_SIGN_IN:
-        startActivity(new Intent(this, ChartEntryListActivity.class));
-        break;
-      case ChartEntryModifyActivity.MODIFY_REQUEST:
-        switch (resultCode) {
-          case ChartEntryModifyActivity.OK_RESPONSE:
-            if (data.hasExtra(Cycle.class.getName())) {
-              showProgress();
-              log("Attaching to new cycle");
-              attachAdapterToCycle((Cycle) data.getParcelableExtra(Cycle.class.getName()));
-            }
-            break;
-        }
+      default:
+        Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);
         break;
     }
-  }
-
-  private void attachAdapterToCycle(Cycle cycle) {
-    savedCycle = cycle;
-    getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
-    log("Attaching to cycle starting " + cycle.startDateStr);
-    mChartEntryAdapter.attachToCycle(cycle, Callbacks.singleUse(new Callbacks.HaltingCallback<Void>() {
-      @Override
-      public void acceptData(Void unused) {
-        log("Hiding progress bar");
-        showList();
-      }
-    }));
-    log("Attached to cycle starting " + cycle.startDateStr);
-  }
-
-  @Nullable
-  private Cycle detachAdapterFromCycle() {
-    return mChartEntryAdapter.detachFromCycle();
   }
 
   @Override
   protected void onResume() {
     super.onResume();
     log("onResume");
-    if (savedCycle != null) {
-      log("Attaching to saved cycle: " + savedCycle.startDateStr);
-      attachAdapterToCycle(savedCycle);
-    }
+
+    mChartEntryAdapter.attachListener();
     mRecyclerView.scrollToPosition(0);
   }
 
@@ -148,7 +123,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onPause() {
     super.onPause();
     log("onPause");
-    savedCycle = detachAdapterFromCycle();
+
+    mChartEntryAdapter.detachListener();
   }
 
   @Override

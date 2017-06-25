@@ -12,6 +12,7 @@ import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
+import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -55,12 +56,18 @@ public class SplashActivity extends AppCompatActivity {
     }
   }
 
-  private void preloadCycleData(Cycle cycle) {
-    // TODO: preload cycle data to cache entries
-    Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
-    intent.putExtra(Cycle.class.getName(), cycle);
-    finish();
-    startActivity(intent);
+  private void preloadCycleData(final Cycle cycle) {
+    log("Preload cycle data: start");
+    ChartEntryList.builder(cycle).build().initialize(getApplicationContext(), new Callbacks.HaltingCallback<Void>() {
+      @Override
+      public void acceptData(Void data) {
+        log("Preload cycle data: finish");
+        Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
+        intent.putExtra(Cycle.class.getName(), cycle);
+        finish();
+        startActivity(intent);
+      }
+    });
   }
 
   private void promptForStartOfCurrentCycle(final FirebaseUser user) {
@@ -75,17 +82,7 @@ public class SplashActivity extends AppCompatActivity {
             Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
               @Override
               public void acceptData(final Cycle cycle) {
-                DataStore.createEmptyEntries(
-                    getApplicationContext(),
-                    cycle.id,
-                    cycle.startDate,
-                    cycle.endDate,
-                    new Callbacks.HaltingCallback<Void>() {
-                      @Override
-                      public void acceptData(Void data) {
-                        preloadCycleData(cycle);
-                      }
-                    });
+                preloadCycleData(cycle);
               }
             };
             Cycle previousCycle = null;
