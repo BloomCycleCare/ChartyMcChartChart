@@ -14,12 +14,12 @@ import com.roamingroths.cmcc.utils.Callbacks;
 
 public class ChartEntryListener implements ChildEventListener {
 
-  private final ChartEntryAdapter mAdapter;
   private final Context mContext;
+  private final ChartEntryList mList;
 
-  public ChartEntryListener(Context context, ChartEntryAdapter adapter) {
+  public ChartEntryListener(Context context, ChartEntryList list) {
     mContext = context;
-    mAdapter = adapter;
+    mList = list;
   }
 
   @Override
@@ -27,20 +27,27 @@ public class ChartEntryListener implements ChildEventListener {
     ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry entry) {
-        mAdapter.addEntry(entry);
+        mList.addEntry(entry);
       }
     });
   }
 
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-    mAdapter.changeEntry(dataSnapshot.getKey(), dataSnapshot.getValue(String.class));
-    mAdapter.notifyDataSetChanged();
+    String dateStr = dataSnapshot.getKey();
+    String encryptedPayload = dataSnapshot.getValue(String.class);
+    ChartEntry.fromEncryptedString(
+        encryptedPayload, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
+          @Override
+          public void acceptData(ChartEntry entry) {
+            mList.changeEntry(entry);
+          }
+        });
   }
 
   @Override
   public void onChildRemoved(DataSnapshot dataSnapshot) {
-    mAdapter.removeEntry(dataSnapshot.getKey());
+    mList.removeEntry(dataSnapshot.getKey());
   }
 
   @Override

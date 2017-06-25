@@ -81,53 +81,6 @@ public class DataStore {
     DB.getReference("cycles").child(userId).removeEventListener(listener);
   }
 
-  public static void fillCycleEntryAdapter(
-      Cycle cycle, final Context context, final ChartEntryAdapter adapter,
-      final Callback<LocalDate> doneCallback) {
-    Log.v("DataStore", "Begin filling ChartEntryAdapter");
-    DatabaseReference dbRef = DB.getReference("entries").child(cycle.id);
-    dbRef.keepSynced(true);
-    dbRef.addListenerForSingleValueEvent(new SimpleValueEventListener(doneCallback) {
-      @Override
-      public void onDataChange(DataSnapshot entriesSnapshot) {
-        final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
-        final AtomicReference<LocalDate> lastEntryDate = new AtomicReference<>();
-        for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
-          LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
-          if (lastEntryDate.get() == null || lastEntryDate.get().isBefore(entryDate)) {
-            lastEntryDate.set(entryDate);
-          }
-          ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
-              new Callbacks.ErrorForwardingCallback<ChartEntry>(doneCallback) {
-
-                @Override
-                public void acceptData(ChartEntry entry) {
-                  adapter.addEntry(entry);
-                  long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
-                  if (numLeftToDecrypt < 1) {
-                    Log.v("DataStore", "Done filling ChartEntryAdapter");
-                    doneCallback.acceptData(lastEntryDate.get());
-                  } else {
-                    Log.v("DataStore", "Still waiting for " + numLeftToDecrypt + " decryptions");
-                  }
-                }
-              });
-        }
-      }
-    });
-  }
-
-  public static void attachCycleEntryListener(ChildEventListener listener, Cycle cycle) {
-    Preconditions.checkNotNull(cycle);
-    DatabaseReference dbRef = DB.getReference("entries").child(cycle.id);
-    dbRef.addChildEventListener(listener);
-    dbRef.keepSynced(true);
-  }
-
-  public static void detatchCycleEntryListener(ChildEventListener listener, Cycle cycle) {
-    DB.getReference("entries").child(cycle.id).removeEventListener(listener);
-  }
-
   public static void createCycle(
       final Context context,
       String userId,
@@ -160,35 +113,6 @@ public class DataStore {
     });
   }
 
-  public static void createEmptyEntries(
-      Context context, String cycleId, LocalDate startDate, @Nullable LocalDate endDate, final Callback<?> callback) {
-    final DatabaseReference ref = DB.getReference("entries").child(cycleId);
-    endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
-    Set<LocalDate> dates = new HashSet<>();
-    for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
-      dates.add(date);
-    }
-    final AtomicLong entriesRemaining = new AtomicLong(dates.size());
-    for (LocalDate date : dates) {
-      Log.v("DataStore", "Creating empty entry for " + cycleId + " " + date);
-      final ChartEntry entry = ChartEntry.emptyEntry(date);
-      CryptoUtil.encrypt(entry, context, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<String>(callback) {
-        @Override
-        public void acceptData(String encryptedEntry) {
-          Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-              if (entriesRemaining.decrementAndGet() == 0) {
-                callback.acceptData(null);
-              }
-            }
-          };
-          ref.child(entry.getDateStr()).setValue(
-              encryptedEntry, Listeners.completionListener(callback, runnable));
-        }
-      }));
-    }
-  }
 
   public static void putChartEntry(Context context, final String cycleId, final ChartEntry entry)
       throws CryptoUtil.CryptoException {
