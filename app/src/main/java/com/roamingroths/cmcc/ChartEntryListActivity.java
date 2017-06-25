@@ -43,6 +43,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
+  private ChartEntryList mChartEntryList;
 
   private Cycle savedCycle;
 
@@ -161,6 +162,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     switch (requestCode) {
+      case RC_SIGN_IN:
+        startActivity(new Intent(this, ChartEntryListActivity.class));
+        break;
       case ChartEntryModifyActivity.MODIFY_REQUEST:
         switch (resultCode) {
           case ChartEntryModifyActivity.OK_RESPONSE:
