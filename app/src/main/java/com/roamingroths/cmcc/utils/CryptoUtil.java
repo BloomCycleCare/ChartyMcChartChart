@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
@@ -203,7 +204,11 @@ public class CryptoUtil {
       @Override
       protected void onPostExecute(String s) {
         super.onPostExecute(s);
-        callback.acceptData(s);
+        if (Strings.isNullOrEmpty(s)) {
+          callback.handleNotFound();
+        } else {
+          callback.acceptData(s);
+        }
       }
     }.executeOnExecutor(EXECUTOR, encryptedText);
   }

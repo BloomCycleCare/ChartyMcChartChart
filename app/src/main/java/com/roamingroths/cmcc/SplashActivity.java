@@ -1,8 +1,8 @@
 package com.roamingroths.cmcc;
 
 import android.content.Intent;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -12,7 +12,6 @@ import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -59,7 +58,7 @@ public class SplashActivity extends AppCompatActivity {
   private void preloadCycleData(final Cycle cycle) {
     log("Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    ChartEntryList.builder(cycle).build().initialize(getApplicationContext(), new Callbacks.HaltingCallback<Void>() {
+    ChartEntryList.builder(cycle).build().initialize(getApplicationContext(), new Callbacks.Callback<Void>() {
       @Override
       public void acceptData(Void data) {
         log("Preload cycle data: finish");
@@ -67,6 +66,16 @@ public class SplashActivity extends AppCompatActivity {
         intent.putExtra(Cycle.class.getName(), cycle);
         finish();
         startActivity(intent);
+      }
+
+      @Override
+      public void handleNotFound() {
+        showError("Could not decrypt cycle entries.");
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+        showError(error.getMessage());
       }
     });
   }

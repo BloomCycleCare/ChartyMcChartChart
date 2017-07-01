@@ -5,7 +5,6 @@ import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.util.SortedList;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
@@ -15,7 +14,6 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
-import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.data.DischargeSummary;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -34,8 +32,6 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static android.R.interpolator.cycle;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -377,7 +373,6 @@ public class ChartEntryList {
           }
           ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
               new Callbacks.ErrorForwardingCallback<ChartEntry>(lastDateAddedCallback) {
-
                 @Override
                 public void acceptData(ChartEntry entry) {
                   addEntry(entry);
