@@ -255,7 +255,6 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           }
         } else {
           DataStore.putChartEntry(this, mCycle.id, entry);
-          returnIntent.putExtra(Cycle.class.getName(), mCycle);
           setResult(OK_RESPONSE, returnIntent);
           finish();
         }
