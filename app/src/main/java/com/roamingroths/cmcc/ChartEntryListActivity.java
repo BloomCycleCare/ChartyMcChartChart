@@ -95,7 +95,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    if (data.hasExtra(Cycle.class.getName())) {
+    if (data != null && data.hasExtra(Cycle.class.getName())) {
       Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
       if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
         swapCycles(cycleFromResponse);

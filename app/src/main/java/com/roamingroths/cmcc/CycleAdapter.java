@@ -9,14 +9,14 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.google.common.base.Preconditions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
 
-import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -25,18 +25,16 @@ import java.util.Set;
 public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder>
     implements ChildEventListener {
 
-  private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("E MMM d, yyyy");
-
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final Set<Cycle> seenCycles;
-  private final SortedList<Cycle> cycles;
+  private final Map<String, Cycle> mCycleIndex;
+  private final SortedList<Cycle> mCycles;
 
   public CycleAdapter(Context context, OnClickHandler clickHandler) {
-    seenCycles = new HashSet<>();
+    mCycleIndex = new HashMap<>();
     mContext = context;
     mClickHandler = clickHandler;
-    cycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
+    mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
       @Override
       public int compare(Cycle c1, Cycle c2) {
         return c2.startDate.compareTo(c1.startDate);
@@ -74,10 +72,6 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     });
   }
 
-  public int addCycle(Cycle cycle) {
-    return cycles.add(cycle);
-  }
-
   /**
    * This gets called when each new ViewHolder is created. This happens when the RecyclerView
    * is laid out. Enough ViewHolders will be created to fill the screen and allow for scrolling.
@@ -112,18 +106,18 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
     // TODO: Bind real text to view
-    Cycle cycle = cycles.get(position);
+    Cycle cycle = mCycles.get(position);
     holder.mCycleDataTextView.setText("Cycle Starting: " + cycle.startDateStr);
   }
 
   @Override
   public int getItemCount() {
-    return cycles.size();
+    return mCycles.size();
   }
 
   private int findCycle(String cycleId) {
-    for (int i = 0; i < cycles.size(); i++) {
-      Cycle curCycle = cycles.get(i);
+    for (int i = 0; i < mCycles.size(); i++) {
+      Cycle curCycle = mCycles.get(i);
       if (curCycle.id.equals(cycleId)) {
         return i;
       }
@@ -134,21 +128,40 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
     Cycle cycle = Cycle.fromSnapshot(dataSnapshot);
-    if (seenCycles.contains(cycle)) {
+    if (mCycleIndex.containsKey(cycle.id)) {
+      maybeChangeCycle(cycle);
       return;
     }
-    seenCycles.add(cycle);
-    cycles.add(cycle);
+    mCycleIndex.put(cycle.id, cycle);
+    mCycles.add(cycle);
+  }
+
+  private void maybeChangeCycle(Cycle cycle) {
+    Preconditions.checkArgument(mCycleIndex.containsKey(cycle.id));
+    if (mCycleIndex.get(cycle.id).equals(cycle)) {
+      return;
+    }
+    int index = getCycleIndex(cycle.id);
+    if (index < 0) {
+      throw new IllegalStateException();
+    }
+    mCycleIndex.put(cycle.id, cycle);
+    mCycles.updateItemAt(index, cycle);
+  }
+
+  private int getCycleIndex(String cycleId) {
+    for (int i = 0; i < mCycles.size(); i++) {
+      Cycle cycle = mCycles.get(i);
+      if (cycle.id.equals(cycleId)) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-    Cycle cycle = Cycle.fromSnapshot(dataSnapshot);
-    int index = findCycle(cycle.id);
-    if (index < 0) {
-      throw new IllegalStateException("Couldn't find cycle for update!");
-    }
-    cycles.updateItemAt(index, cycle);
+    maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot));
   }
 
   @Override
@@ -157,7 +170,8 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     if (index < 0) {
       throw new IllegalStateException("Couldn't find cycle for update!");
     }
-    cycles.removeItemAt(index);
+    mCycleIndex.remove(mCycles.get(index).id);
+    mCycles.removeItemAt(index);
   }
 
   @Override
@@ -186,7 +200,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     @Override
     public void onClick(View v) {
       int adapterPosition = getAdapterPosition();
-      mClickHandler.onClick(cycles.get(adapterPosition), adapterPosition);
+      mClickHandler.onClick(mCycles.get(adapterPosition), adapterPosition);
     }
   }
 }
