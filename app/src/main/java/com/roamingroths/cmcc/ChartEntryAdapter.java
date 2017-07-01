@@ -1,42 +1,25 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
-import android.graphics.Typeface;
-import android.support.annotation.Nullable;
-import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.ImageView;
-import android.widget.TextView;
 
-import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
-import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.DateUtil;
 
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
-
-import java.util.HashSet;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by parkeroth on 4/18/17.
  */
 
-public class ChartEntryAdapter
-    extends RecyclerView.Adapter<ChartEntryAdapter.EntryAdapterViewHolder> {
+public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
@@ -85,13 +68,13 @@ public class ChartEntryAdapter
   }
 
   @Override
-  public EntryAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+  public ChartEntryViewHolder.Impl onCreateViewHolder(ViewGroup parent, int viewType) {
     int layoutIdForListItem = R.layout.observation_list_item;
     LayoutInflater inflater = LayoutInflater.from(mContext);
     boolean shouldAttachToParentImmediately = false;
 
     View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
-    return new EntryAdapterViewHolder(view);
+    return new ChartEntryViewHolder.Impl(view, mChartEntryList, mClickHandler);
   }
 
   /**
@@ -105,24 +88,8 @@ public class ChartEntryAdapter
    * @param position The position of the item within the adapter's data set.
    */
   @Override
-  public void onBindViewHolder(EntryAdapterViewHolder holder, int position) {
-    ChartEntry entry = mChartEntryList.get(position);
-    holder.mEntryDataTextView.setText(entry.getListUiText());
-    holder.mEntryBackgroundView.setBackgroundResource(
-        mChartEntryList.getEntryColorResource(entry, mContext));
-    holder.mEntryNumTextView.setText(String.valueOf(mChartEntryList.size() - position));
-    holder.mEntryDateTextView.setText(DateUtil.toWireStr(entry.date));
-    holder.mEntryPeakTextView.setText(mChartEntryList.getPeakDayViewText(entry));
-    if (entry.intercourse) {
-      holder.mEntryDataTextView.setTypeface(null, Typeface.BOLD);
-    } else {
-      holder.mEntryDateTextView.setTypeface(null, Typeface.NORMAL);
-    }
-    if (mChartEntryList.shouldShowBaby(entry, mContext)) {
-      holder.mBabyImageView.setVisibility(View.VISIBLE);
-    } else {
-      holder.mBabyImageView.setVisibility(View.INVISIBLE);
-    }
+  public void onBindViewHolder(ChartEntryViewHolder.Impl holder, int position) {
+    mChartEntryList.bindViewHolder(holder, position, mContext);
   }
 
   @Override
@@ -136,33 +103,5 @@ public class ChartEntryAdapter
 
   public interface OnItemAddedHandler {
     void onItemAdded(ChartEntry entry, int index);
-  }
-
-  public class EntryAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
-    public final TextView mEntryNumTextView;
-    public final TextView mEntryDateTextView;
-    public final TextView mEntryDataTextView;
-    public final TextView mEntryPeakTextView;
-    public final ImageView mBabyImageView;
-    public final View mEntryBackgroundView;
-
-    public EntryAdapterViewHolder(View itemView) {
-      super(itemView);
-      itemView.setOnClickListener(this);
-      mEntryNumTextView = (TextView) itemView.findViewById(R.id.tv_entry_num);
-      mEntryDateTextView = (TextView) itemView.findViewById(R.id.tv_entry_date);
-      mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
-      mEntryPeakTextView = (TextView) itemView.findViewById(R.id.tv_peak_day);
-      mBabyImageView = (ImageView) itemView.findViewById(R.id.baby_image_view);
-      mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
-    }
-
-    @Override
-    public void onClick(View v) {
-      int index = getAdapterPosition();
-      int previousEntryIndex = index + 1;
-      ChartEntry currentEntry = mChartEntryList.get(index);
-      mClickHandler.onClick(currentEntry, index);
-    }
   }
 }

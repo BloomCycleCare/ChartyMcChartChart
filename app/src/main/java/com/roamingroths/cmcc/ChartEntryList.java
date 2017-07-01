@@ -57,6 +57,17 @@ public class ChartEntryList {
     mCycle = cycle;
   }
 
+  public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
+    ChartEntry entry = mEntries.get(position);
+    holder.setEntrySummary(entry.getListUiText());
+    holder.setBackgroundColor(getEntryColorResource(entry, context));
+    holder.setEntryNum(mEntries.size() - position);
+    holder.setDate(DateUtil.toWireStr(entry.date));
+    holder.setPeakDayText(getPeakDayViewText(entry));
+    holder.setIntercourse(entry.intercourse);
+    holder.setShowBaby(shouldShowBaby(entry, context));
+  }
+
   public void initialize(final Context context, final Callbacks.Callback<Void> doneCallback) {
     if (mInitialized.compareAndSet(false, true)) {
       fillFromDb(context, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
