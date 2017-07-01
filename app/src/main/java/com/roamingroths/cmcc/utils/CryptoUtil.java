@@ -164,8 +164,6 @@ public class CryptoUtil {
   }
 
   public static void decrypt(String encryptedText, final Context context, final Callbacks.Callback<String> callback) {
-    Log.v("CryptoUtil", "Scheduled decryption");
-
     new AsyncTask<String, Integer, String>() {
       @Override
       protected String doInBackground(String... params) {

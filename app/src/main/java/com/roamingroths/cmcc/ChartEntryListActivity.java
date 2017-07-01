@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.preference.PreferenceManager;
@@ -17,21 +16,13 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.firebase.ui.auth.AuthUI;
 import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntry;
 import com.roamingroths.cmcc.data.Cycle;
-import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
-
-import org.joda.time.LocalDate;
-
-import java.util.Calendar;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
     ChartEntryAdapter.OnClickHandler, ChartEntryAdapter.OnItemAddedHandler,
@@ -43,6 +34,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private ProgressBar mProgressBar;
   private FloatingActionButton mFab;
 
+  private FirebaseDatabase mDb;
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
 
@@ -56,7 +48,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     final FirebaseUser user =
         Preconditions.checkNotNull(FirebaseAuth.getInstance().getCurrentUser());
-    FirebaseDatabase db = FirebaseDatabase.getInstance();
+    mDb = FirebaseDatabase.getInstance();
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
     Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
@@ -72,7 +64,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     };
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, this, db, adapterInitialzationCallback);
+        getApplicationContext(), cycle, this, this, mDb, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -103,6 +95,12 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
+    if (data.hasExtra(Cycle.class.getName())) {
+      Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
+      if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
+        swapCycles(cycleFromResponse);
+      }
+    }
     switch (requestCode) {
       default:
         Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);
@@ -165,6 +163,21 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
     intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
     startActivityForResult(intent, ChartEntryModifyActivity.MODIFY_REQUEST);
+  }
+
+  private void swapCycles(Cycle newCycle) {
+    log("Switching to cycle: " + newCycle.id);
+    showProgress();
+    Callbacks.Callback<Void> adapterInitialzationCallback = new Callbacks.HaltingCallback<Void>() {
+      @Override
+      public void acceptData(Void data) {
+        log("Adapter initialized");
+        showList();
+      }
+    };
+    mChartEntryAdapter = new ChartEntryAdapter(
+        getApplicationContext(), newCycle, this, this, mDb, adapterInitialzationCallback);
+    mRecyclerView.setAdapter(mChartEntryAdapter);
   }
 
   private void showError() {

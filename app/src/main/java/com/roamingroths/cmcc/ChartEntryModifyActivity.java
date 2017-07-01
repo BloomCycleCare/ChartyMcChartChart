@@ -205,7 +205,6 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     if (id == R.id.action_save) {
       final Intent returnIntent = new Intent();
       try {
-        returnIntent.putExtra(Cycle.class.getName(), mCycle);
         final ChartEntry entry = getChartEntryFromUi();
         if (mExistingEntry.firstDay != entry.firstDay) {
           String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -256,6 +255,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           }
         } else {
           DataStore.putChartEntry(this, mCycle.id, entry);
+          returnIntent.putExtra(Cycle.class.getName(), mCycle);
           setResult(OK_RESPONSE, returnIntent);
           finish();
         }

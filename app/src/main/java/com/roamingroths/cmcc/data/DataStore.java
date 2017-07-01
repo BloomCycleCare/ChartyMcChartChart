@@ -13,7 +13,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.ChartEntryAdapter;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -24,11 +23,8 @@ import com.roamingroths.cmcc.utils.Listeners.SimpleValueEventListener;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by parkeroth on 5/13/17.
@@ -146,6 +142,8 @@ public class DataStore {
       final String userId,
       final Predicate<LocalDate> datePredicate,
       final Callback<?> callback) {
+    Log.v("DataStore", "Source cycle id: " + fromCycle.id);
+    Log.v("DataStore", "Destination cycle id: " + toCycle.id);
     final DatabaseReference sourceEntrisRef =
         DB.getReference("entries").child(fromCycle.id);
     final DatabaseReference destinationEntriesRef =
@@ -162,6 +160,7 @@ public class DataStore {
           }
         }
         final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
+        Log.v("DataStore", "Moving " + outstandingRemovals.get() + " entries");
         final boolean shouldDropCycle = entriesToMove.size() == entrySnapshots.getChildrenCount();
         for (Map.Entry<String, String> entry : entriesToMove.entrySet()) {
           final String dateStr = entry.getKey();
@@ -170,12 +169,16 @@ public class DataStore {
               Listeners.completionListener(callback, new Runnable() {
                 @Override
                 public void run() {
+                  Log.v("DataStore", "Added entry: " + dateStr);
                   DatabaseReference.CompletionListener rmListener =
                       Listeners.completionListener(callback, new Runnable() {
                         @Override
                         public void run() {
+                          Log.v("DataStore", "Removed entry: " + dateStr);
                           if (outstandingRemovals.decrementAndGet() == 0) {
+                            Log.v("DataStore", "Entry moves complete");
                             if (shouldDropCycle) {
+                              Log.v("DataStore", "Dropping cycle: " + fromCycle.id);
                               DB.getReference("cycles").child(userId).child(fromCycle.id).removeValue(
                                   Listeners.completionListener(callback));
                             }
@@ -236,6 +239,8 @@ public class DataStore {
       final Cycle currentCycle,
       final ChartEntry firstEntry,
       final Callback<Cycle> resultCallback) {
+    Log.v("DataStore", "Splitting cycle: " + currentCycle.id);
+    Log.v("DataStore", "Next cycle: " + currentCycle.nextCycleId);
     getCycle(
         userId,
         currentCycle.nextCycleId,
