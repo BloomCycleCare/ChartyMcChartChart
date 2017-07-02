@@ -11,7 +11,6 @@ import org.joda.time.LocalDate;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -36,8 +35,6 @@ public class ChartEntryViewHolderTest {
 
   @Mock
   Context mContext;
-  @Captor
-  ArgumentCaptor<Integer> mBackgroundCaptor;
 
   @Test
   public void testB1A() throws Exception {
@@ -143,13 +140,49 @@ public class ChartEntryViewHolderTest {
   }
   // TODO: B1D
   // TODO: B1E
-  // TODO: B1F
+
+  @Test
+  public void testB1F() throws Exception {
+    ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("L0AD"), Expectations.redSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8kx2").peakDay(), Expectations.whiteSticker().withBaby().withPeakText("P"));
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby().withPeakText("1"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("2"));
+
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("vl10kx2").unusualBleeding(), Expectations.redSticker());
+    entries.put(Entry.forText("vl0ad").unusualBleeding(), Expectations.redSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby());
+
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby());
+    entries.put(Entry.forText("2x1"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("4x2"), Expectations.greenSticker());
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker());
+    entries.put(Entry.forText("2ad"), Expectations.greenSticker());
+
+    runTest(entries.build(), new Preferences(PREPEAK_YELLOW_DISABLED, POSTPEAK_YELLOW_DISABLED));
+  }
 
   // TODO: B2
 
   @Test
   public void testB7A() throws Exception {
-    // Double Peak
     ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
     entries.put(Entry.forText("L2AD"), Expectations.redSticker());
     entries.put(Entry.forText("H"), Expectations.redSticker());
@@ -193,8 +226,7 @@ public class ChartEntryViewHolderTest {
   // TODO: B7B - "Missed Period" form of "Double Peak"
 
   @Test
-  public void testPrePeakYellowExample() throws Exception {
-    // Double Peak
+  public void testYellowPrePeakExample() throws Exception {
     ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
     entries.put(Entry.forText("L2ad"), Expectations.redSticker());
     entries.put(Entry.forText("M"), Expectations.redSticker());
@@ -227,8 +259,7 @@ public class ChartEntryViewHolderTest {
   }
 
   @Test
-  public void testPostPeakYellowExample() throws Exception {
-    // Double Peak
+  public void testYellowPostPeakExample() throws Exception {
     ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
     entries.put(Entry.forText("M"), Expectations.redSticker());
     entries.put(Entry.forText("H"), Expectations.redSticker());
@@ -331,9 +362,9 @@ public class ChartEntryViewHolderTest {
       return;
     }
     if (expected) {
-      throw new Exception("Expected baby was not present");
+      throw new Exception("Expected baby but was not present");
     } else {
-      throw new Exception("Did not expect baby was present");
+      throw new Exception("Did not expect baby but was present");
     }
   }
 

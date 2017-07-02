@@ -187,12 +187,15 @@ public class ChartEntryList {
       if (previousEntry.observation == null) {
         continue;
       }
-      // TODO: unusual bleeding (D.6)
+      // Check if any unusual bleeding within count of three (D.6)
+      if (previousEntry.unusualBleeding) {
+        return true;
+      }
       if (previousEntry.observation.dischargeSummary == null) {
         continue;
       }
       if (previousEntry.observation.dischargeSummary.isPeakType()) {
-        // Check for 1 day of peak mucus pre peak (D.5)
+        // Check for 1 day of peak mucus (D.5)
         return true;
       }
       if (previousEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
@@ -216,12 +219,8 @@ public class ChartEntryList {
       return false;
     }
     // Check for a red sticker
-    if (entry.observation != null) {
-      if (entry.observation.flow != null
-          || entry.observation.dischargeSummary.mModifiers.contains(
-              DischargeSummary.MucusModifier.B)) {
-        return false;
-      }
+    if (entry.observation != null && entry.observation.hasBlood()) {
+      return false;
     }
     // Suppress if prepeak and yellow stickers enabled
     if (mPreferences.prePeakYellowEnabled() && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
