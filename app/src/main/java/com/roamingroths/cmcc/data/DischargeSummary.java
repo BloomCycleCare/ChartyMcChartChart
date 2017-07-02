@@ -7,6 +7,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -63,6 +64,24 @@ public class DischargeSummary implements Parcelable {
 
     }
     return code.toString();
+  }
+
+  public boolean hasMucus() {
+    return mType.hasMucus();
+  }
+
+  private static final ImmutableSet<MucusModifier> PEAK_TYPE_MODIFIERS = ImmutableSet.of(
+      MucusModifier.K, MucusModifier.CK, MucusModifier.L);
+  private static final ImmutableSet<DischargeType> SPECIAL_PEAK_TYPES = ImmutableSet.of(
+      DischargeType.DAMP_W_LUB, DischargeType.WET_W_LUB, DischargeType.SHINY_W_LUB);
+
+  public boolean isPeakType() {
+    for (MucusModifier modifier : PEAK_TYPE_MODIFIERS) {
+      if (mModifiers.contains(modifier)) {
+        return true;
+      }
+    }
+    return SPECIAL_PEAK_TYPES.contains(mType);
   }
 
   public String getImperialDesciption(Joiner joiner) {
@@ -180,6 +199,7 @@ public class DischargeSummary implements Parcelable {
     private String mDescriptionMetric;
     private String mDescriptionImperial;
     private boolean mHasMucus;
+    private boolean mAlwaysPeakType;
 
     DischargeType(String code, boolean hasMucus, String description) {
       this(code, hasMucus, description, "", "");

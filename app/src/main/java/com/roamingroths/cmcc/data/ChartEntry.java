@@ -1,15 +1,12 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
-import android.support.v7.preference.PreferenceManager;
 
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
-import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -83,6 +80,13 @@ public class ChartEntry implements Parcelable {
       return new ChartEntry[size];
     }
   };
+
+  public boolean hasMucus() {
+    if (observation == null || observation.dischargeSummary == null) {
+      return false;
+    }
+    return observation.dischargeSummary.hasMucus();
+  }
 
   public String getListUiText() {
     if (observation == null) {

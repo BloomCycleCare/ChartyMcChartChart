@@ -66,8 +66,81 @@ public class ChartEntryViewHolderTest {
     runTest(entries.build(), new Preferences(PREPEAK_YELLOW_DISABLED, POSTPEAK_YELLOW_DISABLED));
   }
 
-  // TODO: B1B
-  // TODO: B1C
+  @Test
+  public void testB1B() throws Exception {
+    ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("L0AD"), Expectations.redSticker());
+    entries.put(Entry.forText("VL2x1"), Expectations.redSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx2"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("8cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8cx2"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8cad"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10cx2"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10klad"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10klad").peakDay(), Expectations.whiteSticker().withBaby().withPeakText("P"));
+    entries.put(Entry.forText("8cx1"), Expectations.whiteSticker().withBaby().withPeakText("1"));
+
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker().withBaby().withPeakText("2"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+
+    runTest(entries.build(), new Preferences(PREPEAK_YELLOW_DISABLED, POSTPEAK_YELLOW_DISABLED));
+  }
+
+  @Test
+  public void testB1C() throws Exception {
+    ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("L0AD"), Expectations.redSticker());
+    entries.put(Entry.forText("2x2"), Expectations.greenSticker());
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker());
+    entries.put(Entry.forText("2ad"), Expectations.greenSticker());
+
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby());
+    entries.put(Entry.forText("2x2"), Expectations.greenSticker().withBaby());
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker().withBaby());
+
+    entries.put(Entry.forText("4x1"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("8cx2"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10kad"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10klad"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("10wlx2").peakDay(), Expectations.whiteSticker().withBaby().withPeakText("P"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("1"));
+
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("2"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+
+    runTest(entries.build(), new Preferences(PREPEAK_YELLOW_DISABLED, POSTPEAK_YELLOW_DISABLED));
+  }
   // TODO: B1D
   // TODO: B1E
   // TODO: B1F

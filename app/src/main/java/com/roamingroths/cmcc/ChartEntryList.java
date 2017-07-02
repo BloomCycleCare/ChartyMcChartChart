@@ -65,7 +65,7 @@ public class ChartEntryList {
     holder.setDate(DateUtil.toWireStr(entry.date));
     holder.setPeakDayText(getPeakDayViewText(entry));
     holder.setIntercourse(entry.intercourse);
-    holder.setShowBaby(shouldShowBaby(entry, context));
+    holder.setShowBaby(shouldShowBaby(position, entry));
   }
 
   public void initialize(final Context context, final Callbacks.Callback<Void> doneCallback) {
@@ -168,10 +168,42 @@ public class ChartEntryList {
     return mEntries.get(index);
   }
 
-  public boolean shouldShowBaby(ChartEntry entry, Context context) {
+  private boolean isWithinCountOfThree(int position, ChartEntry entry) {
+    int lastPosition = position + 3;
+    for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
+      ChartEntry previousEntry = mEntries.get(i);
+      if (previousEntry.observation == null) {
+        continue;
+      }
+      // TODO: unusual bleeding (D.6)
+      if (previousEntry.observation.dischargeSummary == null) {
+        continue;
+      }
+      if (previousEntry.observation.dischargeSummary.isPeakType()) {
+        // Check for 1 day of peak mucus pre peak (D.5)
+        return true;
+      }
+      if (previousEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
+        // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
+        int lastNonPeakMucus = i + 3;
+        boolean consecutiveNonPeakMucus = true;
+        for (int j = i; i < mEntries.size() && j < lastNonPeakMucus; j++) {
+          if (!mEntries.get(j).hasMucus()) {
+            consecutiveNonPeakMucus = false;
+            break;
+          }
+        }
+        return consecutiveNonPeakMucus;
+      }
+    }
+    return false;
+  }
+
+  private boolean shouldShowBaby(int position, ChartEntry entry) {
     if (entry == null) {
       return false;
     }
+    // Check for a red sticker
     if (entry.observation != null) {
       if (entry.observation.flow != null
           || entry.observation.dischargeSummary.mModifiers.contains(
@@ -179,8 +211,12 @@ public class ChartEntryList {
         return false;
       }
     }
+    // Suppress if prepeak and yellow stickers enabled
     if (mPreferences.prePeakYellowEnabled() && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
       return false;
+    }
+    if (isWithinCountOfThree(position, entry)) {
+      return true;
     }
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
     if (mostRecentPeakDay != null) {
@@ -196,7 +232,7 @@ public class ChartEntryList {
     return entry.observation != null && entry.observation.hasMucus();
   }
 
-  public String getPeakDayViewText(ChartEntry entry) {
+  private String getPeakDayViewText(ChartEntry entry) {
     if (entry == null) {
       return "";
     }
