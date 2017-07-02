@@ -42,7 +42,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mContext = context;
     mClickHandler = clickHandler;
     mAddedHandler = addedHandler;
-    mChartEntryList = ChartEntryList.builder(cycle).withAdapter(this).build();
+    mChartEntryList = ChartEntryList.builder(cycle, Preferences.fromShared(mContext)).withAdapter(this).build();
     mListener = new ChartEntryListener(context, mChartEntryList);
     mChartEntryList.initialize(context, initializationCompleteCallback);
   }

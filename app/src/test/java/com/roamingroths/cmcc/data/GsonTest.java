@@ -1,10 +1,7 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.common.collect.ImmutableList;
-import com.google.gson.Gson;
-import com.roamingroths.cmcc.utils.GsonUtil;
 
-import org.joda.time.LocalDate;
 import org.junit.Test;
 
 /**
@@ -21,10 +18,10 @@ public class GsonTest {
   @Test
   public void chartEntry() throws Exception {
     for (String observationStr : OBSERVATION_STRS) {
-      ChartEntry entry =
+      /**ChartEntry entry =
           new ChartEntry(LocalDate.now(), Observation.fromString(observationStr), true, false);
       Gson gson = GsonUtil.getGsonInstance();
-      gson.fromJson(gson.toJson(entry), ChartEntry.class);
+       gson.fromJson(gson.toJson(entry), ChartEntry.class);*/
     }
   }
 }

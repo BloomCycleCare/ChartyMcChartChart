@@ -26,6 +26,7 @@ import static com.roamingroths.cmcc.ChartEntryListActivity.RC_SIGN_IN;
 public class SplashActivity extends AppCompatActivity {
 
   private ProgressBar mProgressBar;
+  private Preferences mPreferences;
   private TextView mErrorView;
   private TextView mStatusView;
 
@@ -37,6 +38,8 @@ public class SplashActivity extends AppCompatActivity {
     mProgressBar = (ProgressBar) findViewById(R.id.splash_progress);
     mErrorView = (TextView) findViewById(R.id.splash_error_tv);
     mStatusView = (TextView) findViewById(R.id.splash_status_tv);
+
+    mPreferences = Preferences.fromShared(getApplicationContext());
 
     showProgress("Loading user account");
 
@@ -58,7 +61,7 @@ public class SplashActivity extends AppCompatActivity {
   private void preloadCycleData(final Cycle cycle) {
     log("Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    ChartEntryList.builder(cycle).build().initialize(getApplicationContext(), new Callbacks.Callback<Void>() {
+    ChartEntryList.builder(cycle, mPreferences).build().initialize(getApplicationContext(), new Callbacks.Callback<Void>() {
       @Override
       public void acceptData(Void data) {
         log("Preload cycle data: finish");

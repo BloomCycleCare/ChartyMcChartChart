@@ -1,9 +1,7 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.support.annotation.Nullable;
-import android.support.v7.preference.PreferenceManager;
 import android.support.v7.util.SortedList;
 import android.util.Log;
 
@@ -46,15 +44,17 @@ public class ChartEntryList {
   private final SortedList<ChartEntry> mEntries;
   private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
+  private final Preferences mPreferences;
   private LocalDate mPointOfChange;
 
-  public static Builder builder(Cycle cycle) {
-    return new Builder(cycle);
+  public static Builder builder(Cycle cycle, Preferences preferences) {
+    return new Builder(cycle, preferences);
   }
 
-  private ChartEntryList(Cycle cycle, SortedList<ChartEntry> entries) {
+  private ChartEntryList(Cycle cycle, Preferences preferences, SortedList<ChartEntry> entries) {
     mEntries = entries;
     mCycle = cycle;
+    mPreferences = preferences;
   }
 
   public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
@@ -179,10 +179,7 @@ public class ChartEntryList {
         return false;
       }
     }
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-    if (preferences.getBoolean("enable_pre_peak_yellow_stickers", false)
-        && isPreakPeak(entry)
-        && isBeforePointOfChange(entry)) {
+    if (mPreferences.prePeakYellowEnabled() && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
       return false;
     }
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
@@ -191,7 +188,7 @@ public class ChartEntryList {
           && mostRecentPeakDay.plusDays(4).isAfter(entry.date)) {
         return true;
       }
-      if (preferences.getBoolean("enable_post_peak_yellow_stickers", false)
+      if (mPreferences.postPeakYellowEnabled()
           && entry.date.isAfter(mostRecentPeakDay.plusDays(3))) {
         return false;
       }
@@ -220,17 +217,16 @@ public class ChartEntryList {
     if (entry.observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
       return R.color.entryRed;
     }
-    if (entry.observation.dischargeSummary.mType == DischargeSummary.DischargeType.DRY) {
+    if (!entry.observation.dischargeSummary.mType.hasMucus()) {
       return R.color.entryGreen;
     }
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-    if (preferences.getBoolean("enable_pre_peak_yellow_stickers", false)) {
+    if (mPreferences.prePeakYellowEnabled()) {
       // Prepeak yellow stickers enabled
       if (isPreakPeak(entry) && isBeforePointOfChange(entry)) {
         return R.color.entryYellow;
       }
     }
-    if (preferences.getBoolean("enable_post_peak_yellow_stickers", false)) {
+    if (mPreferences.postPeakYellowEnabled()) {
       // Postpeak yellow stickers enabled
       if (isPostPeak(entry)) {
         return R.color.entryYellow;
@@ -300,10 +296,12 @@ public class ChartEntryList {
   public static class Builder {
 
     private final Cycle cycle;
+    private final Preferences preferences;
     private ChartEntryAdapter adapter;
 
-    private Builder(Cycle cycle) {
+    private Builder(Cycle cycle, Preferences preferences) {
       this.cycle = Preconditions.checkNotNull(cycle);
+      this.preferences = Preconditions.checkNotNull(preferences);
     }
 
     public Builder withAdapter(ChartEntryAdapter adapter) {
@@ -356,7 +354,7 @@ public class ChartEntryList {
           return item1 == item2;
         }
       });
-      return new ChartEntryList(cycle, entries);
+      return new ChartEntryList(cycle, preferences, entries);
     }
   }
 
