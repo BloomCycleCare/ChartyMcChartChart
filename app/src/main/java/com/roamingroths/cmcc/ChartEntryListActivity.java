@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc;
 
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -157,12 +156,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
   @Override
   public void onClick(ChartEntry entry, int index) {
-    Context context = this;
-    Class destinationClass = ChartEntryModifyActivity.class;
-    Intent intent = new Intent(context, destinationClass);
-    intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
-    intent.putExtra(Cycle.class.getName(), mChartEntryAdapter.getCycle());
-    startActivityForResult(intent, ChartEntryModifyActivity.MODIFY_REQUEST);
+    startActivityForResult(
+        mChartEntryAdapter.getIntentForModification(entry, index),
+        ChartEntryModifyActivity.MODIFY_REQUEST);
   }
 
   private void swapCycles(Cycle newCycle) {

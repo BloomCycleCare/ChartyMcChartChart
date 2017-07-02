@@ -43,6 +43,10 @@ public class Observation implements Parcelable {
     occurrences = in.readParcelable(Occurrences.class.getClassLoader());
   }
 
+  public boolean hasBlood() {
+    return flow != null || (dischargeSummary != null && dischargeSummary.hasBlood());
+  }
+
   public boolean hasMucus() {
     return dischargeSummary != null && dischargeSummary.mType.hasMucus();
   }

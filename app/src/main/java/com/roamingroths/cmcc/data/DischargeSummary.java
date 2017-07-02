@@ -70,6 +70,10 @@ public class DischargeSummary implements Parcelable {
     return mType.hasMucus();
   }
 
+  public boolean hasBlood() {
+    return mModifiers.contains(MucusModifier.B);
+  }
+
   private static final ImmutableSet<MucusModifier> PEAK_TYPE_MODIFIERS = ImmutableSet.of(
       MucusModifier.K, MucusModifier.CK, MucusModifier.L);
   private static final ImmutableSet<DischargeType> SPECIAL_PEAK_TYPES = ImmutableSet.of(

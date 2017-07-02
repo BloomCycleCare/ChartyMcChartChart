@@ -25,6 +25,7 @@ public class ChartEntry implements Parcelable {
   public boolean intercourse;
   public boolean firstDay;
   public boolean pointOfChange;
+  public boolean unusualBleeding;
 
   public ChartEntry() {
     // Required for DataSnapshot.getValue(ChartEntry.class)
@@ -36,13 +37,18 @@ public class ChartEntry implements Parcelable {
       boolean peakDay,
       boolean intercourse,
       boolean firstDay,
-      boolean pointOfChange) {
+      boolean pointOfChange,
+      boolean unusualBleeding) {
     this.date = date;
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
     this.firstDay = firstDay;
     this.pointOfChange = pointOfChange;
+    if (unusualBleeding && (observation == null || !observation.hasBlood())) {
+      throw new IllegalArgumentException();
+    }
+    this.unusualBleeding = unusualBleeding;
   }
 
   public ChartEntry(Parcel in) {
@@ -52,11 +58,12 @@ public class ChartEntry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0,
+        in.readByte() != 0,
         in.readByte() != 0);
   }
 
   public static ChartEntry emptyEntry(LocalDate date) {
-    return new ChartEntry(date, null, false, false, false, false);
+    return new ChartEntry(date, null, false, false, false, false, false);
   }
 
   public static void fromEncryptedString(
@@ -112,6 +119,7 @@ public class ChartEntry implements Parcelable {
     dest.writeByte((byte) (intercourse ? 1 : 0));
     dest.writeByte((byte) (firstDay ? 1 : 0));
     dest.writeByte((byte) (pointOfChange ? 1 : 0));
+    dest.writeByte((byte) (unusualBleeding ? 1 : 0));
   }
 
   @Override
@@ -123,13 +131,15 @@ public class ChartEntry implements Parcelable {
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
           this.firstDay == that.firstDay &&
-          this.pointOfChange == that.pointOfChange;
+          this.pointOfChange == that.pointOfChange &&
+          this.unusualBleeding == that.unusualBleeding;
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(observation, peakDay, intercourse, date, firstDay, pointOfChange);
+    return Objects.hashCode(
+        observation, peakDay, intercourse, date, firstDay, pointOfChange, unusualBleeding);
   }
 }

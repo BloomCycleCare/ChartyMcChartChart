@@ -10,5 +10,7 @@ public class Extras {
 
   public static String ENTRY_DATE_STR = "EntryDate";
 
+  public static String EXPECT_UNUSUAL_BLEEDING = "ExpectUnusualBleeding";
+
   public static String USER_ID = "UserId";
 }

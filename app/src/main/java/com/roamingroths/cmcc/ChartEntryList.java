@@ -168,6 +168,18 @@ public class ChartEntryList {
     return mEntries.get(index);
   }
 
+  public boolean expectUnusualBleeding(int index) {
+    int previousIndex = index + 1;
+    if (previousIndex >= mEntries.size()) {
+      return false;
+    }
+    ChartEntry previousEntry = mEntries.get(previousIndex);
+    if (previousEntry.unusualBleeding) {
+      return true;
+    }
+    return !(previousEntry.observation != null && previousEntry.observation.hasBlood());
+  }
+
   private boolean isWithinCountOfThree(int position, ChartEntry entry) {
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {

@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -103,5 +104,13 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   public interface OnItemAddedHandler {
     void onItemAdded(ChartEntry entry, int index);
+  }
+
+  public Intent getIntentForModification(ChartEntry entry, int index) {
+    Intent intent = new Intent(mContext, ChartEntryModifyActivity.class);
+    intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
+    intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mChartEntryList.expectUnusualBleeding(index));
+    intent.putExtra(Cycle.class.getName(), mChartEntryList.mCycle);
+    return intent;
   }
 }

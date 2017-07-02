@@ -97,7 +97,6 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      int previousEntryIndex = index + 1;
       ChartEntry currentEntry = mEntryList.get(index);
       mClickHandler.onClick(currentEntry, index);
     }

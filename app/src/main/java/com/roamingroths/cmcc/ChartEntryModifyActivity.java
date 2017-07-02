@@ -48,7 +48,10 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   private Switch mIntercourseSwitch;
   private Switch mFirstDaySwitch;
   private Switch mPointOfChangeSwitch;
+  private View mUnusualBleedingLayout;
+  private Switch mUnusualBleedingSwitch;
 
+  private boolean expectUnusualBleeding;
   private boolean usingPrePeakYellowStickers;
   private Cycle mCycle;
   private LocalDate mEntryDate;
@@ -60,6 +63,12 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mIntercourseSwitch.setChecked(entry.intercourse);
     mFirstDaySwitch.setChecked(entry.firstDay);
     mPointOfChangeSwitch.setChecked(entry.pointOfChange);
+    mUnusualBleedingSwitch.setChecked(entry.unusualBleeding);
+    if (entry.observation == null || !entry.observation.hasBlood()) {
+      mUnusualBleedingLayout.setVisibility(View.GONE);
+    } else {
+      mUnusualBleedingLayout.setVisibility(View.VISIBLE);
+    }
   }
 
   private void updateUiWithObservation(@Nullable Observation observation) {
@@ -74,6 +83,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_observation_modify);
+
+    mUnusualBleedingLayout = findViewById(R.id.unusual_bleeding_layout);
+    mUnusualBleedingSwitch = (Switch) findViewById(R.id.switch_unusual_bleeding);
 
     mObservationDescriptionTextView =
         (TextView) findViewById(R.id.tv_modify_observation_description);
@@ -103,6 +115,11 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           if (observation != null) {
             mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
           }
+          if (observation != null && observation.hasBlood()) {
+            mUnusualBleedingLayout.setVisibility(View.VISIBLE);
+          } else {
+            mUnusualBleedingLayout.setVisibility(View.GONE);
+          }
         } catch (Observation.InvalidObservationException ioe) {
           mObservationDescriptionTextView.setText(null);
         }
@@ -127,6 +144,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
     String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
+    expectUnusualBleeding = intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false);
 
     DataStore.getChartEntry(this, mCycle.id, entryDateStr, new Callbacks.Callback<ChartEntry>() {
       @Override
@@ -179,7 +197,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     boolean intercourse = mIntercourseSwitch.isChecked();
     boolean firstDay = mFirstDaySwitch.isChecked();
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
-    return new ChartEntry(mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange);
+    boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
+    return new ChartEntry(
+        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding);
   }
 
   @Override
@@ -187,6 +207,71 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     // Inflate the menu; this adds items to the action bar if it is present.
     getMenuInflater().inflate(R.menu.menu_observation_modify, menu);
     return true;
+  }
+
+  private void maybeSplitOrJoinCycle(final ChartEntry entry) {
+    final Intent returnIntent = new Intent();
+    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    if (entry.firstDay) {
+      // Try and split the current cycle
+      DataStore.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
+        @Override
+        public void acceptData(Cycle newCycle) {
+          try {
+            DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+            returnIntent.putExtra(Cycle.class.getName(), newCycle);
+            setResult(OK_RESPONSE, returnIntent);
+            finish();
+          } catch (CryptoUtil.CryptoException ce) {
+            ce.printStackTrace();
+          }
+        }
+      });
+    } else {
+      // Try and this and the previous cycle
+      if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("No Previous Cycle");
+        builder.setMessage("Please add cycle before this entry to proceed.");
+        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            mFirstDaySwitch.setChecked(true);
+            dialog.dismiss();
+          }
+        });
+        builder.create().show();
+      } else {
+        DataStore.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
+          @Override
+          public void acceptData(Cycle newCycle) {
+            try {
+              DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+              returnIntent.putExtra(Cycle.class.getName(), newCycle);
+              setResult(OK_RESPONSE, returnIntent);
+              finish();
+            } catch (CryptoUtil.CryptoException ce) {
+              ce.printStackTrace();
+            }
+          }
+        });
+      }
+    }
+  }
+
+  private void doSaveAction(final ChartEntry entry) {
+    if (mExistingEntry.firstDay != entry.firstDay) {
+      maybeSplitOrJoinCycle(entry);
+    } else {
+      Intent returnIntent = new Intent();
+      try {
+        DataStore.putChartEntry(this, mCycle.id, entry);
+        setResult(OK_RESPONSE, returnIntent);
+        finish();
+      } catch (CryptoUtil.CryptoException ce) {
+        ce.printStackTrace();
+      }
+    }
   }
 
   @Override
@@ -203,65 +288,32 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      final Intent returnIntent = new Intent();
       try {
         final ChartEntry entry = getChartEntryFromUi();
-        if (mExistingEntry.firstDay != entry.firstDay) {
-          String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-          if (entry.firstDay) {
-            // Try and split the current cycle
-            DataStore.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
-              @Override
-              public void acceptData(Cycle newCycle) {
-                try {
-                  DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
-                  returnIntent.putExtra(Cycle.class.getName(), newCycle);
-                  setResult(OK_RESPONSE, returnIntent);
-                  finish();
-                } catch (CryptoUtil.CryptoException ce) {
-                  ce.printStackTrace();
-                }
-              }
-            });
-          } else {
-            // Try and this and the previous cycle
-            if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
-              AlertDialog.Builder builder = new AlertDialog.Builder(this);
-              builder.setTitle("No Previous Cycle");
-              builder.setMessage("Please add cycle before this entry to proceed.");
-              builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                @Override
-                public void onClick(DialogInterface dialog, int which) {
-                  mFirstDaySwitch.setChecked(true);
-                  dialog.dismiss();
-                }
-              });
-              builder.create().show();
-            } else {
-              DataStore.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
-                @Override
-                public void acceptData(Cycle newCycle) {
-                  try {
-                    DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
-                    returnIntent.putExtra(Cycle.class.getName(), newCycle);
-                    setResult(OK_RESPONSE, returnIntent);
-                    finish();
-                  } catch (CryptoUtil.CryptoException ce) {
-                    ce.printStackTrace();
-                  }
-                }
-              });
+        boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
+        if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
+          AlertDialog.Builder builder = new AlertDialog.Builder(this);
+          builder.setTitle("Unusual bleeding?");
+          builder.setMessage("Are you sure this bleeding is typical?");
+          builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+              doSaveAction(entry);
             }
-          }
-        } else {
-          DataStore.putChartEntry(this, mCycle.id, entry);
-          setResult(OK_RESPONSE, returnIntent);
-          finish();
+          });
+          builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+            }
+          });
+          builder.create().show();
+          return false;
         }
+        doSaveAction(entry);
       } catch (Observation.InvalidObservationException ioe) {
         Toast.makeText(this, "Cannot save invalid observation", Toast.LENGTH_LONG).show();
-      } catch (CryptoUtil.CryptoException e) {
-        e.printStackTrace();
       }
       return true;
     }

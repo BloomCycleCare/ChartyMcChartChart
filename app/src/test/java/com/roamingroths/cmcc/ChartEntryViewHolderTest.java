@@ -373,6 +373,7 @@ public class ChartEntryViewHolderTest {
     private boolean peakDay = false;
     private boolean intercourse = false;
     private boolean pointOfChange = false;
+    private boolean unusualBleeding = false;
 
     private Entry(String observationText) {
       this.observationText = observationText;
@@ -397,9 +398,14 @@ public class ChartEntryViewHolderTest {
       return this;
     }
 
+    public Entry unusualBleeding() {
+      unusualBleeding = true;
+      return this;
+    }
+
     public ChartEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
       Observation observation = Observation.fromString(observationText);
-      return new ChartEntry(date, observation, peakDay, intercourse, false, pointOfChange);
+      return new ChartEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding);
     }
   }
 
