@@ -24,8 +24,7 @@ import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
-    ChartEntryAdapter.OnClickHandler, ChartEntryAdapter.OnItemAddedHandler,
-    SharedPreferences.OnSharedPreferenceChangeListener {
+    ChartEntryAdapter.OnClickHandler, SharedPreferences.OnSharedPreferenceChangeListener {
 
   public static final int RC_SIGN_IN = 1;
 
@@ -45,8 +44,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
-    final FirebaseUser user =
-        Preconditions.checkNotNull(FirebaseAuth.getInstance().getCurrentUser());
     mDb = FirebaseDatabase.getInstance();
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
@@ -63,7 +60,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     };
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, this, mDb, adapterInitialzationCallback);
+        getApplicationContext(), cycle, this, mDb, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -172,14 +169,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       }
     };
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), newCycle, this, this, mDb, adapterInitialzationCallback);
+        getApplicationContext(), newCycle, this, mDb, adapterInitialzationCallback);
     mRecyclerView.setAdapter(mChartEntryAdapter);
-  }
-
-  private void showError() {
-    mErrorView.setVisibility(View.VISIBLE);
-    mRecyclerView.setVisibility(View.INVISIBLE);
-    mProgressBar.setVisibility(View.INVISIBLE);
   }
 
   private void showList() {
@@ -192,11 +183,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mProgressBar.setVisibility(View.VISIBLE);
     mRecyclerView.setVisibility(View.INVISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
-  }
-
-  @Override
-  public void onItemAdded(ChartEntry entry, int index) {
-    mRecyclerView.scrollToPosition(index);
   }
 
   @Override

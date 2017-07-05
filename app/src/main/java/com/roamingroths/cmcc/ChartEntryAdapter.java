@@ -24,7 +24,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final OnItemAddedHandler mAddedHandler;
   private final ChartEntryListener mListener;
   private final AtomicBoolean mEntryListenerAttached;
   private final DatabaseReference mEntriesDbRef;
@@ -34,7 +33,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       Context context,
       Cycle cycle,
       OnClickHandler clickHandler,
-      OnItemAddedHandler addedHandler,
       FirebaseDatabase db,
       Callbacks.Callback<Void> initializationCompleteCallback) {
     mEntriesDbRef = db.getReference("entries").child(cycle.id);
@@ -42,7 +40,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mEntryListenerAttached = new AtomicBoolean(false);
     mContext = context;
     mClickHandler = clickHandler;
-    mAddedHandler = addedHandler;
     mChartEntryList = ChartEntryList.builder(cycle, Preferences.fromShared(mContext)).withAdapter(this).build();
     mListener = new ChartEntryListener(context, mChartEntryList);
     mChartEntryList.initialize(context, initializationCompleteCallback);
@@ -100,10 +97,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   public interface OnClickHandler {
     void onClick(ChartEntry entry, int index);
-  }
-
-  public interface OnItemAddedHandler {
-    void onItemAdded(ChartEntry entry, int index);
   }
 
   public Intent getIntentForModification(ChartEntry entry, int index) {
