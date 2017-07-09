@@ -407,19 +407,21 @@ public class ChartEntryList {
 
   private void fillFromDb(
       final Context context,
-      final Callbacks.Callback<LocalDate> lastDateAddedCallback) {
+      Callbacks.Callback<LocalDate> lastDateAddedCallback) {
     Log.v("ChartEntryList", "Begin filling from DB");
+    final Callbacks.Callback<LocalDate> wrappedCallback =
+        Callbacks.singleUse(Preconditions.checkNotNull(lastDateAddedCallback));
     DatabaseReference dbRef =
         FirebaseDatabase.getInstance().getReference("entries").child(mCycle.id);
     dbRef.keepSynced(true);
-    dbRef.addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(lastDateAddedCallback) {
+    dbRef.addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(wrappedCallback) {
       @Override
       public void onDataChange(DataSnapshot entriesSnapshot) {
         final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
         Log.v("ChartEntryList", "Found " + entriesToDecrypt.get() + " entries.");
         if (entriesToDecrypt.get() == 0) {
           Log.v("ChartEntryList", "Done filling");
-          lastDateAddedCallback.acceptData(null);
+          wrappedCallback.acceptData(null);
         }
         final AtomicReference<LocalDate> lastEntryDate = new AtomicReference<>();
         for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
@@ -428,17 +430,23 @@ public class ChartEntryList {
             lastEntryDate.set(entryDate);
           }
           ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
-              new Callbacks.ErrorForwardingCallback<ChartEntry>(lastDateAddedCallback) {
+              new Callbacks.Callback<ChartEntry>() {
                 @Override
                 public void acceptData(ChartEntry entry) {
                   addEntry(entry);
                   long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
                   if (numLeftToDecrypt < 1) {
                     Log.v("ChartEntryList", "Done filling");
-                    lastDateAddedCallback.acceptData(lastEntryDate.get());
+                    wrappedCallback.acceptData(lastEntryDate.get());
                   } else {
                     Log.v("ChartEntryList", "Still waiting for " + numLeftToDecrypt + " decryptions");
                   }
+                }
+                @Override
+                public void handleNotFound() {
+                }
+                @Override
+                public void handleError(DatabaseError error) {
                 }
               });
         }

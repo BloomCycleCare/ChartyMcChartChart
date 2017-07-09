@@ -26,6 +26,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.Callbacks;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -114,40 +115,15 @@ public class CycleListActivity extends AppCompatActivity
           .setTitle("Delete All Cycles?")
           .setMessage("This is permanent and cannot be undone!")
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-              Log.v("CycleListActivity", "Dropping cycles");
-              final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-              final FirebaseDatabase db = FirebaseDatabase.getInstance();
-              ValueEventListener listener = new ValueEventListener() {
+            public void onClick(final DialogInterface dialog, int whichButton) {
+              DataStore.dropCycles(new Callbacks.HaltingCallback<Void>() {
                 @Override
-                public void onCancelled(DatabaseError databaseError) {
-                  databaseError.toException().printStackTrace();
+                public void acceptData(Void data) {
+                  Intent intent = new Intent(CycleListActivity.this, SplashActivity.class);
+                  startActivity(intent);
+                  dialog.dismiss();
                 }
-
-                @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                  final AtomicLong cyclesToDrop = new AtomicLong(dataSnapshot.getChildrenCount());
-                  for (DataSnapshot cycleSnapshot : dataSnapshot.getChildren()) {
-                    final String cycleId = cycleSnapshot.getKey();
-                    Log.v("CycleListActivity", "Dropping entries for cycle: " + cycleId);
-                    db.getReference("entries").child(cycleId).removeValue(
-                        new DatabaseReference.CompletionListener() {
-                          @Override
-                          public void onComplete(
-                              DatabaseError databaseError, DatabaseReference databaseReference) {
-                            Log.v("CycleListActivity", "Dropping cycle: " + cycleId);
-                            db.getReference("cycles").child(user.getUid()).child(cycleId).removeValue();
-                            if (cyclesToDrop.decrementAndGet() == 0) {
-                              Intent intent = new Intent(CycleListActivity.this, SplashActivity.class);
-                              startActivity(intent);
-                            }
-                          }
-                        });
-                  }
-                }
-              };
-              db.getReference("cycles").child(user.getUid()).addListenerForSingleValueEvent(listener);
-              dialog.dismiss();
+              });
             }
           })
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

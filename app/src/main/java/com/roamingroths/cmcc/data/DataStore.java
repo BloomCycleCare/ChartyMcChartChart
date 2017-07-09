@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -8,11 +9,15 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
+import com.roamingroths.cmcc.CycleListActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -47,6 +52,39 @@ public class DataStore {
     });
   }
 
+  public static void dropCycles(final Callback<Void> doneCallback) {
+    Log.v("CycleListActivity", "Dropping cycles");
+    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    final FirebaseDatabase db = FirebaseDatabase.getInstance();
+    ValueEventListener listener = new ValueEventListener() {
+      @Override
+      public void onCancelled(DatabaseError databaseError) {
+        databaseError.toException().printStackTrace();
+      }
+
+      @Override
+      public void onDataChange(DataSnapshot dataSnapshot) {
+        final AtomicLong cyclesToDrop = new AtomicLong(dataSnapshot.getChildrenCount());
+        for (DataSnapshot cycleSnapshot : dataSnapshot.getChildren()) {
+          final String cycleId = cycleSnapshot.getKey();
+          Log.v("CycleListActivity", "Dropping entries for cycle: " + cycleId);
+          db.getReference("entries").child(cycleId).removeValue(
+              new DatabaseReference.CompletionListener() {
+                @Override
+                public void onComplete(
+                    DatabaseError databaseError, DatabaseReference databaseReference) {
+                  Log.v("CycleListActivity", "Dropping cycle: " + cycleId);
+                  db.getReference("cycles").child(user.getUid()).child(cycleId).removeValue();
+                  if (cyclesToDrop.decrementAndGet() == 0) {
+                    doneCallback.acceptData(null);
+                  }
+                }
+              });
+        }
+      }
+    };
+    db.getReference("cycles").child(user.getUid()).addListenerForSingleValueEvent(listener);
+  }
   public static void getCurrentCycle(String userId, final Callback<Cycle> callback) {
     DatabaseReference ref = DB.getReference("cycles").child(userId);
     ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {

@@ -1,7 +1,9 @@
 package com.roamingroths.cmcc;
 
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -61,7 +63,7 @@ public class SplashActivity extends AppCompatActivity {
   private void preloadCycleData(final Cycle cycle) {
     log("Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    ChartEntryList.builder(cycle, mPreferences).build().initialize(getApplicationContext(), new Callbacks.Callback<Void>() {
+    ChartEntryList.builder(cycle, mPreferences).build().initialize(getApplicationContext(), Callbacks.singleUse(new Callbacks.Callback<Void>() {
       @Override
       public void acceptData(Void data) {
         log("Preload cycle data: finish");
@@ -74,13 +76,35 @@ public class SplashActivity extends AppCompatActivity {
       @Override
       public void handleNotFound() {
         showError("Could not decrypt cycle entries.");
+        new AlertDialog.Builder(SplashActivity.this)
+            //set message, title, and icon
+            .setTitle("Delete All Cycles?")
+            .setMessage("This is permanent and cannot be undone!")
+            .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+              public void onClick(final DialogInterface dialog, int whichButton) {
+                DataStore.dropCycles(new Callbacks.HaltingCallback<Void>() {
+                  @Override
+                  public void acceptData(Void data) {
+                    dialog.dismiss();
+                    getCurrentCycleForUser(FirebaseAuth.getInstance().getCurrentUser());
+                  }
+                });
+              }
+            })
+            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int which) {
+                showError("Please restart the app.");
+                dialog.dismiss();
+              }
+            })
+            .create().show();
       }
 
       @Override
       public void handleError(DatabaseError error) {
         showError(error.getMessage());
       }
-    });
+    }));
   }
 
   private void promptForStartOfCurrentCycle(final FirebaseUser user) {
