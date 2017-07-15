@@ -15,6 +15,10 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
 
+import org.joda.time.LocalDate;
+
+import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -70,6 +74,16 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
         notifyItemMoved(fromPosition, toPosition);
       }
     });
+  }
+
+  public Calendar[] getChartedDays() {
+    ArrayList<Calendar> days = new ArrayList<>();
+    for (int i=0; i<mCycles.size(); i++) {
+      Cycle cycle = mCycles.get(i);
+      if (cycle.endDate == null) {
+      }
+    }
+    return (Calendar[]) days.toArray();
   }
 
   /**

@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc;
 
-import android.app.DatePickerDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -27,6 +26,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import java.util.Calendar;
 import java.util.Date;
@@ -63,15 +63,16 @@ public class CycleListActivity extends AppCompatActivity
       @Override
       public void onClick(View view) {
         Calendar cal = Calendar.getInstance();
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-            CycleListActivity.this, new DatePickerDialog.OnDateSetListener() {
+        DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(new DatePickerDialog.OnDateSetListener() {
           @Override
-          public void onDateSet(DatePicker view, int year, int month, int dayOfMonth) {
-            Date date = new Date(year, month, dayOfMonth);
-            //mCycleAdapter.addCycle(new Cycle(date, ImmutableList.<ChartEntry>of()));
+          public void onDateSet(DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
+
           }
-        }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH));
-        datePickerDialog.show();
+        });
+        datePickerDialog.setTitle("Select cycle start");
+        datePickerDialog.setMaxDate(cal);
+        datePickerDialog.dis
+        datePickerDialog.show(getFragmentManager(), "datepickerdialog");
       }
     });
 
