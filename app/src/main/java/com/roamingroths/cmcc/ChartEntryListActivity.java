@@ -1,11 +1,9 @@
 package com.roamingroths.cmcc;
 
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -22,7 +20,7 @@ import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
-    ChartEntryAdapter.OnClickHandler, SharedPreferences.OnSharedPreferenceChangeListener {
+    ChartEntryAdapter.OnClickHandler {
 
   public static final int RC_SIGN_IN = 1;
 
@@ -68,22 +66,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
-    PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
     showProgress();
-  }
-
-  @Override
-  public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-    if (key.equals("enable_pre_peak_yellow_stickers")
-        || key.equals("enable_post_peak_yellow_stickers")) {
-      runOnUiThread(new Runnable() {
-        @Override
-        public void run() {
-          mChartEntryAdapter.notifyDataSetChanged();
-        }
-      });
-    }
   }
 
   @Override

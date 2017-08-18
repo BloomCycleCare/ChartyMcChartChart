@@ -2,6 +2,8 @@ package com.roamingroths.cmcc;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -27,6 +29,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private final ChartEntryListener mListener;
   private final AtomicBoolean mEntryListenerAttached;
   private final DatabaseReference mEntriesDbRef;
+  private final Preferences mPreferences;
   private ChartEntryList mChartEntryList;
 
   public ChartEntryAdapter(
@@ -40,9 +43,20 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mEntryListenerAttached = new AtomicBoolean(false);
     mContext = context;
     mClickHandler = clickHandler;
-    mChartEntryList = ChartEntryList.builder(cycle, Preferences.fromShared(mContext)).withAdapter(this).build();
+    mPreferences = Preferences.fromShared(mContext);
+    mChartEntryList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
     mListener = new ChartEntryListener(context, mChartEntryList);
     mChartEntryList.initialize(context, initializationCompleteCallback);
+
+    PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
+        new SharedPreferences.OnSharedPreferenceChangeListener() {
+          @Override
+          public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+            mPreferences.update(sharedPreferences);
+            notifyDataSetChanged();
+          }
+        }
+    );
   }
 
   public synchronized void attachListener() {

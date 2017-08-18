@@ -10,27 +10,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.DatePicker;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import java.util.Calendar;
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicLong;
 
 public class CycleListActivity extends AppCompatActivity
     implements CycleAdapter.OnClickHandler {
@@ -71,7 +61,6 @@ public class CycleListActivity extends AppCompatActivity
         });
         datePickerDialog.setTitle("Select cycle start");
         datePickerDialog.setMaxDate(cal);
-        datePickerDialog.dis
         datePickerDialog.show(getFragmentManager(), "datepickerdialog");
       }
     });

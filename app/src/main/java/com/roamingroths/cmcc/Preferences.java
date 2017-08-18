@@ -10,19 +10,27 @@ import android.support.v7.preference.PreferenceManager;
 
 public class Preferences {
 
-  private final boolean prePeakYellowEnabled;
-  private final boolean postPeakYellowEnabled;
+  private boolean prePeakYellowEnabled;
+  private boolean postPeakYellowEnabled;
 
   public static Preferences fromShared(Context context) {
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
-    return new Preferences(
-        preferences.getBoolean("enable_pre_peak_yellow_stickers", false),
-        preferences.getBoolean("enable_post_peak_yellow_stickers", false));
+    Preferences prefs = new Preferences();
+    prefs.update(PreferenceManager.getDefaultSharedPreferences(context));
+    return prefs;
+  }
+
+  public Preferences() {
+    this(false, false);
   }
 
   public Preferences(boolean prePeakYellowEnabled, boolean postPeakYellowEnabled) {
     this.prePeakYellowEnabled = prePeakYellowEnabled;
     this.postPeakYellowEnabled = postPeakYellowEnabled;
+  }
+
+  public void update(SharedPreferences preferences) {
+    this.prePeakYellowEnabled = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
+    this.postPeakYellowEnabled = preferences.getBoolean("enable_post_peak_yellow_stickers", false);
   }
 
   public boolean prePeakYellowEnabled() {
