@@ -215,11 +215,11 @@ public class ChartEntryList {
   }
 
   private boolean shouldShowBaby(int position, ChartEntry entry) {
-    if (entry == null) {
+    if (entry == null || entry.observation == null) {
       return false;
     }
     // Check for a red sticker
-    if (entry.observation != null && entry.observation.hasBlood()) {
+    if (entry.observation.hasBlood()) {
       return false;
     }
     // Suppress if prepeak and yellow stickers enabled
@@ -244,7 +244,7 @@ public class ChartEntryList {
   }
 
   private String getPeakDayViewText(ChartEntry entry) {
-    if (entry == null) {
+    if (entry == null || entry.observation == null) {
       return "";
     }
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
