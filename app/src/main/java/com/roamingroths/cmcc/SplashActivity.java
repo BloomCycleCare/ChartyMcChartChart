@@ -17,6 +17,7 @@ import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
@@ -168,12 +169,21 @@ public class SplashActivity extends AppCompatActivity {
     super.onActivityResult(requestCode, resultCode, data);
     switch (requestCode) {
       case RC_SIGN_IN:
-        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
           showError("Could not create user.");
         } else {
-          updateStatus("Account created successfully");
-          getCurrentCycleForUser(user);
+          try {
+            DataStore.registerUser(user, this, new Callbacks.HaltingCallback<Void>() {
+              @Override
+              public void acceptData(Void data) {
+                getCurrentCycleForUser(user);
+              }
+            });
+            updateStatus("Account created successfully");
+          } catch (CryptoUtil.CryptoException ce) {
+            showError("Error storing new user");
+          }
         }
         break;
       default:

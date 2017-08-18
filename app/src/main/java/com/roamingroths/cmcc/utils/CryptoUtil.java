@@ -92,6 +92,10 @@ public class CryptoUtil {
     return getPersonalPrivateKeyEntry(context).getCertificate().getPublicKey();
   }
 
+  public static String getPersonalPublicKeyStr(Context context) throws CryptoException {
+    return Base64.encodeToString(getPersonalPublicKey(context).getEncoded(), Base64.DEFAULT);
+  }
+
   private static PrivateKey getPersonalPrivateKey(Context context) throws CryptoException {
     return getPersonalPrivateKeyEntry(context).getPrivateKey();
   }
