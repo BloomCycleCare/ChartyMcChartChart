@@ -429,7 +429,7 @@ public class ChartEntryList {
           if (lastEntryDate.get() == null || lastEntryDate.get().isBefore(entryDate)) {
             lastEntryDate.set(entryDate);
           }
-          ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), context,
+          ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), mCycle.key,
               new Callbacks.Callback<ChartEntry>() {
                 @Override
                 public void acceptData(ChartEntry entry) {
@@ -472,8 +472,8 @@ public class ChartEntryList {
     Log.v("ChartEntryList", "Creating " + entriesRemaining.get() + " entries");
     for (LocalDate date : dates) {
       Log.v("ChartEntryList", "Creating empty entry for " + cycleId + " " + date);
-      final ChartEntry entry = ChartEntry.emptyEntry(date);
-      CryptoUtil.encrypt(entry, context, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<String>(callback) {
+      final ChartEntry entry = ChartEntry.emptyEntry(date, mCycle.key);
+      CryptoUtil.encrypt(entry, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<String>(callback) {
         @Override
         public void acceptData(String encryptedEntry) {
           Runnable runnable = new Runnable() {

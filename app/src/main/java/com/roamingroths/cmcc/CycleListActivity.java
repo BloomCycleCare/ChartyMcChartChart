@@ -38,7 +38,8 @@ public class CycleListActivity extends AppCompatActivity
 
     setTitle("Your Cycles");
 
-    mCycleAdapter = new CycleAdapter(this, this);
+    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    mCycleAdapter = new CycleAdapter(this, this, userId);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_cycle_entry);
     boolean shouldReverseLayout = false;

@@ -14,13 +14,15 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.data.Cycle;
-
-import org.joda.time.LocalDate;
+import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.utils.Callbacks;
 
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.crypto.SecretKey;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -30,11 +32,13 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     implements ChildEventListener {
 
   private final Context mContext;
+  private final String mUserId;
   private final OnClickHandler mClickHandler;
   private final Map<String, Cycle> mCycleIndex;
   private final SortedList<Cycle> mCycles;
 
-  public CycleAdapter(Context context, OnClickHandler clickHandler) {
+  public CycleAdapter(Context context, OnClickHandler clickHandler, String userId) {
+    mUserId = userId;
     mCycleIndex = new HashMap<>();
     mContext = context;
     mClickHandler = clickHandler;
@@ -140,14 +144,19 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   }
 
   @Override
-  public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-    Cycle cycle = Cycle.fromSnapshot(dataSnapshot);
-    if (mCycleIndex.containsKey(cycle.id)) {
-      maybeChangeCycle(cycle);
-      return;
-    }
-    mCycleIndex.put(cycle.id, cycle);
-    mCycles.add(cycle);
+  public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
+    DataStore.getCycleKey(mUserId, dataSnapshot.getKey(), new Callbacks.HaltingCallback<SecretKey>() {
+      @Override
+      public void acceptData(SecretKey key) {
+        Cycle cycle = Cycle.fromSnapshot(dataSnapshot, key);
+        if (mCycleIndex.containsKey(cycle.id)) {
+          maybeChangeCycle(cycle);
+          return;
+        }
+        mCycleIndex.put(cycle.id, cycle);
+        mCycles.add(cycle);
+      }
+    });
   }
 
   private void maybeChangeCycle(Cycle cycle) {
@@ -174,8 +183,13 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   }
 
   @Override
-  public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-    maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot));
+  public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
+    DataStore.getCycleKey(mUserId, dataSnapshot.getKey(), new Callbacks.HaltingCallback<SecretKey>() {
+      @Override
+      public void acceptData(SecretKey key) {
+        maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, key));
+      }
+    });
   }
 
   @Override

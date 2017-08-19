@@ -24,7 +24,7 @@ public class ChartEntryListener implements ChildEventListener {
 
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-    ChartEntry.fromSnapshot(dataSnapshot, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
+    ChartEntry.fromSnapshot(dataSnapshot, mList.mCycle.key, new Callbacks.HaltingCallback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry entry) {
         mList.addEntry(entry);
@@ -37,7 +37,7 @@ public class ChartEntryListener implements ChildEventListener {
     String dateStr = dataSnapshot.getKey();
     String encryptedPayload = dataSnapshot.getValue(String.class);
     ChartEntry.fromEncryptedString(
-        encryptedPayload, mContext, new Callbacks.HaltingCallback<ChartEntry>() {
+        encryptedPayload, mList.mCycle.key, new Callbacks.HaltingCallback<ChartEntry>() {
           @Override
           public void acceptData(ChartEntry entry) {
             mList.changeEntry(entry);

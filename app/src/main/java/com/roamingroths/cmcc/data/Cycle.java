@@ -6,9 +6,12 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+
+import javax.crypto.SecretKey;
 
 /**
  * Created by parkeroth on 4/30/17.
@@ -22,8 +25,9 @@ public class Cycle implements Parcelable {
   public final LocalDate startDate;
   public final LocalDate endDate;
   public final String startDateStr;
+  public final SecretKey key;
 
-  public static Cycle fromSnapshot(DataSnapshot snapshot) {
+  public static Cycle fromSnapshot(DataSnapshot snapshot, SecretKey key) {
     String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);
     String nextCycleId = snapshot.child("next-cycle-id").getValue(String.class);
     LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
@@ -31,10 +35,10 @@ public class Cycle implements Parcelable {
     if (snapshot.hasChild("end-date")) {
       endDate = DateUtil.fromWireStr(snapshot.child("end-date").getValue(String.class));
     }
-    return new Cycle(snapshot.getKey(), previousCycleId, nextCycleId, startDate, endDate);
+    return new Cycle(snapshot.getKey(), previousCycleId, nextCycleId, startDate, endDate, key);
   }
 
-  public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate) {
+  public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate, SecretKey key) {
     Preconditions.checkNotNull(startDate);
     this.id = id;
     this.previousCycleId = previousCycleId;
@@ -42,6 +46,7 @@ public class Cycle implements Parcelable {
     this.startDate = startDate;
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
+    this.key = key;
   }
 
   protected Cycle(Parcel in) {
@@ -50,7 +55,8 @@ public class Cycle implements Parcelable {
         in.readString(),
         in.readString(),
         DateUtil.fromWireStr(in.readString()),
-        DateUtil.fromWireStr(in.readString()));
+        DateUtil.fromWireStr(in.readString()),
+        CryptoUtil.parseSecretKey(in.readString()));
   }
 
   public static final Creator<Cycle> CREATOR = new Creator<Cycle>() {
@@ -77,6 +83,7 @@ public class Cycle implements Parcelable {
     dest.writeString(nextCycleId);
     dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
+    dest.writeString(CryptoUtil.serializeKey(key));
   }
 
   @Override

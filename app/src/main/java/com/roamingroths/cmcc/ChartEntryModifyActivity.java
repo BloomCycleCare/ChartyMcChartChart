@@ -146,7 +146,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
     expectUnusualBleeding = intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false);
 
-    DataStore.getChartEntry(this, mCycle.id, entryDateStr, new Callbacks.Callback<ChartEntry>() {
+    DataStore.getChartEntry(mCycle.id, entryDateStr, mCycle.key, new Callbacks.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
@@ -199,7 +199,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
     return new ChartEntry(
-        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding);
+        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, mCycle.key);
   }
 
   @Override
@@ -218,7 +218,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
         @Override
         public void acceptData(Cycle newCycle) {
           try {
-            DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+            DataStore.putChartEntry(newCycle.id, entry);
             returnIntent.putExtra(Cycle.class.getName(), newCycle);
             setResult(OK_RESPONSE, returnIntent);
             finish();
@@ -246,7 +246,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           @Override
           public void acceptData(Cycle newCycle) {
             try {
-              DataStore.putChartEntry(ChartEntryModifyActivity.this, newCycle.id, entry);
+              DataStore.putChartEntry(newCycle.id, entry);
               returnIntent.putExtra(Cycle.class.getName(), newCycle);
               setResult(OK_RESPONSE, returnIntent);
               finish();
@@ -265,7 +265,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     } else {
       Intent returnIntent = new Intent();
       try {
-        DataStore.putChartEntry(this, mCycle.id, entry);
+        DataStore.putChartEntry(mCycle.id, entry);
         setResult(OK_RESPONSE, returnIntent);
         finish();
       } catch (CryptoUtil.CryptoException ce) {

@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc.data;
 
-import android.content.Context;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
@@ -8,16 +7,19 @@ import android.support.annotation.Nullable;
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.Cipherable;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import javax.crypto.SecretKey;
+
 /**
  * Created by parkeroth on 4/22/17.
  */
 
-public class ChartEntry implements Parcelable {
+public class ChartEntry implements Parcelable, Cipherable {
 
   public LocalDate date;
   @Nullable public Observation observation;
@@ -26,10 +28,7 @@ public class ChartEntry implements Parcelable {
   public boolean firstDay;
   public boolean pointOfChange;
   public boolean unusualBleeding;
-
-  public ChartEntry() {
-    // Required for DataSnapshot.getValue(ChartEntry.class)
-  }
+  private transient SecretKey mKey;
 
   public ChartEntry(
       LocalDate date,
@@ -38,7 +37,8 @@ public class ChartEntry implements Parcelable {
       boolean intercourse,
       boolean firstDay,
       boolean pointOfChange,
-      boolean unusualBleeding) {
+      boolean unusualBleeding,
+      SecretKey key) {
     this.date = date;
     this.observation = observation;
     this.peakDay = peakDay;
@@ -49,6 +49,7 @@ public class ChartEntry implements Parcelable {
       throw new IllegalArgumentException();
     }
     this.unusualBleeding = unusualBleeding;
+    mKey = key;
   }
 
   public ChartEntry(Parcel in) {
@@ -59,21 +60,22 @@ public class ChartEntry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0,
-        in.readByte() != 0);
+        in.readByte() != 0,
+        CryptoUtil.parseSecretKey(in.readString()));
   }
 
-  public static ChartEntry emptyEntry(LocalDate date) {
-    return new ChartEntry(date, null, false, false, false, false, false);
+  public static ChartEntry emptyEntry(LocalDate date, SecretKey secretKey) {
+    return new ChartEntry(date, null, false, false, false, false, false, secretKey);
   }
 
   public static void fromEncryptedString(
-      String encryptedEntry, Context context, Callbacks.Callback<ChartEntry> callback) {
-    CryptoUtil.decrypt(encryptedEntry, context, ChartEntry.class, callback);
+      String encryptedEntry, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
+    CryptoUtil.decrypt(encryptedEntry, secretKey, ChartEntry.class, callback);
   }
 
   public static void fromSnapshot(
-      DataSnapshot snapshot, Context context, Callbacks.Callback<ChartEntry> callback) {
-    fromEncryptedString(snapshot.getValue(String.class), context, callback);
+      DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
+    fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
@@ -141,5 +143,15 @@ public class ChartEntry implements Parcelable {
   public int hashCode() {
     return Objects.hashCode(
         observation, peakDay, intercourse, date, firstDay, pointOfChange, unusualBleeding);
+  }
+
+  @Override
+  public SecretKey getKey() {
+    return mKey;
+  }
+
+  @Override
+  public void swapKey(SecretKey newKey) {
+    mKey = newKey;
   }
 }

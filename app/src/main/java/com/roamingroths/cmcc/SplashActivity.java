@@ -44,6 +44,12 @@ public class SplashActivity extends AppCompatActivity {
 
     mPreferences = Preferences.fromShared(getApplicationContext());
 
+    try {
+      CryptoUtil.init(this);
+    } catch (CryptoUtil.CryptoException ce) {
+      showError("Error initializing crypto.");
+    }
+
     showProgress("Loading user account");
 
     // Get user

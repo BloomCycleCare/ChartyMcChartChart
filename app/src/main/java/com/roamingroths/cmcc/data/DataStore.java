@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
+import javax.crypto.SecretKey;
+
 /**
  * Created by parkeroth on 5/13/17.
  */
@@ -37,15 +39,20 @@ public class DataStore {
 
   private static final FirebaseDatabase DB = FirebaseDatabase.getInstance();
 
-  public static void getCycle(String userId, @Nullable String cycleId, final Callback<Cycle> callback) {
+  public static void getCycle(final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
     if (Strings.isNullOrEmpty(cycleId)) {
       callback.acceptData(null);
       return;
     }
-    DB.getReference("cycles").child(userId).child(cycleId).addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+    getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
       @Override
-      public void onDataChange(DataSnapshot dataSnapshot) {
-        callback.acceptData(Cycle.fromSnapshot(dataSnapshot));
+      public void acceptData(final SecretKey key) {
+        DB.getReference("cycles").child(userId).child(cycleId).addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+          @Override
+          public void onDataChange(DataSnapshot dataSnapshot) {
+            callback.acceptData(Cycle.fromSnapshot(dataSnapshot, key));
+          }
+        });
       }
     });
   }
@@ -83,17 +90,35 @@ public class DataStore {
     };
     db.getReference("cycles").child(user.getUid()).addListenerForSingleValueEvent(listener);
   }
-  public static void getCurrentCycle(String userId, final Callback<Cycle> callback) {
+
+  public static void getCycleKey(String userId, String cycleId, final Callback<SecretKey> callback) {
+    DB.getReference("keys").child(cycleId).child(userId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
+      @Override
+      public void onDataChange(DataSnapshot dataSnapshot) {
+        Log.v("DataStore", "Found key for cycle");
+        String encryptedKey = dataSnapshot.getValue(String.class);
+        CryptoUtil.decryptKey(encryptedKey, callback);
+      }
+    });
+  }
+
+  public static void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
     DatabaseReference ref = DB.getReference("cycles").child(userId);
     ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
         // TODO: Optimize
         Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
-        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+        for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
           if (!snapshot.hasChild("end-date")) {
-            Log.v("DataSource", "Found current cycle");
-            callback.acceptData(Cycle.fromSnapshot(snapshot));
+            String cycleId = snapshot.getKey();
+            getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+              @Override
+              public void acceptData(SecretKey key) {
+                Log.v("DataSource", "Found current cycle");
+                callback.acceptData(Cycle.fromSnapshot(snapshot, key));
+              }
+            });
             return;
           }
         }
@@ -115,19 +140,30 @@ public class DataStore {
 
   public static void createCycle(
       final Context context,
-      String userId,
+      final String userId,
       @Nullable Cycle previousCycle,
       @Nullable Cycle nextCycle,
       final LocalDate startDate,
       final @Nullable LocalDate endDate,
       final Callback<Cycle> callback) {
+    SecretKey key = CryptoUtil.createSecretKey();
     DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
+    final String cycleId = cycleRef.getKey();
+    // Store key
+    CryptoUtil.encrypt(CryptoUtil.serializeKey(key), new Callbacks.ErrorForwardingCallback<String>(callback) {
+      @Override
+      public void acceptData(String encryptedKey) {
+        DB.getReference("keys").child(cycleId).child(userId).setValue(
+            encryptedKey, Listeners.completionListener(callback));
+      }
+    });
     final Cycle cycle = new Cycle(
-        cycleRef.getKey(),
+        cycleId,
         (previousCycle == null) ? null : previousCycle.id,
         (nextCycle == null) ? null : nextCycle.id,
         startDate,
-        endDate);
+        endDate,
+        key);
     Map<String, Object> updates = new HashMap<>();
     updates.put("previous-cycle-id", cycle.previousCycleId);
     updates.put("next-cycle-id", cycle.nextCycleId);
@@ -160,9 +196,9 @@ public class DataStore {
   }
 
 
-  public static void putChartEntry(Context context, final String cycleId, final ChartEntry entry)
+  public static void putChartEntry(final String cycleId, final ChartEntry entry)
       throws CryptoUtil.CryptoException {
-    CryptoUtil.encrypt(entry, context, new Callbacks.HaltingCallback<String>() {
+    CryptoUtil.encrypt(entry, new Callbacks.HaltingCallback<String>() {
       @Override
       public void acceptData(String encryptedEntry) {
         DB.getReference("entries").child(cycleId).child(entry.getDateStr()).setValue(encryptedEntry);
@@ -176,12 +212,12 @@ public class DataStore {
   }
 
   public static void getChartEntry(
-      final Context context, String cycleId, String entryDateStr, final Callback<ChartEntry> callback) {
+      String cycleId, String entryDateStr, final SecretKey key, final Callback<ChartEntry> callback) {
     DB.getReference("entries").child(cycleId).child(entryDateStr)
         .addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
-            ChartEntry.fromSnapshot(dataSnapshot, context, callback);
+            ChartEntry.fromSnapshot(dataSnapshot, key, callback);
           }
         });
   }
@@ -214,8 +250,8 @@ public class DataStore {
         final boolean shouldDropCycle = entriesToMove.size() == entrySnapshots.getChildrenCount();
         for (Map.Entry<String, String> entry : entriesToMove.entrySet()) {
           final String dateStr = entry.getKey();
-          final String encryptedEntry = entry.getValue();
-          DatabaseReference.CompletionListener moveCompleteListener =
+          String encryptedEntry = entry.getValue();
+          final DatabaseReference.CompletionListener moveCompleteListener =
               Listeners.completionListener(callback, new Runnable() {
                 @Override
                 public void run() {
@@ -239,7 +275,20 @@ public class DataStore {
                   sourceEntrisRef.child(dateStr).removeValue(rmListener);
                 }
               });
-          destinationEntriesRef.child(dateStr).setValue(encryptedEntry, moveCompleteListener);
+          CryptoUtil.decrypt(encryptedEntry, fromCycle.key, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(callback) {
+            @Override
+            public void acceptData(ChartEntry decryptedEntry) {
+              decryptedEntry.swapKey(toCycle.key);
+              Log.v("FOOBAR", fromCycle.key.hashCode() + " " + toCycle.key.hashCode());
+              CryptoUtil.encrypt(decryptedEntry, new Callbacks.ErrorForwardingCallback<String>(callback) {
+                @Override
+                public void acceptData(String newEncryptedEntry) {
+                  Log.v("FOOBAR", "BAZ");
+                  destinationEntriesRef.child(dateStr).setValue(newEncryptedEntry, moveCompleteListener);
+                }
+              });
+            }
+          });
         }
       }
     });
