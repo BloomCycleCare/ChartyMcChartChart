@@ -40,7 +40,8 @@ public class DataStore {
 
   private static final FirebaseDatabase DB = FirebaseDatabase.getInstance();
 
-  public static void getCycle(final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
+  public static void getCycle(
+      final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
     if (Strings.isNullOrEmpty(cycleId)) {
       callback.acceptData(null);
       return;
@@ -104,27 +105,35 @@ public class DataStore {
   }
 
   public static void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
-    DatabaseReference ref = DB.getReference("cycles").child(userId);
-    ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+    final DatabaseReference ref = DB.getReference("cycles").child(userId);
+    ref.keepSynced(true);
+    ref.child("pile-of-poo").setValue(true, new DatabaseReference.CompletionListener() {
       @Override
-      public void onDataChange(DataSnapshot dataSnapshot) {
-        // TODO: Optimize
-        Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
-        for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
-          if (!snapshot.hasChild("end-date")) {
-            String cycleId = snapshot.getKey();
-            getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
-              @Override
-              public void acceptData(SecretKey key) {
-                Log.v("DataSource", "Found current cycle");
-                callback.acceptData(Cycle.fromSnapshot(snapshot, key));
+      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        Log.v("DataSource", "Getting cycles for " + userId);
+        ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
+          @Override
+          public void onDataChange(DataSnapshot dataSnapshot) {
+            ref.child("pile-of-poo").removeValue();
+            // TODO: Optimize
+            Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
+            for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
+              if (!snapshot.hasChild("end-date")) {
+                String cycleId = snapshot.getKey();
+                getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+                  @Override
+                  public void acceptData(SecretKey key) {
+                    Log.v("DataSource", "Found current cycle");
+                    callback.acceptData(Cycle.fromSnapshot(snapshot, key));
+                  }
+                });
+                return;
               }
-            });
-            return;
+            }
+            Log.v("DataSource", "Could not find current cycle");
+            callback.handleNotFound();
           }
-        }
-        Log.v("DataSource", "Could not find current cycle");
-        callback.handleNotFound();
+        });
       }
     });
   }
@@ -251,6 +260,9 @@ public class DataStore {
                             Log.v("DataStore", "Entry moves complete");
                             if (shouldDropCycle) {
                               Log.v("DataStore", "Dropping cycle: " + fromCycle.id);
+                              // TODO: fix race
+                              DB.getReference("keys").child(fromCycle.id).removeValue(
+                                  Listeners.completionListener(callback));
                               DB.getReference("cycles").child(userId).child(fromCycle.id).removeValue(
                                   Listeners.completionListener(callback));
                             }

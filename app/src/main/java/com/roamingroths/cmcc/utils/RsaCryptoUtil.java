@@ -51,7 +51,7 @@ public class RsaCryptoUtil {
     cipherOutputStream.close();
 
     byte[] vals = outputStream.toByteArray();
-    return Base64.encodeToString(vals, Base64.DEFAULT);
+    return Base64.encodeToString(vals, Base64.NO_WRAP);
   }
 
   public static String decrypt(PrivateKey privateKey, String cipherText) throws Exception {
@@ -59,7 +59,7 @@ public class RsaCryptoUtil {
     output.init(Cipher.DECRYPT_MODE, privateKey);
 
     CipherInputStream cipherInputStream = new CipherInputStream(
-        new ByteArrayInputStream(Base64.decode(cipherText, Base64.DEFAULT)), output);
+        new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
     ArrayList<Byte> values = new ArrayList<>();
     int nextByte;
     while ((nextByte = cipherInputStream.read()) != -1) {
@@ -92,11 +92,11 @@ public class RsaCryptoUtil {
 
   public static String serializePublicKey(PublicKey key) throws Exception {
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(key.getEncoded());
-    return Base64.encodeToString(keySpec.getEncoded(), Base64.DEFAULT);
+    return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
   }
 
   public static PublicKey parsePublicKey(String keyStr) throws Exception {
-    byte[] encodedKey = Base64.decode(keyStr, Base64.DEFAULT);
+    byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encodedKey);
     KeyFactory factory = KeyFactory.getInstance("RSA");
     return factory.generatePublic(keySpec);
@@ -104,11 +104,11 @@ public class RsaCryptoUtil {
 
   public static String serializePrivateKey(PrivateKey key) throws Exception {
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(key.getEncoded());
-    return Base64.encodeToString(keySpec.getEncoded(), Base64.DEFAULT);
+    return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
   }
 
   public static PrivateKey parsePrivateKey(String keyStr) throws Exception {
-    byte[] encodedKey = Base64.decode(keyStr, Base64.DEFAULT);
+    byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encodedKey);
     KeyFactory factory = KeyFactory.getInstance("RSA");
     return factory.generatePrivate(keySpec);

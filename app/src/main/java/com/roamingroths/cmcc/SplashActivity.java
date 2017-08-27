@@ -263,7 +263,7 @@ public class SplashActivity extends AppCompatActivity {
 
   private void initUserState(final FirebaseUser user) {
     final Callbacks.Callback<Void> doneCallback = userInitCompleteCallback(user);
-
+    Log.v("SplashActivity", "Initializing user state");
     DatabaseReference userRef =
         FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
     userRef.addListenerForSingleValueEvent(
@@ -271,21 +271,25 @@ public class SplashActivity extends AppCompatActivity {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
             if (dataSnapshot.getChildrenCount() == 0) {
-              // No user in DB
+              Log.v("SplashActivity", "No user entry found in DB");
               createUserDbEntry(user, doneCallback);
             } else {
               // Found user in DB
+              Log.v("SplashActivity", "Found user entry in DB");
               if (CryptoUtil.initFromKeyStore()) {
+                Log.v("SplashActivity", "Crypto initialized from KeyStore");
                 doneCallback.acceptData(null);
                 return;
               }
-              final String publicKeyStr = dataSnapshot.child("public-key").getValue(String.class);
+              final String publicKeyStr = dataSnapshot.child("pub-key").getValue(String.class);
               final String privateKeyStr = dataSnapshot.child("private-key").getValue(String.class);
               promptForPhoneNumber(new ErrorPrintingCallback<String>() {
                 @Override
                 public void acceptData(String phoneNumberStr) {
                   try {
+                    Log.v("SplashActivity", "Initializing crypto decoding");
                     CryptoUtil.init(publicKeyStr, privateKeyStr, phoneNumberStr);
+                    doneCallback.acceptData(null);
                   } catch (CryptoUtil.CryptoException ce) {
                     handleError(DatabaseError.fromException(ce));
                   }
@@ -320,6 +324,7 @@ public class SplashActivity extends AppCompatActivity {
         callback.acceptData(phoneNumberStr);
       }
     });
+    Log.v("SplashActivity", "Prompting for phone number");
     builder.create().show();
   }
 

@@ -70,11 +70,11 @@ public class PbeCryptoUtil {
     AlgorithmParameters algParams = getAlgParams(params);
     EncryptedPrivateKeyInfo encInfo = new EncryptedPrivateKeyInfo(algParams, cipherBytes);
 
-    return Base64.encodeToString(encInfo.getEncoded(), Base64.DEFAULT);
+    return Base64.encodeToString(encInfo.getEncoded(), Base64.NO_WRAP);
   }
 
   public static PrivateKey unwrapPrivateKey(String password, String cipherText) throws Exception {
-    byte[] infoBytes = Base64.decode(cipherText, Base64.DEFAULT);
+    byte[] infoBytes = Base64.decode(cipherText, Base64.NO_WRAP);
     EncryptedPrivateKeyInfo encInfo = new EncryptedPrivateKeyInfo(infoBytes);
     PBEParameterSpec parameterSpec =
         encInfo.getAlgParameters().getParameterSpec(PBEParameterSpec.class);

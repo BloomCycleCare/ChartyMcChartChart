@@ -28,21 +28,21 @@ public class AesCryptoUtil {
     Cipher cipher = Cipher.getInstance(ALG);
     cipher.init(Cipher.ENCRYPT_MODE, key);
     byte[] cipherBytes = cipher.doFinal(rawText.getBytes());
-    return Base64.encodeToString(cipherBytes, Base64.DEFAULT);
+    return Base64.encodeToString(cipherBytes, Base64.NO_WRAP);
   }
 
   public static String decrypt(SecretKey key, String cipherStr) throws Exception {
     Cipher cipher = Cipher.getInstance(ALG);
     cipher.init(Cipher.DECRYPT_MODE, key);
-    return new String(cipher.doFinal(Base64.decode(cipherStr, Base64.DEFAULT)));
+    return new String(cipher.doFinal(Base64.decode(cipherStr, Base64.NO_WRAP)));
   }
 
   public static String serializeKey(SecretKey key) {
-    return Base64.encodeToString(key.getEncoded(), Base64.DEFAULT);
+    return Base64.encodeToString(key.getEncoded(), Base64.NO_WRAP);
   }
 
   public static SecretKey parseKey(String keyStr) {
-    byte[] encodedKey = Base64.decode(keyStr, Base64.DEFAULT);
+    byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
     return new SecretKeySpec(encodedKey, "AES");
   }
 }

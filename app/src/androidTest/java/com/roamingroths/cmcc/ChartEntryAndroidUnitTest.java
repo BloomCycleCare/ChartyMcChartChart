@@ -1,17 +1,20 @@
 package com.roamingroths.cmcc;
 
-import android.os.Parcel;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.google.common.collect.ImmutableList;
-import com.roamingroths.cmcc.data.ChartEntry;
-import com.roamingroths.cmcc.data.Observation;
+import com.roamingroths.cmcc.utils.AesCryptoUtil;
+import com.roamingroths.cmcc.utils.PbeCryptoUtil;
+import com.roamingroths.cmcc.utils.RsaCryptoUtil;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import java.util.Date;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
+
+import javax.crypto.SecretKey;
 
 import static org.junit.Assert.assertEquals;
 
@@ -19,23 +22,57 @@ import static org.junit.Assert.assertEquals;
 @SmallTest
 public class ChartEntryAndroidUnitTest {
 
-  private static final ImmutableList<String> OBSERVATION_STRS = ImmutableList.of(
-      "H", "VL10CKAD", "0X1", "10WLAD"
-  );
+  @Test
+  public void testPbeWrappedRsa() throws Exception {
+    String password = "password";
+
+    KeyPair originalKeyPair = RsaCryptoUtil.createKeyPair();
+
+    String encryptedPrivateKey =
+        PbeCryptoUtil.wrapPrivateKey(password, originalKeyPair.getPrivate());
+    PrivateKey decryptedPrivateKey = PbeCryptoUtil.unwrapPrivateKey(password, encryptedPrivateKey);
+
+    assertEquals(decryptedPrivateKey, originalKeyPair.getPrivate());
+  }
 
   @Test
-  public void chartEntry_ParcelableWriteRead() throws Exception {
-    Date date = ChartEntry.parseDate("2017-01-01");
-    for (String observationStr : OBSERVATION_STRS) {
-      ChartEntry entry = new ChartEntry(date, Observation.fromString(observationStr), true, true);
+  public void testRsaPublicKeyStorage() throws Exception {
+    PublicKey originalPublicKey = RsaCryptoUtil.createKeyPair().getPublic();
 
-      Parcel parcel = Parcel.obtain();
-      entry.writeToParcel(parcel, entry.describeContents());
+    PublicKey parsedPublicKey =
+        RsaCryptoUtil.parsePublicKey(RsaCryptoUtil.serializePublicKey(originalPublicKey));
+    assertEquals(parsedPublicKey, originalPublicKey);
+  }
 
-      parcel.setDataPosition(0);
+  @Test
+  public void testRsaPrivateKeyStorage() throws Exception {
+    PrivateKey originalPrivateKey = RsaCryptoUtil.createKeyPair().getPrivate();
 
-      ChartEntry createdFromParcel = ChartEntry.CREATOR.createFromParcel(parcel);
-      assertEquals(entry, createdFromParcel);
+    PrivateKey parsedPrivateKey =
+        RsaCryptoUtil.parsePrivateKey(RsaCryptoUtil.serializePrivateKey(originalPrivateKey));
+    if (!parsedPrivateKey.equals(originalPrivateKey)) {
+      throw new Exception();
+    }
+  }
+
+  @Test
+  public void testAesEncryptDecrypt() throws Exception {
+    String secret = "the secret";
+    SecretKey key = AesCryptoUtil.createKey();
+
+    String encryptedSecret = AesCryptoUtil.encrypt(key, secret);
+    String decryptedSecret = AesCryptoUtil.decrypt(key, encryptedSecret);
+    if (!decryptedSecret.equals(secret)) {
+      throw new Exception(decryptedSecret + " != " + secret);
+    }
+  }
+
+  @Test
+  public void testAesKeyStorage() throws Exception {
+    SecretKey key = AesCryptoUtil.createKey();
+
+    if (!key.equals(AesCryptoUtil.parseKey(AesCryptoUtil.serializeKey(key)))) {
+      throw new Exception();
     }
   }
 }

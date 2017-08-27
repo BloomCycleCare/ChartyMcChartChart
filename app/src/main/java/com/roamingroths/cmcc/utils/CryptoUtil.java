@@ -46,6 +46,7 @@ public class CryptoUtil {
       }
       KeyStore.PrivateKeyEntry entry =
           (KeyStore.PrivateKeyEntry) ks.getEntry(PERSONAL_PRIVATE_KEY_ALIAS, null);
+      Log.v("CryptoUtil", "Found key in KeyStore");
       init(new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey()));
       return true;
     } catch (Exception e) {
@@ -56,13 +57,23 @@ public class CryptoUtil {
 
   public static void init() throws CryptoException {
     try {
+      Log.v("CryptoUtil", "Creating new KeyPair");
+      KeyPair keyPair = RsaCryptoUtil.createKeyPair();
+      populateKeystore(keyPair);
+      init(keyPair);
+    } catch (Exception e) {
+      throw new CryptoException(e);
+    }
+  }
+
+  private static void populateKeystore(KeyPair keyPair) throws CryptoException {
+    try {
+      Log.v("CryptoUtil", "Adding keys to KeyStore");
       KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
       ks.load(null);
-      KeyPair keyPair = RsaCryptoUtil.createKeyPair();
       Certificate cert = RsaCryptoUtil.createCertificate(keyPair);
       ks.setKeyEntry(
           PERSONAL_PRIVATE_KEY_ALIAS, keyPair.getPrivate(), null, new Certificate[]{cert});
-      init(keyPair);
     } catch (Exception e) {
       throw new CryptoException(e);
     }
@@ -73,7 +84,10 @@ public class CryptoUtil {
     try {
       PublicKey publicKey = RsaCryptoUtil.parsePublicKey(publicKeyStr);
       PrivateKey privateKey = PbeCryptoUtil.unwrapPrivateKey(pbePassword, privateKeyStr);
-      init(new KeyPair(publicKey, privateKey));
+      Log.v("CryptoUtil", "Keys parsed successfully");
+      KeyPair keyPair = new KeyPair(publicKey, privateKey);
+      populateKeystore(keyPair);
+      init(keyPair);
     } catch (Exception e) {
       throw new CryptoException(e);
     }
