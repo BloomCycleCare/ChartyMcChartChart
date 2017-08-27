@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.utils.AesCryptoUtil;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Cipherable;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -61,7 +62,7 @@ public class ChartEntry implements Parcelable, Cipherable {
         in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0,
-        CryptoUtil.parseSecretKey(in.readString()));
+        AesCryptoUtil.parseKey(in.readString()));
   }
 
   public static ChartEntry emptyEntry(LocalDate date, SecretKey secretKey) {

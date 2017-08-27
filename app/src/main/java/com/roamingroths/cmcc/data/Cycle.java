@@ -6,7 +6,7 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
-import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.AesCryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -56,7 +56,7 @@ public class Cycle implements Parcelable {
         in.readString(),
         DateUtil.fromWireStr(in.readString()),
         DateUtil.fromWireStr(in.readString()),
-        CryptoUtil.parseSecretKey(in.readString()));
+        AesCryptoUtil.parseKey(in.readString()));
   }
 
   public static final Creator<Cycle> CREATOR = new Creator<Cycle>() {
@@ -83,7 +83,7 @@ public class Cycle implements Parcelable {
     dest.writeString(nextCycleId);
     dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
-    dest.writeString(CryptoUtil.serializeKey(key));
+    dest.writeString(AesCryptoUtil.serializeKey(key));
   }
 
   @Override

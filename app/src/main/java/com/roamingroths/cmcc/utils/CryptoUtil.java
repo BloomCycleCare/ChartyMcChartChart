@@ -2,8 +2,6 @@ package com.roamingroths.cmcc.utils;
 
 import android.content.Context;
 import android.os.AsyncTask;
-import android.security.KeyPairGeneratorSpec;
-import android.util.Base64;
 import android.util.Log;
 
 import com.google.common.base.Function;
@@ -13,27 +11,16 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.math.BigInteger;
-import java.security.Key;
-import java.security.KeyPairGenerator;
+import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.util.ArrayList;
-import java.util.Calendar;
+import java.security.cert.Certificate;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-import javax.crypto.Cipher;
-import javax.crypto.CipherInputStream;
-import javax.crypto.CipherOutputStream;
-import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
-import javax.crypto.spec.SecretKeySpec;
-import javax.security.auth.x500.X500Principal;
 
 /**
  * Created by parkeroth on 5/1/17.
@@ -41,90 +28,84 @@ import javax.security.auth.x500.X500Principal;
 
 public class CryptoUtil {
 
-  private static final int AES_KEY_SIZE = 256;
-  // TODO: move AES to CBC
-  private static final String AES_TRANSFORM = "AES/ECB/PKCS5Padding";
-  private static final String RSA_TRANSFORM = "RSA/ECB/PKCS1Padding";
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
   private static final String KEY_STORE = "AndroidKeyStore";
   private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
   private static PublicKey PUBLIC_KEY = null;
   private static PrivateKey PRIVATE_KEY = null;
 
-  public static void init(Context context) throws CryptoException {
-    if (PUBLIC_KEY == null) {
-      PUBLIC_KEY = getPersonalPublicKey(context);
-    }
-    if (PRIVATE_KEY == null) {
-      PRIVATE_KEY = getPersonalPrivateKey(context);
-    }
-  }
-
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
 
-  private static void createPersonalPrivateKey(Context context) throws CryptoException {
+  public static boolean initFromKeyStore() {
     try {
-      Calendar start = Calendar.getInstance();
-      Calendar end = Calendar.getInstance();
-      end.add(Calendar.YEAR, 100);
-      KeyPairGeneratorSpec spec = new KeyPairGeneratorSpec.Builder(context)
-          .setAlias(PERSONAL_PRIVATE_KEY_ALIAS)
-          .setSubject(new X500Principal("CN=ChartEntries, O=AndroidAuthority"))
-          .setSerialNumber(BigInteger.ONE)
-          .setStartDate(start.getTime())
-          .setEndDate(end.getTime())
-          .build();
-      KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA", KEY_STORE);
-      generator.initialize(spec);
-      generator.generateKeyPair();
-    } catch (Exception e) {
-      throw new CryptoException(e);
-    }
-  }
-
-  private static KeyStore.PrivateKeyEntry getPersonalPrivateKeyEntry(Context context) throws CryptoException {
-    try {
-      KeyStore keyStore = KeyStore.getInstance(KEY_STORE);
-      keyStore.load(null);
-      if (!keyStore.containsAlias(PERSONAL_PRIVATE_KEY_ALIAS)) {
-        createPersonalPrivateKey(context);
+      KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+      ks.load(null);
+      if (!ks.containsAlias(PERSONAL_PRIVATE_KEY_ALIAS)) {
+        return false;
       }
-      return (KeyStore.PrivateKeyEntry) keyStore.getEntry(PERSONAL_PRIVATE_KEY_ALIAS, null);
+      KeyStore.PrivateKeyEntry entry =
+          (KeyStore.PrivateKeyEntry) ks.getEntry(PERSONAL_PRIVATE_KEY_ALIAS, null);
+      init(new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey()));
+      return true;
+    } catch (Exception e) {
+      Log.w("CryptoUtil", e.getMessage());
+      return false;
+    }
+  }
+
+  public static void init() throws CryptoException {
+    try {
+      KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
+      ks.load(null);
+      KeyPair keyPair = RsaCryptoUtil.createKeyPair();
+      Certificate cert = RsaCryptoUtil.createCertificate(keyPair);
+      ks.setKeyEntry(
+          PERSONAL_PRIVATE_KEY_ALIAS, keyPair.getPrivate(), null, new Certificate[]{cert});
+      init(keyPair);
     } catch (Exception e) {
       throw new CryptoException(e);
     }
   }
 
-  private static PublicKey getPersonalPublicKey(Context context) throws CryptoException {
-    return getPersonalPrivateKeyEntry(context).getCertificate().getPublicKey();
+  public static void init(String publicKeyStr, String privateKeyStr, String pbePassword)
+      throws CryptoException {
+    try {
+      PublicKey publicKey = RsaCryptoUtil.parsePublicKey(publicKeyStr);
+      PrivateKey privateKey = PbeCryptoUtil.unwrapPrivateKey(pbePassword, privateKeyStr);
+      init(new KeyPair(publicKey, privateKey));
+    } catch (Exception e) {
+      throw new CryptoException(e);
+    }
   }
 
-  public static String getPersonalPublicKeyStr(Context context) throws CryptoException {
-    return Base64.encodeToString(getPersonalPublicKey(context).getEncoded(), Base64.DEFAULT);
+  private static void init(KeyPair keyPair) {
+    PUBLIC_KEY = keyPair.getPublic();
+    PRIVATE_KEY = keyPair.getPrivate();
   }
 
-  public static String serializeKey(Key key) {
-    return Base64.encodeToString(key.getEncoded(), Base64.DEFAULT);
+  public static String getPublicKeyStr() throws CryptoException {
+    try {
+      return RsaCryptoUtil.serializePublicKey(PUBLIC_KEY);
+    } catch (Exception e) {
+      throw new CryptoException(e);
+    }
   }
 
-  public static SecretKey parseSecretKey(String key) {
-    byte[] bytes = Base64.decode(key, Base64.DEFAULT);
-    return new SecretKeySpec(bytes, 0, bytes.length, "AES");
+  public static String getWrappedPrivateKeyStr(String password) throws CryptoException {
+    try {
+      return PbeCryptoUtil.wrapPrivateKey(password, PRIVATE_KEY);
+    } catch (Exception e) {
+      throw new CryptoException(e);
+    }
   }
 
   public static SecretKey createSecretKey() {
     try {
-      KeyGenerator keyGen = KeyGenerator.getInstance("AES");
-      keyGen.init(AES_KEY_SIZE);
-      return keyGen.generateKey();
+      return AesCryptoUtil.createKey();
     } catch (NoSuchAlgorithmException e) {
       throw new IllegalStateException(e);
     }
-  }
-
-  private static PrivateKey getPersonalPrivateKey(Context context) throws CryptoException {
-    return getPersonalPrivateKeyEntry(context).getPrivateKey();
   }
 
   public static void encrypt(final Object object, final Callbacks.Callback<String> callback) {
@@ -145,17 +126,7 @@ public class CryptoUtil {
       protected String doInBackground(String... params) {
         String rawText = params[0];
         try {
-          Cipher input = Cipher.getInstance(RSA_TRANSFORM);
-          input.init(Cipher.ENCRYPT_MODE, PUBLIC_KEY);
-
-          ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-          CipherOutputStream cipherOutputStream = new CipherOutputStream(
-              outputStream, input);
-          cipherOutputStream.write(rawText.getBytes("UTF-8"));
-          cipherOutputStream.close();
-
-          byte[] vals = outputStream.toByteArray();
-          return new String(Base64.encodeToString(vals, Base64.DEFAULT));
+          return RsaCryptoUtil.encrypt(PUBLIC_KEY, rawText);
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }
@@ -187,10 +158,7 @@ public class CryptoUtil {
       @Override
       protected String doInBackground(String... params) {
         try {
-          Cipher cipher = Cipher.getInstance(AES_TRANSFORM);
-          cipher.init(Cipher.ENCRYPT_MODE, key);
-          byte[] encrypted = cipher.doFinal(initialText.getBytes());
-          return Base64.encodeToString(encrypted, Base64.DEFAULT);
+          return AesCryptoUtil.encrypt(key, initialText);
         } catch (Exception e) {
           Log.w("CryptoUtil", e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
@@ -230,7 +198,7 @@ public class CryptoUtil {
     Function<String, SecretKey> transformer = new Function<String, SecretKey>() {
       @Override
       public SecretKey apply(String decryptedStr) {
-        return parseSecretKey(decryptedStr);
+        return AesCryptoUtil.parseKey(decryptedStr);
       }
     };
     decrypt(encryptedKey, new Callbacks.TransformingCallback<>(callback, transformer));
@@ -242,9 +210,7 @@ public class CryptoUtil {
       protected String doInBackground(String... params) {
         Log.v("CryptoUtil", "Begin symetric decryption");
         try {
-          Cipher cipher = Cipher.getInstance(AES_TRANSFORM);
-          cipher.init(Cipher.DECRYPT_MODE, key);
-          return new String(cipher.doFinal(Base64.decode(encryptedText, Base64.DEFAULT)));
+          return AesCryptoUtil.decrypt(key, encryptedText);
         } catch (Exception e) {
           Log.w("CryptoUtil", "Exception: " + e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
@@ -292,26 +258,7 @@ public class CryptoUtil {
         try {
           Log.v("CryptoUtil", "Begin decryption");
           String encryptedText = params[0];
-          Cipher output = Cipher.getInstance(RSA_TRANSFORM);
-          output.init(Cipher.DECRYPT_MODE, PRIVATE_KEY);
-
-          String cipherText = encryptedText;
-          CipherInputStream cipherInputStream = new CipherInputStream(
-              new ByteArrayInputStream(Base64.decode(cipherText, Base64.DEFAULT)), output);
-          ArrayList<Byte> values = new ArrayList<>();
-          int nextByte;
-          while ((nextByte = cipherInputStream.read()) != -1) {
-            values.add((byte) nextByte);
-          }
-
-          byte[] bytes = new byte[values.size()];
-          for (int i = 0; i < bytes.length; i++) {
-            bytes[i] = values.get(i).byteValue();
-          }
-
-          String outText = new String(bytes, 0, bytes.length, "UTF-8");
-          Log.v("CryptoUtil", "Finish decryption");
-          return outText;
+          return RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText);
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }

@@ -27,7 +27,7 @@ public class ChartEntryViewHolderTest {
 
   private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
   private static final String CYCLE_ID = "fake-cycle-id";
-  private static final Cycle CYCLE = new Cycle(CYCLE_ID, null, null, CYCLE_START_DATE, null);
+  private static final Cycle CYCLE = new Cycle(CYCLE_ID, null, null, CYCLE_START_DATE, null, null);
   private static final boolean PREPEAK_YELLOW_ENABLED = true;
   private static final boolean PREPEAK_YELLOW_DISABLED = false;
   private static final boolean POSTPEAK_YELLOW_ENABLED = true;
@@ -436,7 +436,7 @@ public class ChartEntryViewHolderTest {
 
     public ChartEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
       Observation observation = Observation.fromString(observationText);
-      return new ChartEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding);
+      return new ChartEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null);
     }
   }
 

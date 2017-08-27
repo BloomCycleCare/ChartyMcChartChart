@@ -26,6 +26,7 @@ dependencies {
     })
 
 
+    compile group: 'org.bouncycastle', name: 'bcprov-jdk16', version: '1.45'
     compile group: 'commons-codec', name: 'commons-codec', version: '1.5'
     compile group: 'com.google.guava', name: 'guava', version: '20.0'
     compile 'com.android.support:recyclerview-v7:25.0.1'

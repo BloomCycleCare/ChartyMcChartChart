@@ -5,24 +5,34 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
+import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.data.Cycle;
 import com.roamingroths.cmcc.data.DataStore;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
+import com.roamingroths.cmcc.utils.Listeners;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
 
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 
 import static com.roamingroths.cmcc.ChartEntryListActivity.RC_SIGN_IN;
 
@@ -32,6 +42,9 @@ public class SplashActivity extends AppCompatActivity {
   private Preferences mPreferences;
   private TextView mErrorView;
   private TextView mStatusView;
+
+  // - Get FirebaseUser (or create one)
+  // - Get try init Crypto and prompt if necessary
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -43,12 +56,6 @@ public class SplashActivity extends AppCompatActivity {
     mStatusView = (TextView) findViewById(R.id.splash_status_tv);
 
     mPreferences = Preferences.fromShared(getApplicationContext());
-
-    try {
-      CryptoUtil.init(this);
-    } catch (CryptoUtil.CryptoException ce) {
-      showError("Error initializing crypto.");
-    }
 
     showProgress("Loading user account");
 
@@ -63,8 +70,45 @@ public class SplashActivity extends AppCompatActivity {
               .build(),
           RC_SIGN_IN);
     } else {
-      getCurrentCycleForUser(user);
+      initUserState(user);
     }
+  }
+
+  private Callbacks.Callback<Void> userInitCompleteCallback(final FirebaseUser user) {
+    return new ErrorPrintingCallback<Void>() {
+
+      @Override
+      public void acceptData(Void unused) {
+        getCurrentCycleForUser(user);
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException();
+      }
+    };
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    switch (requestCode) {
+      case RC_SIGN_IN:
+        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+          showError("Could not create user.");
+        } else {
+          initUserState(user);
+        }
+        break;
+      default:
+        Log.w(SplashActivity.class.getName(), "Unknown request code: " + requestCode);
+    }
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    //No call for super(). Bug on API Level > 11.
   }
 
   private void preloadCycleData(final Cycle cycle) {
@@ -170,31 +214,113 @@ public class SplashActivity extends AppCompatActivity {
     });
   }
 
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    super.onActivityResult(requestCode, resultCode, data);
-    switch (requestCode) {
-      case RC_SIGN_IN:
-        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-          showError("Could not create user.");
-        } else {
-          try {
-            DataStore.registerUser(user, this, new Callbacks.HaltingCallback<Void>() {
-              @Override
-              public void acceptData(Void data) {
-                getCurrentCycleForUser(user);
-              }
-            });
-            updateStatus("Account created successfully");
-          } catch (CryptoUtil.CryptoException ce) {
-            showError("Error storing new user");
-          }
-        }
-        break;
-      default:
-        Log.w(SplashActivity.class.getName(), "Unknown request code: " + requestCode);
+  private abstract class ErrorPrintingListener implements ValueEventListener {
+
+    @Override
+    public final void onCancelled(DatabaseError error) {
+      Log.e("SplashActivity", error.getMessage());
+      showError(error.getMessage());
     }
+  }
+
+  private abstract class ErrorPrintingCallback<T> implements Callbacks.Callback<T> {
+    @Override
+    public void handleError(DatabaseError error) {
+      Log.e("SplashActivity", error.getMessage());
+      showError(error.getMessage());
+    }
+  }
+
+  private void createUserDbEntry(final FirebaseUser user, final Callbacks.Callback<Void> doneCallback) {
+    promptForPhoneNumber(new ErrorPrintingCallback<String>() {
+      @Override
+      public void acceptData(String phoneNumberStr) {
+        try {
+          CryptoUtil.init();
+          FirebaseDatabase db = FirebaseDatabase.getInstance();
+          final DatabaseReference userRef = db.getReference("users").child(user.getUid());
+          Map<String, Object> updates = new HashMap<>();
+          updates.put("display-name", user.getDisplayName());
+          updates.put("pub-key", CryptoUtil.getPublicKeyStr());
+          updates.put("private-key", CryptoUtil.getWrappedPrivateKeyStr(phoneNumberStr));
+          userRef.updateChildren(updates, Listeners.completionListener(doneCallback, new Runnable() {
+            @Override
+            public void run() {
+              doneCallback.acceptData(null);
+            }
+          }));
+        } catch (CryptoUtil.CryptoException ce) {
+          doneCallback.handleError(DatabaseError.fromException(ce));
+        }
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException();
+      }
+    });
+  }
+
+  private void initUserState(final FirebaseUser user) {
+    final Callbacks.Callback<Void> doneCallback = userInitCompleteCallback(user);
+
+    DatabaseReference userRef =
+        FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
+    userRef.addListenerForSingleValueEvent(
+        new ErrorPrintingListener() {
+          @Override
+          public void onDataChange(DataSnapshot dataSnapshot) {
+            if (dataSnapshot.getChildrenCount() == 0) {
+              // No user in DB
+              createUserDbEntry(user, doneCallback);
+            } else {
+              // Found user in DB
+              if (CryptoUtil.initFromKeyStore()) {
+                doneCallback.acceptData(null);
+                return;
+              }
+              final String publicKeyStr = dataSnapshot.child("public-key").getValue(String.class);
+              final String privateKeyStr = dataSnapshot.child("private-key").getValue(String.class);
+              promptForPhoneNumber(new ErrorPrintingCallback<String>() {
+                @Override
+                public void acceptData(String phoneNumberStr) {
+                  try {
+                    CryptoUtil.init(publicKeyStr, privateKeyStr, phoneNumberStr);
+                  } catch (CryptoUtil.CryptoException ce) {
+                    handleError(DatabaseError.fromException(ce));
+                  }
+                }
+
+                @Override
+                public void handleNotFound() {
+                  throw new IllegalStateException();
+                }
+              });
+            }
+          }
+        });
+  }
+
+  private void promptForPhoneNumber(final Callbacks.Callback<String> callback) {
+    AlertDialog.Builder builder = new AlertDialog.Builder(SplashActivity.this);
+    builder.setTitle("Current Phone Number");
+    builder.setMessage("This is used to protect your backups and is not stored by the app. To migrate your data to another device you will need to log in with the same account and provide this number to access your data.");
+    builder.setIcon(R.drawable.ic_key_black_24dp);
+    final EditText input = new EditText(SplashActivity.this);
+    input.setInputType(InputType.TYPE_CLASS_PHONE);
+    LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+        LinearLayout.LayoutParams.MATCH_PARENT,
+        LinearLayout.LayoutParams.MATCH_PARENT);
+    input.setLayoutParams(lp);
+    builder.setView(input);
+    builder.setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+      public void onClick(final DialogInterface dialog, int whichButton) {
+        // TODO: format and validate number
+        String phoneNumberStr = input.getText().toString();
+        callback.acceptData(phoneNumberStr);
+      }
+    });
+    builder.create().show();
   }
 
   private void showProgress(String initialStatus) {

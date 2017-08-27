@@ -16,6 +16,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.roamingroths.cmcc.utils.AesCryptoUtil;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -150,7 +151,7 @@ public class DataStore {
     DatabaseReference cycleRef = DB.getReference("cycles").child(userId).push();
     final String cycleId = cycleRef.getKey();
     // Store key
-    CryptoUtil.encrypt(CryptoUtil.serializeKey(key), new Callbacks.ErrorForwardingCallback<String>(callback) {
+    CryptoUtil.encrypt(AesCryptoUtil.serializeKey(key), new Callbacks.ErrorForwardingCallback<String>(callback) {
       @Override
       public void acceptData(String encryptedKey) {
         DB.getReference("keys").child(cycleId).child(userId).setValue(
@@ -180,21 +181,6 @@ public class DataStore {
       }
     });
   }
-
-
-  public static void registerUser(FirebaseUser user, Context context, final Callback<Void> callback) throws CryptoUtil.CryptoException {
-    DatabaseReference userRef = DB.getReference("users").child(user.getUid());
-    Map<String, Object> updates = new HashMap<>();
-    updates.put("display-name", user.getDisplayName());
-    updates.put("pub-key", CryptoUtil.getPersonalPublicKeyStr(context));
-    userRef.updateChildren(updates, Listeners.completionListener(callback, new Runnable() {
-      @Override
-      public void run() {
-        callback.acceptData(null);
-      }
-    }));
-  }
-
 
   public static void putChartEntry(final String cycleId, final ChartEntry entry)
       throws CryptoUtil.CryptoException {
