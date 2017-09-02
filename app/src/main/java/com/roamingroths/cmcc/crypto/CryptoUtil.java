@@ -1,6 +1,5 @@
-package com.roamingroths.cmcc.utils;
+package com.roamingroths.cmcc.crypto;
 
-import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
 
@@ -10,6 +9,8 @@ import com.google.common.base.Strings;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
+import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.GsonUtil;
 
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -122,18 +123,6 @@ public class CryptoUtil {
     }
   }
 
-  public static void encrypt(final Object object, final Callbacks.Callback<String> callback) {
-    Log.v("CryptoUtil", "Encrypting " + object.getClass().getName());
-    encrypt(GsonUtil.getGsonInstance().toJson(object),
-        new Callbacks.ErrorForwardingCallback<String>(callback) {
-          @Override
-          public void acceptData(String encryptedText) {
-            callback.acceptData(encryptedText);
-            OBJECT_CACHE.put(encryptedText.hashCode(), object);
-          }
-        });
-  }
-
   public static void encrypt(String initialText, final Callbacks.Callback<String> callback) {
     new AsyncTask<String, Integer, String>() {
       @Override
@@ -242,27 +231,6 @@ public class CryptoUtil {
         }
       }
     }.executeOnExecutor(EXECUTOR, encryptedText);
-  }
-
-  public static <T> void decrypt(
-      final String encryptedText, Context context, final Class<T> clazz, Callbacks.Callback<T> callback) {
-    Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
-    if (cachedObject != null) {
-      Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
-      callback.acceptData((T) cachedObject);
-      return;
-    }
-    Function<String, T> transformer = new Function<String, T>() {
-      @Override
-      public T apply(String decryptedStr) {
-        Log.v("CryptoUtil", "Decrypting " + clazz.getName());
-        T decryptedObject = Preconditions.checkNotNull(
-            GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz));
-        OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
-        return decryptedObject;
-      }
-    };
-    decrypt(encryptedText, new Callbacks.TransformingCallback<String, T>(callback, transformer));
   }
 
   public static void decrypt(String encryptedText, final Callbacks.Callback<String> callback) {

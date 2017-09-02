@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.utils;
+package com.roamingroths.cmcc.crypto;
 
 import javax.crypto.SecretKey;
 

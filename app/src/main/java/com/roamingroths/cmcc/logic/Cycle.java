@@ -6,7 +6,7 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
-import com.roamingroths.cmcc.utils.AesCryptoUtil;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

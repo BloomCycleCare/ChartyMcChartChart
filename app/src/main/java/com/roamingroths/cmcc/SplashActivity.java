@@ -21,10 +21,10 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.Listeners;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 

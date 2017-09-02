@@ -3,9 +3,9 @@ package com.roamingroths.cmcc;
 import android.support.test.filters.SmallTest;
 import android.support.test.runner.AndroidJUnit4;
 
-import com.roamingroths.cmcc.utils.AesCryptoUtil;
-import com.roamingroths.cmcc.utils.PbeCryptoUtil;
-import com.roamingroths.cmcc.utils.RsaCryptoUtil;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.roamingroths.cmcc.crypto.PbeCryptoUtil;
+import com.roamingroths.cmcc.crypto.RsaCryptoUtil;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
