@@ -15,7 +15,8 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.roamingroths.cmcc.data.DataStore;
+import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -24,6 +25,8 @@ import java.util.Calendar;
 
 public class CycleListActivity extends AppCompatActivity
     implements CycleAdapter.OnClickHandler {
+
+  private CycleProvider mCycleProvider;
 
   private RecyclerView mRecyclerView;
   private CycleAdapter mCycleAdapter;
@@ -36,10 +39,12 @@ public class CycleListActivity extends AppCompatActivity
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     //setSupportActionBar(toolbar);
 
+    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+
     setTitle("Your Cycles");
 
     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-    mCycleAdapter = new CycleAdapter(this, this, userId);
+    mCycleAdapter = new CycleAdapter(this, this, userId, mCycleProvider.getCycleKeyProvider());
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_cycle_entry);
     boolean shouldReverseLayout = false;
@@ -72,13 +77,13 @@ public class CycleListActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
-    DataStore.attachCycleListener(mCycleAdapter, mUserId);
+    mCycleProvider.attachListener(mCycleAdapter, mUserId);
   }
 
   @Override
   protected void onPause() {
     super.onPause();
-    DataStore.detachCycleListener(mCycleAdapter, mUserId);
+    mCycleProvider.detachListener(mCycleAdapter, mUserId);
   }
 
   @Override
@@ -107,7 +112,7 @@ public class CycleListActivity extends AppCompatActivity
           .setMessage("This is permanent and cannot be undone!")
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
-              DataStore.dropCycles(new Callbacks.HaltingCallback<Void>() {
+              mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
                 @Override
                 public void acceptData(Void data) {
                   Intent intent = new Intent(CycleListActivity.this, SplashActivity.class);

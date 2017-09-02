@@ -22,7 +22,10 @@ import android.widget.Toast;
 import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.DataStore;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Observation;
@@ -41,6 +44,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
 
   public static final int OK_RESPONSE = 0;
   public static final int CANCEL_RESPONSE = 1;
+
+  private ChartEntryProvider chartEntryProvider;
+  private CycleProvider cycleProvider;
 
   private TextInputEditText mObservationEditText;
   private TextView mObservationDescriptionTextView;
@@ -83,6 +89,9 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_observation_modify);
+
+    chartEntryProvider = ChartEntryProvider.forDb(FirebaseDatabase.getInstance());
+    cycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
 
     mUnusualBleedingLayout = findViewById(R.id.unusual_bleeding_layout);
     mUnusualBleedingSwitch = (Switch) findViewById(R.id.switch_unusual_bleeding);
@@ -146,7 +155,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
     expectUnusualBleeding = intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false);
 
-    DataStore.getChartEntry(mCycle.id, entryDateStr, mCycle.key, new Callbacks.Callback<ChartEntry>() {
+    chartEntryProvider.getChartEntry(mCycle.id, entryDateStr, mCycle.key, new Callbacks.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
@@ -214,14 +223,11 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     if (entry.firstDay) {
       // Try and split the current cycle
-      DataStore.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
+      cycleProvider.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
         @Override
         public void acceptData(Cycle newCycle) {
           try {
-            DataStore.putChartEntry(newCycle.id, entry);
-            returnIntent.putExtra(Cycle.class.getName(), newCycle);
-            setResult(OK_RESPONSE, returnIntent);
-            finish();
+            chartEntryProvider.putEntry(newCycle.id, entry, completionListener(newCycle));
           } catch (CryptoUtil.CryptoException ce) {
             ce.printStackTrace();
           }
@@ -242,14 +248,11 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
         });
         builder.create().show();
       } else {
-        DataStore.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
+        cycleProvider.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
           @Override
           public void acceptData(Cycle newCycle) {
             try {
-              DataStore.putChartEntry(newCycle.id, entry);
-              returnIntent.putExtra(Cycle.class.getName(), newCycle);
-              setResult(OK_RESPONSE, returnIntent);
-              finish();
+              chartEntryProvider.putEntry(newCycle.id, entry, completionListener(newCycle));
             } catch (CryptoUtil.CryptoException ce) {
               ce.printStackTrace();
             }
@@ -259,15 +262,28 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     }
   }
 
+  private DatabaseReference.CompletionListener completionListener(final Cycle newCycle) {
+    return new DatabaseReference.CompletionListener() {
+      @Override
+      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        if (databaseError != null) {
+          databaseError.toException().printStackTrace();
+          return;
+        }
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(Cycle.class.getName(), newCycle);
+        setResult(OK_RESPONSE, returnIntent);
+        finish();
+      }
+    };
+  }
+
   private void doSaveAction(final ChartEntry entry) {
     if (mExistingEntry.firstDay != entry.firstDay) {
       maybeSplitOrJoinCycle(entry);
     } else {
-      Intent returnIntent = new Intent();
       try {
-        DataStore.putChartEntry(mCycle.id, entry);
-        setResult(OK_RESPONSE, returnIntent);
-        finish();
+        chartEntryProvider.putEntry(mCycle.id, entry, completionListener(mCycle));
       } catch (CryptoUtil.CryptoException ce) {
         ce.printStackTrace();
       }
@@ -325,11 +341,15 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
           .setMessage("Do you want to permanently delete this entry?")
           .setIcon(R.drawable.ic_delete_forever_black_24dp)
           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-              //your deleting code
-              DataStore.deleteChartEntry(mCycle.id, mEntryDate);
-              dialog.dismiss();
-              finish();
+            public void onClick(final DialogInterface dialog, int whichButton) {
+              DatabaseReference.CompletionListener listener = new DatabaseReference.CompletionListener() {
+                @Override
+                public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+                  dialog.dismiss();
+                  finish();
+                }
+              };
+              chartEntryProvider.deleteChartEntry(mCycle.id, mEntryDate, listener);
             }
           })
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

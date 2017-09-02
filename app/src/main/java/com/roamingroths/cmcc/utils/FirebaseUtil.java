@@ -24,11 +24,15 @@ public class FirebaseUtil {
     reference.child("pile-of-poo").setValue(true, new DatabaseReference.CompletionListener() {
       @Override
       public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        reference.addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
+        reference.child("pile-of-poo").removeValue(new DatabaseReference.CompletionListener() {
           @Override
-          public void onDataChange(DataSnapshot dataSnapshot) {
-            reference.child("pile-of-poo").removeValue();
-            listener.onDataChange(dataSnapshot);
+          public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+            reference.addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
+              @Override
+              public void onDataChange(DataSnapshot dataSnapshot) {
+                listener.onDataChange(dataSnapshot);
+              }
+            });
           }
         });
       }

@@ -21,7 +21,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.CryptoUtil;
@@ -37,6 +37,8 @@ import java.util.Map;
 import static com.roamingroths.cmcc.ChartEntryListActivity.RC_SIGN_IN;
 
 public class SplashActivity extends AppCompatActivity {
+
+  private CycleProvider mCycleProvider;
 
   private ProgressBar mProgressBar;
   private Preferences mPreferences;
@@ -56,6 +58,8 @@ public class SplashActivity extends AppCompatActivity {
     mStatusView = (TextView) findViewById(R.id.splash_status_tv);
 
     mPreferences = Preferences.fromShared(getApplicationContext());
+
+    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
 
     showProgress("Loading user account");
 
@@ -79,6 +83,7 @@ public class SplashActivity extends AppCompatActivity {
 
       @Override
       public void acceptData(Void unused) {
+        showProgress("User initialization complete");
         getCurrentCycleForUser(user);
       }
 
@@ -133,7 +138,7 @@ public class SplashActivity extends AppCompatActivity {
             .setMessage("This is permanent and cannot be undone!")
             .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
               public void onClick(final DialogInterface dialog, int whichButton) {
-                DataStore.dropCycles(new Callbacks.HaltingCallback<Void>() {
+                mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
                   @Override
                   public void acceptData(Void data) {
                     dialog.dismiss();
@@ -159,7 +164,7 @@ public class SplashActivity extends AppCompatActivity {
   }
 
   private void promptForStartOfCurrentCycle(final FirebaseUser user) {
-    log("Prompting for start of first cycle.");
+    updateStatus("Prompting for start of first cycle.");
     updateStatus("Creating first cycle");
     DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
         new DatePickerDialog.OnDateSetListener() {
@@ -177,7 +182,7 @@ public class SplashActivity extends AppCompatActivity {
             Cycle previousCycle = null;
             Cycle nextCycle = null;
             LocalDate cycleEndDate = null;
-            DataStore.createCycle(
+            mCycleProvider.createCycle(
                 getApplicationContext(),
                 user.getUid(),
                 previousCycle,
@@ -194,15 +199,16 @@ public class SplashActivity extends AppCompatActivity {
 
   private void getCurrentCycleForUser(final FirebaseUser user) {
     updateStatus("Fetching current cycle");
-    DataStore.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
+    mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
       @Override
       public void acceptData(Cycle cycle) {
-        log("Received current cycle from DB.");
+        updateStatus("Received current cycle from DB.");
         preloadCycleData(cycle);
       }
 
       @Override
       public void handleNotFound() {
+        updateStatus("No cycle found in DB.");
         promptForStartOfCurrentCycle(user);
       }
 
@@ -232,10 +238,12 @@ public class SplashActivity extends AppCompatActivity {
   }
 
   private void createUserDbEntry(final FirebaseUser user, final Callbacks.Callback<Void> doneCallback) {
+    showProgress("Creating new user");
     promptForPhoneNumber(new ErrorPrintingCallback<String>() {
       @Override
       public void acceptData(String phoneNumberStr) {
         try {
+          showProgress("Initializing crypto");
           CryptoUtil.init();
           FirebaseDatabase db = FirebaseDatabase.getInstance();
           final DatabaseReference userRef = db.getReference("users").child(user.getUid());
@@ -246,9 +254,11 @@ public class SplashActivity extends AppCompatActivity {
           userRef.updateChildren(updates, Listeners.completionListener(doneCallback, new Runnable() {
             @Override
             public void run() {
+              showProgress("Successfuly stored user in DB");
               doneCallback.acceptData(null);
             }
           }));
+          showProgress("Storing user in DB");
         } catch (CryptoUtil.CryptoException ce) {
           doneCallback.handleError(DatabaseError.fromException(ce));
         }
@@ -328,10 +338,11 @@ public class SplashActivity extends AppCompatActivity {
     builder.create().show();
   }
 
-  private void showProgress(String initialStatus) {
+  private void showProgress(String message) {
+    Log.v("SplashActivity", message);
     mProgressBar.setVisibility(View.VISIBLE);
 
-    updateStatus(initialStatus);
+    updateStatus(message);
     mStatusView.setVisibility(View.VISIBLE);
 
     mErrorView.setText("");

@@ -13,7 +13,7 @@ import com.google.common.base.Preconditions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.DataStore;
+import com.roamingroths.cmcc.data.CycleKeyProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 
@@ -36,12 +36,14 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   private final OnClickHandler mClickHandler;
   private final Map<String, Cycle> mCycleIndex;
   private final SortedList<Cycle> mCycles;
+  private final CycleKeyProvider mCycleKeyProvider;
 
-  public CycleAdapter(Context context, OnClickHandler clickHandler, String userId) {
+  public CycleAdapter(Context context, OnClickHandler clickHandler, String userId, CycleKeyProvider cycleKeyProvider) {
     mUserId = userId;
     mCycleIndex = new HashMap<>();
     mContext = context;
     mClickHandler = clickHandler;
+    mCycleKeyProvider = cycleKeyProvider;
     mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
       @Override
       public int compare(Cycle c1, Cycle c2) {
@@ -145,7 +147,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-    DataStore.getCycleKey(mUserId, dataSnapshot.getKey(), new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
         Cycle cycle = Cycle.fromSnapshot(dataSnapshot, key);
@@ -184,7 +186,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
-    DataStore.getCycleKey(mUserId, dataSnapshot.getKey(), new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
         maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, key));
