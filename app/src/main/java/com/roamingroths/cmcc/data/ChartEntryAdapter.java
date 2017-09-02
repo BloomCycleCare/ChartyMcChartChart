@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.data;
 
 import android.content.Context;
 import android.content.Intent;
@@ -12,7 +12,11 @@ import android.view.ViewGroup;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
+import com.roamingroths.cmcc.ChartEntryModifyActivity;
+import com.roamingroths.cmcc.ChartEntryViewHolder;
+import com.roamingroths.cmcc.Extras;
+import com.roamingroths.cmcc.Preferences;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;

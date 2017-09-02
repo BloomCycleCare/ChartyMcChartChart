@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;

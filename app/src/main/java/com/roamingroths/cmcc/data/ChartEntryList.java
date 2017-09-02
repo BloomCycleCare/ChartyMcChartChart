@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.data;
 
 import android.content.Context;
 import android.support.annotation.Nullable;
@@ -7,7 +7,9 @@ import android.util.Log;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
+import com.roamingroths.cmcc.ChartEntryViewHolder;
+import com.roamingroths.cmcc.Preferences;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;

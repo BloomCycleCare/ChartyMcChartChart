@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.data;
 
 import android.content.Context;
 import android.support.v7.util.SortedList;
@@ -13,7 +13,7 @@ import com.google.common.base.Preconditions;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.CycleKeyProvider;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 
