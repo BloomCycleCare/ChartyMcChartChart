@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc.data;
 
-import android.content.Context;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -72,7 +71,6 @@ public class CycleProvider {
   }
 
   public void createCycle(
-      final Context context,
       final String userId,
       @Nullable Cycle previousCycle,
       @Nullable Cycle nextCycle,
@@ -226,7 +224,6 @@ public class CycleProvider {
   }
 
   public void splitCycle(
-      final Context context,
       final String userId,
       final Cycle currentCycle,
       final ChartEntry firstEntry,
@@ -240,7 +237,6 @@ public class CycleProvider {
           @Override
           public void acceptData(@Nullable final Cycle nextCycle) {
             createCycle(
-                context,
                 userId,
                 currentCycle,
                 nextCycle,

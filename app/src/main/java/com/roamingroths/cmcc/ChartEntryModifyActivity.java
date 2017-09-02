@@ -223,7 +223,7 @@ public class ChartEntryModifyActivity extends AppCompatActivity {
     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     if (entry.firstDay) {
       // Try and split the current cycle
-      cycleProvider.splitCycle(this, userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
+      cycleProvider.splitCycle(userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
         @Override
         public void acceptData(Cycle newCycle) {
           try {

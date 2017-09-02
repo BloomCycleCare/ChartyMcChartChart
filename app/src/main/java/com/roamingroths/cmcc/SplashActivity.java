@@ -183,7 +183,6 @@ public class SplashActivity extends AppCompatActivity {
             Cycle nextCycle = null;
             LocalDate cycleEndDate = null;
             mCycleProvider.createCycle(
-                getApplicationContext(),
                 user.getUid(),
                 previousCycle,
                 nextCycle,
