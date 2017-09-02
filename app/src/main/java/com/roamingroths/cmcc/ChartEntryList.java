@@ -6,17 +6,13 @@ import android.support.v7.util.SortedList;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -28,8 +24,6 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -68,16 +62,16 @@ public class ChartEntryList {
     holder.setShowBaby(shouldShowBaby(position, entry));
   }
 
-  public void initialize(final Context context, final Callbacks.Callback<Void> doneCallback) {
+  public void initialize(final ChartEntryProvider chartEntryProvider, final Callbacks.Callback<Void> doneCallback) {
     if (mInitialized.compareAndSet(false, true)) {
-      fillFromDb(context, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
+      fillFromProvider(chartEntryProvider, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
         @Override
         public void acceptData(@Nullable LocalDate lastEntryDate) {
           if (mCycle.endDate == null
               && (lastEntryDate == null || lastEntryDate.isBefore(DateUtil.now()))) {
             LocalDate endDate = null;
             LocalDate startDate = lastEntryDate == null ? mCycle.startDate : lastEntryDate;
-            createEmptyEntries(context, startDate, endDate, true, doneCallback);
+            createEmptyEntries(startDate, endDate, chartEntryProvider, doneCallback);
           } else {
             doneCallback.acceptData(null);
           }
@@ -405,94 +399,45 @@ public class ChartEntryList {
     }
   }
 
-  private void fillFromDb(
-      final Context context,
-      Callbacks.Callback<LocalDate> lastDateAddedCallback) {
+  private void fillFromProvider(
+      ChartEntryProvider chartEntryProvider,
+      final Callbacks.Callback<LocalDate> lastDateAddedCallback) {
     Log.v("ChartEntryList", "Begin filling from DB");
     final Callbacks.Callback<LocalDate> wrappedCallback =
         Callbacks.singleUse(Preconditions.checkNotNull(lastDateAddedCallback));
-    DatabaseReference dbRef =
-        FirebaseDatabase.getInstance().getReference("entries").child(mCycle.id);
-    dbRef.keepSynced(true);
-    dbRef.addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(wrappedCallback) {
+    chartEntryProvider.getDecryptedEntries(mCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(wrappedCallback) {
       @Override
-      public void onDataChange(DataSnapshot entriesSnapshot) {
-        final AtomicLong entriesToDecrypt = new AtomicLong(entriesSnapshot.getChildrenCount());
-        Log.v("ChartEntryList", "Found " + entriesToDecrypt.get() + " entries.");
-        if (entriesToDecrypt.get() == 0) {
-          Log.v("ChartEntryList", "Done filling");
-          wrappedCallback.acceptData(null);
-        }
-        final AtomicReference<LocalDate> lastEntryDate = new AtomicReference<>();
-        for (DataSnapshot entrySnapshot : entriesSnapshot.getChildren()) {
-          LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
-          if (lastEntryDate.get() == null || lastEntryDate.get().isBefore(entryDate)) {
-            lastEntryDate.set(entryDate);
+      public void acceptData(Map<LocalDate, ChartEntry> entries) {
+        LocalDate lastEntryDate = null;
+        for (Map.Entry<LocalDate, ChartEntry> mapEntry : entries.entrySet()) {
+          LocalDate entryDate = mapEntry.getKey();
+          if (lastEntryDate == null || lastEntryDate.isBefore(entryDate)) {
+            lastEntryDate = entryDate;
           }
-          ChartEntry.fromEncryptedString(entrySnapshot.getValue(String.class), mCycle.key,
-              new Callbacks.Callback<ChartEntry>() {
-                @Override
-                public void acceptData(ChartEntry entry) {
-                  addEntry(entry);
-                  long numLeftToDecrypt = entriesToDecrypt.decrementAndGet();
-                  if (numLeftToDecrypt < 1) {
-                    Log.v("ChartEntryList", "Done filling");
-                    wrappedCallback.acceptData(lastEntryDate.get());
-                  } else {
-                    Log.v("ChartEntryList", "Still waiting for " + numLeftToDecrypt + " decryptions");
-                  }
-                }
-                @Override
-                public void handleNotFound() {
-                }
-                @Override
-                public void handleError(DatabaseError error) {
-                }
-              });
+          addEntry(mapEntry.getValue());
         }
+        lastDateAddedCallback.acceptData(lastEntryDate);
       }
     });
   }
 
   private void createEmptyEntries(
-      Context context,
       LocalDate startDate,
       @Nullable LocalDate endDate,
-      final boolean waitForServerResponse,
+      ChartEntryProvider chartEntryProvider,
       final Callbacks.Callback<?> callback) {
-    String cycleId = mCycle.id;
-    final DatabaseReference ref =
-        FirebaseDatabase.getInstance().getReference("entries").child(cycleId);
     endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
     Set<LocalDate> dates = new HashSet<>();
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
       dates.add(date);
     }
-    final AtomicLong entriesRemaining = new AtomicLong(dates.size());
-    Log.v("ChartEntryList", "Creating " + entriesRemaining.get() + " entries");
-    for (LocalDate date : dates) {
-      Log.v("ChartEntryList", "Creating empty entry for " + cycleId + " " + date);
-      final ChartEntry entry = ChartEntry.emptyEntry(date, mCycle.key);
-      CryptoUtil.encrypt(entry, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<String>(callback) {
-        @Override
-        public void acceptData(String encryptedEntry) {
-          Runnable runnable = new Runnable() {
-            @Override
-            public void run() {
-              addEntry(entry);
-              if (entriesRemaining.decrementAndGet() == 0 && waitForServerResponse) {
-                callback.acceptData(null);
-              }
-              Log.v("ChartEntryList", "Still waiting for " + entriesRemaining.get() + " creations");
-            }
-          };
-          ref.child(entry.getDateStr()).setValue(
-              encryptedEntry, Listeners.completionListener(callback, runnable));
+    chartEntryProvider.createEmptyEntries(mCycle, dates, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(callback) {
+      @Override
+      public void acceptData(Map<LocalDate, ChartEntry> data) {
+        for (ChartEntry entry : data.values()) {
+          addEntry(entry);
         }
-      }));
-    }
-    if (!waitForServerResponse) {
-      callback.acceptData(null);
-    }
+      }
+    });
   }
 }

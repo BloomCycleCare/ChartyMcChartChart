@@ -12,6 +12,7 @@ import android.view.ViewGroup;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -37,6 +38,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       Cycle cycle,
       OnClickHandler clickHandler,
       FirebaseDatabase db,
+      ChartEntryProvider chartEntryProvider,
       Callbacks.Callback<Void> initializationCompleteCallback) {
     mEntriesDbRef = db.getReference("entries").child(cycle.id);
     mEntriesDbRef.keepSynced(true);
@@ -46,7 +48,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mPreferences = Preferences.fromShared(mContext);
     mChartEntryList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
     mListener = new ChartEntryListener(context, mChartEntryList);
-    mChartEntryList.initialize(context, initializationCompleteCallback);
+    mChartEntryList.initialize(chartEntryProvider, initializationCompleteCallback);
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {

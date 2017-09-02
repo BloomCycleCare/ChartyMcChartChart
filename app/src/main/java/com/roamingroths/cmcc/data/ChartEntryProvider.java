@@ -1,10 +1,15 @@
 package com.roamingroths.cmcc.data;
 
+import android.util.Log;
+
+import com.google.common.collect.Maps;
 import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -14,6 +19,7 @@ import org.joda.time.LocalDate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -39,6 +45,32 @@ public class ChartEntryProvider {
 
   private DatabaseReference reference(String cycleId, String dateStr) {
     return reference(cycleId).child(dateStr);
+  }
+
+  public void createEmptyEntries(
+      final Cycle cycle, final Set<LocalDate> dates, final Callback<Map<LocalDate, ChartEntry>> callback) {
+    final Map<LocalDate, ChartEntry> entries = Maps.newConcurrentMap();
+    Log.v("ChartEntryList", "Creating " + dates.size() + " entries");
+    for (LocalDate date : dates) {
+      Log.v("ChartEntryList", "Creating empty entry for " + cycle.id + " " + date);
+      final ChartEntry entry = ChartEntry.emptyEntry(date, cycle.key);
+      Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+          entries.put(entry.date, entry);
+          int entriesRemaining = dates.size() - entries.size();
+          if (entriesRemaining == 0) {
+            callback.acceptData(entries);
+          }
+          Log.v("ChartEntryList", "Still waiting for " + entriesRemaining + " creations");
+        }
+      };
+      try {
+        putEntry(cycle.id, entry, Listeners.completionListener(callback, runnable));
+      } catch (CryptoUtil.CryptoException ce) {
+        callback.handleError(DatabaseError.fromException(ce));
+      }
+    }
   }
 
   public void putEntry(
@@ -68,7 +100,7 @@ public class ChartEntryProvider {
     });
   }
 
-  public void getEntries(
+  public void getEncryptedEntries(
       String cycleId, final Callback<Map<LocalDate, String>> callback) {
     reference(cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
       @Override
@@ -79,6 +111,28 @@ public class ChartEntryProvider {
           entries.put(entryDate, entrySnapshot.getValue(String.class));
         }
         callback.acceptData(entries);
+      }
+    });
+  }
+
+  public void getDecryptedEntries(final Cycle cycle, final Callback<Map<LocalDate, ChartEntry>> callback) {
+    getEncryptedEntries(cycle.id, new Callbacks.ErrorForwardingCallback<Map<LocalDate, String>>(callback) {
+      @Override
+      public void acceptData(final Map<LocalDate, String> encryptedEntries) {
+        final Map<LocalDate, ChartEntry> decryptedEntries = Maps.newConcurrentMap();
+        Log.v("ChartEntryProvider", "Found " + encryptedEntries.size() + " entries to decrypt.");
+        for (Map.Entry<LocalDate, String> entry : encryptedEntries.entrySet()) {
+          String encryptedEntry = entry.getValue();
+          CryptoUtil.decrypt(encryptedEntry, cycle.key, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(this) {
+            @Override
+            public void acceptData(ChartEntry decryptedEntry) {
+              decryptedEntries.put(decryptedEntry.date, decryptedEntry);
+              if (decryptedEntries.size() == encryptedEntries.size()) {
+                callback.acceptData(decryptedEntries);
+              }
+            }
+          });
+        }
       }
     });
   }

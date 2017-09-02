@@ -60,6 +60,10 @@ public class CycleProvider {
     return cycleKeyProvider;
   }
 
+  public ChartEntryProvider getChartEntryProvider() {
+    return chartEntryProvider;
+  }
+
   public void attachListener(ChildEventListener listener, String userId) {
     DatabaseReference ref = reference(userId);
     ref.addChildEventListener(listener);
@@ -279,56 +283,52 @@ public class CycleProvider {
       final Callback<?> callback) {
     logV("Source cycle id: " + fromCycle.id);
     logV("Destination cycle id: " + toCycle.id);
-    chartEntryProvider.getEntries(fromCycle.id, new Callbacks.ErrorForwardingCallback<Map<LocalDate, String>>(callback) {
+    chartEntryProvider.getDecryptedEntries(fromCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(callback) {
       @Override
-      public void acceptData(Map<LocalDate, String> entries) {
-        Map<LocalDate, String> entriesToMove = Maps.filterKeys(entries, datePredicate);
+      public void acceptData(Map<LocalDate, ChartEntry> decryptedEntries) {
+        Map<LocalDate, ChartEntry> entriesToMove = Maps.filterKeys(decryptedEntries, datePredicate);
         final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
-        final boolean shouldDropCycle = entriesToMove.size() == entries.size();
+        final boolean shouldDropCycle = entriesToMove.size() == decryptedEntries.size();
 
         logV("Moving " + outstandingRemovals.get() + " entries");
-        for (Map.Entry<LocalDate, String> entry : entriesToMove.entrySet()) {
-          final LocalDate entryDate = entry.getKey();
+        for (Map.Entry<LocalDate, ChartEntry> mapEntry : entriesToMove.entrySet()) {
+          final LocalDate entryDate = mapEntry.getKey();
           final String dateStr = DateUtil.toWireStr(entryDate);
-          String encryptedEntry = entry.getValue();
+          ChartEntry decryptedEntry = mapEntry.getValue();
+          decryptedEntry.swapKey(toCycle.key);
+
+          final DatabaseReference.CompletionListener rmListener =
+              Listeners.completionListener(callback, new Runnable() {
+                @Override
+                public void run() {
+                  logV("Removed entry: " + dateStr);
+                  if (outstandingRemovals.decrementAndGet() == 0) {
+                    logV("Entry moves complete");
+                    if (shouldDropCycle) {
+                      logV("Dropping cycle: " + fromCycle.id);
+                      // TODO: fix race
+                      cycleKeyProvider.forCycle(fromCycle.id).dropKeys(callback);
+                      reference(userId, fromCycle.id).removeValue(
+                          Listeners.completionListener(callback));
+                    }
+                    callback.acceptData(null);
+                  }
+                }
+              });
           final DatabaseReference.CompletionListener moveCompleteListener =
               Listeners.completionListener(callback, new Runnable() {
                 @Override
                 public void run() {
                   logV("Added entry: " + dateStr);
-                  DatabaseReference.CompletionListener rmListener =
-                      Listeners.completionListener(callback, new Runnable() {
-                        @Override
-                        public void run() {
-                          logV("Removed entry: " + dateStr);
-                          if (outstandingRemovals.decrementAndGet() == 0) {
-                            logV("Entry moves complete");
-                            if (shouldDropCycle) {
-                              logV("Dropping cycle: " + fromCycle.id);
-                              // TODO: fix race
-                              cycleKeyProvider.forCycle(fromCycle.id).dropKeys(callback);
-                              reference(userId, fromCycle.id).removeValue(
-                                  Listeners.completionListener(callback));
-                            }
-                            callback.acceptData(null);
-                          }
-                        }
-                      });
                   chartEntryProvider.deleteChartEntry(fromCycle.id, entryDate, rmListener);
                 }
               });
-          CryptoUtil.decrypt(encryptedEntry, fromCycle.key, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(callback) {
-            @Override
-            public void acceptData(ChartEntry decryptedEntry) {
-              decryptedEntry.swapKey(toCycle.key);
-              Log.v("FOOBAR", fromCycle.key.hashCode() + " " + toCycle.key.hashCode());
-              try {
-                chartEntryProvider.putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
-              } catch (CryptoUtil.CryptoException ce) {
-                handleError(DatabaseError.fromException(ce));
-              }
-            }
-          });
+
+          try {
+            chartEntryProvider.putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
+          } catch (CryptoUtil.CryptoException ce) {
+            handleError(DatabaseError.fromException(ce));
+          }
         }
       }
     });

@@ -15,6 +15,7 @@ import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -31,6 +32,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private FirebaseDatabase mDb;
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
+  private ChartEntryProvider mChartEntryProvider;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -41,6 +43,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
     mDb = FirebaseDatabase.getInstance();
+    mChartEntryProvider = ChartEntryProvider.forDb(mDb);
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
     Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
@@ -56,7 +59,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     };
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, mDb, adapterInitialzationCallback);
+        getApplicationContext(), cycle, this, mDb, mChartEntryProvider, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -151,7 +154,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       }
     };
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), newCycle, this, mDb, adapterInitialzationCallback);
+        getApplicationContext(), newCycle, this, mDb, mChartEntryProvider, adapterInitialzationCallback);
     mRecyclerView.setAdapter(mChartEntryAdapter);
   }
 
