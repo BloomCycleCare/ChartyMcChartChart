@@ -3,9 +3,9 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.data.ChartEntry;
-import com.roamingroths.cmcc.data.Cycle;
-import com.roamingroths.cmcc.data.Observation;
+import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.Observation;
 
 import org.joda.time.LocalDate;
 import org.junit.Test;

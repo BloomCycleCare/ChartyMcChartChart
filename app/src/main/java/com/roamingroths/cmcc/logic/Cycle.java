@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.logic;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -25,7 +25,7 @@ public class Cycle implements Parcelable {
   public final LocalDate startDate;
   public final LocalDate endDate;
   public final String startDateStr;
-  public final SecretKey key;
+  public final transient SecretKey key;
 
   public static Cycle fromSnapshot(DataSnapshot snapshot, SecretKey key) {
     String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);

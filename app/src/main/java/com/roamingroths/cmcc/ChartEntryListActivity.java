@@ -15,8 +15,8 @@ import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.data.ChartEntry;
-import com.roamingroths.cmcc.data.Cycle;
+import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 
 public class ChartEntryListActivity extends AppCompatActivity implements

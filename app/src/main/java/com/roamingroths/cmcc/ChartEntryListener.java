@@ -5,7 +5,7 @@ import android.content.Context;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.utils.Callbacks;
 
 /**

@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.roamingroths.cmcc.data.ChartEntry;
+import com.roamingroths.cmcc.logic.ChartEntry;
 
 /**
  * Created by parkeroth on 7/1/17.

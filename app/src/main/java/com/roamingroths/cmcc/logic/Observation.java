@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.logic;
 
 import android.os.Parcel;
 import android.os.Parcelable;
