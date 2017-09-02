@@ -21,6 +21,7 @@ import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.CryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.FirebaseUtil;
 import com.roamingroths.cmcc.utils.Listeners;
 import com.roamingroths.cmcc.utils.Listeners.SimpleValueEventListener;
 
@@ -106,34 +107,25 @@ public class DataStore {
 
   public static void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
     final DatabaseReference ref = DB.getReference("cycles").child(userId);
-    ref.keepSynced(true);
-    ref.child("pile-of-poo").setValue(true, new DatabaseReference.CompletionListener() {
+    FirebaseUtil.criticalRead(ref, callback, new SimpleValueEventListener(callback) {
       @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        Log.v("DataSource", "Getting cycles for " + userId);
-        ref.addListenerForSingleValueEvent(new SimpleValueEventListener(callback) {
-          @Override
-          public void onDataChange(DataSnapshot dataSnapshot) {
-            ref.child("pile-of-poo").removeValue();
-            // TODO: Optimize
-            Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
-            for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
-              if (!snapshot.hasChild("end-date")) {
-                String cycleId = snapshot.getKey();
-                getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
-                  @Override
-                  public void acceptData(SecretKey key) {
-                    Log.v("DataSource", "Found current cycle");
-                    callback.acceptData(Cycle.fromSnapshot(snapshot, key));
-                  }
-                });
-                return;
+      public void onDataChange(DataSnapshot dataSnapshot) {
+        Log.v("DataSource", "Received " + dataSnapshot.getChildrenCount() + " cycles");
+        for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
+          if (!snapshot.hasChild("end-date")) {
+            String cycleId = snapshot.getKey();
+            getCycleKey(userId, cycleId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+              @Override
+              public void acceptData(SecretKey key) {
+                Log.v("DataSource", "Found current cycle");
+                callback.acceptData(Cycle.fromSnapshot(snapshot, key));
               }
-            }
-            Log.v("DataSource", "Could not find current cycle");
-            callback.handleNotFound();
+            });
+            return;
           }
-        });
+        }
+        Log.v("DataSource", "Could not find current cycle");
+        callback.handleNotFound();
       }
     });
   }
