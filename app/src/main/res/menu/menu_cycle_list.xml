@@ -3,6 +3,11 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="com.roamingroths.cmcc.CycleListActivity">
     <item
+        android:id="@+id/action_export"
+        android:orderInCategory="1"
+        app:showAsAction="never"
+        android:title="Export Data"/>
+    <item
         android:id="@+id/action_drop_cycles"
         android:orderInCategory="1"
         app:showAsAction="never"

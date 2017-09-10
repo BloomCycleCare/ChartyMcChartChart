@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.data;
 import android.content.Context;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -147,7 +148,9 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
+    String cycleId = dataSnapshot.getKey();
+    Log.v("CycleAdapter", "onChildAdded id=" + cycleId);
+    mCycleKeyProvider.forCycle(cycleId).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
         Cycle cycle = Cycle.fromSnapshot(dataSnapshot, key);
@@ -186,6 +189,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
+    Log.v("CycleAdapter", "onChildChanged");
     mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
@@ -196,6 +200,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public void onChildRemoved(DataSnapshot dataSnapshot) {
+    Log.v("CycleAdapter", "onChildRemoved");
     int index = findCycle(dataSnapshot.getKey());
     if (index < 0) {
       throw new IllegalStateException("Couldn't find cycle for update!");

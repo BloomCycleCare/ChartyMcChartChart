@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -28,8 +29,11 @@ import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import javax.crypto.SecretKey;
@@ -115,28 +119,77 @@ public class CycleProvider {
     });
   }
 
-
-  public void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
-    logV("Fetching user's cycles");
-    FirebaseUtil.criticalRead(reference(userId), callback, new Listeners.SimpleValueEventListener(callback) {
+  private void getCycles(
+      final String userId, final Predicate<DataSnapshot> fetchPredicate, boolean criticalRead, final Callback<Collection<Cycle>> callback) {
+    logV("Fetching cycles");
+    ValueEventListener listener = new Listeners.SimpleValueEventListener(callback) {
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
         logV("Received " + dataSnapshot.getChildrenCount() + " cycles");
-        for (final DataSnapshot snapshot : dataSnapshot.getChildren()) {
-          if (!snapshot.hasChild("end-date")) {
-            String cycleId = snapshot.getKey();
-            cycleKeyProvider.forCycle(cycleId).getKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
-              @Override
-              public void acceptData(SecretKey key) {
-                logV("Found current cycle");
-                callback.acceptData(Cycle.fromSnapshot(snapshot, key));
-              }
-            });
-            return;
+        if (dataSnapshot.getChildrenCount() == 0) {
+          callback.acceptData(ImmutableSet.<Cycle>of());
+        }
+        final Set<DataSnapshot> snapshots = new HashSet<>();
+        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+          if (fetchPredicate.apply(snapshot)) {
+            snapshots.add(snapshot);
           }
         }
-        logV("Could not find current cycle");
-        callback.handleNotFound();
+        final Map<String, Cycle> cycles = Maps.newConcurrentMap();
+        for (final DataSnapshot snapshot : snapshots) {
+          final String cycleId = snapshot.getKey();
+          cycleKeyProvider.forCycle(cycleId).getKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+            @Override
+            public void acceptData(SecretKey key) {
+              Cycle cycle = Cycle.fromSnapshot(snapshot, key);
+              cycles.put(cycle.id, cycle);
+              if (cycles.size() == snapshots.size()) {
+                callback.acceptData(cycles.values());
+              }
+            }
+
+            @Override
+            public void handleNotFound() {
+              Log.w("CycleProvider", "Could not find key for user " + userId + " cycle " + cycleId);
+              callback.handleNotFound();
+            }
+          });
+        }
+      }
+    };
+    DatabaseReference ref = reference(userId);
+    if (criticalRead) {
+      FirebaseUtil.criticalRead(ref, callback, listener);
+    } else {
+      ref.addListenerForSingleValueEvent(listener);
+    }
+  }
+
+  public void getAllCycles(String userId, Callback<Collection<Cycle>> callback) {
+    getCycles(userId, Predicates.<DataSnapshot>alwaysTrue(), false, callback);
+  }
+
+  public void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
+    logV("Fetching user's cycles");
+    Predicate<DataSnapshot> fetchPredicate = new Predicate<DataSnapshot>() {
+      @Override
+      public boolean apply(DataSnapshot snapshot) {
+        return !snapshot.hasChild("end-date");
+      }
+    };
+    getCycles(userId, fetchPredicate, true, new Callbacks.ErrorForwardingCallback<Collection<Cycle>>(callback) {
+      @Override
+      public void acceptData(Collection<Cycle> data) {
+        if (data.size() == 0) {
+          callback.handleNotFound();
+          return;
+        }
+        if (data.size() == 1) {
+          logV("Could not find current cycle");
+          callback.acceptData(data.iterator().next());
+          return;
+        }
+        callback.handleError(DatabaseError.fromException(new IllegalStateException()));
       }
     });
   }

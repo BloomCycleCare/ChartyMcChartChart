@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
+import com.google.common.base.Strings;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -41,12 +42,15 @@ public class CycleKeyProvider {
 
     public void getKey(
         String userId, final Callback<SecretKey> callback) {
-      Log.v("CycleKeyProvider", "Fetching key");
+      Log.v("CycleKeyProvider", "Fetching key for user " + userId + " cycle " + ref.getKey());
       ref.child(userId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
           Log.v("CycleKeyProvider", "Found key for cycle");
           String encryptedKey = dataSnapshot.getValue(String.class);
+          if (Strings.isNullOrEmpty(encryptedKey)) {
+            callback.handleNotFound();
+          }
           CryptoUtil.decryptKey(encryptedKey, callback);
         }
       });

@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -121,6 +122,9 @@ public class ChartEntryProvider {
       public void acceptData(final Map<LocalDate, String> encryptedEntries) {
         final Map<LocalDate, ChartEntry> decryptedEntries = Maps.newConcurrentMap();
         Log.v("ChartEntryProvider", "Found " + encryptedEntries.size() + " entries to decrypt.");
+        if (encryptedEntries.isEmpty()) {
+          callback.acceptData(ImmutableMap.<LocalDate, ChartEntry>of());
+        }
         for (Map.Entry<LocalDate, String> entry : encryptedEntries.entrySet()) {
           String encryptedEntry = entry.getValue();
           CryptoUtil.decrypt(encryptedEntry, cycle.key, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(this) {

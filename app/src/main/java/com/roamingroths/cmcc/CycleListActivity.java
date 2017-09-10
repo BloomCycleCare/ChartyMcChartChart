@@ -3,25 +3,35 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.ShareCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleAdapter;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.FileUtil;
+import com.roamingroths.cmcc.utils.GsonUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
+import java.io.File;
 import java.util.Calendar;
 
 public class CycleListActivity extends AppCompatActivity
@@ -130,6 +140,47 @@ public class CycleListActivity extends AppCompatActivity
           })
           .create().show();
       return true;
+    }
+    if (id == R.id.action_export) {
+      Log.v("CycleListActivity", "Begin export");
+      final CycleListActivity activity = this;
+      AppState.create(mCycleProvider, new Callbacks.HaltingCallback<AppState>() {
+        @Override
+        public void acceptData(AppState appState) {
+          try {
+            String json = GsonUtil.getGsonInstance().toJson(appState);
+
+            FileUtil.shareAppState(appState, activity);
+            File path = new File(activity.getFilesDir(), "tmp/");
+            if (!path.exists()) {
+              path.mkdir();
+            }
+            File file = new File(path, "cmcc_export.chart");
+
+            Files.write(json, file, Charsets.UTF_8);
+
+            Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+
+            Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
+                .setSubject("CMCC Export")
+                .setEmailTo(null)
+                .setType("application/json")
+                .setStream(uri)
+                .getIntent();
+            shareIntent.setData(uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+            startActivity(shareIntent);
+          } catch (Exception e) {
+            e.printStackTrace();
+          }
+        }
+
+        @Override
+        public void handleNotFound() {
+          Log.w("CycleListActivity", "Could not create AppState");
+        }
+      });
     }
     return super.onOptionsItemSelected(item);
   }

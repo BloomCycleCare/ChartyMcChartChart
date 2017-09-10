@@ -200,19 +200,53 @@ public class SplashActivity extends AppCompatActivity {
     datePickerDialog.show(getFragmentManager(), "datepickerdialog");
   }
 
+  private void importDataFromIntent(Intent intent) {
+
+  }
+
   private void getCurrentCycleForUser(final FirebaseUser user) {
     updateStatus("Fetching current cycle");
+    final Intent intent = getIntent();
+    final boolean importingData = intent.getAction().equals(Intent.ACTION_VIEW);
     mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
       @Override
       public void acceptData(Cycle cycle) {
         updateStatus("Received current cycle from DB.");
-        preloadCycleData(cycle);
+        if (importingData) {
+          new AlertDialog.Builder(SplashActivity.this)
+              //set message, title, and icon
+              .setTitle("Import data from file?")
+              .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
+              .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+                public void onClick(final DialogInterface dialog, int whichButton) {
+                  mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
+                    @Override
+                    public void acceptData(Void data) {
+                      dialog.dismiss();
+                    }
+                  });
+                }
+              })
+              .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                  showError("Please restart the app.");
+                  dialog.dismiss();
+                }
+              })
+              .create().show();
+        } else {
+          preloadCycleData(cycle);
+        }
       }
 
       @Override
       public void handleNotFound() {
         updateStatus("No cycle found in DB.");
-        promptForStartOfCurrentCycle(user);
+        if (importingData) {
+          importDataFromIntent(intent);
+        } else {
+          promptForStartOfCurrentCycle(user);
+        }
       }
 
       @Override
@@ -341,28 +375,43 @@ public class SplashActivity extends AppCompatActivity {
     builder.create().show();
   }
 
-  private void showProgress(String message) {
-    Log.v("SplashActivity", message);
-    mProgressBar.setVisibility(View.VISIBLE);
+  private void showProgress(final String message) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        Log.v("SplashActivity", message);
+        mProgressBar.setVisibility(View.VISIBLE);
 
-    updateStatus(message);
-    mStatusView.setVisibility(View.VISIBLE);
+        updateStatus(message);
+        mStatusView.setVisibility(View.VISIBLE);
 
-    mErrorView.setText("");
-    mErrorView.setVisibility(View.INVISIBLE);
+        mErrorView.setText("");
+        mErrorView.setVisibility(View.INVISIBLE);
+      }
+    });
   }
 
-  private void updateStatus(String status) {
-    mStatusView.setText(status);
+  private void updateStatus(final String status) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        mStatusView.setText(status);
+      }
+    });
   }
 
-  private void showError(String errorText) {
-    mProgressBar.setVisibility(View.INVISIBLE);
+  private void showError(final String errorText) {
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        mProgressBar.setVisibility(View.INVISIBLE);
 
-    mStatusView.setVisibility(View.INVISIBLE);
+        mStatusView.setVisibility(View.INVISIBLE);
 
-    mErrorView.setText(errorText);
-    mErrorView.setVisibility(View.VISIBLE);
+        mErrorView.setText(errorText);
+        mErrorView.setVisibility(View.VISIBLE);
+      }
+    });
   }
 
   private void log(String message) {

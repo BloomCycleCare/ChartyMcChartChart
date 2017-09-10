@@ -2,6 +2,8 @@ package com.roamingroths.cmcc.crypto;
 
 import android.util.Base64;
 
+import com.google.common.base.Strings;
+
 import org.bouncycastle.asn1.x509.X509Name;
 import org.bouncycastle.x509.X509V3CertificateGenerator;
 
@@ -55,6 +57,9 @@ public class RsaCryptoUtil {
   }
 
   public static String decrypt(PrivateKey privateKey, String cipherText) throws Exception {
+    if (Strings.isNullOrEmpty(cipherText)) {
+      return cipherText;
+    }
     Cipher output = Cipher.getInstance(TRANSFORM);
     output.init(Cipher.DECRYPT_MODE, privateKey);
 

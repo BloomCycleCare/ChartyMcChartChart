@@ -69,6 +69,7 @@ public class ChartEntryList {
       fillFromProvider(chartEntryProvider, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
         @Override
         public void acceptData(@Nullable LocalDate lastEntryDate) {
+          Log.v("ChartEntryList", lastEntryDate == null ? "Null last entry date" : lastEntryDate.toString());
           if (mCycle.endDate == null
               && (lastEntryDate == null || lastEntryDate.isBefore(DateUtil.now()))) {
             LocalDate endDate = null;
@@ -427,18 +428,19 @@ public class ChartEntryList {
       LocalDate startDate,
       @Nullable LocalDate endDate,
       ChartEntryProvider chartEntryProvider,
-      final Callbacks.Callback<?> callback) {
+      final Callbacks.Callback<?> doneCallback) {
     endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
     Set<LocalDate> dates = new HashSet<>();
     for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
       dates.add(date);
     }
-    chartEntryProvider.createEmptyEntries(mCycle, dates, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(callback) {
+    chartEntryProvider.createEmptyEntries(mCycle, dates, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(doneCallback) {
       @Override
       public void acceptData(Map<LocalDate, ChartEntry> data) {
         for (ChartEntry entry : data.values()) {
           addEntry(entry);
         }
+        doneCallback.acceptData(null);
       }
     });
   }
