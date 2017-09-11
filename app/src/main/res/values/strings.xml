@@ -100,4 +100,28 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="title_activity_cycle_list">CycleListActivity</string>
     <string name="title_activity_entry_detail">EntryDetailActivity</string>
+    <string-array name="pref_wellness_option_values">
+        <item>Supplements</item>
+        <item>Pain Medication</item>
+        <item>Dairy</item>
+        <item>Gluten</item>
+        <item>Caffeine</item>
+        <item>Alcohol</item>
+        <item>Met hydration goal</item>
+        <item>Followed food guide</item>
+    </string-array>
+    <string-array name="pref_wellness_option_keys">
+        <item>supplements</item>
+        <item>pain_medication</item>
+        <item>dairy</item>
+        <item>gluten</item>
+        <item>caffeine</item>
+        <item>alcohol</item>
+        <item>hydration_goal</item>
+        <item>food_guide</item>
+    </string-array>
+    <string-array name="pref_symptom_option_values">
+    </string-array>
+    <string-array name="pref_symptom_option_keys">
+    </string-array>
 </resources>

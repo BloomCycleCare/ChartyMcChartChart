@@ -196,7 +196,7 @@ public class EntryDetailActivity extends AppCompatActivity {
           fragment.setArguments(args);
           return fragment;
         case 1:
-          return new NutritionEntryFragment();
+          return new WellnessEntryFragment();
         case 2:
           return new SymptomEntryFragment();
       }
@@ -215,7 +215,7 @@ public class EntryDetailActivity extends AppCompatActivity {
         case 0:
           return "Chart Entry";
         case 1:
-          return "Nutrition";
+          return "Wellness";
         case 2:
           return "Symptoms";
       }

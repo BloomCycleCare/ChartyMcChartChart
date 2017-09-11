@@ -2,6 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.v14.preference.MultiSelectListPreference;
 import android.support.v7.preference.CheckBoxPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.Preference;
@@ -62,6 +63,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
     if (null != preference) {
       if (preference instanceof SwitchPreferenceCompat) {
         setPreferenceSummary(preference, sharedPreferences.getBoolean(key, false));
+      } else if (preference instanceof MultiSelectListPreference) {
+        return;
       } else if (!(preference instanceof CheckBoxPreference)) {
         setPreferenceSummary(preference, sharedPreferences.getString(key, ""));
       }
