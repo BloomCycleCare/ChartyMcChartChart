@@ -2,20 +2,24 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
-import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseError;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
+import com.roamingroths.cmcc.utils.GsonUtil;
+import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +43,63 @@ public class AppState {
     });
   }
 
-  public static void fromFile(File file) throws Exception {
-    List<String> lines = Files.readLines(file, Charsets.UTF_8);
+  private static AppState parseFromFile(InputStream in, Callback<?> callback) {
+    AppState appState = null;
+    try {
+      Log.v("AppState", "Reading file");
+      BufferedReader r = new BufferedReader(new InputStreamReader(in));
+      StringBuilder total = new StringBuilder();
+      String line;
+      while ((line = r.readLine()) != null) {
+        total.append(line);
+      }
+      return GsonUtil.getGsonInstance().fromJson(total.toString(), AppState.class);
+    } catch (Exception e) {
+      callback.handleError(DatabaseError.fromException(e));
+    }
+    return null;
+  }
 
+  public static void parseAndPushToDB(InputStream in, final String userId, final CycleProvider cycleProvider, final Callback<Cycle> callback) {
+    final AppState appState = parseFromFile(in, callback);
+    Log.v("AppState", "Found " + appState.cycles.size() + " cycles in file");
+    Log.v("AppState", "Dropping existing cycles");
+    cycleProvider.dropCycles(new Callbacks.ErrorForwardingCallback<Void>(callback) {
+      @Override
+      public void acceptData(Void data) {
+        Log.v("AppState", "Existing cycles dropped");
+        callback.acceptData(putCycleData(appState.cycles, userId, cycleProvider, callback));
+      }
+    });
+  }
+
+  private static Cycle putCycleData(
+      Collection<CycleData> cycleDatas, String userId, final CycleProvider cycleProvider, final Callback<?> callback) {
+    Cycle currentCycle = null;
+    for (final CycleData cycleData : cycleDatas) {
+      final Cycle cycle = cycleData.cycle;
+      if (cycle.endDate == null) {
+        currentCycle = cycle;
+      }
+      Log.v("AppState", "Creating new key for cycle starting " + cycle.startDateStr);
+      cycle.setKey(CryptoUtil.createSecretKey());
+      Log.v("AppState", "Storing cycle starting " + cycle.startDateStr);
+      cycleProvider.putCycle(userId, cycle, new Callbacks.ErrorForwardingCallback<Cycle>(callback) {
+        @Override
+        public void acceptData(Cycle data) {
+          for (ChartEntry entry : cycleData.entries) {
+            entry.setKey(cycle.key);
+            try {
+              cycleProvider.getChartEntryProvider().putEntry(
+                  cycle.id, entry, Listeners.completionListener(callback));
+            } catch (CryptoUtil.CryptoException ce) {
+              callback.handleError(DatabaseError.fromException(ce));
+            }
+          }
+        }
+      });
+    }
+    return currentCycle;
   }
 
   private static void fetchCycleDatas(final CycleProvider cycleProvider, final Callback<Set<CycleData>> callback) {

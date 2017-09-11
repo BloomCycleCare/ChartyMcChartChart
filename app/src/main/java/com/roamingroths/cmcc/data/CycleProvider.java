@@ -78,6 +78,31 @@ public class CycleProvider {
     reference(userId).removeEventListener(listener);
   }
 
+  public void putCycle(final String userId, final Cycle cycle, final Callback<Cycle> callback) {
+    // Store key
+    CryptoUtil.encrypt(AesCryptoUtil.serializeKey(cycle.key), new Callbacks.ErrorForwardingCallback<String>(callback) {
+      @Override
+      public void acceptData(String encryptedKey) {
+        cycleKeyProvider.forCycle(cycle.id).putKey(encryptedKey, userId, callback);
+      }
+    });
+    Map<String, Object> updates = new HashMap<>();
+    updates.put("previous-cycle-id", cycle.previousCycleId);
+    updates.put("next-cycle-id", cycle.nextCycleId);
+    updates.put("start-date", cycle.startDateStr);
+    updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
+    reference(userId, cycle.id).updateChildren(updates, new DatabaseReference.CompletionListener() {
+      @Override
+      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        if (databaseError == null) {
+          callback.acceptData(cycle);
+        } else {
+          callback.handleError(databaseError);
+        }
+      }
+    });
+  }
+
   public void createCycle(
       final String userId,
       @Nullable Cycle previousCycle,
@@ -88,13 +113,6 @@ public class CycleProvider {
     SecretKey key = CryptoUtil.createSecretKey();
     DatabaseReference cycleRef = reference(userId).push();
     final String cycleId = cycleRef.getKey();
-    // Store key
-    CryptoUtil.encrypt(AesCryptoUtil.serializeKey(key), new Callbacks.ErrorForwardingCallback<String>(callback) {
-      @Override
-      public void acceptData(String encryptedKey) {
-        cycleKeyProvider.forCycle(cycleId).putKey(encryptedKey, userId, callback);
-      }
-    });
     final Cycle cycle = new Cycle(
         cycleId,
         (previousCycle == null) ? null : previousCycle.id,
@@ -102,21 +120,7 @@ public class CycleProvider {
         startDate,
         endDate,
         key);
-    Map<String, Object> updates = new HashMap<>();
-    updates.put("previous-cycle-id", cycle.previousCycleId);
-    updates.put("next-cycle-id", cycle.nextCycleId);
-    updates.put("start-date", cycle.startDateStr);
-    updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
-    cycleRef.updateChildren(updates, new DatabaseReference.CompletionListener() {
-      @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        if (databaseError == null) {
-          callback.acceptData(cycle);
-        } else {
-          callback.handleError(databaseError);
-        }
-      }
-    });
+    putCycle(userId, cycle, callback);
   }
 
   private void getCycles(
@@ -194,6 +198,24 @@ public class CycleProvider {
     });
   }
 
+  private void dropCycle(final String cycleId, final String userId, final Runnable onFinish) {
+    logV("Dropping entries for cycle: " + cycleId);
+    db.getReference("entries").child(cycleId).removeValue(new DatabaseReference.CompletionListener() {
+      @Override
+      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        logV("Dropping keys for cycle: " + cycleId);
+        db.getReference("keys").child(cycleId).removeValue(new DatabaseReference.CompletionListener() {
+          @Override
+          public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+            logV("Dropping cycle: " + cycleId);
+            reference(userId, cycleId).removeValue();
+            onFinish.run();
+          }
+        });
+      }
+    });
+  }
+
   public void dropCycles(final Callback<Void> doneCallback) {
     logV("Dropping cycles");
     final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -202,25 +224,19 @@ public class CycleProvider {
       public void onCancelled(DatabaseError databaseError) {
         databaseError.toException().printStackTrace();
       }
-
       @Override
       public void onDataChange(DataSnapshot dataSnapshot) {
         final AtomicLong cyclesToDrop = new AtomicLong(dataSnapshot.getChildrenCount());
         for (DataSnapshot cycleSnapshot : dataSnapshot.getChildren()) {
-          final String cycleId = cycleSnapshot.getKey();
-          logV("Dropping entries for cycle: " + cycleId);
-          db.getReference("entries").child(cycleId).removeValue(
-              new DatabaseReference.CompletionListener() {
-                @Override
-                public void onComplete(
-                    DatabaseError databaseError, DatabaseReference databaseReference) {
-                  logV("Dropping cycle: " + cycleId);
-                  reference(user.getUid(), cycleId).removeValue();
-                  if (cyclesToDrop.decrementAndGet() == 0) {
-                    doneCallback.acceptData(null);
-                  }
-                }
-              });
+          Runnable onRemove = new Runnable() {
+            @Override
+            public void run() {
+              if (cyclesToDrop.decrementAndGet() == 0) {
+                doneCallback.acceptData(null);
+              }
+            }
+          };
+          dropCycle(cycleSnapshot.getKey(), user.getUid(), onRemove);
         }
       }
     };

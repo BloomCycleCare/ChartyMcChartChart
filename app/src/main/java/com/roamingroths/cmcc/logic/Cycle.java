@@ -25,7 +25,7 @@ public class Cycle implements Parcelable {
   public final LocalDate startDate;
   public final LocalDate endDate;
   public final String startDateStr;
-  public final transient SecretKey key;
+  public transient SecretKey key;
 
   public static Cycle fromSnapshot(DataSnapshot snapshot, SecretKey key) {
     String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);
@@ -100,5 +100,9 @@ public class Cycle implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(id, startDate, endDate);
+  }
+
+  public void setKey(SecretKey key) {
+    this.key = key;
   }
 }

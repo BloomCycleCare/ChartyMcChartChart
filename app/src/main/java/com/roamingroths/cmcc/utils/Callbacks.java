@@ -59,6 +59,22 @@ public class Callbacks {
     }
   }
 
+  public static abstract class SwitchingCallback extends HaltingCallback<Boolean> {
+
+    public abstract void positive();
+
+    public abstract void negative();
+
+    @Override
+    public void acceptData(Boolean result) {
+      if (result) {
+        positive();
+      } else {
+        negative();
+      }
+    }
+  }
+
   public static abstract class HaltingCallback<T> implements Callback<T> {
     @Override
     public void handleNotFound() {

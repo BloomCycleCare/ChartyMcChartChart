@@ -88,6 +88,7 @@ public class CycleListActivity extends AppCompatActivity
   @Override
   protected void onResume() {
     super.onResume();
+    mCycleAdapter.clear(); // TODO: fix this
     mCycleProvider.attachListener(mCycleAdapter, mUserId);
   }
 

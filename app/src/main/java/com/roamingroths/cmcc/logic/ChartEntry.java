@@ -105,6 +105,10 @@ public class ChartEntry implements Parcelable, Cipherable {
     return observation.toString();
   }
 
+  public void setKey(SecretKey key) {
+    mKey = key;
+  }
+
   public String getDateStr() {
     return DateUtil.toWireStr(date);
   }

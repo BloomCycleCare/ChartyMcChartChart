@@ -2,6 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -22,6 +23,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
@@ -32,6 +34,8 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
 
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
@@ -200,40 +204,68 @@ public class SplashActivity extends AppCompatActivity {
     datePickerDialog.show(getFragmentManager(), "datepickerdialog");
   }
 
-  private void importDataFromIntent(Intent intent) {
+  private void importDataFromIntent(Intent intent, String userId) {
+    Uri uri = intent.getData();
+    Log.v("SplashActivity", "Reading data from " + uri.getPath());
+    try {
+      InputStream in = getContentResolver().openInputStream(uri);
+      AppState.parseAndPushToDB(in, userId, mCycleProvider, new Callbacks.HaltingCallback<Cycle>() {
+        @Override
+        public void acceptData(Cycle cycle) {
+          preloadCycleData(cycle);
+        }
+      });
+    } catch (FileNotFoundException e) {
+      showError("File " + uri.getPath() + " does not exist");
+      return;
+    }
+  }
 
+  private void confirmImport(final Callbacks.Callback<Boolean> callback) {
+    new AlertDialog.Builder(SplashActivity.this)
+        //set message, title, and icon
+        .setTitle("Import data from file?")
+        .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
+        .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+          public void onClick(final DialogInterface dialog, int whichButton) {
+            dialog.dismiss();
+            callback.acceptData(true);
+          }
+        })
+        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+          public void onClick(DialogInterface dialog, int which) {
+            dialog.dismiss();
+            callback.acceptData(false);
+          }
+        })
+        .create().show();
   }
 
   private void getCurrentCycleForUser(final FirebaseUser user) {
     updateStatus("Fetching current cycle");
     final Intent intent = getIntent();
-    final boolean importingData = intent.getAction().equals(Intent.ACTION_VIEW);
+    final boolean importingData =
+        intent.getAction() != null && intent.getAction().equals(Intent.ACTION_VIEW);
+    if (importingData) {
+      Log.v("SplashActivity", "Importing data from file");
+    }
     mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
       @Override
       public void acceptData(Cycle cycle) {
         updateStatus("Received current cycle from DB.");
         if (importingData) {
-          new AlertDialog.Builder(SplashActivity.this)
-              //set message, title, and icon
-              .setTitle("Import data from file?")
-              .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
-              .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-                public void onClick(final DialogInterface dialog, int whichButton) {
-                  mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
-                    @Override
-                    public void acceptData(Void data) {
-                      dialog.dismiss();
-                    }
-                  });
-                }
-              })
-              .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int which) {
-                  showError("Please restart the app.");
-                  dialog.dismiss();
-                }
-              })
-              .create().show();
+          Log.v("SplashActivity", "Confirming data wipe");
+          confirmImport(new Callbacks.SwitchingCallback() {
+            @Override
+            public void positive() {
+              importDataFromIntent(intent, user.getUid());
+            }
+
+            @Override
+            public void negative() {
+              finish();
+            }
+          });
         } else {
           preloadCycleData(cycle);
         }
@@ -243,7 +275,7 @@ public class SplashActivity extends AppCompatActivity {
       public void handleNotFound() {
         updateStatus("No cycle found in DB.");
         if (importingData) {
-          importDataFromIntent(intent);
+          importDataFromIntent(intent, user.getUid());
         } else {
           promptForStartOfCurrentCycle(user);
         }
@@ -258,7 +290,6 @@ public class SplashActivity extends AppCompatActivity {
   }
 
   private abstract class ErrorPrintingListener implements ValueEventListener {
-
     @Override
     public final void onCancelled(DatabaseError error) {
       Log.e("SplashActivity", error.getMessage());
@@ -313,6 +344,7 @@ public class SplashActivity extends AppCompatActivity {
     Log.v("SplashActivity", "Initializing user state");
     DatabaseReference userRef =
         FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
+    userRef.keepSynced(true);
     userRef.addListenerForSingleValueEvent(
         new ErrorPrintingListener() {
           @Override
@@ -322,7 +354,7 @@ public class SplashActivity extends AppCompatActivity {
               createUserDbEntry(user, doneCallback);
             } else {
               // Found user in DB
-              Log.v("SplashActivity", "Found user entry in DB");
+              Log.v("SplashActivity", "Found user entry in DB: " + dataSnapshot.getKey());
               if (CryptoUtil.initFromKeyStore()) {
                 Log.v("SplashActivity", "Crypto initialized from KeyStore");
                 doneCallback.acceptData(null);

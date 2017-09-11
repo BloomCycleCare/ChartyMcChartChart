@@ -146,6 +146,11 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     return -1;
   }
 
+  public void clear() {
+    mCycleIndex.clear();
+    mCycles.clear();
+  }
+
   @Override
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
     String cycleId = dataSnapshot.getKey();
