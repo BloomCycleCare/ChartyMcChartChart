@@ -22,26 +22,19 @@
         </activity>
         <activity android:name=".SettingsActivity"/>
         <activity
-            android:name=".ChartEntryModifyActivity"
-            android:label="@string/title_activity_observation_modify"
-            android:parentActivityName=".ChartEntryListActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-            <meta-data
-                android:name="android.support.PARENT_ACTIVITY"
-                android:value=".ChartEntryListActivity"/>
-        </activity>
-        <activity
             android:name=".SplashActivity"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
+
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
             <intent-filter>
                 <data
-                    android:scheme="content"
                     android:mimeType="*/*"
-                    android:pathPattern=".*\\.chart"/>
+                    android:pathPattern=".*\\.chart"
+                    android:scheme="content"/>
+
                 <action android:name="android.intent.action.VIEW"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -49,10 +42,11 @@
             </intent-filter>
             <intent-filter>
                 <data
-                    android:scheme="file"
+                    android:host="*"
                     android:mimeType="*/*"
                     android:pathPattern=".*\\.chart"
-                    android:host="*"/>
+                    android:scheme="file"/>
+
                 <action android:name="android.intent.action.VIEW"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -63,12 +57,22 @@
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="com.roamingroths.cmcc.fileprovider"
-            android:grantUriPermissions="true"
-            android:exported="false">
+            android:exported="false"
+            android:grantUriPermissions="true">
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"/>
         </provider>
+
+        <activity
+            android:name=".EntryDetailActivity"
+            android:label="@string/title_activity_entry_detail"
+            android:parentActivityName=".ChartEntryListActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+            <meta-data
+                android:name="android.support.PARENT_ACTIVITY"
+                android:value="com.roamingroths.cmcc.ChartEntryListActivity"/>
+        </activity>
     </application>
 
 </manifest>

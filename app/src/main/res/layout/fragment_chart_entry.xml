@@ -1,12 +1,10 @@
-<?xml version="1.0" encoding="utf-8"?>
 <android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
                                             xmlns:app="http://schemas.android.com/apk/res-auto"
                                             xmlns:tools="http://schemas.android.com/tools"
                                             android:layout_width="match_parent"
                                             android:layout_height="match_parent"
                                             app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                                            tools:context="com.roamingroths.cmcc.ChartEntryModifyActivity"
-                                            tools:showIn="@layout/activity_observation_modify">
+                                            tools:context="com.roamingroths.cmcc.EntryDetailActivity">
 
     <LinearLayout
         android:paddingTop="10dp"
@@ -23,7 +21,7 @@
                 android:paddingLeft="10dp"
                 android:paddingRight="20dp"
                 android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_assignment_black_24dp" />
+                app:srcCompat="@drawable/ic_assignment_black_24dp"/>
 
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -33,7 +31,7 @@
                     android:id="@+id/et_modify_observation_value"
                     android:hint="Observation text"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="match_parent"/>
             </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 
@@ -48,7 +46,7 @@
                 android:id="@+id/tv_modify_observation_description"
                 android:hint="Valid observation needed"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"/>
         </LinearLayout>
 
         <LinearLayout
@@ -60,7 +58,7 @@
                 android:layout_height="wrap_content"
                 android:layout_gravity="center_vertical"
                 android:paddingRight="10dp"
-                app:srcCompat="@drawable/ic_peak_black_24dp" />
+                app:srcCompat="@drawable/ic_peak_black_24dp"/>
 
             <LinearLayout
                 android:paddingTop="10dp"
@@ -74,14 +72,14 @@
                     android:layout_height="match_parent"
                     android:layout_gravity="center_vertical"
                     android:text="Peak Day"
-                    android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
 
                 <Switch
                     android:id="@+id/switch_peak_day"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:gravity="right" />
+                    android:gravity="right"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -94,7 +92,7 @@
                 android:layout_width="60dp"
                 android:layout_height="wrap_content"
                 android:paddingRight="10dp"
-                app:srcCompat="@drawable/ic_heart_black_24dp" />
+                app:srcCompat="@drawable/ic_heart_black_24dp"/>
 
             <LinearLayout
                 android:paddingTop="10dp"
@@ -108,14 +106,14 @@
                     android:layout_height="match_parent"
                     android:layout_gravity="center_vertical"
                     android:text="Intercourse"
-                    android:textAppearance="@android:style/TextAppearance.Material.Medium" />
+                    android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
 
                 <Switch
                     android:id="@+id/switch_intercourse"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_vertical"
-                    android:gravity="right" />
+                    android:gravity="right"/>
             </LinearLayout>
         </LinearLayout>
 
@@ -232,7 +230,7 @@
                 android:paddingLeft="10dp"
                 android:paddingRight="20dp"
                 android:layout_height="match_parent"
-                app:srcCompat="@drawable/ic_note_black_24dp" />
+                app:srcCompat="@drawable/ic_note_black_24dp"/>
 
             <android.support.design.widget.TextInputLayout
                 android:layout_width="match_parent"
@@ -242,7 +240,7 @@
                     android:id="@+id/et_modify_observation_note"
                     android:hint="Note"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
+                    android:layout_height="match_parent"/>
             </android.support.design.widget.TextInputLayout>
         </LinearLayout>
 

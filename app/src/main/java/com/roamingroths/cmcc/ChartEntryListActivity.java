@@ -141,7 +141,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   public void onClick(ChartEntry entry, int index) {
     startActivityForResult(
         mChartEntryAdapter.getIntentForModification(entry, index),
-        ChartEntryModifyActivity.MODIFY_REQUEST);
+        EntryDetailActivity.MODIFY_REQUEST);
   }
 
   private void swapCycles(Cycle newCycle) {

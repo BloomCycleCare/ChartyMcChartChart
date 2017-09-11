@@ -1,17 +1,17 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto"
       xmlns:tools="http://schemas.android.com/tools"
-      tools:context="com.roamingroths.cmcc.ChartEntryModifyActivity">
+      tools:context="com.roamingroths.cmcc.EntryDetailActivity">
     <item
         android:id="@+id/action_save"
         android:orderInCategory="1"
         app:showAsAction="always"
-        android:title="Save" />
+        android:title="Save"/>
     <item
         android:id="@+id/action_delete"
         android:orderInCategory="10"
         android:title="Delete"
-        app:showAsAction="never" />
+        app:showAsAction="never"/>
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"

@@ -12,8 +12,8 @@ import android.view.ViewGroup;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.ChartEntryModifyActivity;
 import com.roamingroths.cmcc.ChartEntryViewHolder;
+import com.roamingroths.cmcc.EntryDetailActivity;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
@@ -120,7 +120,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public Intent getIntentForModification(ChartEntry entry, int index) {
-    Intent intent = new Intent(mContext, ChartEntryModifyActivity.class);
+    Intent intent = new Intent(mContext, EntryDetailActivity.class);
     intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
     intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mChartEntryList.expectUnusualBleeding(index));
     intent.putExtra(Cycle.class.getName(), mChartEntryList.mCycle);
