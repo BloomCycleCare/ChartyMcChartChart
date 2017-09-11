@@ -83,7 +83,7 @@ public class CycleProvider {
     CryptoUtil.encrypt(AesCryptoUtil.serializeKey(cycle.key), new Callbacks.ErrorForwardingCallback<String>(callback) {
       @Override
       public void acceptData(String encryptedKey) {
-        cycleKeyProvider.forCycle(cycle.id).putKey(encryptedKey, userId, callback);
+        cycleKeyProvider.forCycle(cycle.id).putChartKey(encryptedKey, userId, callback);
       }
     });
     Map<String, Object> updates = new HashMap<>();
@@ -142,7 +142,7 @@ public class CycleProvider {
         final Map<String, Cycle> cycles = Maps.newConcurrentMap();
         for (final DataSnapshot snapshot : snapshots) {
           final String cycleId = snapshot.getKey();
-          cycleKeyProvider.forCycle(cycleId).getKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+          cycleKeyProvider.forCycle(cycleId).getChartKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
             @Override
             public void acceptData(SecretKey key) {
               Cycle cycle = Cycle.fromSnapshot(snapshot, key);
@@ -249,7 +249,7 @@ public class CycleProvider {
       callback.acceptData(null);
       return;
     }
-    cycleKeyProvider.forCycle(cycleId).getKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+    cycleKeyProvider.forCycle(cycleId).getChartKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
       @Override
       public void acceptData(final SecretKey key) {
         reference(userId, cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {

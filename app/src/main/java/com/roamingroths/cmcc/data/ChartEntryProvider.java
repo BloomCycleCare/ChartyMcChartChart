@@ -41,7 +41,7 @@ public class ChartEntryProvider {
   }
 
   private DatabaseReference reference(String cycleId) {
-    return db.getReference("entries").child(cycleId);
+    return db.getReference("entries").child(cycleId).child("chart");
   }
 
   private DatabaseReference reference(String cycleId, String dateStr) {

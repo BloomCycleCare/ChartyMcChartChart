@@ -40,10 +40,10 @@ public class CycleKeyProvider {
       ref = reference(cycleId);
     }
 
-    public void getKey(
+    public void getChartKey(
         String userId, final Callback<SecretKey> callback) {
       Log.v("CycleKeyProvider", "Fetching key for user " + userId + " cycle " + ref.getKey());
-      ref.child(userId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
+      ref.child(userId).child("chart").addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
           Log.v("CycleKeyProvider", "Found key for cycle");
@@ -56,8 +56,8 @@ public class CycleKeyProvider {
       });
     }
 
-    public void putKey(String encryptedKey, String userId, Callback<?> callback) {
-      ref.child(userId).setValue(encryptedKey, Listeners.completionListener(callback));
+    public void putChartKey(String encryptedKey, String userId, Callback<?> callback) {
+      ref.child(userId).child("chart").setValue(encryptedKey, Listeners.completionListener(callback));
     }
 
     public void dropKeys(Callback<?> callback) {

@@ -44,7 +44,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       FirebaseDatabase db,
       ChartEntryProvider chartEntryProvider,
       Callbacks.Callback<Void> initializationCompleteCallback) {
-    mEntriesDbRef = db.getReference("entries").child(cycle.id);
+    mEntriesDbRef = db.getReference("entries").child(cycle.id).child("chart");
     mEntriesDbRef.keepSynced(true);
     mEntryListenerAttached = new AtomicBoolean(false);
     mContext = context;

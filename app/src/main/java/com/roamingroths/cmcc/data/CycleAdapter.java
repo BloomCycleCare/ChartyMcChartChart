@@ -155,7 +155,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
     String cycleId = dataSnapshot.getKey();
     Log.v("CycleAdapter", "onChildAdded id=" + cycleId);
-    mCycleKeyProvider.forCycle(cycleId).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(cycleId).getChartKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
         Cycle cycle = Cycle.fromSnapshot(dataSnapshot, key);
@@ -195,7 +195,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
     Log.v("CycleAdapter", "onChildChanged");
-    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getChartKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
       @Override
       public void acceptData(SecretKey key) {
         maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, key));
