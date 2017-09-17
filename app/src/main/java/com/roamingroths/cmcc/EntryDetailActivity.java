@@ -118,7 +118,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == android.R.id.home) {
-      if (chartEntryFragment.isUiDirty()) {
+      if (chartEntryFragment.isDirty()) {
         new AlertDialog.Builder(this)
             //set message, title, and icon
             .setTitle("Discard Changes")

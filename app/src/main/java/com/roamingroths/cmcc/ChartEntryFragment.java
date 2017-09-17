@@ -7,7 +7,6 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
-import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.PreferenceManager;
 import android.text.Editable;
@@ -39,7 +38,7 @@ import org.joda.time.LocalDate;
  * Created by parkeroth on 9/11/17.
  */
 
-public class ChartEntryFragment extends Fragment {
+public class ChartEntryFragment extends EntryFragment {
 
   public static final int OK_RESPONSE = 0;
 
@@ -168,7 +167,7 @@ public class ChartEntryFragment extends Fragment {
     mPointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
   }
 
-  public boolean isUiDirty() {
+  public boolean isDirty() {
     if (mExistingEntry == null) {
       return false;
     }
