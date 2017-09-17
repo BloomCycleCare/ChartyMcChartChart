@@ -7,10 +7,12 @@ import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -145,7 +147,7 @@ public class EntryDetailActivity extends AppCompatActivity {
    * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
    * one of the sections/tabs/pages.
    */
-  public class SectionsPagerAdapter extends FragmentPagerAdapter {
+  public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
     private final SparseArray<Fragment> registeredFragments = new SparseArray<>();
     private final Intent intent;
@@ -157,6 +159,7 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
+      Log.v("EntryDetailActivity", "instantiateItem: " + position);
       Fragment fragment = (Fragment) super.instantiateItem(container, position);
       registeredFragments.put(position, fragment);
       return fragment;
@@ -164,6 +167,7 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
+      Log.v("EntryDetailActivity", "destroyItem: " + position);
       registeredFragments.remove(position);
       super.destroyItem(container, position, object);
     }
@@ -174,6 +178,7 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public Fragment getItem(int position) {
+      Log.v("EntryDetailActivity", "getItem: " + position);
       // getItem is called to instantiate the fragment for the given page.
       // Return a PlaceholderFragment (defined as a static inner class below).
       switch (position) {

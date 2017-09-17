@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -30,6 +31,7 @@ public class WellnessAdapter extends RecyclerView.Adapter<WellnessAdapter.Wellne
   }
 
   public synchronized void updateData(Map<String, String> preferences) {
+    Log.v("WellnessAdapter", "Updating with new preferences: " + preferences.size());
     ImmutableList.Builder<WellnessItem> builder = ImmutableList.builder();
     for (Map.Entry<String, String> entry : preferences.entrySet()) {
       builder.add(new WellnessItem(entry.getKey(), entry.getValue()));

@@ -1,6 +1,6 @@
 package com.roamingroths.cmcc;
 
-import android.app.Activity;
+import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -13,12 +13,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.data.WellnessAdapter;
-
-import java.util.Map;
-import java.util.Set;
+import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
 /**
  * Created by parkeroth on 9/11/17.
@@ -27,50 +23,42 @@ import java.util.Set;
 public class WellnessEntryFragment extends Fragment {
 
   private RecyclerView mRecyclerView;
-  private WellnessAdapter mWellnessAdapter;
-
-  private Map<String, String> getWellnessOptions(SharedPreferences preferences) {
-    Set<String> activeOptions =
-        preferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of());
-    Log.v("WellnessEntryFragment", activeOptions.size() + " active options");
-    ImmutableMap.Builder<String, String> mapBuilder = ImmutableMap.builder();
-    String[] values = getActivity().getResources().getStringArray(R.array.pref_wellness_option_values);
-    String[] keys = getActivity().getResources().getStringArray(R.array.pref_wellness_option_keys);
-    for (int i = 0; i < values.length; i++) {
-      Log.v("WellnessEntryFragment", "Key: " + keys[i] + " Value: " + values[i]);
-      if (activeOptions.contains(keys[i])) {
-        mapBuilder.put(keys[i], values[i]);
-      }
-    }
-    return mapBuilder.build();
-  }
+  private MultiSelectPrefAdapter mAdapter;
+  private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     Log.v("WellnessEntryFragment", "onCreateView");
 
     View view = inflater.inflate(R.layout.fragment_wellness_entry, container, false);
-    mWellnessAdapter = new WellnessAdapter(getActivity());
+    String[] values = getActivity().getResources().getStringArray(R.array.pref_wellness_option_values);
+    String[] keys = getActivity().getResources().getStringArray(R.array.pref_wellness_option_keys);
+    mAdapter = new MultiSelectPrefAdapter(
+        getContext(),
+        R.layout.wellness_list_item,
+        R.id.tv_wellness_item,
+        R.id.switch_wellness_item, values, keys, savedInstanceState);
 
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-    mWellnessAdapter.updateData(getWellnessOptions(preferences));
-    preferences.registerOnSharedPreferenceChangeListener(
-        new SharedPreferences.OnSharedPreferenceChangeListener() {
-          @Override
-          public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-            Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
-            if (key.equals("pref_key_wellness_options")) {
-              mWellnessAdapter.updateData(getWellnessOptions(sharedPreferences));
-            }
-          }
+    mAdapter.updateActiveItems(
+        preferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
+    mPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+      @Override
+      public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
+        if (key.equals("pref_key_wellness_options")) {
+          mAdapter.updateActiveItems(
+              sharedPreferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
         }
-    );
+      }
+    };
+    preferences.registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
 
     mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_wellness_entry);
     mRecyclerView.setLayoutManager(
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
-    mRecyclerView.setAdapter(mWellnessAdapter);
+    mRecyclerView.setAdapter(mAdapter);
 
     return view;
   }
@@ -95,9 +83,18 @@ public class WellnessEntryFragment extends Fragment {
     super.onPause();
   }
 
+  @Override
+  public void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    mAdapter.fillBundle(outState);
+  }
+
   private void hideKeyboard() {
-    InputMethodManager imm =
-        (InputMethodManager) getContext().getSystemService(Activity.INPUT_METHOD_SERVICE);
-    imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
+    Context context = getContext();
+    if (context != null) {
+      InputMethodManager imm =
+          (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+      imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
+    }
   }
 }

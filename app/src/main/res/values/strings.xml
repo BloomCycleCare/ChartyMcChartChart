@@ -120,8 +120,54 @@
         <item>hydration_goal</item>
         <item>food_guide</item>
     </string-array>
-    <string-array name="pref_symptom_option_values">
-    </string-array>
     <string-array name="pref_symptom_option_keys">
+        ________
+        <item>light_cramps</item>
+        ________
+        <item>medium_cramps</item>
+        ________
+        <item>heavy_cramps</item>
+        ________
+        <item>diarrhea</item>
+        ________
+        <item>constipation</item>
+        ________
+        <item>bloating</item>
+        ________
+        <item>nausea</item>
+        ________
+        <item>cravings</item>
+        ________
+        <item>blemishes</item>
+        ________
+        <item>insomnia</item>
+        ________
+        <item>fatigue</item>
+        ________
+        <item>anxiety</item>
+        ________
+        <item>headache</item>
+        ________
+        <item>breast_tenderness</item>
+        ________
+        <item>swelling_of_extremities</item>
+        ____
+    </string-array>
+    <string-array name="pref_symptom_option_values">
+        <item>Light Cramps</item>
+        <item>Medium Cramps</item>
+        <item>Heavy Cramps</item>
+        <item>Diarrhea</item>
+        <item>Constipation</item>
+        <item>Bloating</item>
+        <item>Nausea</item>
+        <item>Cravings</item>
+        <item>Blemishes</item>
+        <item>Insomnia</item>
+        <item>Fatigue</item>
+        <item>Anxiety</item>
+        <item>Headache</item>
+        <item>Breast Tenderness</item>
+        <item>Swelling of Extremities</item>
     </string-array>
 </resources>

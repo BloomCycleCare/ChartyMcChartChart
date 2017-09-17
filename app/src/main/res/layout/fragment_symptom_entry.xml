@@ -1,43 +1,13 @@
-<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-                                            xmlns:app="http://schemas.android.com/apk/res-auto"
-                                            xmlns:tools="http://schemas.android.com/tools"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="match_parent"
-                                            app:layout_behavior="@string/appbar_scrolling_view_behavior"
-                                            tools:context="com.roamingroths.cmcc.EntryDetailActivity">
-
-    <LinearLayout
-        android:paddingTop="10dp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical">
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
-            <LinearLayout
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:paddingLeft="5dp">
+                android:layout_height="match_parent"
+                android:paddingBottom="@dimen/activity_vertical_margin"
+                android:paddingLeft="@dimen/activity_horizontal_margin">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="match_parent"
-                    android:layout_gravity="center_vertical"
-                    android:text="Peak Day"
-                    android:textAppearance="@android:style/TextAppearance.Material.Medium"/>
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recyclerview_symptom_entry"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"/>
 
-                <Switch
-                    android:id="@+id/switch_peak_day"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_vertical"
-                    android:gravity="right"/>
-            </LinearLayout>
-        </LinearLayout>
-
-    </LinearLayout>
-</android.support.v4.widget.NestedScrollView>
+</RelativeLayout>
