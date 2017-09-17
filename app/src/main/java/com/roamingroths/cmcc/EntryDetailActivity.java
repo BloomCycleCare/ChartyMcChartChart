@@ -19,6 +19,10 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.utils.DateUtil;
+
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 
 public class EntryDetailActivity extends AppCompatActivity {
 
@@ -52,6 +56,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    getSupportActionBar().setTitle(getTitle(getIntent()));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
     mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getIntent());
@@ -184,17 +189,10 @@ public class EntryDetailActivity extends AppCompatActivity {
       switch (position) {
         case 0:
           Bundle args = new Bundle();
+          args.putParcelable(Cycle.class.getName(), getCycle(intent));
           args.putBoolean(
               Extras.EXPECT_UNUSUAL_BLEEDING,
               intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
-          if (!intent.hasExtra(Cycle.class.getName())) {
-            throw new IllegalStateException("Missing Cycle");
-          }
-          args.putParcelable(
-              Cycle.class.getName(), intent.getParcelableExtra(Cycle.class.getName()));
-          if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
-            throw new IllegalStateException("Missing entry date");
-          }
           args.putString(Extras.ENTRY_DATE_STR, intent.getStringExtra(Extras.ENTRY_DATE_STR));
 
           Fragment fragment = new ChartEntryFragment();
@@ -226,5 +224,26 @@ public class EntryDetailActivity extends AppCompatActivity {
       }
       return null;
     }
+  }
+
+  private static Cycle getCycle(Intent intent) {
+    if (!intent.hasExtra(Cycle.class.getName())) {
+      throw new IllegalStateException();
+    }
+    return intent.getParcelableExtra(Cycle.class.getName());
+  }
+
+  private static String getEntryDateStr(Intent intent) {
+    if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
+      throw new IllegalStateException("Missing entry date");
+    }
+    return intent.getStringExtra(Extras.ENTRY_DATE_STR);
+  }
+
+  private static String getTitle(Intent intent) {
+    LocalDate entryDate = DateUtil.fromWireStr(getEntryDateStr(intent));
+    Cycle cycle = getCycle(intent);
+    int daysBetween = Days.daysBetween(cycle.startDate, entryDate).getDays();
+    return "Day #" + (daysBetween + 1);
   }
 }
