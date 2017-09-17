@@ -52,7 +52,6 @@ public class SymptomEntryFragment extends Fragment {
         }
       }
     };
-    preferences.registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
 
     mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_symptom_entry);
     mRecyclerView.setLayoutManager(
@@ -74,6 +73,8 @@ public class SymptomEntryFragment extends Fragment {
   @Override
   public void onResume() {
     super.onResume();
+    PreferenceManager.getDefaultSharedPreferences(getContext())
+        .registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
     Log.v("WellnessEntryFragment", "onCreateView");
     hideKeyboard();
   }
@@ -81,6 +82,8 @@ public class SymptomEntryFragment extends Fragment {
   @Override
   public void onPause() {
     super.onPause();
+    PreferenceManager.getDefaultSharedPreferences(getContext())
+        .unregisterOnSharedPreferenceChangeListener(mPreferenceChangeListener);
   }
 
   @Override
