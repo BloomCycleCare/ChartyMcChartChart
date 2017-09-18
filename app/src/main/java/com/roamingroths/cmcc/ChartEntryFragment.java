@@ -138,7 +138,7 @@ public class ChartEntryFragment extends EntryFragment {
     mFirstDaySwitch = (Switch) view.findViewById(R.id.switch_new_cycle);
     mPointOfChangeSwitch = (Switch) view.findViewById(R.id.switch_point_of_change);
 
-    chartEntryProvider.getChartEntry(mCycle.id, entryDateStr, mCycle.key, new Callbacks.Callback<ChartEntry>() {
+    chartEntryProvider.getChartEntry(mCycle.id, entryDateStr, mCycle.keys.chartKey, new Callbacks.Callback<ChartEntry>() {
       @Override
       public void acceptData(ChartEntry data) {
         mExistingEntry = data;
@@ -250,7 +250,7 @@ public class ChartEntryFragment extends EntryFragment {
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
     return new ChartEntry(
-        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, mCycle.key);
+        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, mCycle.keys.chartKey);
   }
 
   private void maybeSplitOrJoinCycle(final ChartEntry entry) {

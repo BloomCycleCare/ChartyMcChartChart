@@ -54,7 +54,7 @@ public class ChartEntryProvider {
     Log.v("ChartEntryList", "Creating " + dates.size() + " entries");
     for (LocalDate date : dates) {
       Log.v("ChartEntryList", "Creating empty entry for " + cycle.id + " " + date);
-      final ChartEntry entry = ChartEntry.emptyEntry(date, cycle.key);
+      final ChartEntry entry = ChartEntry.emptyEntry(date, cycle.keys.chartKey);
       Runnable runnable = new Runnable() {
         @Override
         public void run() {
@@ -127,7 +127,7 @@ public class ChartEntryProvider {
         }
         for (Map.Entry<LocalDate, String> entry : encryptedEntries.entrySet()) {
           String encryptedEntry = entry.getValue();
-          CryptoUtil.decrypt(encryptedEntry, cycle.key, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(this) {
+          CryptoUtil.decrypt(encryptedEntry, cycle.keys.chartKey, ChartEntry.class, new Callbacks.ErrorForwardingCallback<ChartEntry>(this) {
             @Override
             public void acceptData(ChartEntry decryptedEntry) {
               decryptedEntries.put(decryptedEntry.date, decryptedEntry);

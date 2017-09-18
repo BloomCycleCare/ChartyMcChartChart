@@ -81,14 +81,14 @@ public class AppState {
       if (cycle.endDate == null) {
         currentCycle = cycle;
       }
-      Log.v("AppState", "Creating new key for cycle starting " + cycle.startDateStr);
-      cycle.setKey(CryptoUtil.createSecretKey());
+      Log.v("AppState", "Creating new keys for cycle starting " + cycle.startDateStr);
+      cycle.setKeys(new Cycle.Keys(CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey()));
       Log.v("AppState", "Storing cycle starting " + cycle.startDateStr);
       cycleProvider.putCycle(userId, cycle, new Callbacks.ErrorForwardingCallback<Cycle>(callback) {
         @Override
         public void acceptData(Cycle data) {
           for (ChartEntry entry : cycleData.entries) {
-            entry.setKey(cycle.key);
+            entry.setKey(cycle.keys.chartKey);
             try {
               cycleProvider.getChartEntryProvider().putEntry(
                   cycle.id, entry, Listeners.completionListener(callback));

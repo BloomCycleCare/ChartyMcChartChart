@@ -23,8 +23,6 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.crypto.SecretKey;
-
 /**
  * Created by parkeroth on 4/18/17.
  */
@@ -155,10 +153,10 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
     String cycleId = dataSnapshot.getKey();
     Log.v("CycleAdapter", "onChildAdded id=" + cycleId);
-    mCycleKeyProvider.forCycle(cycleId).getChartKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(cycleId).getChartKeys(mUserId, new Callbacks.HaltingCallback<Cycle.Keys>() {
       @Override
-      public void acceptData(SecretKey key) {
-        Cycle cycle = Cycle.fromSnapshot(dataSnapshot, key);
+      public void acceptData(Cycle.Keys keys) {
+        Cycle cycle = Cycle.fromSnapshot(dataSnapshot, keys);
         if (mCycleIndex.containsKey(cycle.id)) {
           maybeChangeCycle(cycle);
           return;
@@ -195,10 +193,10 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
     Log.v("CycleAdapter", "onChildChanged");
-    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getChartKey(mUserId, new Callbacks.HaltingCallback<SecretKey>() {
+    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getChartKeys(mUserId, new Callbacks.HaltingCallback<Cycle.Keys>() {
       @Override
-      public void acceptData(SecretKey key) {
-        maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, key));
+      public void acceptData(Cycle.Keys keys) {
+        maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, keys));
       }
     });
   }

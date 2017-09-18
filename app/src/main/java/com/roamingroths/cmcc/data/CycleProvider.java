@@ -17,7 +17,6 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -35,8 +34,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
-import javax.crypto.SecretKey;
 
 /**
  * Created by parkeroth on 9/2/17.
@@ -80,27 +77,23 @@ public class CycleProvider {
 
   public void putCycle(final String userId, final Cycle cycle, final Callback<Cycle> callback) {
     // Store key
-    CryptoUtil.encrypt(AesCryptoUtil.serializeKey(cycle.key), new Callbacks.ErrorForwardingCallback<String>(callback) {
-      @Override
-      public void acceptData(String encryptedKey) {
-        cycleKeyProvider.forCycle(cycle.id).putChartKey(encryptedKey, userId, callback);
-      }
-    });
     Map<String, Object> updates = new HashMap<>();
     updates.put("previous-cycle-id", cycle.previousCycleId);
     updates.put("next-cycle-id", cycle.nextCycleId);
     updates.put("start-date", cycle.startDateStr);
     updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
-    reference(userId, cycle.id).updateChildren(updates, new DatabaseReference.CompletionListener() {
+    reference(userId, cycle.id).updateChildren(updates, Listeners.completionListener(callback, new Runnable() {
       @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        if (databaseError == null) {
-          callback.acceptData(cycle);
-        } else {
-          callback.handleError(databaseError);
-        }
+      public void run() {
+        cycleKeyProvider.forCycle(cycle.id).putChartKeys(cycle.keys, userId, new Callbacks.ErrorForwardingCallback<Void>(callback) {
+          @Override
+          public void acceptData(Void data) {
+            logV("Storing keys for cycle: " + cycle.id);
+            callback.acceptData(cycle);
+          }
+        });
       }
-    });
+    }));
   }
 
   public void createCycle(
@@ -110,16 +103,18 @@ public class CycleProvider {
       final LocalDate startDate,
       final @Nullable LocalDate endDate,
       final Callback<Cycle> callback) {
-    SecretKey key = CryptoUtil.createSecretKey();
     DatabaseReference cycleRef = reference(userId).push();
+    logV("Creating new cycle: " + cycleRef.getKey());
     final String cycleId = cycleRef.getKey();
+    Cycle.Keys keys = new Cycle.Keys(
+        CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey());
     final Cycle cycle = new Cycle(
         cycleId,
         (previousCycle == null) ? null : previousCycle.id,
         (nextCycle == null) ? null : nextCycle.id,
         startDate,
         endDate,
-        key);
+        keys);
     putCycle(userId, cycle, callback);
   }
 
@@ -142,10 +137,10 @@ public class CycleProvider {
         final Map<String, Cycle> cycles = Maps.newConcurrentMap();
         for (final DataSnapshot snapshot : snapshots) {
           final String cycleId = snapshot.getKey();
-          cycleKeyProvider.forCycle(cycleId).getChartKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+          cycleKeyProvider.forCycle(cycleId).getChartKeys(userId, new Callbacks.ErrorForwardingCallback<Cycle.Keys>(callback) {
             @Override
-            public void acceptData(SecretKey key) {
-              Cycle cycle = Cycle.fromSnapshot(snapshot, key);
+            public void acceptData(Cycle.Keys keys) {
+              Cycle cycle = Cycle.fromSnapshot(snapshot, keys);
               cycles.put(cycle.id, cycle);
               if (cycles.size() == snapshots.size()) {
                 callback.acceptData(cycles.values());
@@ -249,13 +244,13 @@ public class CycleProvider {
       callback.acceptData(null);
       return;
     }
-    cycleKeyProvider.forCycle(cycleId).getChartKey(userId, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
+    cycleKeyProvider.forCycle(cycleId).getChartKeys(userId, new Callbacks.ErrorForwardingCallback<Cycle.Keys>(callback) {
       @Override
-      public void acceptData(final SecretKey key) {
+      public void acceptData(final Cycle.Keys keys) {
         reference(userId, cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
-            callback.acceptData(Cycle.fromSnapshot(dataSnapshot, key));
+            callback.acceptData(Cycle.fromSnapshot(dataSnapshot, keys));
           }
         });
       }
@@ -364,7 +359,7 @@ public class CycleProvider {
           final LocalDate entryDate = mapEntry.getKey();
           final String dateStr = DateUtil.toWireStr(entryDate);
           ChartEntry decryptedEntry = mapEntry.getValue();
-          decryptedEntry.swapKey(toCycle.key);
+          decryptedEntry.swapKey(toCycle.keys.chartKey);
 
           final DatabaseReference.CompletionListener rmListener =
               Listeners.completionListener(callback, new Runnable() {

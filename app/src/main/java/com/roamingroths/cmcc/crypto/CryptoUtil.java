@@ -123,6 +123,10 @@ public class CryptoUtil {
     }
   }
 
+  public static void encryptKey(SecretKey key, Callbacks.Callback<String> callback) {
+    encrypt(AesCryptoUtil.serializeKey(key), callback);
+  }
+
   public static void encrypt(String initialText, final Callbacks.Callback<String> callback) {
     new AsyncTask<String, Integer, String>() {
       @Override

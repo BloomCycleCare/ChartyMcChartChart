@@ -184,6 +184,7 @@ public class SplashActivity extends AppCompatActivity {
             Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
               @Override
               public void acceptData(final Cycle cycle) {
+                log("Done creating new cycle");
                 preloadCycleData(cycle);
               }
             };
