@@ -32,7 +32,7 @@ public class SymptomEntryProvider extends EntryProvider<SymptomEntry> {
 
   @Override
   SecretKey getKey(Cycle cycle) {
-    return cycle.keys.wellnessKey;
+    return cycle.keys.symptomKey;
   }
 
   @Override

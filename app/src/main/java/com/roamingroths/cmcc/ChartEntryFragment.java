@@ -14,7 +14,6 @@ import android.text.TextWatcher;
 import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseAuth;
@@ -29,6 +28,9 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Observation;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Listeners;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Created by parkeroth on 9/11/17.
@@ -131,48 +133,30 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
     mPointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
   }
 
-  public void onSave() {
+  @Override
+  public Set<ValidationIssue> validateEntryFromUi() throws ValidationException {
+    Set<ValidationIssue> issues = new HashSet<>();
     try {
       final ChartEntry entry = getEntryFromUi();
       boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
       if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("Unusual bleeding?");
-        builder.setMessage("Are you sure this bleeding is typical?");
-        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.dismiss();
-            doSaveAction(entry);
-          }
-        });
-        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.dismiss();
-          }
-        });
-        builder.create().show();
+        issues.add(new ValidationIssue("Unusual bleeding?", "Are yousure this bleedin is typical?"));
       }
-      doSaveAction(entry);
     } catch (Exception e) {
-      Toast.makeText(getActivity(), "Cannot save invalid observation", Toast.LENGTH_LONG).show();
+      throw new ValidationException("Cannot save invalid observation.");
     }
+    return issues;
   }
 
   public void onDelete(final Callbacks.Callback<Void> onDone) {
     getEntryProvider().deleteEntry(getCycle().id, getEntryDate(), Listeners.doneOnCompletion(onDone));
   }
 
-  private void doSaveAction(final ChartEntry entry) {
-    if (getExistingEntry().firstDay != entry.firstDay) {
-      maybeSplitOrJoinCycle(entry);
-    } else {
-      try {
-        getEntryProvider().putEntry(getCycle().id, entry, completionListener(getCycle()));
-      } catch (CryptoUtil.CryptoException ce) {
-        ce.printStackTrace();
-      }
+  public boolean shouldSplitOrJoinCycle() {
+    try {
+      return getExistingEntry().firstDay != getEntryFromUi().firstDay;
+    } catch (Exception e) {
+      return false;
     }
   }
 

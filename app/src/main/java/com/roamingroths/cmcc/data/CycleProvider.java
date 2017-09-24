@@ -303,17 +303,18 @@ public class CycleProvider {
               reference(userId, currentCycle.nextCycleId).child("previous-cycle-id").setValue(
                   previousCycle.id, Listeners.completionListener(this));
             }
-            moveEntries(
-                currentCycle,
-                previousCycle,
-                userId,
-                Predicates.<LocalDate>alwaysTrue(),
-                new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
-                  @Override
-                  public void acceptData(Void unused) {
+            final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
+            for (EntryProvider provider : entryProviders) {
+              Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
+                @Override
+                public void acceptData(Void data) {
+                  if (entryMoves.decrementAndGet() == 0) {
                     mergedCycleCallback.acceptData(previousCycle);
                   }
-                });
+                }
+              };
+              provider.moveEntries(currentCycle, previousCycle, userId, Predicates.<LocalDate>alwaysTrue(), cycleKeyProvider, callback);
+            }
           }
         }));
   }
@@ -349,81 +350,31 @@ public class CycleProvider {
                     updates.put("end-date", DateUtil.toWireStr(firstEntry.getDate().minusDays(1)));
                     reference(userId, currentCycle.id).updateChildren(
                         updates, Listeners.completionListener(this));
-                    moveEntries(currentCycle, newCycle, userId, new Predicate<LocalDate>() {
+                    Predicate<LocalDate> ifEqualOrAfter = new Predicate<LocalDate>() {
                       @Override
                       public boolean apply(LocalDate entryDate) {
                         return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
                       }
-                    }, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Void>(this) {
-                      @Override
-                      public void acceptData(Void data) {
-                        resultCallback.acceptData(newCycle);
-                      }
-                    }));
+                    };
+                    final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
+                    for (EntryProvider provider : entryProviders) {
+                      Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
+                        @Override
+                        public void acceptData(Void data) {
+                          if (entryMoves.decrementAndGet() == 0) {
+                            resultCallback.acceptData(newCycle);
+                          }
+                        }
+                      };
+                      provider.moveEntries(
+                          currentCycle, newCycle, userId, ifEqualOrAfter, cycleKeyProvider, callback);
+                    }
                   }
                 }));
           }
         }));
   }
 
-  private void moveEntries(
-      final Cycle fromCycle,
-      final Cycle toCycle,
-      final String userId,
-      final Predicate<LocalDate> datePredicate,
-      final Callback<?> callback) {
-    logV("Source cycle id: " + fromCycle.id);
-    logV("Destination cycle id: " + toCycle.id);
-    chartEntryProvider.getDecryptedEntries(fromCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(callback) {
-      @Override
-      public void acceptData(Map<LocalDate, ChartEntry> decryptedEntries) {
-        Map<LocalDate, ChartEntry> entriesToMove = Maps.filterKeys(decryptedEntries, datePredicate);
-        final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
-        final boolean shouldDropCycle = entriesToMove.size() == decryptedEntries.size();
-
-        logV("Moving " + outstandingRemovals.get() + " entries");
-        for (Map.Entry<LocalDate, ChartEntry> mapEntry : entriesToMove.entrySet()) {
-          final LocalDate entryDate = mapEntry.getKey();
-          final String dateStr = DateUtil.toWireStr(entryDate);
-          ChartEntry decryptedEntry = mapEntry.getValue();
-          decryptedEntry.swapKey(toCycle.keys.chartKey);
-
-          final DatabaseReference.CompletionListener rmListener =
-              Listeners.completionListener(callback, new Runnable() {
-                @Override
-                public void run() {
-                  logV("Removed entry: " + dateStr);
-                  if (outstandingRemovals.decrementAndGet() == 0) {
-                    logV("Entry moves complete");
-                    if (shouldDropCycle) {
-                      logV("Dropping cycle: " + fromCycle.id);
-                      // TODO: fix race
-                      cycleKeyProvider.forCycle(fromCycle.id).dropKeys(callback);
-                      reference(userId, fromCycle.id).removeValue(
-                          Listeners.completionListener(callback));
-                    }
-                    callback.acceptData(null);
-                  }
-                }
-              });
-          final DatabaseReference.CompletionListener moveCompleteListener =
-              Listeners.completionListener(callback, new Runnable() {
-                @Override
-                public void run() {
-                  logV("Added entry: " + dateStr);
-                  chartEntryProvider.deleteEntry(fromCycle.id, entryDate, rmListener);
-                }
-              });
-
-          try {
-            chartEntryProvider.putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
-          } catch (CryptoUtil.CryptoException ce) {
-            handleError(DatabaseError.fromException(ce));
-          }
-        }
-      }
-    });
-  }
 
   private DatabaseReference reference(String userId, String cycleId) {
     return reference(userId).child(cycleId);

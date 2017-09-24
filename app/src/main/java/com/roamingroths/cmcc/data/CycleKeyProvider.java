@@ -26,10 +26,6 @@ import javax.crypto.SecretKey;
 
 public class CycleKeyProvider {
 
-  private enum KeyAlias {
-
-  }
-
   private final FirebaseDatabase db;
 
   public static CycleKeyProvider forDb(FirebaseDatabase db) {

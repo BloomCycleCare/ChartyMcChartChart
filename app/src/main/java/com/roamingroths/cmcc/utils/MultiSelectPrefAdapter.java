@@ -63,15 +63,16 @@ public class MultiSelectPrefAdapter extends RecyclerView.Adapter<MultiSelectPref
 
   public void updateActiveItems(Set<String> activeKeys) {
     Log.v("MultiSelectPrefAdapter", "Active items: " + activeKeys.size());
-    ListOrderedMap<String, Boolean> updatedItems = new ListOrderedMap<>();
-    for (Map.Entry<String, String> entry : mItems.entrySet()) {
-      String key = entry.getKey();
-      if (activeKeys.contains(key)) {
-        boolean val = mActiveItems.containsKey(key) ? mActiveItems.get(key) : false;
-        updatedItems.put(entry.getKey(), val);
+    for (Map.Entry<String, Boolean> entry : mActiveItems.entrySet()) {
+      if (!activeKeys.contains(entry.getKey())) {
+        mActiveItems.remove(entry.getKey());
       }
     }
-    mActiveItems = updatedItems;
+    for (String key : activeKeys) {
+      if (!mActiveItems.containsKey(key)) {
+        mActiveItems.put(key, false);
+      }
+    }
     notifyDataSetChanged();
   }
 
@@ -81,6 +82,7 @@ public class MultiSelectPrefAdapter extends RecyclerView.Adapter<MultiSelectPref
         mActiveItems.put(entry.getKey(), entry.getValue());
       }
     }
+    notifyDataSetChanged();
   }
 
   public ImmutableMap<String, Boolean> getActiveEntries() {
@@ -134,6 +136,11 @@ public class MultiSelectPrefAdapter extends RecyclerView.Adapter<MultiSelectPref
         mActiveItems.put(key, isChecked);
       }
     });
+  }
+
+  @Override
+  public void onViewRecycled(MultiSelectPrefViewHolder holder) {
+    holder.mValueSwitch.setOnCheckedChangeListener(null);
   }
 
   @Override

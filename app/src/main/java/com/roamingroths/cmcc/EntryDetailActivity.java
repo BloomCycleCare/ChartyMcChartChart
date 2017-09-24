@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc;
 
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -16,14 +17,22 @@ import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.roamingroths.cmcc.ChartEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity {
 
@@ -60,7 +69,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     getSupportActionBar().setTitle(getTitle(getIntent()));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getIntent());
+    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getIntent(), this);
 
     // Set up the ViewPager with the sections adapter.
     mViewPager = (ViewPager) findViewById(R.id.container);
@@ -92,6 +101,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
+      mSectionsPagerAdapter.trySaveEntries();
       //chartEntryFragment.onSave();
       return true;
     }
@@ -155,10 +165,14 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     private final SparseArray<EntryFragment> registeredFragments = new SparseArray<>();
     private final Intent intent;
+    private final Activity activity;
+    private final Cycle mCycle;
 
-    public SectionsPagerAdapter(FragmentManager fm, Intent intent) {
+    public SectionsPagerAdapter(FragmentManager fm, Intent intent, Activity activity) {
       super(fm);
       this.intent = intent;
+      this.activity = activity;
+      mCycle = getCycle(intent);
     }
 
     public boolean anyDirty() {
@@ -169,6 +183,64 @@ public class EntryDetailActivity extends AppCompatActivity {
         }
       }
       return false;
+    }
+
+    private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
+      if (issues.isEmpty()) {
+        doSaveEntries();
+        return;
+      }
+      EntryFragment.ValidationIssue issue = issues.remove();
+      AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+      builder.setTitle(issue.title);
+      builder.setMessage(issue.message);
+      builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+          dialog.dismiss();
+          addressValidationIssues(issues);
+        }
+      });
+      builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+          dialog.dismiss();
+        }
+      });
+      builder.create().show();
+    }
+
+    private void doSaveEntries() {
+      ChartEntryFragment chartEntryFragment = (ChartEntryFragment) getItem(0);
+      if (chartEntryFragment.shouldSplitOrJoinCycle()) {
+        // TODO: finish
+      }
+      final AtomicInteger numSaves = new AtomicInteger(getCount());
+      for (int i = 0; i < getCount(); i++) {
+        getItem(i).doSave(mCycle, new Callbacks.HaltingCallback<Void>() {
+          @Override
+          public void acceptData(Void data) {
+            if (numSaves.decrementAndGet() == 0) {
+              Intent returnIntent = new Intent();
+              returnIntent.putExtra(Cycle.class.getName(), mCycle);
+              setResult(OK_RESPONSE, returnIntent);
+              finish();
+            }
+          }
+        });
+      }
+    }
+
+    public void trySaveEntries() {
+      try {
+        Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
+        for (int i = 0; i < getCount(); i++) {
+          issues.addAll(getItem(i).validateEntryFromUi());
+        }
+        addressValidationIssues(issues);
+      } catch (EntryFragment.ValidationException ve) {
+        Toast.makeText(activity, ve.getMessage(), Toast.LENGTH_LONG).show();
+      }
     }
 
     @Override
@@ -182,8 +254,8 @@ public class EntryDetailActivity extends AppCompatActivity {
     @Override
     public void destroyItem(ViewGroup container, int position, Object object) {
       Log.v("EntryDetailActivity", "destroyItem: " + position);
-      registeredFragments.remove(position);
-      super.destroyItem(container, position, object);
+      //registeredFragments.remove(position);
+      //super.destroyItem(container, position, object);
     }
 
     @Override

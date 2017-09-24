@@ -11,10 +11,14 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.WellnessEntryProvider;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
+
+import java.util.Map;
 
 /**
  * Created by parkeroth on 9/11/17.
@@ -65,6 +69,22 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mAdapter);
+  }
+
+  @Override
+  WellnessEntry processExistingEntry(WellnessEntry existingEntry) {
+    MapDifference<String, Boolean> difference =
+        Maps.difference(existingEntry.wellnessItems, mAdapter.getActiveEntries());
+    if (difference.areEqual()) {
+      return existingEntry;
+    }
+
+    for (Map.Entry<String, Boolean> entry : difference.entriesOnlyOnLeft().entrySet()) {
+      existingEntry.wellnessItems.remove(entry.getKey());
+    }
+    existingEntry.wellnessItems.putAll(difference.entriesOnlyOnRight());
+
+    return existingEntry;
   }
 
   @Override

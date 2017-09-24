@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.data;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.crypto.SecretKey;
 
@@ -221,6 +223,66 @@ public abstract class EntryProvider<E extends Entry> {
               }
             }
           });
+        }
+      }
+    });
+  }
+
+  public void moveEntries(
+      final Cycle fromCycle,
+      final Cycle toCycle,
+      final String userId,
+      final Predicate<LocalDate> datePredicate,
+      final CycleKeyProvider keyProvider,
+      final Callback<?> callback) {
+    logV("Source cycle id: " + fromCycle.id);
+    logV("Destination cycle id: " + toCycle.id);
+    getDecryptedEntries(fromCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, E>>(callback) {
+      @Override
+      public void acceptData(Map<LocalDate, E> decryptedEntries) {
+        Map<LocalDate, E> entriesToMove = Maps.filterKeys(decryptedEntries, datePredicate);
+        final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
+        final boolean shouldDropCycle = entriesToMove.size() == decryptedEntries.size();
+
+        logV("Moving " + outstandingRemovals.get() + " entries");
+        for (Map.Entry<LocalDate, E> mapEntry : entriesToMove.entrySet()) {
+          final LocalDate entryDate = mapEntry.getKey();
+          final String dateStr = DateUtil.toWireStr(entryDate);
+          E decryptedEntry = mapEntry.getValue();
+          decryptedEntry.swapKey(toCycle.keys.chartKey);
+
+          final DatabaseReference.CompletionListener rmListener =
+              Listeners.completionListener(callback, new Runnable() {
+                @Override
+                public void run() {
+                  logV("Removed entry: " + dateStr);
+                  if (outstandingRemovals.decrementAndGet() == 0) {
+                    logV("Entry moves complete");
+                    if (shouldDropCycle) {
+                      logV("Dropping cycle: " + fromCycle.id);
+                      // TODO: fix race
+                      keyProvider.forCycle(fromCycle.id).dropKeys(callback);
+                      reference(userId, fromCycle.id).removeValue(
+                          Listeners.completionListener(callback));
+                    }
+                    callback.acceptData(null);
+                  }
+                }
+              });
+          final DatabaseReference.CompletionListener moveCompleteListener =
+              Listeners.completionListener(callback, new Runnable() {
+                @Override
+                public void run() {
+                  logV("Added entry: " + dateStr);
+                  deleteEntry(fromCycle.id, entryDate, rmListener);
+                }
+              });
+
+          try {
+            putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
+          } catch (CryptoUtil.CryptoException ce) {
+            handleError(DatabaseError.fromException(ce));
+          }
         }
       }
     });

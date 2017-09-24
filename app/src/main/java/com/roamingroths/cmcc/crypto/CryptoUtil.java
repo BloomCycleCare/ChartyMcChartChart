@@ -217,6 +217,7 @@ public class CryptoUtil {
         try {
           return AesCryptoUtil.decrypt(key, encryptedText);
         } catch (Exception e) {
+          e.printStackTrace();
           Log.w("CryptoUtil", "Exception: " + e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
         }

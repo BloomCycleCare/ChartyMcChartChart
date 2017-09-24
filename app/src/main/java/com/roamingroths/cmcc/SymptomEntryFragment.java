@@ -11,11 +11,15 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.data.SymptomEntryProvider;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
+
+import java.util.Map;
 
 /**
  * Created by parkeroth on 9/11/17.
@@ -114,5 +118,21 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
   @Override
   SymptomEntry getEntryFromUi() throws Exception {
     return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.symptomKey);
+  }
+
+  @Override
+  SymptomEntry processExistingEntry(SymptomEntry existingEntry) {
+    MapDifference<String, Boolean> difference =
+        Maps.difference(existingEntry.symptoms, mAdapter.getActiveEntries());
+    if (difference.areEqual()) {
+      return existingEntry;
+    }
+
+    for (Map.Entry<String, Boolean> entry : difference.entriesOnlyOnLeft().entrySet()) {
+      existingEntry.symptoms.remove(entry.getKey());
+    }
+    existingEntry.symptoms.putAll(difference.entriesOnlyOnRight());
+
+    return existingEntry;
   }
 }
