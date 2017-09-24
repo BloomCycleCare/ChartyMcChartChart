@@ -24,9 +24,9 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.AppState;
-import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Listeners;
@@ -93,6 +93,7 @@ public class SplashActivity extends AppCompatActivity {
       public void acceptData(Void unused) {
         showProgress("User initialization complete");
         getCurrentCycleForUser(user);
+        // TODO: move off UI thread end
       }
 
       @Override
@@ -127,7 +128,7 @@ public class SplashActivity extends AppCompatActivity {
   private void preloadCycleData(final Cycle cycle) {
     log("Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    ChartEntryList.builder(cycle, mPreferences).build().initialize(mChartEntryProvider, Callbacks.singleUse(new Callbacks.Callback<Void>() {
+    EntryContainerList.builder(cycle, mPreferences).build().initialize(mCycleProvider, Callbacks.singleUse(new Callbacks.Callback<Void>() {
       @Override
       public void acceptData(Void data) {
         log("Preload cycle data: finish");
@@ -341,6 +342,7 @@ public class SplashActivity extends AppCompatActivity {
   }
 
   private void initUserState(final FirebaseUser user) {
+    // TODO: move off UI thread start
     final Callbacks.Callback<Void> doneCallback = userInitCompleteCallback(user);
     Log.v("SplashActivity", "Initializing user state");
     DatabaseReference userRef =

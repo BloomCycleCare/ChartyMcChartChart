@@ -13,6 +13,7 @@ import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -20,9 +21,7 @@ import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,14 +30,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Created by parkeroth on 6/24/17.
  */
 
-public class ChartEntryList {
+public class EntryContainerList {
 
   private final AtomicBoolean mInitialized = new AtomicBoolean(false);
 
   // Chart state members
   public final Cycle mCycle;
-  private final SortedList<ChartEntry> mEntries;
-  private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
+  private final SortedList<EntryContainer> mEntries;
+  private final Map<LocalDate, EntryContainer> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
   private final Preferences mPreferences;
   private LocalDate mPointOfChange;
@@ -47,60 +46,53 @@ public class ChartEntryList {
     return new Builder(cycle, preferences);
   }
 
-  private ChartEntryList(Cycle cycle, Preferences preferences, SortedList<ChartEntry> entries) {
+  private EntryContainerList(Cycle cycle, Preferences preferences, SortedList<EntryContainer> entries) {
     mEntries = entries;
     mCycle = cycle;
     mPreferences = preferences;
   }
 
   public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
-    ChartEntry entry = mEntries.get(position);
+    ChartEntry entry = mEntries.get(position).chartEntry;
     holder.setEntrySummary(entry.getListUiText());
     holder.setBackgroundColor(getEntryColorResource(entry, context));
     holder.setEntryNum(mEntries.size() - position);
-    holder.setDate(DateUtil.toWireStr(entry.date));
+    holder.setDate(DateUtil.toWireStr(entry.getDate()));
     holder.setPeakDayText(getPeakDayViewText(entry));
     holder.setIntercourse(entry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, entry));
   }
 
-  public void initialize(final ChartEntryProvider chartEntryProvider, final Callbacks.Callback<Void> doneCallback) {
+  public void initialize(CycleProvider cycleProvider, final Callbacks.Callback<Void> doneCallback) {
     if (mInitialized.compareAndSet(false, true)) {
-      fillFromProvider(chartEntryProvider, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
+      cycleProvider.maybeCreateNewEntries(mCycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
         @Override
-        public void acceptData(@Nullable LocalDate lastEntryDate) {
-          Log.v("ChartEntryList", lastEntryDate == null ? "Null last entry date" : lastEntryDate.toString());
-          if (mCycle.endDate == null
-              && (lastEntryDate == null || lastEntryDate.isBefore(DateUtil.now()))) {
-            LocalDate endDate = null;
-            LocalDate startDate = lastEntryDate == null ? mCycle.startDate : lastEntryDate;
-            createEmptyEntries(startDate, endDate, chartEntryProvider, doneCallback);
-          } else {
-            doneCallback.acceptData(null);
-          }
+        public void acceptData(Void data) {
+
         }
       });
+      fillFromProvider(cycleProvider.getChartEntryProvider(), doneCallback);
     } else {
       doneCallback.handleError(DatabaseError.fromException(new IllegalStateException()));
     }
   }
 
-  public synchronized void addEntry(ChartEntry entry) {
-    if (mEntryIndex.containsKey(entry.date)) {
-      changeEntry(entry);
+  public synchronized void addEntry(EntryContainer entryContainer) {
+    if (mEntryIndex.containsKey(entryContainer.entryDate)) {
+      changeEntry(entryContainer);
       return;
     }
     // Maybe add peak day to set
-    if (entry.peakDay) {
-      mPeakDays.add(entry.date);
+    if (entryContainer.chartEntry.peakDay) {
+      mPeakDays.add(entryContainer.entryDate);
     }
     // Maybe set point of change
-    if (entry.pointOfChange) {
-      setPointOfChange(entry.date);
+    if (entryContainer.chartEntry.pointOfChange) {
+      setPointOfChange(entryContainer.entryDate);
     }
     // Add entry to list
-    mEntries.add(entry);
-    mEntryIndex.put(entry.date, entry);
+    mEntries.add(entryContainer);
+    mEntryIndex.put(entryContainer.entryDate, entryContainer);
     return;
   }
 
@@ -111,26 +103,27 @@ public class ChartEntryList {
     mPointOfChange = date;
   }
 
-  public synchronized void changeEntry(ChartEntry entry) {
+  public synchronized void changeEntry(EntryContainer entryContainer) {
     // Maybe add or remove from peak day set
-    if (mEntryIndex.containsKey(entry.date) && mEntryIndex.get(entry.date).equals(entry)) {
+    if (mEntryIndex.containsKey(entryContainer.entryDate)
+        && mEntryIndex.get(entryContainer.entryDate).equals(entryContainer)) {
       return;
     }
-    if (entry.peakDay) {
-      mPeakDays.add(entry.date);
+    if (entryContainer.chartEntry.peakDay) {
+      mPeakDays.add(entryContainer.entryDate);
     } else {
-      mPeakDays.remove(entry.date);
+      mPeakDays.remove(entryContainer.entryDate);
     }
-    if (entry.pointOfChange) {
-      setPointOfChange(entry.date);
+    if (entryContainer.chartEntry.pointOfChange) {
+      setPointOfChange(entryContainer.entryDate);
     } else {
       mPointOfChange = null;
     }
-    int entryIndex = getEntryIndex(entry.date);
+    int entryIndex = getEntryIndex(entryContainer.entryDate);
     if (entryIndex < 0) {
-      Log.w("ChartEntryList", "No entry to update for: " + entry.date + ", adding instead.");
+      Log.w("ChartEntryList", "No entry to update for: " + entryContainer.entryDate + ", adding instead.");
     } else {
-      mEntries.updateItemAt(entryIndex, entry);
+      mEntries.updateItemAt(entryIndex, entryContainer);
     }
   }
 
@@ -138,18 +131,18 @@ public class ChartEntryList {
     removeEntry(findEntry(entryDateStr));
   }
 
-  public synchronized void removeEntry(ChartEntry entry) {
-    if (entry.pointOfChange) {
+  public synchronized void removeEntry(EntryContainer entryContainer) {
+    if (entryContainer.chartEntry.pointOfChange) {
       mPointOfChange = null;
     }
     // Maybe remove peak day from set
-    mEntryIndex.remove(entry.date);
-    mPeakDays.remove(entry.date);
-    mEntries.remove(entry);
+    mEntryIndex.remove(entryContainer.entryDate);
+    mPeakDays.remove(entryContainer.entryDate);
+    mEntries.remove(entryContainer);
   }
 
   @Nullable
-  public ChartEntry findEntry(String dateStr) {
+  public EntryContainer findEntry(String dateStr) {
     int index = getEntryIndex(DateUtil.fromWireStr(dateStr));
     if (index < 0) {
       return null;
@@ -161,7 +154,7 @@ public class ChartEntryList {
     return mEntries.size();
   }
 
-  public ChartEntry get(int index) {
+  public EntryContainer get(int index) {
     return mEntries.get(index);
   }
 
@@ -170,37 +163,38 @@ public class ChartEntryList {
     if (previousIndex >= mEntries.size()) {
       return false;
     }
-    ChartEntry previousEntry = mEntries.get(previousIndex);
-    if (previousEntry.unusualBleeding) {
+    EntryContainer previousEntry = mEntries.get(previousIndex);
+    if (previousEntry.chartEntry.unusualBleeding) {
       return true;
     }
-    return !(previousEntry.observation != null && previousEntry.observation.hasBlood());
+    return !(previousEntry.chartEntry.observation != null
+        && previousEntry.chartEntry.observation.hasBlood());
   }
 
   private boolean isWithinCountOfThree(int position, ChartEntry entry) {
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
-      ChartEntry previousEntry = mEntries.get(i);
-      if (previousEntry.observation == null) {
+      EntryContainer previousEntry = mEntries.get(i);
+      if (previousEntry.chartEntry.observation == null) {
         continue;
       }
       // Check if any unusual bleeding within count of three (D.6)
-      if (previousEntry.unusualBleeding) {
+      if (previousEntry.chartEntry.unusualBleeding) {
         return true;
       }
-      if (previousEntry.observation.dischargeSummary == null) {
+      if (previousEntry.chartEntry.observation.dischargeSummary == null) {
         continue;
       }
-      if (previousEntry.observation.dischargeSummary.isPeakType()) {
+      if (previousEntry.chartEntry.observation.dischargeSummary.isPeakType()) {
         // Check for 1 day of peak mucus (D.5)
         return true;
       }
-      if (previousEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
+      if (previousEntry.chartEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
         // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
         int lastNonPeakMucus = i + 3;
         boolean consecutiveNonPeakMucus = true;
         for (int j = i; i < mEntries.size() && j < lastNonPeakMucus; j++) {
-          if (!mEntries.get(j).hasMucus()) {
+          if (!mEntries.get(j).chartEntry.hasMucus()) {
             consecutiveNonPeakMucus = false;
             break;
           }
@@ -228,12 +222,12 @@ public class ChartEntryList {
     }
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
     if (mostRecentPeakDay != null) {
-      if (mostRecentPeakDay.minusDays(1).isBefore(entry.date)
-          && mostRecentPeakDay.plusDays(4).isAfter(entry.date)) {
+      if (mostRecentPeakDay.minusDays(1).isBefore(entry.getDate())
+          && mostRecentPeakDay.plusDays(4).isAfter(entry.getDate())) {
         return true;
       }
       if (mPreferences.postPeakYellowEnabled()
-          && entry.date.isAfter(mostRecentPeakDay.plusDays(3))) {
+          && entry.getDate().isAfter(mostRecentPeakDay.plusDays(3))) {
         return false;
       }
     }
@@ -282,25 +276,25 @@ public class ChartEntryList {
   private boolean isPostPeak(ChartEntry entry) {
     Preconditions.checkNotNull(entry);
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
-    return mostRecentPeakDay != null && mostRecentPeakDay.isBefore(entry.date);
+    return mostRecentPeakDay != null && mostRecentPeakDay.isBefore(entry.getDate());
   }
 
   private boolean isPreakPeak(ChartEntry entry) {
     Preconditions.checkNotNull(entry);
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
-    return mostRecentPeakDay == null || mostRecentPeakDay.isAfter(entry.date);
+    return mostRecentPeakDay == null || mostRecentPeakDay.isAfter(entry.getDate());
   }
 
   private boolean isBeforePointOfChange(ChartEntry entry) {
     Preconditions.checkNotNull(entry);
-    return mPointOfChange == null || mPointOfChange.isAfter(entry.date);
+    return mPointOfChange == null || mPointOfChange.isAfter(entry.getDate());
   }
 
   @Nullable
   private LocalDate getMostRecentPeakDay(ChartEntry entry) {
     LocalDate mostRecentPeakDay = null;
     for (LocalDate peakDay : mPeakDays) {
-      if (peakDay.isAfter(entry.date)) {
+      if (peakDay.isAfter(entry.getDate())) {
         continue;
       }
       if (mostRecentPeakDay == null) {
@@ -314,13 +308,13 @@ public class ChartEntryList {
   }
 
   private String getPeakDayViewText(ChartEntry entry, LocalDate peakDay) {
-    if (entry.date.isBefore(peakDay)) {
+    if (entry.getDate().isBefore(peakDay)) {
       return "";
     }
-    if (entry.date.equals(peakDay)) {
+    if (entry.getDate().equals(peakDay)) {
       return "P";
     }
-    int daysAfterPeak = Days.daysBetween(peakDay, entry.date).getDays();
+    int daysAfterPeak = Days.daysBetween(peakDay, entry.getDate()).getDays();
     if (daysAfterPeak < 4) {
       return String.valueOf(daysAfterPeak);
     }
@@ -329,8 +323,8 @@ public class ChartEntryList {
 
   private int getEntryIndex(LocalDate entryDate) {
     for (int i = 0; i < mEntries.size(); i++) {
-      ChartEntry entry = mEntries.get(i);
-      if (entry.date.equals(entryDate)) {
+      EntryContainer entryContainer = mEntries.get(i);
+      if (entryContainer.entryDate.equals(entryDate)) {
         return i;
       }
     }
@@ -353,8 +347,8 @@ public class ChartEntryList {
       return this;
     }
 
-    public ChartEntryList build() {
-      SortedList<ChartEntry> entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
+    public EntryContainerList build() {
+      SortedList<EntryContainer> entries = new SortedList<EntryContainer>(EntryContainer.class, new SortedList.Callback<EntryContainer>() {
         @Override
         public void onInserted(int position, int count) {
           if (adapter != null) {
@@ -384,64 +378,40 @@ public class ChartEntryList {
         }
 
         @Override
-        public int compare(ChartEntry e1, ChartEntry e2) {
-          return e2.date.compareTo(e1.date);
+        public int compare(EntryContainer e1, EntryContainer e2) {
+          return e2.entryDate.compareTo(e1.entryDate);
         }
 
         @Override
-        public boolean areContentsTheSame(ChartEntry oldItem, ChartEntry newItem) {
+        public boolean areContentsTheSame(EntryContainer oldItem, EntryContainer newItem) {
           return oldItem.equals(newItem);
         }
 
         @Override
-        public boolean areItemsTheSame(ChartEntry item1, ChartEntry item2) {
+        public boolean areItemsTheSame(EntryContainer item1, EntryContainer item2) {
           return item1 == item2;
         }
       });
-      return new ChartEntryList(cycle, preferences, entries);
+      return new EntryContainerList(cycle, preferences, entries);
     }
   }
 
   private void fillFromProvider(
       ChartEntryProvider chartEntryProvider,
-      final Callbacks.Callback<LocalDate> lastDateAddedCallback) {
-    Log.v("ChartEntryList", "Begin filling from DB");
-    final Callbacks.Callback<LocalDate> wrappedCallback =
-        Callbacks.singleUse(Preconditions.checkNotNull(lastDateAddedCallback));
-    chartEntryProvider.getDecryptedEntries(mCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(wrappedCallback) {
+      final Callbacks.Callback<Void> doneCallback) {
+    logV("Begin filling from DB");
+    chartEntryProvider.getDecryptedEntries(mCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(doneCallback) {
       @Override
       public void acceptData(Map<LocalDate, ChartEntry> entries) {
-        LocalDate lastEntryDate = null;
-        for (Map.Entry<LocalDate, ChartEntry> mapEntry : entries.entrySet()) {
-          LocalDate entryDate = mapEntry.getKey();
-          if (lastEntryDate == null || lastEntryDate.isBefore(entryDate)) {
-            lastEntryDate = entryDate;
-          }
-          addEntry(mapEntry.getValue());
-        }
-        lastDateAddedCallback.acceptData(lastEntryDate);
-      }
-    });
-  }
-
-  private void createEmptyEntries(
-      LocalDate startDate,
-      @Nullable LocalDate endDate,
-      ChartEntryProvider chartEntryProvider,
-      final Callbacks.Callback<?> doneCallback) {
-    endDate = (endDate == null) ? LocalDate.now().plusDays(1) : endDate.plusDays(1);
-    Set<LocalDate> dates = new HashSet<>();
-    for (LocalDate date = startDate; date.isBefore(endDate); date = date.plusDays(1)) {
-      dates.add(date);
-    }
-    chartEntryProvider.createEmptyEntries(mCycle, dates, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(doneCallback) {
-      @Override
-      public void acceptData(Map<LocalDate, ChartEntry> data) {
-        for (ChartEntry entry : data.values()) {
-          addEntry(entry);
+        for (Map.Entry<LocalDate, ChartEntry> entry : entries.entrySet()) {
+          addEntry(new EntryContainer(entry.getKey(), entry.getValue()));
         }
         doneCallback.acceptData(null);
       }
     });
+  }
+
+  private void logV(String message) {
+    Log.v("EntryContainerList", message);
   }
 }

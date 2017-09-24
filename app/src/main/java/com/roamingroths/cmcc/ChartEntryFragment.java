@@ -11,9 +11,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -25,25 +23,20 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
-import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Observation;
 import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.DateUtil;
-
-import org.joda.time.LocalDate;
+import com.roamingroths.cmcc.utils.Listeners;
 
 /**
  * Created by parkeroth on 9/11/17.
  */
 
-public class ChartEntryFragment extends EntryFragment {
+public class ChartEntryFragment extends EntryFragment<ChartEntry> {
 
   public static final int OK_RESPONSE = 0;
-
-  private ChartEntryProvider chartEntryProvider;
-  private CycleProvider cycleProvider;
 
   private TextInputEditText mObservationEditText;
   private TextView mObservationDescriptionTextView;
@@ -57,9 +50,10 @@ public class ChartEntryFragment extends EntryFragment {
 
   private boolean expectUnusualBleeding;
   private boolean usingPrePeakYellowStickers;
-  private Cycle mCycle;
-  private LocalDate mEntryDate;
-  private ChartEntry mExistingEntry;
+
+  public ChartEntryFragment() {
+    super(R.layout.fragment_chart_entry);
+  }
 
   @Override
   public void onAttach(Context context) {
@@ -67,23 +61,13 @@ public class ChartEntryFragment extends EntryFragment {
   }
 
   @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-
-    chartEntryProvider = ChartEntryProvider.forDb(FirebaseDatabase.getInstance());
-    cycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
-
+  EntryProvider<ChartEntry> createEntryProvider(FirebaseDatabase db) {
+    return ChartEntryProvider.forDb(db);
   }
 
   @Override
-  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    View view = inflater.inflate(R.layout.fragment_chart_entry, container, false);
-
-    Bundle args = getArguments();
-    mCycle = args.getParcelable(Cycle.class.getName());
+  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
     expectUnusualBleeding = args.getBoolean(Extras.EXPECT_UNUSUAL_BLEEDING);
-    String entryDateStr = args.getString(Extras.ENTRY_DATE_STR);
-    mEntryDate = DateUtil.fromWireStr(entryDateStr);
 
     mPointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
 
@@ -137,26 +121,6 @@ public class ChartEntryFragment extends EntryFragment {
     mIntercourseSwitch = (Switch) view.findViewById(R.id.switch_intercourse);
     mFirstDaySwitch = (Switch) view.findViewById(R.id.switch_new_cycle);
     mPointOfChangeSwitch = (Switch) view.findViewById(R.id.switch_point_of_change);
-
-    chartEntryProvider.getChartEntry(mCycle.id, entryDateStr, mCycle.keys.chartKey, new Callbacks.Callback<ChartEntry>() {
-      @Override
-      public void acceptData(ChartEntry data) {
-        mExistingEntry = data;
-        updateUiWithEntry(mExistingEntry);
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException("Could not load ChartEntry");
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        error.toException().printStackTrace();
-      }
-    });
-
-    return view;
   }
 
   @Override
@@ -167,21 +131,9 @@ public class ChartEntryFragment extends EntryFragment {
     mPointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
   }
 
-  public boolean isDirty() {
-    if (mExistingEntry == null) {
-      return false;
-    }
-    try {
-      ChartEntry entryFromUi = getChartEntryFromUi();
-      return !mExistingEntry.equals(entryFromUi);
-    } catch (Observation.InvalidObservationException ioe) {
-      return true;
-    }
-  }
-
   public void onSave() {
     try {
-      final ChartEntry entry = getChartEntryFromUi();
+      final ChartEntry entry = getEntryFromUi();
       boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
       if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
@@ -203,27 +155,21 @@ public class ChartEntryFragment extends EntryFragment {
         builder.create().show();
       }
       doSaveAction(entry);
-    } catch (Observation.InvalidObservationException ioe) {
+    } catch (Exception e) {
       Toast.makeText(getActivity(), "Cannot save invalid observation", Toast.LENGTH_LONG).show();
     }
   }
 
-  public void onDelete() {
-    DatabaseReference.CompletionListener listener = new DatabaseReference.CompletionListener() {
-      @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        getActivity().finish();
-      }
-    };
-    chartEntryProvider.deleteChartEntry(mCycle.id, mEntryDate, listener);
+  public void onDelete(final Callbacks.Callback<Void> onDone) {
+    getEntryProvider().deleteEntry(getCycle().id, getEntryDate(), Listeners.doneOnCompletion(onDone));
   }
 
   private void doSaveAction(final ChartEntry entry) {
-    if (mExistingEntry.firstDay != entry.firstDay) {
+    if (getExistingEntry().firstDay != entry.firstDay) {
       maybeSplitOrJoinCycle(entry);
     } else {
       try {
-        chartEntryProvider.putEntry(mCycle.id, entry, completionListener(mCycle));
+        getEntryProvider().putEntry(getCycle().id, entry, completionListener(getCycle()));
       } catch (CryptoUtil.CryptoException ce) {
         ce.printStackTrace();
       }
@@ -242,7 +188,8 @@ public class ChartEntryFragment extends EntryFragment {
     return getObservationFromView(mObservationEditText);
   }
 
-  private ChartEntry getChartEntryFromUi() throws Observation.InvalidObservationException {
+  @Override
+  ChartEntry getEntryFromUi() throws Exception {
     Observation observation = getObservationFromEditText();
     boolean peakDay = mPeakDaySwitch.isChecked();
     boolean intercourse = mIntercourseSwitch.isChecked();
@@ -250,7 +197,7 @@ public class ChartEntryFragment extends EntryFragment {
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
     return new ChartEntry(
-        mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, mCycle.keys.chartKey);
+        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, getCycle().keys.chartKey);
   }
 
   private void maybeSplitOrJoinCycle(final ChartEntry entry) {
@@ -258,11 +205,11 @@ public class ChartEntryFragment extends EntryFragment {
     String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     if (entry.firstDay) {
       // Try and split the current cycle
-      cycleProvider.splitCycle(userId, mCycle, entry, new Callbacks.HaltingCallback<Cycle>() {
+      getCycleProvider().splitCycle(userId, getCycle(), entry, new Callbacks.HaltingCallback<Cycle>() {
         @Override
         public void acceptData(Cycle newCycle) {
           try {
-            chartEntryProvider.putEntry(newCycle.id, entry, completionListener(newCycle));
+            getEntryProvider().putEntry(newCycle.id, entry, completionListener(newCycle));
           } catch (CryptoUtil.CryptoException ce) {
             ce.printStackTrace();
           }
@@ -270,7 +217,7 @@ public class ChartEntryFragment extends EntryFragment {
       });
     } else {
       // Try and this and the previous cycle
-      if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
+      if (Strings.isNullOrEmpty(getCycle().previousCycleId)) {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setTitle("No Previous Cycle");
         builder.setMessage("Please add cycle before this entry to proceed.");
@@ -283,11 +230,11 @@ public class ChartEntryFragment extends EntryFragment {
         });
         builder.create().show();
       } else {
-        cycleProvider.combineCycles(mCycle, userId, new Callbacks.HaltingCallback<Cycle>() {
+        getCycleProvider().combineCycles(getCycle(), userId, new Callbacks.HaltingCallback<Cycle>() {
           @Override
           public void acceptData(Cycle newCycle) {
             try {
-              chartEntryProvider.putEntry(newCycle.id, entry, completionListener(newCycle));
+              getEntryProvider().putEntry(newCycle.id, entry, completionListener(newCycle));
             } catch (CryptoUtil.CryptoException ce) {
               ce.printStackTrace();
             }
@@ -313,7 +260,8 @@ public class ChartEntryFragment extends EntryFragment {
     };
   }
 
-  private void updateUiWithEntry(ChartEntry entry) {
+  @Override
+  void updateUiWithEntry(ChartEntry entry) {
     updateUiWithObservation(entry.observation);
     mPeakDaySwitch.setChecked(entry.peakDay);
     mIntercourseSwitch.setChecked(entry.intercourse);

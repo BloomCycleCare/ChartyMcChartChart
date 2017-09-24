@@ -3,9 +3,10 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.data.ChartEntryList;
+import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.logic.Observation;
 
 import org.joda.time.LocalDate;
@@ -298,10 +299,10 @@ public class ChartEntryViewHolderTest {
 
   private void runTest(
       ImmutableMap<Entry, Expectations> entries, Preferences preferences) throws Exception {
-    ChartEntryList entryList = ChartEntryList.builder(CYCLE, preferences).build();
+    EntryContainerList entryList = EntryContainerList.builder(CYCLE, preferences).build();
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(entryList.size());
-      entryList.addEntry(anEntry.getKey().asChartEntry(entryDate));
+      entryList.addEntry(new EntryContainer(entryDate, anEntry.getKey().asChartEntry(entryDate)));
     }
     int i = entryList.size() - 1;
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {

@@ -6,8 +6,6 @@ import android.util.Log;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -35,8 +33,8 @@ public class CryptoUtil {
   private static PublicKey PUBLIC_KEY = null;
   private static PrivateKey PRIVATE_KEY = null;
 
-  private static final Cache<Integer, Object> OBJECT_CACHE =
-      CacheBuilder.newBuilder().maximumSize(100).build();
+  //private static final Cache<Integer, Object> OBJECT_CACHE =
+  //    CacheBuilder.newBuilder().maximumSize(100).build();
 
   public static boolean initFromKeyStore() {
     try {
@@ -155,7 +153,7 @@ public class CryptoUtil {
           @Override
           public void acceptData(String encryptedText) {
             callback.acceptData(encryptedText);
-            OBJECT_CACHE.put(encryptedText.hashCode(), cipherable);
+            //OBJECT_CACHE.put(encryptedText.hashCode(), cipherable);
           }
         });
   }
@@ -182,19 +180,19 @@ public class CryptoUtil {
   }
 
   public static <T> void decrypt(final String encryptedText, SecretKey key, final Class<T> clazz, Callbacks.Callback<T> callback) {
-    Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
+    /*Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
     if (cachedObject != null) {
       Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
       callback.acceptData((T) cachedObject);
       return;
-    }
+    }*/
     Function<String, T> transformer = new Function<String, T>() {
       @Override
       public T apply(String decryptedStr) {
         Log.v("CryptoUtil", "Decrypting " + clazz.getName());
         T decryptedObject = Preconditions.checkNotNull(
             GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz));
-        OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
+        //OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
         return decryptedObject;
       }
     };

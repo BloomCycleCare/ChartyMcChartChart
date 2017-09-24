@@ -7,8 +7,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.data.EntryContainerList;
+import com.roamingroths.cmcc.logic.EntryContainer;
 
 /**
  * Created by parkeroth on 7/1/17.
@@ -31,7 +31,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
-    private final ChartEntryList mEntryList;
+    private final EntryContainerList mContainerList;
     private final TextView mEntryNumTextView;
     private final TextView mEntryDateTextView;
     private final TextView mEntryDataTextView;
@@ -40,10 +40,10 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final View mEntryBackgroundView;
 
     public Impl(
-        View itemView, ChartEntryList entryList, ChartEntryAdapter.OnClickHandler clickHandler) {
+        View itemView, EntryContainerList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
       super(itemView);
       itemView.setOnClickListener(this);
-      mEntryList = entryList;
+      mContainerList = containerList;
       mClickHandler = clickHandler;
       mEntryNumTextView = (TextView) itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = (TextView) itemView.findViewById(R.id.tv_entry_date);
@@ -99,8 +99,8 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      ChartEntry currentEntry = mEntryList.get(index);
-      mClickHandler.onClick(currentEntry, index);
+      EntryContainer container = mContainerList.get(index);
+      mClickHandler.onClick(container, index);
     }
   }
 }

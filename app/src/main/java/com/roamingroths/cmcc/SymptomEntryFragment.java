@@ -7,29 +7,37 @@ import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.EntryProvider;
+import com.roamingroths.cmcc.data.SymptomEntryProvider;
+import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
 /**
  * Created by parkeroth on 9/11/17.
  */
 
-public class SymptomEntryFragment extends EntryFragment {
+public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
 
   private RecyclerView mRecyclerView;
   private MultiSelectPrefAdapter mAdapter;
   private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
-  @Override
-  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    Log.v("SymptomEntryFragment", "onCreateView");
+  public SymptomEntryFragment() {
+    super(R.layout.fragment_symptom_entry);
+  }
 
-    View view = inflater.inflate(R.layout.fragment_symptom_entry, container, false);
+  @Override
+  EntryProvider<SymptomEntry> createEntryProvider(FirebaseDatabase db) {
+    return SymptomEntryProvider.forDb(db);
+  }
+
+  @Override
+  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
     String[] values = getActivity().getResources().getStringArray(R.array.pref_symptom_option_values);
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_symptom_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
@@ -57,8 +65,6 @@ public class SymptomEntryFragment extends EntryFragment {
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mAdapter);
-
-    return view;
   }
 
   @Override
@@ -101,8 +107,12 @@ public class SymptomEntryFragment extends EntryFragment {
   }
 
   @Override
-  public boolean isDirty() {
-    // TODO: implement
-    return false;
+  void updateUiWithEntry(SymptomEntry entry) {
+    mAdapter.updateValues(entry.symptoms);
+  }
+
+  @Override
+  SymptomEntry getEntryFromUi() throws Exception {
+    return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.symptomKey);
   }
 }

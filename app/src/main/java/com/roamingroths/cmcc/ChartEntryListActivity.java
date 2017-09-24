@@ -17,8 +17,9 @@ import com.google.common.base.Preconditions;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.utils.Callbacks;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
@@ -34,6 +35,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
   private ChartEntryProvider mChartEntryProvider;
+  private CycleProvider mCycleProvider;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -45,6 +47,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     mDb = FirebaseDatabase.getInstance();
     mChartEntryProvider = ChartEntryProvider.forDb(mDb);
+    mCycleProvider = CycleProvider.forDb(mDb);
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
     Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
@@ -60,7 +63,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     };
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, mDb, mChartEntryProvider, adapterInitialzationCallback);
+        getApplicationContext(), cycle, this, mDb, mCycleProvider, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -138,9 +141,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   }
 
   @Override
-  public void onClick(ChartEntry entry, int index) {
+  public void onClick(EntryContainer container, int index) {
     startActivityForResult(
-        mChartEntryAdapter.getIntentForModification(entry, index),
+        mChartEntryAdapter.getIntentForModification(container, index),
         EntryDetailActivity.MODIFY_REQUEST);
   }
 
@@ -155,7 +158,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       }
     };
     mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), newCycle, this, mDb, mChartEntryProvider, adapterInitialzationCallback);
+        getApplicationContext(), newCycle, this, mDb, mCycleProvider, adapterInitialzationCallback);
     mRecyclerView.setAdapter(mChartEntryAdapter);
   }
 

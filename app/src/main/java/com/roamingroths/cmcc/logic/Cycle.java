@@ -54,7 +54,7 @@ public class Cycle implements Parcelable {
         in.readString(),
         in.readString(),
         in.readString(),
-        DateUtil.fromWireStr(in.readString()),
+        Preconditions.checkNotNull(DateUtil.fromWireStr(in.readString())),
         DateUtil.fromWireStr(in.readString()),
         new Keys(
             AesCryptoUtil.parseKey(in.readString()),

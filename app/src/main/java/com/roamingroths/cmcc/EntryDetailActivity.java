@@ -4,7 +4,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.app.FragmentStatePagerAdapter;
@@ -18,6 +17,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -79,8 +80,6 @@ public class EntryDetailActivity extends AppCompatActivity {
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
-    final ChartEntryFragment chartEntryFragment = mSectionsPagerAdapter.getChartEntryFragment();
-
     // Handle action bar item clicks here. The action bar will
     // automatically handle clicks on the Home/Up button, so long
     // as you specify a parent activity in AndroidManifest.xml.
@@ -93,7 +92,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      chartEntryFragment.onSave();
+      //chartEntryFragment.onSave();
       return true;
     }
     if (id == R.id.action_delete) {
@@ -105,7 +104,7 @@ public class EntryDetailActivity extends AppCompatActivity {
           .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
               dialog.dismiss();
-              chartEntryFragment.onDelete();
+              //chartEntryFragment.onDelete();
 
             }
           })
@@ -118,7 +117,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == android.R.id.home) {
-      if (chartEntryFragment.isDirty()) {
+      if (mSectionsPagerAdapter.anyDirty()) {
         new AlertDialog.Builder(this)
             //set message, title, and icon
             .setTitle("Discard Changes")
@@ -154,7 +153,7 @@ public class EntryDetailActivity extends AppCompatActivity {
    */
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
-    private final SparseArray<Fragment> registeredFragments = new SparseArray<>();
+    private final SparseArray<EntryFragment> registeredFragments = new SparseArray<>();
     private final Intent intent;
 
     public SectionsPagerAdapter(FragmentManager fm, Intent intent) {
@@ -162,10 +161,20 @@ public class EntryDetailActivity extends AppCompatActivity {
       this.intent = intent;
     }
 
+    public boolean anyDirty() {
+      for (int i = 0; i < getCount(); i++) {
+        if (getItem(i).isDirty()) {
+          Log.v("FOO", "Index: " + i);
+          return true;
+        }
+      }
+      return false;
+    }
+
     @Override
     public Object instantiateItem(ViewGroup container, int position) {
       Log.v("EntryDetailActivity", "instantiateItem: " + position);
-      Fragment fragment = (Fragment) super.instantiateItem(container, position);
+      EntryFragment fragment = (EntryFragment) super.instantiateItem(container, position);
       registeredFragments.put(position, fragment);
       return fragment;
     }
@@ -177,31 +186,41 @@ public class EntryDetailActivity extends AppCompatActivity {
       super.destroyItem(container, position, object);
     }
 
-    public ChartEntryFragment getChartEntryFragment() {
-      return (ChartEntryFragment) registeredFragments.get(0);
-    }
-
     @Override
-    public Fragment getItem(int position) {
+    public EntryFragment getItem(int position) {
       Log.v("EntryDetailActivity", "getItem: " + position);
+      EntryFragment cachedFragment = registeredFragments.get(position);
+      if (cachedFragment != null) {
+        return cachedFragment;
+      }
+
+      Bundle args = new Bundle();
+      args.putString(Extras.ENTRY_DATE_STR, intent.getStringExtra(Extras.ENTRY_DATE_STR));
+      args.putParcelable(Cycle.class.getName(), getCycle(intent));
+
+      EntryFragment fragment;
       // getItem is called to instantiate the fragment for the given page.
       // Return a PlaceholderFragment (defined as a static inner class below).
       switch (position) {
         case 0:
-          Bundle args = new Bundle();
-          args.putParcelable(Cycle.class.getName(), getCycle(intent));
           args.putBoolean(
               Extras.EXPECT_UNUSUAL_BLEEDING,
               intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
-          args.putString(Extras.ENTRY_DATE_STR, intent.getStringExtra(Extras.ENTRY_DATE_STR));
 
-          Fragment fragment = new ChartEntryFragment();
+          fragment = new ChartEntryFragment();
           fragment.setArguments(args);
+          Log.v("EntryDetailActivity", "Creating new instance of ChartEntryFragment");
           return fragment;
         case 1:
-          return new WellnessEntryFragment();
+          fragment = new WellnessEntryFragment();
+          fragment.setArguments(args);
+          Log.v("EntryDetailActivity", "Creating new instance of WellnessEntryFragment");
+          return fragment;
         case 2:
-          return new SymptomEntryFragment();
+          fragment = new SymptomEntryFragment();
+          fragment.setArguments(args);
+          Log.v("EntryDetailActivity", "Creating new instance of WellnessEntryFragment");
+          return fragment;
       }
       return null;
     }
@@ -237,11 +256,13 @@ public class EntryDetailActivity extends AppCompatActivity {
     if (!intent.hasExtra(Extras.ENTRY_DATE_STR)) {
       throw new IllegalStateException("Missing entry date");
     }
-    return intent.getStringExtra(Extras.ENTRY_DATE_STR);
+    String entryDateStr = intent.getStringExtra(Extras.ENTRY_DATE_STR);
+    Preconditions.checkState(!Strings.isNullOrEmpty(entryDateStr));
+    return entryDateStr;
   }
 
   private static String getTitle(Intent intent) {
-    LocalDate entryDate = DateUtil.fromWireStr(getEntryDateStr(intent));
+    LocalDate entryDate = Preconditions.checkNotNull(DateUtil.fromWireStr(getEntryDateStr(intent)));
     Cycle cycle = getCycle(intent);
     int daysBetween = Days.daysBetween(cycle.startDate, entryDate).getDays();
     return "Day #" + (daysBetween + 1);

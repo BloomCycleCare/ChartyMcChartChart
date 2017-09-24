@@ -31,6 +31,16 @@ public class Listeners {
     return completionListener(callback, Runnables.doNothing());
   }
 
+  public static DatabaseReference.CompletionListener doneOnCompletion(
+      final Callbacks.Callback<Void> onDone) {
+    return completionListener(onDone, new Runnable() {
+      @Override
+      public void run() {
+        onDone.acceptData(null);
+      }
+    });
+  }
+
   public static DatabaseReference.CompletionListener completionListener(
       Callbacks.Callback<?> callback, Runnable onSuccess) {
     return new SimpleCompletionListener(callback, onSuccess);

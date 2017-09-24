@@ -7,6 +7,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
@@ -33,6 +34,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -45,16 +47,18 @@ public class CycleProvider {
   private final FirebaseDatabase db;
   private final CycleKeyProvider cycleKeyProvider;
   private final ChartEntryProvider chartEntryProvider;
+  private final ImmutableList<EntryProvider> entryProviders;
 
   public static CycleProvider forDb(FirebaseDatabase db) {
-    return new CycleProvider(db, CycleKeyProvider.forDb(db), ChartEntryProvider.forDb(db));
+    return new CycleProvider(db, CycleKeyProvider.forDb(db), ChartEntryProvider.forDb(db), WellnessEntryProvider.forDb(db), SymptomEntryProvider.forDb(db));
   }
 
   private CycleProvider(
-      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider) {
+      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
     this.db = db;
     this.cycleKeyProvider = cycleKeyProvider;
     this.chartEntryProvider = chartEntryProvider;
+    entryProviders = ImmutableList.<EntryProvider>of(this.chartEntryProvider, wellnessEntryProvider, symptomEntryProvider);
   }
 
   public CycleKeyProvider getCycleKeyProvider() {
@@ -69,6 +73,20 @@ public class CycleProvider {
     DatabaseReference ref = reference(userId);
     ref.addChildEventListener(listener);
     ref.keepSynced(true);
+  }
+
+  public void maybeCreateNewEntries(Cycle cycle, final Callback<Void> doneCallback) {
+    final AtomicInteger providersToCheck = new AtomicInteger(entryProviders.size());
+    for (EntryProvider provider : entryProviders) {
+      provider.maybeAddNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
+        @Override
+        public void acceptData(Void data) {
+          if (providersToCheck.decrementAndGet() == 0) {
+            doneCallback.acceptData(null);
+          }
+        }
+      });
+    }
   }
 
   public void detachListener(ChildEventListener listener, String userId) {
@@ -115,7 +133,17 @@ public class CycleProvider {
         startDate,
         endDate,
         keys);
-    putCycle(userId, cycle, callback);
+    putCycle(userId, cycle, new Callbacks.ErrorForwardingCallback<Cycle>(callback) {
+      @Override
+      public void acceptData(Cycle data) {
+        maybeCreateNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(callback) {
+          @Override
+          public void acceptData(Void data) {
+            callback.acceptData(cycle);
+          }
+        });
+      }
+    });
   }
 
   private void getCycles(
@@ -184,7 +212,6 @@ public class CycleProvider {
           return;
         }
         if (data.size() == 1) {
-          logV("Could not find current cycle");
           callback.acceptData(data.iterator().next());
           return;
         }
@@ -308,7 +335,7 @@ public class CycleProvider {
                 userId,
                 currentCycle,
                 nextCycle,
-                firstEntry.date,
+                firstEntry.getDate(),
                 currentCycle.endDate,
                 Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Cycle>(this) {
                   @Override
@@ -319,13 +346,13 @@ public class CycleProvider {
                     }
                     Map<String, Object> updates = new HashMap<>();
                     updates.put("next-cycle-id", newCycle.id);
-                    updates.put("end-date", DateUtil.toWireStr(firstEntry.date.minusDays(1)));
+                    updates.put("end-date", DateUtil.toWireStr(firstEntry.getDate().minusDays(1)));
                     reference(userId, currentCycle.id).updateChildren(
                         updates, Listeners.completionListener(this));
                     moveEntries(currentCycle, newCycle, userId, new Predicate<LocalDate>() {
                       @Override
                       public boolean apply(LocalDate entryDate) {
-                        return entryDate.equals(firstEntry.date) || entryDate.isAfter(firstEntry.date);
+                        return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
                       }
                     }, Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Void>(this) {
                       @Override
@@ -384,7 +411,7 @@ public class CycleProvider {
                 @Override
                 public void run() {
                   logV("Added entry: " + dateStr);
-                  chartEntryProvider.deleteChartEntry(fromCycle.id, entryDate, rmListener);
+                  chartEntryProvider.deleteEntry(fromCycle.id, entryDate, rmListener);
                 }
               });
 

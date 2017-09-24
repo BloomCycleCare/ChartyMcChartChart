@@ -17,9 +17,10 @@ import com.roamingroths.cmcc.EntryDetailActivity;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.utils.Callbacks;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -31,18 +32,18 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final ChartEntryListener mListener;
+  private final EntryContainerListener mListener;
   private final AtomicBoolean mEntryListenerAttached;
   private final DatabaseReference mEntriesDbRef;
   private final Preferences mPreferences;
-  private ChartEntryList mChartEntryList;
+  private EntryContainerList mContainerList;
 
   public ChartEntryAdapter(
       Context context,
       Cycle cycle,
       OnClickHandler clickHandler,
       FirebaseDatabase db,
-      ChartEntryProvider chartEntryProvider,
+      CycleProvider cycleProvider,
       Callbacks.Callback<Void> initializationCompleteCallback) {
     mEntriesDbRef = db.getReference("entries").child(cycle.id).child("chart");
     mEntriesDbRef.keepSynced(true);
@@ -50,9 +51,9 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mContext = context;
     mClickHandler = clickHandler;
     mPreferences = Preferences.fromShared(mContext);
-    mChartEntryList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
-    mListener = new ChartEntryListener(context, mChartEntryList);
-    mChartEntryList.initialize(chartEntryProvider, initializationCompleteCallback);
+    mContainerList = EntryContainerList.builder(cycle, mPreferences).withAdapter(this).build();
+    mListener = new EntryContainerListener(context, mContainerList);
+    mContainerList.initialize(cycleProvider, initializationCompleteCallback);
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -82,7 +83,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public Cycle getCycle() {
-    return mChartEntryList.mCycle;
+    return mContainerList.mCycle;
   }
 
   @Override
@@ -92,7 +93,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     boolean shouldAttachToParentImmediately = false;
 
     View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
-    return new ChartEntryViewHolder.Impl(view, mChartEntryList, mClickHandler);
+    return new ChartEntryViewHolder.Impl(view, mContainerList, mClickHandler);
   }
 
   /**
@@ -107,23 +108,23 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
    */
   @Override
   public void onBindViewHolder(ChartEntryViewHolder.Impl holder, int position) {
-    mChartEntryList.bindViewHolder(holder, position, mContext);
+    mContainerList.bindViewHolder(holder, position, mContext);
   }
 
   @Override
   public int getItemCount() {
-    return mChartEntryList.size();
+    return mContainerList.size();
   }
 
   public interface OnClickHandler {
-    void onClick(ChartEntry entry, int index);
+    void onClick(EntryContainer container, int index);
   }
 
-  public Intent getIntentForModification(ChartEntry entry, int index) {
+  public Intent getIntentForModification(EntryContainer container, int index) {
     Intent intent = new Intent(mContext, EntryDetailActivity.class);
-    intent.putExtra(Extras.ENTRY_DATE_STR, entry.getDateStr());
-    intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mChartEntryList.expectUnusualBleeding(index));
-    intent.putExtra(Cycle.class.getName(), mChartEntryList.mCycle);
+    intent.putExtra(Extras.ENTRY_DATE_STR, DateUtil.toWireStr(container.entryDate));
+    intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mContainerList.expectUnusualBleeding(index));
+    intent.putExtra(Cycle.class.getName(), mContainerList.mCycle);
     return intent;
   }
 }

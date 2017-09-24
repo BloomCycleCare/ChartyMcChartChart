@@ -7,7 +7,6 @@ import android.support.annotation.Nullable;
 import com.google.common.base.Objects;
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -20,9 +19,8 @@ import javax.crypto.SecretKey;
  * Created by parkeroth on 4/22/17.
  */
 
-public class ChartEntry implements Parcelable, Cipherable {
+public class ChartEntry extends Entry implements Parcelable {
 
-  public LocalDate date;
   @Nullable public Observation observation;
   public boolean peakDay;
   public boolean intercourse;
@@ -40,7 +38,7 @@ public class ChartEntry implements Parcelable, Cipherable {
       boolean pointOfChange,
       boolean unusualBleeding,
       SecretKey key) {
-    this.date = date;
+    super(date);
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
@@ -109,10 +107,6 @@ public class ChartEntry implements Parcelable, Cipherable {
     mKey = key;
   }
 
-  public String getDateStr() {
-    return DateUtil.toWireStr(date);
-  }
-
   @Override
   public int describeContents() {
     return 0;
@@ -120,7 +114,7 @@ public class ChartEntry implements Parcelable, Cipherable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(DateUtil.toWireStr(date));
+    dest.writeString(getDateStr());
     dest.writeParcelable(observation, flags);
     dest.writeByte((byte) (peakDay ? 1 : 0));
     dest.writeByte((byte) (intercourse ? 1 : 0));
@@ -134,7 +128,7 @@ public class ChartEntry implements Parcelable, Cipherable {
     if (o instanceof ChartEntry) {
       ChartEntry that = (ChartEntry) o;
       return Objects.equal(this.observation, that.observation) &&
-          Objects.equal(this.date, that.date) &&
+          Objects.equal(this.getDate(), that.getDate()) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
           this.firstDay == that.firstDay &&
@@ -147,7 +141,7 @@ public class ChartEntry implements Parcelable, Cipherable {
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, date, firstDay, pointOfChange, unusualBleeding);
+        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding);
   }
 
   @Override

@@ -7,29 +7,36 @@ import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.WellnessEntryProvider;
+import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
 /**
  * Created by parkeroth on 9/11/17.
  */
 
-public class WellnessEntryFragment extends EntryFragment {
+public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
 
   private RecyclerView mRecyclerView;
   private MultiSelectPrefAdapter mAdapter;
   private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
-  @Override
-  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    Log.v("WellnessEntryFragment", "onCreateView");
+  public WellnessEntryFragment() {
+    super(R.layout.fragment_wellness_entry);
+  }
 
-    View view = inflater.inflate(R.layout.fragment_wellness_entry, container, false);
+  @Override
+  WellnessEntryProvider createEntryProvider(FirebaseDatabase db) {
+    return WellnessEntryProvider.forDb(db);
+  }
+
+  @Override
+  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
     String[] values = getActivity().getResources().getStringArray(R.array.pref_wellness_option_values);
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_wellness_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
@@ -58,8 +65,6 @@ public class WellnessEntryFragment extends EntryFragment {
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mAdapter);
-
-    return view;
   }
 
   @Override
@@ -98,8 +103,12 @@ public class WellnessEntryFragment extends EntryFragment {
   }
 
   @Override
-  public boolean isDirty() {
-    // TODO: implement
-    return false;
+  WellnessEntry getEntryFromUi() {
+    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.wellnessKey);
+  }
+
+  @Override
+  void updateUiWithEntry(WellnessEntry entry) {
+    mAdapter.updateValues(entry.wellnessItems);
   }
 }

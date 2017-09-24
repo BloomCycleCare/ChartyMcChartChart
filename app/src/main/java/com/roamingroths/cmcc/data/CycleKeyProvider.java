@@ -3,6 +3,8 @@ package com.roamingroths.cmcc.data;
 import android.util.Log;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
@@ -23,6 +25,10 @@ import javax.crypto.SecretKey;
  */
 
 public class CycleKeyProvider {
+
+  private enum KeyAlias {
+
+  }
 
   private final FirebaseDatabase db;
 
@@ -55,17 +61,19 @@ public class CycleKeyProvider {
       final Callback<Map<String, SecretKey>> keyCallback = new Callbacks.ErrorForwardingCallback<Map<String, SecretKey>>(callback) {
         @Override
         public void acceptData(Map<String, SecretKey> decryptedKeys) {
+          Log.v("CycleKeyProvider", "Done decrypting keys for cycle");
           callback.acceptData(new Cycle.Keys(
-              decryptedKeys.get("chart"), decryptedKeys.get("wellness"), decryptedKeys.get("symptoms")));
+              decryptedKeys.get("chart"), decryptedKeys.get("wellness"), decryptedKeys.get("symptom")));
         }
       };
       ref.child(userId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
-          Log.v("CycleKeyProvider", "Found key for cycle");
-          decryptKey(dataSnapshot, "chart", decryptedKeys, 3, keyCallback);
-          decryptKey(dataSnapshot, "wellness", decryptedKeys, 3, keyCallback);
-          decryptKey(dataSnapshot, "symptoms", decryptedKeys, 3, keyCallback);
+          long numKeys = dataSnapshot.getChildrenCount();
+          Log.v("CycleKeyProvider", "Found " + numKeys + " keys for cycle");
+          decryptKey(dataSnapshot, "chart", decryptedKeys, numKeys, keyCallback);
+          decryptKey(dataSnapshot, "wellness", decryptedKeys, numKeys, keyCallback);
+          decryptKey(dataSnapshot, "symptom", decryptedKeys, numKeys, keyCallback);
         }
       });
     }
@@ -74,12 +82,15 @@ public class CycleKeyProvider {
         DataSnapshot snapshot,
         final String keyAlias,
         final Map<String, SecretKey> decryptedKeys,
-        final int keysToDecrypt,
+        final long keysToDecrypt,
         final Callback<Map<String, SecretKey>> callback) {
       String encryptedKey = snapshot.child(keyAlias).getValue(String.class);
+      Preconditions.checkArgument(!Strings.isNullOrEmpty(encryptedKey));
+      Log.v("CycleKeyProvider", "Begin decryption of " + keyAlias + " key");
       CryptoUtil.decryptKey(encryptedKey, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
         @Override
         public void acceptData(SecretKey decryptedKey) {
+          Log.v("CycleKeyProvider", "Done decrypting " + keyAlias + " key");
           decryptedKeys.put(keyAlias, decryptedKey);
           if (decryptedKeys.size() == keysToDecrypt) {
             callback.acceptData(decryptedKeys);
