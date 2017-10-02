@@ -4,6 +4,8 @@ import android.util.Base64;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 
 import java.security.NoSuchAlgorithmException;
 
@@ -42,6 +44,7 @@ public class AesCryptoUtil {
   }
 
   public static String decrypt(SecretKey key, String combinedStr) throws Exception {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(combinedStr));
     String[] parts = combinedStr.split("\\|");
     IvParameterSpec iv = new IvParameterSpec(Base64.decode(parts[0], Base64.NO_WRAP));
     byte[] cipherBytes = Base64.decode(parts[1], Base64.NO_WRAP);

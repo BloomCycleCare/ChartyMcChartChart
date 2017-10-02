@@ -3,6 +3,7 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.support.annotation.Nullable;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -32,7 +33,7 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
   private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
   public SymptomEntryFragment() {
-    super(R.layout.fragment_symptom_entry);
+    super(SymptomEntry.class, "SymptomEntryFragment", R.layout.fragment_symptom_entry);
   }
 
   @Override
@@ -41,7 +42,8 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
   }
 
   @Override
-  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
+  public void onCreate(@Nullable Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
     String[] values = getActivity().getResources().getStringArray(R.array.pref_symptom_option_values);
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_symptom_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
@@ -50,20 +52,25 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
         R.id.tv_symptom_item,
         R.id.switch_symptom_item, values, keys, savedInstanceState);
 
+    PreferenceManager.setDefaultValues(getActivity(), R.xml.pref_general, false);
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
     mAdapter.updateActiveItems(
         preferences.getStringSet("pref_key_symptom_options", ImmutableSet.<String>of()));
     mPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
       @Override
       public void onSharedPreferenceChanged(SharedPreferences preferences, String key) {
-        Log.v("SymptomEntryFragment", "onSharedPreferenceChanged: " + key);
         if (key.equals("pref_key_symptom_options")) {
+          Log.v("SymptomEntryFragment", "onSharedPreferenceChanged: " + key);
           mAdapter.updateActiveItems(
               preferences.getStringSet("pref_key_symptom_options", ImmutableSet.<String>of()));
         }
       }
     };
+    preferences.registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
+  }
 
+  @Override
+  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
     mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_symptom_entry);
     mRecyclerView.setLayoutManager(
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
@@ -101,6 +108,14 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
     mAdapter.fillBundle(outState);
   }
 
+  @Override
+  public SymptomEntry getEntryFromUi() throws Exception {
+    if (!mUiActive) {
+      return null;
+    }
+    return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.symptomKey);
+  }
+
   private void hideKeyboard() {
     Context context = getContext();
     if (context != null) {
@@ -113,11 +128,6 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
   @Override
   void updateUiWithEntry(SymptomEntry entry) {
     mAdapter.updateValues(entry.symptoms);
-  }
-
-  @Override
-  SymptomEntry getEntryFromUi() throws Exception {
-    return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.symptomKey);
   }
 
   @Override

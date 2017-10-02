@@ -47,7 +47,7 @@ public class CycleKeyProvider {
 
     private Instance(String cycleId) {
       mCycleId = cycleId;
-      ref = reference(cycleId);
+      ref = db.getReference("keys").child(cycleId);
     }
 
     public void getChartKeys(
@@ -106,7 +106,7 @@ public class CycleKeyProvider {
       Callback<Map<String, String>> encryptedKeysCallback = new Callbacks.ErrorForwardingCallback<Map<String, String>>(callback) {
         @Override
         public void acceptData(Map<String, String> encryptedKeys) {
-          reference(mCycleId).child(userId).updateChildren(
+          ref.child(userId).updateChildren(
               Maps.transformValues(encryptedKeys, TO_OBJECT),
               Listeners.completionListener(callback, onFinish));
         }
@@ -144,10 +144,6 @@ public class CycleKeyProvider {
     public void dropKeys(Callback<?> callback) {
       ref.removeValue(Listeners.completionListener(callback));
     }
-  }
-
-  private DatabaseReference reference(String cycleId) {
-    return db.getReference("keys").child(cycleId);
   }
 
   private static final Function<String, Object> TO_OBJECT = new Function<String, Object>() {

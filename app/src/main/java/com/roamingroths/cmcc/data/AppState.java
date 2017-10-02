@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -88,11 +89,11 @@ public class AppState {
         @Override
         public void acceptData(Cycle data) {
           for (ChartEntry entry : cycleData.entries) {
-            entry.setKey(cycle.keys.chartKey);
+            entry.swapKey(cycle.keys.chartKey);
             try {
               cycleProvider.getChartEntryProvider().putEntry(
                   cycle.id, entry, Listeners.completionListener(callback));
-            } catch (CryptoUtil.CryptoException ce) {
+            } catch (CyrptoExceptions.CryptoException ce) {
               callback.handleError(DatabaseError.fromException(ce));
             }
           }

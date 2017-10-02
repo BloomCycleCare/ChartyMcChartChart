@@ -32,6 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EntryContainerList {
 
+  private final boolean DEBUG = true;
+  private final String TAG = EntryContainerList.class.getSimpleName();
   private final AtomicBoolean mInitialized = new AtomicBoolean(false);
 
   // Chart state members
@@ -63,15 +65,15 @@ public class EntryContainerList {
     holder.setShowBaby(shouldShowBaby(position, entry));
   }
 
-  public void initialize(CycleProvider cycleProvider, final Callbacks.Callback<Void> doneCallback) {
+  public void initialize(final CycleProvider cycleProvider, final Callbacks.Callback<Void> doneCallback) {
+    if (DEBUG) Log.v(TAG, "Initialize");
     if (mInitialized.compareAndSet(false, true)) {
       cycleProvider.maybeCreateNewEntries(mCycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
         @Override
         public void acceptData(Void data) {
-
+          fillFromProvider(cycleProvider.getChartEntryProvider(), doneCallback);
         }
       });
-      fillFromProvider(cycleProvider.getChartEntryProvider(), doneCallback);
     } else {
       doneCallback.handleError(DatabaseError.fromException(new IllegalStateException()));
     }

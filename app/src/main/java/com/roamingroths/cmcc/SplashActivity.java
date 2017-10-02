@@ -23,6 +23,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
@@ -74,7 +75,6 @@ public class SplashActivity extends AppCompatActivity {
     // Get user
     final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
-      updateStatus("Creating new user account");
       startActivityForResult(
           AuthUI.getInstance().createSignInIntentBuilder()
               .setProviders(AuthUI.GOOGLE_PROVIDER)
@@ -329,7 +329,7 @@ public class SplashActivity extends AppCompatActivity {
             }
           }));
           showProgress("Storing user in DB");
-        } catch (CryptoUtil.CryptoException ce) {
+        } catch (CyrptoExceptions.CryptoException ce) {
           doneCallback.handleError(DatabaseError.fromException(ce));
         }
       }
@@ -372,7 +372,7 @@ public class SplashActivity extends AppCompatActivity {
                     Log.v("SplashActivity", "Initializing crypto decoding");
                     CryptoUtil.init(publicKeyStr, privateKeyStr, phoneNumberStr);
                     doneCallback.acceptData(null);
-                  } catch (CryptoUtil.CryptoException ce) {
+                  } catch (CyrptoExceptions.CryptoException ce) {
                     handleError(DatabaseError.fromException(ce));
                   }
                 }

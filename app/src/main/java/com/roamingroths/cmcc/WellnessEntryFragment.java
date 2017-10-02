@@ -31,7 +31,7 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
   private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
   public WellnessEntryFragment() {
-    super(R.layout.fragment_wellness_entry);
+    super(WellnessEntry.class, "WellnessEntryFragment", R.layout.fragment_wellness_entry);
   }
 
   @Override
@@ -49,14 +49,15 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
         R.id.tv_wellness_item,
         R.id.switch_wellness_item, values, keys, savedInstanceState);
 
+    PreferenceManager.setDefaultValues(getActivity(), R.xml.pref_general, false);
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
     mAdapter.updateActiveItems(
         preferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
     mPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
       @Override
       public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
         if (key.equals("pref_key_wellness_options")) {
+          Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
           mAdapter.updateActiveItems(
               sharedPreferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
         }
@@ -103,14 +104,17 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
   }
 
   @Override
-  public void onPause() {
-    super.onPause();
-  }
-
-  @Override
   public void onSaveInstanceState(Bundle outState) {
     super.onSaveInstanceState(outState);
     mAdapter.fillBundle(outState);
+  }
+
+  @Override
+  public WellnessEntry getEntryFromUi() {
+    if (!mUiActive) {
+      return null;
+    }
+    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.wellnessKey);
   }
 
   private void hideKeyboard() {
@@ -120,11 +124,6 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
           (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
       imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
     }
-  }
-
-  @Override
-  WellnessEntry getEntryFromUi() {
-    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.wellnessKey);
   }
 
   @Override

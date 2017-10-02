@@ -12,6 +12,7 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -35,6 +36,8 @@ import javax.crypto.SecretKey;
  */
 
 public abstract class EntryProvider<E extends Entry> {
+
+  private static boolean DEBUG = true;
 
   private final Class<E> mClazz;
   private final String mChildId;
@@ -64,7 +67,7 @@ public abstract class EntryProvider<E extends Entry> {
       public void handleNotFound() {
         logV("No entries found");
         LocalDate today = DateUtil.now();
-        final int numDaysWithoutEntries = Days.daysBetween(cycle.startDate, today).getDays();
+        final int numDaysWithoutEntries = Days.daysBetween(cycle.startDate, today).getDays() + 1;
         logV(numDaysWithoutEntries + " days need entries starting " + today);
         Set<LocalDate> daysWithoutEntries = new HashSet<>(numDaysWithoutEntries);
         for (int i = 0; i < numDaysWithoutEntries; i++) {
@@ -97,6 +100,9 @@ public abstract class EntryProvider<E extends Entry> {
             doneCallback.acceptData(null);
           }
         };
+        if (daysWithoutEntries.isEmpty()) {
+          onDone.run();
+        }
         final Map<String, Object> updates = Maps.newConcurrentMap();
         for (final LocalDate date : daysWithoutEntries) {
           E emptyEntry = createEmptyEntry(date, getKey(cycle));
@@ -140,7 +146,7 @@ public abstract class EntryProvider<E extends Entry> {
 
   public final void putEntry(
       final String cycleId, final E entry,
-      final DatabaseReference.CompletionListener completionListener) throws CryptoUtil.CryptoException {
+      final DatabaseReference.CompletionListener completionListener) throws CyrptoExceptions.CryptoException {
     CryptoUtil.encrypt(entry, new Callbacks.HaltingCallback<String>() {
       @Override
       public void acceptData(String encryptedEntry) {
@@ -151,6 +157,7 @@ public abstract class EntryProvider<E extends Entry> {
 
   public final void deleteEntry(
       String cycleId, LocalDate entryDate, DatabaseReference.CompletionListener completionListener) {
+    if (DEBUG) Log.v(mLogId, "Deleting " + DateUtil.toWireStr(entryDate) + " " + cycleId);
     reference(cycleId, DateUtil.toWireStr(entryDate)).removeValue(completionListener);
   }
 
@@ -249,26 +256,25 @@ public abstract class EntryProvider<E extends Entry> {
           final LocalDate entryDate = mapEntry.getKey();
           final String dateStr = DateUtil.toWireStr(entryDate);
           E decryptedEntry = mapEntry.getValue();
-          decryptedEntry.swapKey(toCycle.keys.chartKey);
+          decryptedEntry.swapKey(getKey(toCycle));
 
-          final DatabaseReference.CompletionListener rmListener =
-              Listeners.completionListener(callback, new Runnable() {
-                @Override
-                public void run() {
-                  logV("Removed entry: " + dateStr);
-                  if (outstandingRemovals.decrementAndGet() == 0) {
-                    logV("Entry moves complete");
-                    if (shouldDropCycle) {
-                      logV("Dropping cycle: " + fromCycle.id);
-                      // TODO: fix race
-                      keyProvider.forCycle(fromCycle.id).dropKeys(callback);
-                      reference(userId, fromCycle.id).removeValue(
-                          Listeners.completionListener(callback));
-                    }
-                    callback.acceptData(null);
-                  }
+          final DatabaseReference.CompletionListener rmListener = Listeners.completionListener(callback, new Runnable() {
+            @Override
+            public void run() {
+              logV("Removed entry: " + dateStr);
+              if (outstandingRemovals.decrementAndGet() == 0) {
+                logV("Entry moves complete");
+                if (shouldDropCycle) {
+                  logV("Dropping cycle: " + fromCycle.id);
+                  // TODO: fix race
+                  keyProvider.forCycle(fromCycle.id).dropKeys(callback);
+                  reference(userId, fromCycle.id).removeValue(
+                      Listeners.completionListener(callback));
                 }
-              });
+                callback.acceptData(null);
+              }
+            }
+          });
           final DatabaseReference.CompletionListener moveCompleteListener =
               Listeners.completionListener(callback, new Runnable() {
                 @Override
@@ -280,7 +286,7 @@ public abstract class EntryProvider<E extends Entry> {
 
           try {
             putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
-          } catch (CryptoUtil.CryptoException ce) {
+          } catch (CyrptoExceptions.CryptoException ce) {
             handleError(DatabaseError.fromException(ce));
           }
         }
@@ -297,6 +303,6 @@ public abstract class EntryProvider<E extends Entry> {
   }
 
   private void logV(String message) {
-    Log.v(mLogId, message);
+    if (DEBUG) Log.v(mLogId, message);
   }
 }

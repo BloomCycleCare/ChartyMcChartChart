@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc;
 
 import android.app.Application;
+import android.support.v7.preference.PreferenceManager;
 
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -20,5 +21,7 @@ public class FirebaseApplication extends Application {
     Security.addProvider(new BouncyCastleProvider());
 
     FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+
+    PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
   }
 }

@@ -1,8 +1,10 @@
 package com.roamingroths.cmcc;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,13 +12,11 @@ import android.view.ViewGroup;
 import com.google.common.collect.ImmutableSet;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
@@ -28,35 +28,75 @@ import java.util.Set;
 
 public abstract class EntryFragment<E extends Entry> extends Fragment {
 
+  public interface EntryListener {
+    void onExistingEntryLoaded(Entry entry, Class<? extends Entry> clazz);
+
+    void onEntryUpdated(Entry entry, Class<? extends Entry> clazz);
+  }
+
+  private final Class<E> mClazz;
+  private final String mTag;
   private final int layoutId;
+  private final EntryProvider<E> mEntryProvider;
+  private EntryListener mUpdateListener;
   private Cycle mCycle;
   private LocalDate mEntryDate;
-  private CycleProvider mCycleProvider;
-  private EntryProvider<E> mEntryProvider;
   private E mExistingEntry;
 
-  EntryFragment(int layoutId) {
+  protected boolean mUiActive = false;
+
+  EntryFragment(Class<E> clazz, String tag, int layoutId) {
+    this.mClazz = clazz;
+    this.mTag = tag;
     this.layoutId = layoutId;
+    mEntryProvider = createEntryProvider(FirebaseDatabase.getInstance());
   }
 
   @Override
-  public final void onCreate(@Nullable Bundle savedInstanceState) {
+  public void onAttach(Context context) {
+    super.onAttach(context);
+    try {
+      mUpdateListener = (EntryListener) context;
+    } catch (ClassCastException cce) {
+      throw new ClassCastException(context.toString() + " must implement EntryUpdateListener");
+    }
+  }
+
+  @Override
+  public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    FirebaseDatabase db = FirebaseDatabase.getInstance();
-    mCycleProvider = CycleProvider.forDb(db);
-    mEntryProvider = createEntryProvider(db);
+    Log.v(mTag, "onCreate: " + String.valueOf(savedInstanceState != null));
+
+    String entryDateStr = getArguments().getString(Extras.ENTRY_DATE_STR);
+    mEntryDate = DateUtil.fromWireStr(entryDateStr);
+    mCycle = getArguments().getParcelable(Cycle.class.getName());
+    mExistingEntry = null;
+
+    mEntryProvider.getEntry(mCycle, getEntryDateStr(), new Callbacks.Callback<E>() {
+      @Override
+      public void acceptData(E entry) {
+        mExistingEntry = processExistingEntry(entry);
+        mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException("Could not load Entry");
+      }
+
+      @Override
+      public void handleError(DatabaseError error) {
+        error.toException().printStackTrace();
+      }
+    });
   }
 
   @Override
   public final View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    Bundle args = getArguments();
-    String entryDateStr = args.getString(Extras.ENTRY_DATE_STR);
-    mEntryDate = DateUtil.fromWireStr(entryDateStr);
-    mCycle = args.getParcelable(Cycle.class.getName());
-    mExistingEntry = null;
+    Log.v(mTag, "onCreateView: " + String.valueOf(savedInstanceState != null));
 
     View view = inflater.inflate(layoutId, container, false);
-    duringCreateView(view, args, savedInstanceState);
+    duringCreateView(view, getArguments(), savedInstanceState);
 
     mEntryProvider.getEntry(mCycle, getEntryDateStr(), new Callbacks.Callback<E>() {
       @Override
@@ -76,8 +116,30 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
       }
     });
 
+    mUiActive = true;
     return view;
   }
+
+  @Override
+  public void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    try {
+      mUpdateListener.onEntryUpdated(getEntryFromUi(), mClazz);
+    } catch (Exception e) {
+      // TODO: something better
+      Log.w(mTag, "Could not notify EntryUpdateListener: " + e.getMessage());
+    }
+  }
+
+  public Class<? extends E> getClazz() {
+    return mClazz;
+  }
+
+  public EntryProvider<E> getEntryProvider() {
+    return mEntryProvider;
+  }
+
+  public abstract E getEntryFromUi() throws Exception;
 
   /**
    * Process an existing entry found in DB before storing it as a member.
@@ -95,41 +157,11 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   abstract void updateUiWithEntry(E entry);
 
-  abstract E getEntryFromUi() throws Exception;
-
-  public Set<ValidationIssue> validateEntryFromUi() throws ValidationException {
+  public Set<ValidationIssue> validateEntry(E entry) {
     return ImmutableSet.of();
   }
 
-  public void doSave(Cycle cycle, Callbacks.Callback<Void> callback) {
-    try {
-      getEntryProvider().putEntry(cycle.id, getEntryFromUi(), Listeners.doneOnCompletion(callback));
-    } catch (Exception e) {
-      callback.handleError(DatabaseError.fromException(e));
-    }
-  }
-
-  public boolean isDirty() {
-    if (mExistingEntry == null) {
-      return false;
-    }
-    try {
-      E entryFromUi = getEntryFromUi();
-      return !getExistingEntry().equals(entryFromUi);
-    } catch (Exception e) {
-      return true;
-    }
-  }
-
   //public abstract void onDelete(Callbacks.Callback<Void> onDone);
-
-  EntryProvider<E> getEntryProvider() {
-    return mEntryProvider;
-  }
-
-  CycleProvider getCycleProvider() {
-    return mCycleProvider;
-  }
 
   LocalDate getEntryDate() {
     return mEntryDate;
@@ -154,12 +186,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     public ValidationIssue(String title, String message) {
       this.title = title;
       this.message = message;
-    }
-  }
-
-  public static class ValidationException extends Exception {
-    public ValidationException(String message) {
-      super(message);
     }
   }
 }

@@ -6,6 +6,8 @@ import android.util.Log;
 import com.google.common.base.Function;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -27,14 +29,17 @@ import javax.crypto.SecretKey;
 
 public class CryptoUtil {
 
+  private static boolean DEBUG = false;
+  private static String TAG = CryptoUtil.class.getSimpleName();
+
   private static final String PERSONAL_PRIVATE_KEY_ALIAS = "PersonalPrivateKey";
   private static final String KEY_STORE = "AndroidKeyStore";
   private static final Executor EXECUTOR = Executors.newFixedThreadPool(4);
   private static PublicKey PUBLIC_KEY = null;
   private static PrivateKey PRIVATE_KEY = null;
 
-  //private static final Cache<Integer, Object> OBJECT_CACHE =
-  //    CacheBuilder.newBuilder().maximumSize(100).build();
+  private static final Cache<Integer, Object> OBJECT_CACHE =
+      CacheBuilder.newBuilder().maximumSize(100).build();
 
   public static boolean initFromKeyStore() {
     try {
@@ -45,7 +50,7 @@ public class CryptoUtil {
       }
       KeyStore.PrivateKeyEntry entry =
           (KeyStore.PrivateKeyEntry) ks.getEntry(PERSONAL_PRIVATE_KEY_ALIAS, null);
-      Log.v("CryptoUtil", "Found key in KeyStore");
+      if (DEBUG) Log.v(TAG, "Found key in KeyStore");
       init(new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey()));
       return true;
     } catch (Exception e) {
@@ -54,41 +59,41 @@ public class CryptoUtil {
     }
   }
 
-  public static void init() throws CryptoException {
+  public static void init() throws CyrptoExceptions.CryptoException {
     try {
-      Log.v("CryptoUtil", "Creating new KeyPair");
+      if (DEBUG) Log.v(TAG, "Creating new KeyPair");
       KeyPair keyPair = RsaCryptoUtil.createKeyPair();
       populateKeystore(keyPair);
       init(keyPair);
     } catch (Exception e) {
-      throw new CryptoException(e);
+      throw new CyrptoExceptions.CryptoException(e);
     }
   }
 
-  private static void populateKeystore(KeyPair keyPair) throws CryptoException {
+  private static void populateKeystore(KeyPair keyPair) throws CyrptoExceptions.CryptoException {
     try {
-      Log.v("CryptoUtil", "Adding keys to KeyStore");
+      if (DEBUG) Log.v(TAG, "Adding keys to KeyStore");
       KeyStore ks = KeyStore.getInstance("AndroidKeyStore");
       ks.load(null);
       Certificate cert = RsaCryptoUtil.createCertificate(keyPair);
       ks.setKeyEntry(
           PERSONAL_PRIVATE_KEY_ALIAS, keyPair.getPrivate(), null, new Certificate[]{cert});
     } catch (Exception e) {
-      throw new CryptoException(e);
+      throw new CyrptoExceptions.CryptoException(e);
     }
   }
 
   public static void init(String publicKeyStr, String privateKeyStr, String pbePassword)
-      throws CryptoException {
+      throws CyrptoExceptions.CryptoException {
     try {
       PublicKey publicKey = RsaCryptoUtil.parsePublicKey(publicKeyStr);
       PrivateKey privateKey = PbeCryptoUtil.unwrapPrivateKey(pbePassword, privateKeyStr);
-      Log.v("CryptoUtil", "Keys parsed successfully");
+      if (DEBUG) Log.v(TAG, "Keys parsed successfully");
       KeyPair keyPair = new KeyPair(publicKey, privateKey);
       populateKeystore(keyPair);
       init(keyPair);
     } catch (Exception e) {
-      throw new CryptoException(e);
+      throw new CyrptoExceptions.CryptoException(e);
     }
   }
 
@@ -97,19 +102,19 @@ public class CryptoUtil {
     PRIVATE_KEY = keyPair.getPrivate();
   }
 
-  public static String getPublicKeyStr() throws CryptoException {
+  public static String getPublicKeyStr() throws CyrptoExceptions.CryptoException {
     try {
       return RsaCryptoUtil.serializePublicKey(PUBLIC_KEY);
     } catch (Exception e) {
-      throw new CryptoException(e);
+      throw new CyrptoExceptions.CryptoException(e);
     }
   }
 
-  public static String getWrappedPrivateKeyStr(String password) throws CryptoException {
+  public static String getWrappedPrivateKeyStr(String password) throws CyrptoExceptions.CryptoException {
     try {
       return PbeCryptoUtil.wrapPrivateKey(password, PRIVATE_KEY);
     } catch (Exception e) {
-      throw new CryptoException(e);
+      throw new CyrptoExceptions.CryptoException(e);
     }
   }
 
@@ -147,13 +152,13 @@ public class CryptoUtil {
   }
 
   public static void encrypt(final Cipherable cipherable, final Callbacks.Callback<String> callback) {
-    Log.v("CryptoUtil", "Encrypting " + cipherable.getClass().getName());
+    if (DEBUG) Log.v(TAG, "Encrypting " + cipherable.getClass().getName());
     encrypt(GsonUtil.getGsonInstance().toJson(cipherable), cipherable.getKey(),
         new Callbacks.ErrorForwardingCallback<String>(callback) {
           @Override
           public void acceptData(String encryptedText) {
             callback.acceptData(encryptedText);
-            //OBJECT_CACHE.put(encryptedText.hashCode(), cipherable);
+            OBJECT_CACHE.put(encryptedText.hashCode(), cipherable);
           }
         });
   }
@@ -180,19 +185,19 @@ public class CryptoUtil {
   }
 
   public static <T> void decrypt(final String encryptedText, SecretKey key, final Class<T> clazz, Callbacks.Callback<T> callback) {
-    /*Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
+    Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedText.hashCode());
     if (cachedObject != null) {
-      Log.v("CryptoUtil", "Served " + clazz.getName() + " from local cache");
+      if (DEBUG) Log.v(TAG, "Served " + clazz.getName() + " from local cache");
       callback.acceptData((T) cachedObject);
       return;
-    }*/
+    }
     Function<String, T> transformer = new Function<String, T>() {
       @Override
       public T apply(String decryptedStr) {
-        Log.v("CryptoUtil", "Decrypting " + clazz.getName());
+        if (DEBUG) Log.v(TAG, "Decrypting " + clazz.getName());
         T decryptedObject = Preconditions.checkNotNull(
             GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz));
-        //OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
+        OBJECT_CACHE.put(encryptedText.hashCode(), decryptedObject);
         return decryptedObject;
       }
     };
@@ -213,11 +218,10 @@ public class CryptoUtil {
     new AsyncTask<String, Integer, String>() {
       @Override
       protected String doInBackground(String... params) {
-        Log.v("CryptoUtil", "Begin symetric decryption");
+        if (DEBUG) Log.v(TAG, "Begin symetric decryption");
         try {
           return AesCryptoUtil.decrypt(key, encryptedText);
         } catch (Exception e) {
-          e.printStackTrace();
           Log.w("CryptoUtil", "Exception: " + e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
         }
@@ -241,7 +245,7 @@ public class CryptoUtil {
       @Override
       protected String doInBackground(String... params) {
         try {
-          Log.v("CryptoUtil", "Begin decryption");
+          if (DEBUG) Log.v(TAG, "Begin decryption");
           String encryptedText = params[0];
           return RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText);
         } catch (Exception e) {
@@ -260,12 +264,6 @@ public class CryptoUtil {
         }
       }
     }.executeOnExecutor(EXECUTOR, encryptedText);
-  }
-
-  public static class CryptoException extends Exception {
-    public CryptoException(Exception e) {
-      super(e);
-    }
   }
 
 }

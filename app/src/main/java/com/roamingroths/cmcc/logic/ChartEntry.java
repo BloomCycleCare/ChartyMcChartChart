@@ -27,7 +27,6 @@ public class ChartEntry extends Entry implements Parcelable {
   public boolean firstDay;
   public boolean pointOfChange;
   public boolean unusualBleeding;
-  private transient SecretKey mKey;
 
   public ChartEntry(
       LocalDate date,
@@ -48,7 +47,7 @@ public class ChartEntry extends Entry implements Parcelable {
       throw new IllegalArgumentException();
     }
     this.unusualBleeding = unusualBleeding;
-    mKey = key;
+    swapKey(key);
   }
 
   public ChartEntry(Parcel in) {
@@ -103,10 +102,6 @@ public class ChartEntry extends Entry implements Parcelable {
     return observation.toString();
   }
 
-  public void setKey(SecretKey key) {
-    mKey = key;
-  }
-
   @Override
   public int describeContents() {
     return 0;
@@ -142,15 +137,5 @@ public class ChartEntry extends Entry implements Parcelable {
   public int hashCode() {
     return Objects.hashCode(
         observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding);
-  }
-
-  @Override
-  public SecretKey getKey() {
-    return mKey;
-  }
-
-  @Override
-  public void swapKey(SecretKey newKey) {
-    mKey = newKey;
   }
 }

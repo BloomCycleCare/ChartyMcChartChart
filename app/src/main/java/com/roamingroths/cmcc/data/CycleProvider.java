@@ -76,6 +76,11 @@ public class CycleProvider {
   }
 
   public void maybeCreateNewEntries(Cycle cycle, final Callback<Void> doneCallback) {
+    if (cycle.endDate != null) {
+      logV("No entries to add, end date set");
+      doneCallback.acceptData(null);
+      return;
+    }
     final AtomicInteger providersToCheck = new AtomicInteger(entryProviders.size());
     for (EntryProvider provider : entryProviders) {
       provider.maybeAddNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
@@ -358,6 +363,7 @@ public class CycleProvider {
                     };
                     final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
                     for (EntryProvider provider : entryProviders) {
+                      logV("Moving entries: " + entryProviders.size());
                       Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
                         @Override
                         public void acceptData(Void data) {

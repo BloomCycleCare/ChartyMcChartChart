@@ -4,7 +4,6 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.crypto.Cipherable;
@@ -26,7 +25,6 @@ import javax.crypto.SecretKey;
 public class SymptomEntry extends Entry implements Parcelable, Cipherable {
 
   public Map<String, Boolean> symptoms;
-  private transient SecretKey mKey;
 
   public static void fromEncryptedString(
       String encryptedEntry, SecretKey secretKey, Callbacks.Callback<SymptomEntry> callback) {
@@ -39,13 +37,13 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
   }
 
   public static SymptomEntry emptyEntry(LocalDate date, SecretKey key) {
-    return new SymptomEntry(date, ImmutableMap.<String, Boolean>of(), key);
+    return new SymptomEntry(date, new HashMap<String, Boolean>(), key);
   }
 
   public SymptomEntry(LocalDate date, Map<String, Boolean> symptoms, SecretKey key) {
     super(date);
     this.symptoms = symptoms;
-    this.mKey = key;
+    swapKey(key);
   }
 
   public SymptomEntry(Parcel in) {
@@ -70,16 +68,6 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
       dest.writeString(entry.getKey());
       dest.writeByte((byte) (entry.getValue() ? 1 : 0));
     }
-  }
-
-  @Override
-  public SecretKey getKey() {
-    return mKey;
-  }
-
-  @Override
-  public void swapKey(SecretKey key) {
-    mKey = key;
   }
 
   @Override

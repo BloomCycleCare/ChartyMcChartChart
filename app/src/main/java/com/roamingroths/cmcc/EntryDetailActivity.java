@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc;
 
-import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -13,30 +12,41 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.MapDifference;
+import com.google.common.collect.Maps;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.CyrptoExceptions;
+import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.roamingroths.cmcc.ChartEntryFragment.OK_RESPONSE;
 
-public class EntryDetailActivity extends AppCompatActivity {
+public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
 
-  private static final String UI_DATE_FORMAT = "EEE, d MMM yyyy";
+  private static final boolean DEBUG = true;
+  private static final String TAG = EntryDetailActivity.class.getSimpleName();
 
   public static final int CREATE_REQUEST = 1;
   public static final int MODIFY_REQUEST = 2;
@@ -57,11 +67,33 @@ public class EntryDetailActivity extends AppCompatActivity {
    * The {@link ViewPager} that will host the section contents.
    */
   private ViewPager mViewPager;
+  private Cycle mCycle;
+  private CycleProvider mCycleProvider;
+  private String mUserId;
+
+  private Map<Class<? extends Entry>, Entry> mExistingEntries = new HashMap<>();
+  private Map<Class<? extends Entry>, Entry> mEntries = new HashMap<>();
+
+  @Override
+  public void onEntryUpdated(Entry entry, Class<? extends Entry> clazz) {
+    if (DEBUG) Log.v(TAG, "Received entry for " + clazz.toString());
+    mEntries.put(clazz, entry);
+  }
+
+  @Override
+  public void onExistingEntryLoaded(Entry entry, Class<? extends Entry> clazz) {
+    if (DEBUG) Log.v(TAG, "Received existing entry for " + clazz.toString());
+    mExistingEntries.put(clazz, entry);
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
+
+    mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    mCycle = getCycle(getIntent());
+    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -69,7 +101,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     getSupportActionBar().setTitle(getTitle(getIntent()));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getIntent(), this);
+    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), getIntent(), mCycle);
 
     // Set up the ViewPager with the sections adapter.
     mViewPager = (ViewPager) findViewById(R.id.container);
@@ -101,8 +133,13 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      mSectionsPagerAdapter.trySaveEntries();
-      //chartEntryFragment.onSave();
+      updateEntryMapFromUIs();
+      Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
+      for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+        EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+        issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
+      }
+      addressValidationIssues(issues);
       return true;
     }
     if (id == R.id.action_delete) {
@@ -127,7 +164,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == android.R.id.home) {
-      if (mSectionsPagerAdapter.anyDirty()) {
+      if (anyPagesDirty()) {
         new AlertDialog.Builder(this)
             //set message, title, and icon
             .setTitle("Discard Changes")
@@ -153,168 +190,7 @@ public class EntryDetailActivity extends AppCompatActivity {
       }
       return true;
     }
-
     return super.onOptionsItemSelected(item);
-  }
-
-  /**
-   * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-   * one of the sections/tabs/pages.
-   */
-  public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
-
-    private final SparseArray<EntryFragment> registeredFragments = new SparseArray<>();
-    private final Intent intent;
-    private final Activity activity;
-    private final Cycle mCycle;
-
-    public SectionsPagerAdapter(FragmentManager fm, Intent intent, Activity activity) {
-      super(fm);
-      this.intent = intent;
-      this.activity = activity;
-      mCycle = getCycle(intent);
-    }
-
-    public boolean anyDirty() {
-      for (int i = 0; i < getCount(); i++) {
-        if (getItem(i).isDirty()) {
-          Log.v("FOO", "Index: " + i);
-          return true;
-        }
-      }
-      return false;
-    }
-
-    private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
-      if (issues.isEmpty()) {
-        doSaveEntries();
-        return;
-      }
-      EntryFragment.ValidationIssue issue = issues.remove();
-      AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-      builder.setTitle(issue.title);
-      builder.setMessage(issue.message);
-      builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-          dialog.dismiss();
-          addressValidationIssues(issues);
-        }
-      });
-      builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-        @Override
-        public void onClick(DialogInterface dialog, int which) {
-          dialog.dismiss();
-        }
-      });
-      builder.create().show();
-    }
-
-    private void doSaveEntries() {
-      ChartEntryFragment chartEntryFragment = (ChartEntryFragment) getItem(0);
-      if (chartEntryFragment.shouldSplitOrJoinCycle()) {
-        // TODO: finish
-      }
-      final AtomicInteger numSaves = new AtomicInteger(getCount());
-      for (int i = 0; i < getCount(); i++) {
-        getItem(i).doSave(mCycle, new Callbacks.HaltingCallback<Void>() {
-          @Override
-          public void acceptData(Void data) {
-            if (numSaves.decrementAndGet() == 0) {
-              Intent returnIntent = new Intent();
-              returnIntent.putExtra(Cycle.class.getName(), mCycle);
-              setResult(OK_RESPONSE, returnIntent);
-              finish();
-            }
-          }
-        });
-      }
-    }
-
-    public void trySaveEntries() {
-      try {
-        Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
-        for (int i = 0; i < getCount(); i++) {
-          issues.addAll(getItem(i).validateEntryFromUi());
-        }
-        addressValidationIssues(issues);
-      } catch (EntryFragment.ValidationException ve) {
-        Toast.makeText(activity, ve.getMessage(), Toast.LENGTH_LONG).show();
-      }
-    }
-
-    @Override
-    public Object instantiateItem(ViewGroup container, int position) {
-      Log.v("EntryDetailActivity", "instantiateItem: " + position);
-      EntryFragment fragment = (EntryFragment) super.instantiateItem(container, position);
-      registeredFragments.put(position, fragment);
-      return fragment;
-    }
-
-    @Override
-    public void destroyItem(ViewGroup container, int position, Object object) {
-      Log.v("EntryDetailActivity", "destroyItem: " + position);
-      //registeredFragments.remove(position);
-      //super.destroyItem(container, position, object);
-    }
-
-    @Override
-    public EntryFragment getItem(int position) {
-      Log.v("EntryDetailActivity", "getItem: " + position);
-      EntryFragment cachedFragment = registeredFragments.get(position);
-      if (cachedFragment != null) {
-        return cachedFragment;
-      }
-
-      Bundle args = new Bundle();
-      args.putString(Extras.ENTRY_DATE_STR, intent.getStringExtra(Extras.ENTRY_DATE_STR));
-      args.putParcelable(Cycle.class.getName(), getCycle(intent));
-
-      EntryFragment fragment;
-      // getItem is called to instantiate the fragment for the given page.
-      // Return a PlaceholderFragment (defined as a static inner class below).
-      switch (position) {
-        case 0:
-          args.putBoolean(
-              Extras.EXPECT_UNUSUAL_BLEEDING,
-              intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
-
-          fragment = new ChartEntryFragment();
-          fragment.setArguments(args);
-          Log.v("EntryDetailActivity", "Creating new instance of ChartEntryFragment");
-          return fragment;
-        case 1:
-          fragment = new WellnessEntryFragment();
-          fragment.setArguments(args);
-          Log.v("EntryDetailActivity", "Creating new instance of WellnessEntryFragment");
-          return fragment;
-        case 2:
-          fragment = new SymptomEntryFragment();
-          fragment.setArguments(args);
-          Log.v("EntryDetailActivity", "Creating new instance of WellnessEntryFragment");
-          return fragment;
-      }
-      return null;
-    }
-
-    @Override
-    public int getCount() {
-      // Show 3 total pages.
-      return 3;
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-      switch (position) {
-        case 0:
-          return "Chart Entry";
-        case 1:
-          return "Wellness";
-        case 2:
-          return "Symptoms";
-      }
-      return null;
-    }
   }
 
   private static Cycle getCycle(Intent intent) {
@@ -338,5 +214,205 @@ public class EntryDetailActivity extends AppCompatActivity {
     Cycle cycle = getCycle(intent);
     int daysBetween = Days.daysBetween(cycle.startDate, entryDate).getDays();
     return "Day #" + (daysBetween + 1);
+  }
+
+  private boolean anyPagesDirty() {
+    updateEntryMapFromUIs();
+    MapDifference<Class<? extends Entry>, Entry> difference =
+        Maps.difference(mExistingEntries, mEntries);
+    return !difference.areEqual();
+  }
+
+  private void updateEntryMapFromUIs() {
+    for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+      EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+      try {
+        Entry entry = fragment.getEntryFromUi();
+        if (entry != null) {
+          Class<? extends Entry> clazz = fragment.getClazz();
+          if (DEBUG) Log.v(TAG, "Updating entry for " + clazz.toString());
+          mEntries.put(clazz, entry);
+        }
+      } catch (Exception e) {
+      }
+    }
+  }
+
+  private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
+    if (issues.isEmpty()) {
+      doSave();
+      return;
+    }
+    EntryFragment.ValidationIssue issue = issues.remove();
+    AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    builder.setTitle(issue.title);
+    builder.setMessage(issue.message);
+    builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        dialog.dismiss();
+        addressValidationIssues(issues);
+      }
+    });
+    builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+      @Override
+      public void onClick(DialogInterface dialog, int which) {
+        dialog.dismiss();
+      }
+    });
+    builder.create().show();
+  }
+
+  private void doSave() {
+    final Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
+      @Override
+      public void acceptData(final Cycle cycleForEntries) {
+        Intent returnIntent = new Intent();
+        returnIntent.putExtra(Cycle.class.getName(), cycleForEntries);
+        setResult(OK_RESPONSE, returnIntent);
+        finish();
+      }
+    };
+
+    if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
+    final AtomicInteger numSaves = new AtomicInteger(mSectionsPagerAdapter.getCount());
+    for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+      EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+      Class<? extends Entry> clazz = fragment.getClazz();
+
+      if (!mEntries.containsKey(clazz)) {
+        if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no entry");
+        numSaves.decrementAndGet();
+        continue;
+      }
+      if (mEntries.containsKey(clazz) && mExistingEntries.containsKey(clazz)
+          && mEntries.get(clazz).equals(mExistingEntries.get(clazz))) {
+        if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no change");
+        numSaves.decrementAndGet();
+        continue;
+      }
+
+      if (DEBUG) Log.v(TAG, "Putting " + clazz);
+      EntryProvider provider =
+          mSectionsPagerAdapter.getCachedItem(mViewPager, i).getEntryProvider();
+      try {
+        provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz()), Listeners.completionListener(cycleCallback, new Runnable() {
+          @Override
+          public void run() {
+            if (numSaves.decrementAndGet() == 0) {
+              if (DEBUG) Log.v(TAG, "Done putting entries");
+              ChartEntryFragment chartEntryFragment =
+                  (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
+
+              if (chartEntryFragment.shouldSplitCycle()) {
+                if (DEBUG) Log.v(TAG, "Splitting cycle");
+                try {
+                  mCycleProvider.splitCycle(
+                      mUserId, mCycle, chartEntryFragment.getEntryFromUi(), cycleCallback);
+                } catch (Exception e) {
+                  cycleCallback.handleError(DatabaseError.fromException(e));
+                }
+              } else if (chartEntryFragment.shouldJoinCycle()) {
+                if (DEBUG) Log.v(TAG, "Joining cycle with previous");
+                joinCycle(cycleCallback);
+              } else {
+                cycleCallback.acceptData(mCycle);
+              }
+            }
+          }
+        }));
+      } catch (CyrptoExceptions.CryptoException ce) {
+        cycleCallback.handleError(DatabaseError.fromException(ce));
+      }
+    }
+  }
+
+  private void joinCycle(final Callbacks.Callback<Cycle> newCycleCallback) {
+    if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
+      AlertDialog.Builder builder = new AlertDialog.Builder(this);
+      builder.setTitle("No Previous Cycle");
+      builder.setMessage("Please add cycle before this entry to proceed.");
+      builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+        @Override
+        public void onClick(DialogInterface dialog, int which) {
+          dialog.dismiss();
+        }
+      });
+      builder.create().show();
+    } else {
+      mCycleProvider.combineCycles(mCycle, mUserId, newCycleCallback);
+    }
+  }
+
+  /**
+   * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
+   * one of the sections/tabs/pages.
+   */
+  public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
+
+    private final Intent intent;
+    private final Cycle mCycle;
+
+    public SectionsPagerAdapter(FragmentManager fm, Intent intent, Cycle cycle) {
+      super(fm);
+      this.intent = intent;
+      mCycle = cycle;
+    }
+
+    public EntryFragment getCachedItem(ViewGroup container, int position) {
+      return (EntryFragment) instantiateItem(container, position);
+    }
+
+    @Override
+    public EntryFragment getItem(int position) {
+      Bundle args = new Bundle();
+      args.putString(Extras.ENTRY_DATE_STR, intent.getStringExtra(Extras.ENTRY_DATE_STR));
+      args.putParcelable(Cycle.class.getName(), mCycle);
+
+      EntryFragment fragment;
+      // getItem is called to instantiate the fragment for the given page.
+      // Return a PlaceholderFragment (defined as a static inner class below).
+      switch (position) {
+        case 0:
+          args.putBoolean(
+              Extras.EXPECT_UNUSUAL_BLEEDING,
+              intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
+
+          fragment = new ChartEntryFragment();
+          fragment.setArguments(args);
+          if (DEBUG) Log.v(TAG, "Creating new instance of ChartEntryFragment");
+          return fragment;
+        case 1:
+          fragment = new WellnessEntryFragment();
+          fragment.setArguments(args);
+          if (DEBUG) Log.v(TAG, "Creating new instance of WellnessEntryFragment");
+          return fragment;
+        case 2:
+          fragment = new SymptomEntryFragment();
+          fragment.setArguments(args);
+          if (DEBUG) Log.v(TAG, "Creating new instance of SymptomEntryFragment");
+          return fragment;
+      }
+      return null;
+    }
+
+    @Override
+    public int getCount() {
+      // Show 3 total pages.
+      return 3;
+    }
+
+    @Override
+    public CharSequence getPageTitle(int position) {
+      switch (position) {
+        case 0:
+          return "Chart Entry";
+        case 1:
+          return "Wellness";
+        case 2:
+          return "Symptoms";
+      }
+      return null;
+    }
   }
 }

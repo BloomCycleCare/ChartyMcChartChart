@@ -1,13 +1,10 @@
 package com.roamingroths.cmcc;
 
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.TextInputEditText;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -15,16 +12,10 @@ import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.common.base.Strings;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Observation;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Listeners;
@@ -54,7 +45,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   private boolean usingPrePeakYellowStickers;
 
   public ChartEntryFragment() {
-    super(R.layout.fragment_chart_entry);
+    super(ChartEntry.class, "ChartEntryFragment", R.layout.fragment_chart_entry);
   }
 
   @Override
@@ -134,16 +125,17 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  public Set<ValidationIssue> validateEntryFromUi() throws ValidationException {
+  public void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    // TODO
+  }
+
+  @Override
+  public Set<ValidationIssue> validateEntry(ChartEntry entry) {
     Set<ValidationIssue> issues = new HashSet<>();
-    try {
-      final ChartEntry entry = getEntryFromUi();
-      boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
-      if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
-        issues.add(new ValidationIssue("Unusual bleeding?", "Are yousure this bleedin is typical?"));
-      }
-    } catch (Exception e) {
-      throw new ValidationException("Cannot save invalid observation.");
+    boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
+    if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
+      issues.add(new ValidationIssue("Unusual bleeding?", "Are yousure this bleedin is typical?"));
     }
     return issues;
   }
@@ -152,9 +144,17 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
     getEntryProvider().deleteEntry(getCycle().id, getEntryDate(), Listeners.doneOnCompletion(onDone));
   }
 
-  public boolean shouldSplitOrJoinCycle() {
+  public boolean shouldJoinCycle() {
     try {
-      return getExistingEntry().firstDay != getEntryFromUi().firstDay;
+      return getExistingEntry().firstDay && !getEntryFromUi().firstDay;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public boolean shouldSplitCycle() {
+    try {
+      return !getExistingEntry().firstDay && getEntryFromUi().firstDay;
     } catch (Exception e) {
       return false;
     }
@@ -173,7 +173,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  ChartEntry getEntryFromUi() throws Exception {
+  public ChartEntry getEntryFromUi() throws Exception {
     Observation observation = getObservationFromEditText();
     boolean peakDay = mPeakDaySwitch.isChecked();
     boolean intercourse = mIntercourseSwitch.isChecked();
@@ -182,66 +182,6 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
     return new ChartEntry(
         getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, getCycle().keys.chartKey);
-  }
-
-  private void maybeSplitOrJoinCycle(final ChartEntry entry) {
-    final Intent returnIntent = new Intent();
-    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-    if (entry.firstDay) {
-      // Try and split the current cycle
-      getCycleProvider().splitCycle(userId, getCycle(), entry, new Callbacks.HaltingCallback<Cycle>() {
-        @Override
-        public void acceptData(Cycle newCycle) {
-          try {
-            getEntryProvider().putEntry(newCycle.id, entry, completionListener(newCycle));
-          } catch (CryptoUtil.CryptoException ce) {
-            ce.printStackTrace();
-          }
-        }
-      });
-    } else {
-      // Try and this and the previous cycle
-      if (Strings.isNullOrEmpty(getCycle().previousCycleId)) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
-        builder.setTitle("No Previous Cycle");
-        builder.setMessage("Please add cycle before this entry to proceed.");
-        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-          @Override
-          public void onClick(DialogInterface dialog, int which) {
-            mFirstDaySwitch.setChecked(true);
-            dialog.dismiss();
-          }
-        });
-        builder.create().show();
-      } else {
-        getCycleProvider().combineCycles(getCycle(), userId, new Callbacks.HaltingCallback<Cycle>() {
-          @Override
-          public void acceptData(Cycle newCycle) {
-            try {
-              getEntryProvider().putEntry(newCycle.id, entry, completionListener(newCycle));
-            } catch (CryptoUtil.CryptoException ce) {
-              ce.printStackTrace();
-            }
-          }
-        });
-      }
-    }
-  }
-
-  private DatabaseReference.CompletionListener completionListener(final Cycle newCycle) {
-    return new DatabaseReference.CompletionListener() {
-      @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        if (databaseError != null) {
-          databaseError.toException().printStackTrace();
-          return;
-        }
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(Cycle.class.getName(), newCycle);
-        getActivity().setResult(OK_RESPONSE, returnIntent);
-        getActivity().finish();
-      }
-    };
   }
 
   @Override
