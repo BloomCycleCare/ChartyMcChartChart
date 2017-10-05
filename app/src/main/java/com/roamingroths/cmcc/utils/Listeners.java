@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.utils;
 
+import android.os.AsyncTask;
+
 import com.google.common.base.Preconditions;
 import com.google.common.util.concurrent.Runnables;
 import com.google.firebase.database.DatabaseError;
@@ -57,12 +59,18 @@ public class Listeners {
     }
 
     @Override
-    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-      if (databaseError == null) {
-        mOnSuccess.run();
-      } else {
-        mCallback.handleError(databaseError);
-      }
+    public void onComplete(final DatabaseError databaseError, DatabaseReference databaseReference) {
+      new AsyncTask<Void, Integer, Void>() {
+        @Override
+        protected Void doInBackground(Void... params) {
+          if (databaseError == null) {
+            mOnSuccess.run();
+          } else {
+            mCallback.handleError(databaseError);
+          }
+          return null;
+        }
+      }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
   }
 }

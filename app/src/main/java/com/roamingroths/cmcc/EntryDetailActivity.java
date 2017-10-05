@@ -2,6 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
@@ -277,9 +278,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
     final AtomicInteger numSaves = new AtomicInteger(mSectionsPagerAdapter.getCount());
     for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-      EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+      final EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
       Class<? extends Entry> clazz = fragment.getClazz();
-
       if (!mEntries.containsKey(clazz)) {
         if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no entry");
         numSaves.decrementAndGet();
@@ -293,37 +293,44 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       }
 
       if (DEBUG) Log.v(TAG, "Putting " + clazz);
-      EntryProvider provider =
+      final EntryProvider provider =
           mSectionsPagerAdapter.getCachedItem(mViewPager, i).getEntryProvider();
-      try {
-        provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz()), Listeners.completionListener(cycleCallback, new Runnable() {
-          @Override
-          public void run() {
-            if (numSaves.decrementAndGet() == 0) {
-              if (DEBUG) Log.v(TAG, "Done putting entries");
-              ChartEntryFragment chartEntryFragment =
-                  (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
 
-              if (chartEntryFragment.shouldSplitCycle()) {
-                if (DEBUG) Log.v(TAG, "Splitting cycle");
-                try {
-                  mCycleProvider.splitCycle(
-                      mUserId, mCycle, chartEntryFragment.getEntryFromUi(), cycleCallback);
-                } catch (Exception e) {
-                  cycleCallback.handleError(DatabaseError.fromException(e));
+      new AsyncTask<Void, Integer, Void>() {
+        @Override
+        protected Void doInBackground(Void... params) {
+          try {
+            provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz()), Listeners.completionListener(cycleCallback, new Runnable() {
+              @Override
+              public void run() {
+                if (numSaves.decrementAndGet() == 0) {
+                  if (DEBUG) Log.v(TAG, "Done putting entries");
+                  ChartEntryFragment chartEntryFragment =
+                      (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
+
+                  if (chartEntryFragment.shouldSplitCycle()) {
+                    if (DEBUG) Log.v(TAG, "Splitting cycle");
+                    try {
+                      mCycleProvider.splitCycle(
+                          mUserId, mCycle, chartEntryFragment.getEntryFromUi(), cycleCallback);
+                    } catch (Exception e) {
+                      cycleCallback.handleError(DatabaseError.fromException(e));
+                    }
+                  } else if (chartEntryFragment.shouldJoinCycle()) {
+                    if (DEBUG) Log.v(TAG, "Joining cycle with previous");
+                    joinCycle(cycleCallback);
+                  } else {
+                    cycleCallback.acceptData(mCycle);
+                  }
                 }
-              } else if (chartEntryFragment.shouldJoinCycle()) {
-                if (DEBUG) Log.v(TAG, "Joining cycle with previous");
-                joinCycle(cycleCallback);
-              } else {
-                cycleCallback.acceptData(mCycle);
               }
-            }
+            }));
+          } catch (CyrptoExceptions.CryptoException ce) {
+            cycleCallback.handleError(DatabaseError.fromException(ce));
           }
-        }));
-      } catch (CyrptoExceptions.CryptoException ce) {
-        cycleCallback.handleError(DatabaseError.fromException(ce));
-      }
+          return null;
+        }
+      }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
     }
   }
 

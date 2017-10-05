@@ -136,17 +136,11 @@ public class CryptoUtil {
       protected String doInBackground(String... params) {
         String rawText = params[0];
         try {
-          return RsaCryptoUtil.encrypt(PUBLIC_KEY, rawText);
+          callback.acceptData(RsaCryptoUtil.encrypt(PUBLIC_KEY, rawText));
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }
         return null;
-      }
-
-      @Override
-      protected void onPostExecute(String s) {
-        super.onPostExecute(s);
-        callback.acceptData(s);
       }
     }.executeOnExecutor(EXECUTOR, initialText);
   }
@@ -168,18 +162,12 @@ public class CryptoUtil {
       @Override
       protected String doInBackground(String... params) {
         try {
-          return AesCryptoUtil.encrypt(key, initialText);
+          callback.acceptData(AesCryptoUtil.encrypt(key, initialText));
         } catch (Exception e) {
           Log.w("CryptoUtil", e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
         }
         return null;
-      }
-
-      @Override
-      protected void onPostExecute(String s) {
-        super.onPostExecute(s);
-        callback.acceptData(s);
       }
     }.executeOnExecutor(EXECUTOR, initialText);
   }
@@ -220,22 +208,17 @@ public class CryptoUtil {
       protected String doInBackground(String... params) {
         if (DEBUG) Log.v(TAG, "Begin symetric decryption");
         try {
-          return AesCryptoUtil.decrypt(key, encryptedText);
+          String decrypted = AesCryptoUtil.decrypt(key, encryptedText);
+          if (Strings.isNullOrEmpty(decrypted)) {
+            callback.handleNotFound();
+          } else {
+            callback.acceptData(decrypted);
+          }
         } catch (Exception e) {
           Log.w("CryptoUtil", "Exception: " + e.getMessage());
           callback.handleError(DatabaseError.fromException(e));
         }
         return null;
-      }
-
-      @Override
-      protected void onPostExecute(String s) {
-        super.onPostExecute(s);
-        if (Strings.isNullOrEmpty(s)) {
-          callback.handleNotFound();
-        } else {
-          callback.acceptData(s);
-        }
       }
     }.executeOnExecutor(EXECUTOR, encryptedText);
   }
@@ -247,21 +230,16 @@ public class CryptoUtil {
         try {
           if (DEBUG) Log.v(TAG, "Begin decryption");
           String encryptedText = params[0];
-          return RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText);
+          String decryptedText = RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText);
+          if (Strings.isNullOrEmpty(decryptedText)) {
+            callback.handleNotFound();
+          } else {
+            callback.acceptData(decryptedText);
+          }
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }
         return null;
-      }
-
-      @Override
-      protected void onPostExecute(String s) {
-        super.onPostExecute(s);
-        if (Strings.isNullOrEmpty(s)) {
-          callback.handleNotFound();
-        } else {
-          callback.acceptData(s);
-        }
       }
     }.executeOnExecutor(EXECUTOR, encryptedText);
   }

@@ -95,6 +95,10 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   public final View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     Log.v(mTag, "onCreateView: " + String.valueOf(savedInstanceState != null));
 
+    if (mExistingEntry != null) {
+      updateUiWithEntry(mExistingEntry);
+    }
+
     View view = inflater.inflate(layoutId, container, false);
     duringCreateView(view, getArguments(), savedInstanceState);
 

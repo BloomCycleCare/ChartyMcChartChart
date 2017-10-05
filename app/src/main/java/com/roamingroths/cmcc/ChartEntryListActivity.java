@@ -58,7 +58,12 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     Callbacks.Callback<Void> adapterInitialzationCallback = new Callbacks.HaltingCallback<Void>() {
       @Override
       public void acceptData(Void data) {
-        showList();
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            showList();
+          }
+        });
       }
     };
 
@@ -154,7 +159,12 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       @Override
       public void acceptData(Void data) {
         log("Adapter initialized");
-        showList();
+        runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            showList();
+          }
+        });
       }
     };
     mChartEntryAdapter = new ChartEntryAdapter(

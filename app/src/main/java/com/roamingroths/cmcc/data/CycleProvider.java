@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.data;
 
+import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
@@ -312,29 +313,36 @@ public class CycleProvider {
                   previousCycle.id, Listeners.completionListener(this));
             }
             final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
-            for (EntryProvider provider : entryProviders) {
-              Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
-                @Override
-                public void acceptData(Void done) {
-                  if (entryMoves.decrementAndGet() == 0) {
-                    final Runnable onDone = new Runnable() {
-                      @Override
-                      public void run() {
-                        mergedCycleCallback.acceptData(previousCycle);
-                      }
-                    };
-                    Runnable dropCycle = new Runnable() {
-                      @Override
-                      public void run() {
-                        dropCycle(currentCycle.id, userId, onDone);
-                      }
-                    };
-                    cycleKeyProvider.forCycle(currentCycle.id).dropKeys(
-                        Listeners.completionListener(mergedCycleCallback, dropCycle));
-                  }
+            final Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
+              @Override
+              public void acceptData(Void done) {
+                if (entryMoves.decrementAndGet() == 0) {
+                  final Runnable onDone = new Runnable() {
+                    @Override
+                    public void run() {
+                      mergedCycleCallback.acceptData(previousCycle);
+                    }
+                  };
+                  Runnable dropCycle = new Runnable() {
+                    @Override
+                    public void run() {
+                      dropCycle(currentCycle.id, userId, onDone);
+                    }
+                  };
+                  cycleKeyProvider.forCycle(currentCycle.id).dropKeys(
+                      Listeners.completionListener(mergedCycleCallback, dropCycle));
                 }
-              };
-              provider.moveEntries(currentCycle, previousCycle, userId, Predicates.<LocalDate>alwaysTrue(), cycleKeyProvider, callback);
+              }
+            };
+            for (final EntryProvider provider : entryProviders) {
+              new AsyncTask<Void, Integer, Void>() {
+                @Override
+                protected Void doInBackground(Void... params) {
+                  provider.moveEntries(
+                      currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue(), callback);
+                  return null;
+                }
+              }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
             }
           }
         }));
@@ -371,25 +379,30 @@ public class CycleProvider {
                     updates.put("end-date", DateUtil.toWireStr(firstEntry.getDate().minusDays(1)));
                     reference(userId, currentCycle.id).updateChildren(
                         updates, Listeners.completionListener(this));
-                    Predicate<LocalDate> ifEqualOrAfter = new Predicate<LocalDate>() {
+                    final Predicate<LocalDate> ifEqualOrAfter = new Predicate<LocalDate>() {
                       @Override
                       public boolean apply(LocalDate entryDate) {
                         return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
                       }
                     };
                     final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
-                    for (EntryProvider provider : entryProviders) {
-                      logV("Moving entries: " + entryProviders.size());
-                      Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
-                        @Override
-                        public void acceptData(Void done) {
-                          if (entryMoves.decrementAndGet() == 0) {
-                            resultCallback.acceptData(newCycle);
-                          }
+                    final Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
+                      @Override
+                      public void acceptData(Void done) {
+                        if (entryMoves.decrementAndGet() == 0) {
+                          resultCallback.acceptData(newCycle);
                         }
-                      };
-                      provider.moveEntries(
-                          currentCycle, newCycle, userId, ifEqualOrAfter, cycleKeyProvider, callback);
+                      }
+                    };
+                    logV("Moving entries: " + entryProviders.size());
+                    for (final EntryProvider provider : entryProviders) {
+                      new AsyncTask<Void, Integer, Void>() {
+                        @Override
+                        protected Void doInBackground(Void... params) {
+                          provider.moveEntries(currentCycle, newCycle, ifEqualOrAfter, callback);
+                          return null;
+                        }
+                      }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
                     }
                   }
                 }));

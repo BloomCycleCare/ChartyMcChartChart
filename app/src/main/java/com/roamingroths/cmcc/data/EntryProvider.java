@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.data;
 
+import android.os.AsyncTask;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
@@ -175,13 +176,19 @@ public abstract class EntryProvider<E extends Entry> {
       String cycleId, final Callback<Map<LocalDate, String>> callback) {
     reference(cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
       @Override
-      public void onDataChange(DataSnapshot entrySnapshots) {
-        Map<LocalDate, String> entries = new HashMap<>();
-        for (DataSnapshot entrySnapshot : entrySnapshots.getChildren()) {
-          LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
-          entries.put(entryDate, entrySnapshot.getValue(String.class));
-        }
-        callback.acceptData(entries);
+      public void onDataChange(final DataSnapshot entrySnapshots) {
+        new AsyncTask<Void, Integer, Void>() {
+          @Override
+          protected Void doInBackground(Void... params) {
+            Map<LocalDate, String> entries = new HashMap<>();
+            for (DataSnapshot entrySnapshot : entrySnapshots.getChildren()) {
+              LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
+              entries.put(entryDate, entrySnapshot.getValue(String.class));
+            }
+            callback.acceptData(entries);
+            return null;
+          }
+        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
       }
     });
   }
@@ -238,9 +245,7 @@ public abstract class EntryProvider<E extends Entry> {
   public void moveEntries(
       final Cycle fromCycle,
       final Cycle toCycle,
-      final String userId,
       final Predicate<LocalDate> datePredicate,
-      final CycleKeyProvider keyProvider,
       final Callback<Void> callback) {
     logV("Source cycle id: " + fromCycle.id);
     logV("Destination cycle id: " + toCycle.id);
@@ -254,33 +259,37 @@ public abstract class EntryProvider<E extends Entry> {
         for (Map.Entry<LocalDate, E> mapEntry : entriesToMove.entrySet()) {
           final LocalDate entryDate = mapEntry.getKey();
           final String dateStr = DateUtil.toWireStr(entryDate);
-          E decryptedEntry = mapEntry.getValue();
+          final E decryptedEntry = mapEntry.getValue();
           decryptedEntry.swapKey(getKey(toCycle));
 
-          final DatabaseReference.CompletionListener rmListener = Listeners.completionListener(callback, new Runnable() {
+          new AsyncTask<Void, Integer, Void>() {
             @Override
-            public void run() {
-              logV("Removed entry: " + dateStr);
-              if (outstandingRemovals.decrementAndGet() == 0) {
-                logV("Entry moves complete");
-                callback.acceptData(null);
-              }
-            }
-          });
-          final DatabaseReference.CompletionListener moveCompleteListener =
-              Listeners.completionListener(callback, new Runnable() {
+            protected Void doInBackground(Void... params) {
+              final DatabaseReference.CompletionListener rmListener = Listeners.completionListener(callback, new Runnable() {
+                @Override
+                public void run() {
+                  logV("Removed entry: " + dateStr);
+                  if (outstandingRemovals.decrementAndGet() == 0) {
+                    logV("Entry moves complete");
+                    callback.acceptData(null);
+                  }
+                }
+              });
+              final DatabaseReference.CompletionListener moveCompleteListener = Listeners.completionListener(callback, new Runnable() {
                 @Override
                 public void run() {
                   logV("Added entry: " + dateStr);
                   deleteEntry(fromCycle.id, entryDate, rmListener);
                 }
               });
-
-          try {
-            putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
-          } catch (CyrptoExceptions.CryptoException ce) {
-            handleError(DatabaseError.fromException(ce));
-          }
+              try {
+                putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
+              } catch (CyrptoExceptions.CryptoException ce) {
+                handleError(DatabaseError.fromException(ce));
+              }
+              return null;
+            }
+          }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
         }
       }
     });

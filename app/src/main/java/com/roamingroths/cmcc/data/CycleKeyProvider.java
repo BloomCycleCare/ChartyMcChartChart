@@ -26,6 +26,9 @@ import javax.crypto.SecretKey;
 
 public class CycleKeyProvider {
 
+  private static boolean DEBUG = false;
+  private static String TAG = CycleKeyProvider.class.getSimpleName();
+
   private final FirebaseDatabase db;
 
   public static CycleKeyProvider forDb(FirebaseDatabase db) {
@@ -52,12 +55,12 @@ public class CycleKeyProvider {
 
     public void getChartKeys(
         String userId, final Callback<Cycle.Keys> callback) {
-      Log.v("CycleKeyProvider", "Fetching key for user " + userId + " cycle " + ref.getKey());
+      if (DEBUG) Log.v(TAG, "Fetching key for user " + userId + " cycle " + ref.getKey());
       final Map<String, SecretKey> decryptedKeys = new ConcurrentHashMap<>();
       final Callback<Map<String, SecretKey>> keyCallback = new Callbacks.ErrorForwardingCallback<Map<String, SecretKey>>(callback) {
         @Override
         public void acceptData(Map<String, SecretKey> decryptedKeys) {
-          Log.v("CycleKeyProvider", "Done decrypting keys for cycle");
+          if (DEBUG) Log.v(TAG, "Done decrypting keys for cycle");
           callback.acceptData(new Cycle.Keys(
               decryptedKeys.get("chart"), decryptedKeys.get("wellness"), decryptedKeys.get("symptom")));
         }
@@ -66,7 +69,7 @@ public class CycleKeyProvider {
         @Override
         public void onDataChange(DataSnapshot dataSnapshot) {
           long numKeys = dataSnapshot.getChildrenCount();
-          Log.v("CycleKeyProvider", "Found " + numKeys + " keys for cycle");
+          if (DEBUG) Log.v(TAG, "Found " + numKeys + " keys for cycle");
           decryptKey(dataSnapshot, "chart", decryptedKeys, numKeys, keyCallback);
           decryptKey(dataSnapshot, "wellness", decryptedKeys, numKeys, keyCallback);
           decryptKey(dataSnapshot, "symptom", decryptedKeys, numKeys, keyCallback);
@@ -82,11 +85,11 @@ public class CycleKeyProvider {
         final Callback<Map<String, SecretKey>> callback) {
       String encryptedKey = snapshot.child(keyAlias).getValue(String.class);
       Preconditions.checkArgument(!Strings.isNullOrEmpty(encryptedKey));
-      Log.v("CycleKeyProvider", "Begin decryption of " + keyAlias + " key");
+      if (DEBUG) Log.v(TAG, "Begin decryption of " + keyAlias + " key");
       CryptoUtil.decryptKey(encryptedKey, new Callbacks.ErrorForwardingCallback<SecretKey>(callback) {
         @Override
         public void acceptData(SecretKey decryptedKey) {
-          Log.v("CycleKeyProvider", "Done decrypting " + keyAlias + " key");
+          if (DEBUG) Log.v(TAG, "Done decrypting " + keyAlias + " key");
           decryptedKeys.put(keyAlias, decryptedKey);
           if (decryptedKeys.size() == keysToDecrypt) {
             callback.acceptData(decryptedKeys);
