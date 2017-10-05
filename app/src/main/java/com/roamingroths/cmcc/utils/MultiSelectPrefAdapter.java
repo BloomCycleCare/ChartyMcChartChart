@@ -11,8 +11,6 @@ import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.apache.commons.collections4.map.ListOrderedMap;
 
 import java.util.LinkedHashMap;
@@ -85,8 +83,8 @@ public class MultiSelectPrefAdapter extends RecyclerView.Adapter<MultiSelectPref
     notifyDataSetChanged();
   }
 
-  public ImmutableMap<String, Boolean> getActiveEntries() {
-    return ImmutableMap.copyOf(mActiveItems);
+  public Map<String, Boolean> getActiveEntries() {
+    return mActiveItems;
   }
 
   public Bundle fillBundle(Bundle bundle) {
