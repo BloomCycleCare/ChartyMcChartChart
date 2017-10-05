@@ -21,9 +21,9 @@ public class Cycle implements Parcelable {
 
   public final String id;
   public final String previousCycleId;
-  public final String nextCycleId;
+  public String nextCycleId;
   public final LocalDate startDate;
-  public final LocalDate endDate;
+  public LocalDate endDate;
   public final String startDateStr;
   public transient Keys keys;
 

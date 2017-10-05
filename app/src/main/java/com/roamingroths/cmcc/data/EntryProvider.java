@@ -241,7 +241,7 @@ public abstract class EntryProvider<E extends Entry> {
       final String userId,
       final Predicate<LocalDate> datePredicate,
       final CycleKeyProvider keyProvider,
-      final Callback<?> callback) {
+      final Callback<Void> callback) {
     logV("Source cycle id: " + fromCycle.id);
     logV("Destination cycle id: " + toCycle.id);
     getDecryptedEntries(fromCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, E>>(callback) {
@@ -249,7 +249,6 @@ public abstract class EntryProvider<E extends Entry> {
       public void acceptData(Map<LocalDate, E> decryptedEntries) {
         Map<LocalDate, E> entriesToMove = Maps.filterKeys(decryptedEntries, datePredicate);
         final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
-        final boolean shouldDropCycle = entriesToMove.size() == decryptedEntries.size();
 
         logV("Moving " + outstandingRemovals.get() + " entries");
         for (Map.Entry<LocalDate, E> mapEntry : entriesToMove.entrySet()) {
@@ -264,13 +263,6 @@ public abstract class EntryProvider<E extends Entry> {
               logV("Removed entry: " + dateStr);
               if (outstandingRemovals.decrementAndGet() == 0) {
                 logV("Entry moves complete");
-                if (shouldDropCycle) {
-                  logV("Dropping cycle: " + fromCycle.id);
-                  // TODO: fix race
-                  keyProvider.forCycle(fromCycle.id).dropKeys(callback);
-                  reference(userId, fromCycle.id).removeValue(
-                      Listeners.completionListener(callback));
-                }
                 callback.acceptData(null);
               }
             }

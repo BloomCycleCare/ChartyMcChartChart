@@ -302,9 +302,12 @@ public class CycleProvider {
           public void acceptData(final Cycle previousCycle) {
             Map<String, Object> updates = new HashMap<>();
             updates.put("next-cycle-id", currentCycle.nextCycleId);
+            previousCycle.nextCycleId = currentCycle.nextCycleId;
             updates.put("end-date", DateUtil.toWireStr(currentCycle.endDate));
+            previousCycle.endDate = currentCycle.endDate;
             reference(userId, previousCycle.id).updateChildren(updates, Listeners.completionListener(this));
             if (currentCycle.nextCycleId != null) {
+              previousCycle.nextCycleId = currentCycle.nextCycleId;
               reference(userId, currentCycle.nextCycleId).child("previous-cycle-id").setValue(
                   previousCycle.id, Listeners.completionListener(this));
             }
@@ -312,9 +315,22 @@ public class CycleProvider {
             for (EntryProvider provider : entryProviders) {
               Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
                 @Override
-                public void acceptData(Void data) {
+                public void acceptData(Void done) {
                   if (entryMoves.decrementAndGet() == 0) {
-                    mergedCycleCallback.acceptData(previousCycle);
+                    final Runnable onDone = new Runnable() {
+                      @Override
+                      public void run() {
+                        mergedCycleCallback.acceptData(previousCycle);
+                      }
+                    };
+                    Runnable dropCycle = new Runnable() {
+                      @Override
+                      public void run() {
+                        dropCycle(currentCycle.id, userId, onDone);
+                      }
+                    };
+                    cycleKeyProvider.forCycle(currentCycle.id).dropKeys(
+                        Listeners.completionListener(mergedCycleCallback, dropCycle));
                   }
                 }
               };
@@ -366,7 +382,7 @@ public class CycleProvider {
                       logV("Moving entries: " + entryProviders.size());
                       Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
                         @Override
-                        public void acceptData(Void data) {
+                        public void acceptData(Void done) {
                           if (entryMoves.decrementAndGet() == 0) {
                             resultCallback.acceptData(newCycle);
                           }

@@ -141,8 +141,8 @@ public class CycleKeyProvider {
       ref.child(userId).child("chart").setValue(encryptedKey, Listeners.completionListener(callback));
     }
 
-    public void dropKeys(Callback<?> callback) {
-      ref.removeValue(Listeners.completionListener(callback));
+    public void dropKeys(DatabaseReference.CompletionListener listener) {
+      ref.removeValue(listener);
     }
   }
 
