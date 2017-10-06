@@ -1,6 +1,6 @@
 package com.roamingroths.cmcc.data;
 
-import android.content.Context;
+import android.app.Activity;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -30,17 +30,17 @@ import java.util.Map;
 public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder>
     implements ChildEventListener {
 
-  private final Context mContext;
+  private final Activity mActivity;
   private final String mUserId;
   private final OnClickHandler mClickHandler;
   private final Map<String, Cycle> mCycleIndex;
   private final SortedList<Cycle> mCycles;
   private final CycleKeyProvider mCycleKeyProvider;
 
-  public CycleAdapter(Context context, OnClickHandler clickHandler, String userId, CycleKeyProvider cycleKeyProvider) {
+  public CycleAdapter(Activity activity, OnClickHandler clickHandler, String userId, CycleKeyProvider cycleKeyProvider) {
     mUserId = userId;
     mCycleIndex = new HashMap<>();
-    mContext = context;
+    mActivity = activity;
     mClickHandler = clickHandler;
     mCycleKeyProvider = cycleKeyProvider;
     mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
@@ -65,8 +65,13 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
       }
 
       @Override
-      public void onInserted(int position, int count) {
-        notifyItemRangeInserted(position, count);
+      public void onInserted(final int position, final int count) {
+        mActivity.runOnUiThread(new Runnable() {
+          @Override
+          public void run() {
+            notifyItemRangeInserted(position, count);
+          }
+        });
       }
 
       @Override
@@ -105,7 +110,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public CycleAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
     int layoutIdForListItem = R.layout.cycle_list_item;
-    LayoutInflater inflater = LayoutInflater.from(mContext);
+    LayoutInflater inflater = LayoutInflater.from(mActivity);
     boolean shouldAttachToParentImmediately = false;
 
     View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
