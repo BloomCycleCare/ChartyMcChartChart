@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -13,6 +13,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.Extras;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;

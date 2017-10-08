@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.WellnessEntryProvider;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;

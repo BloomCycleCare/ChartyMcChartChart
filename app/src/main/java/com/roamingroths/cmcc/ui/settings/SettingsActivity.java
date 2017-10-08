@@ -1,8 +1,10 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.settings;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.MenuItem;
+
+import com.roamingroths.cmcc.R;
 
 public class SettingsActivity extends AppCompatActivity {
 

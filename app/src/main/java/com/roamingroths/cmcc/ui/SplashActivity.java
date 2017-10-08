@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -22,6 +22,8 @@ import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+import com.roamingroths.cmcc.Preferences;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.data.AppState;
@@ -29,6 +31,7 @@ import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Listeners;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -41,7 +44,7 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.roamingroths.cmcc.ChartEntryListActivity.RC_SIGN_IN;
+import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
 
 public class SplashActivity extends AppCompatActivity {
 

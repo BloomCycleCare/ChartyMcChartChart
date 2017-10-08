@@ -1,9 +1,10 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.application;
 
 import android.app.Application;
 import android.support.v7.preference.PreferenceManager;
 
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.R;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 

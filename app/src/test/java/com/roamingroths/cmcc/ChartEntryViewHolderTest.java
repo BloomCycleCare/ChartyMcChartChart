@@ -8,6 +8,7 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.logic.Observation;
+import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 
 import org.joda.time.LocalDate;
 import org.junit.Test;

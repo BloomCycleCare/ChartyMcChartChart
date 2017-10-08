@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.entry.list;
 
 import android.graphics.Typeface;
 import android.support.v7.widget.RecyclerView;
@@ -6,6 +6,7 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.EntryContainer;

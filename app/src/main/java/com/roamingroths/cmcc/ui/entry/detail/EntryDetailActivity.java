@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -24,11 +24,14 @@ import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.Extras;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
+import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.Listeners;
@@ -42,7 +45,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static com.roamingroths.cmcc.ChartEntryFragment.OK_RESPONSE;
+import static com.roamingroths.cmcc.ui.entry.detail.ChartEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
 

@@ -7,13 +7,13 @@ import android.util.Log;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseError;
-import com.roamingroths.cmcc.ChartEntryViewHolder;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 

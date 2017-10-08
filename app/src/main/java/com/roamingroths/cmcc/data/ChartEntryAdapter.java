@@ -12,13 +12,13 @@ import android.view.ViewGroup;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.ChartEntryViewHolder;
-import com.roamingroths.cmcc.EntryDetailActivity;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
+import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 

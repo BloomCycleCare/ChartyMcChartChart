@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui;
 
 import android.content.Context;
 import android.content.DialogInterface;
@@ -22,10 +22,12 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleAdapter;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.FileUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
