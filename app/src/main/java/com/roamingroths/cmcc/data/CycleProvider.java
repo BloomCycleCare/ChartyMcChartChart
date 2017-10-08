@@ -8,7 +8,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
@@ -22,6 +22,7 @@ import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -48,7 +49,7 @@ public class CycleProvider {
   private final FirebaseDatabase db;
   private final CycleKeyProvider cycleKeyProvider;
   private final ChartEntryProvider chartEntryProvider;
-  private final ImmutableList<EntryProvider> entryProviders;
+  private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
 
   public static CycleProvider forDb(FirebaseDatabase db) {
     return new CycleProvider(db, CycleKeyProvider.forDb(db), ChartEntryProvider.forDb(db), WellnessEntryProvider.forDb(db), SymptomEntryProvider.forDb(db));
@@ -59,15 +60,26 @@ public class CycleProvider {
     this.db = db;
     this.cycleKeyProvider = cycleKeyProvider;
     this.chartEntryProvider = chartEntryProvider;
-    entryProviders = ImmutableList.<EntryProvider>of(this.chartEntryProvider, wellnessEntryProvider, symptomEntryProvider);
+    entryProviders = ImmutableMap.<Class<? extends Entry>, EntryProvider>builder()
+        .put(chartEntryProvider.getEntryClazz(), chartEntryProvider)
+        .put(wellnessEntryProvider.getEntryClazz(), wellnessEntryProvider)
+        .put(symptomEntryProvider.getEntryClazz(), symptomEntryProvider).build();
+  }
+
+  public <E extends Entry> EntryProvider<E> getProviderForEntry(E entry) {
+    return getProviderForClazz((Class<E>) entry.getClass());
+  }
+
+  public <E extends Entry> EntryProvider<E> getProviderForClazz(Class<E> clazz) {
+    return entryProviders.get(clazz);
+  }
+
+  public Collection<EntryProvider> getEntryProviders() {
+    return entryProviders.values();
   }
 
   public CycleKeyProvider getCycleKeyProvider() {
     return cycleKeyProvider;
-  }
-
-  public ChartEntryProvider getChartEntryProvider() {
-    return chartEntryProvider;
   }
 
   public void attachListener(ChildEventListener listener, String userId) {
@@ -83,7 +95,7 @@ public class CycleProvider {
       return;
     }
     final AtomicInteger providersToCheck = new AtomicInteger(entryProviders.size());
-    for (EntryProvider provider : entryProviders) {
+    for (EntryProvider provider : entryProviders.values()) {
       provider.maybeAddNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
         @Override
         public void acceptData(Void data) {
@@ -334,7 +346,7 @@ public class CycleProvider {
                 }
               }
             };
-            for (final EntryProvider provider : entryProviders) {
+            for (final EntryProvider provider : entryProviders.values()) {
               new AsyncTask<Void, Integer, Void>() {
                 @Override
                 protected Void doInBackground(Void... params) {
@@ -395,7 +407,7 @@ public class CycleProvider {
                       }
                     };
                     logV("Moving entries: " + entryProviders.size());
-                    for (final EntryProvider provider : entryProviders) {
+                    for (final EntryProvider provider : entryProviders.values()) {
                       new AsyncTask<Void, Integer, Void>() {
                         @Override
                         protected Void doInBackground(Void... params) {

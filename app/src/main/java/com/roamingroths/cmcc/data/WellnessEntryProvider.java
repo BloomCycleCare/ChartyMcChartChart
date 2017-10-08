@@ -31,7 +31,7 @@ public class WellnessEntryProvider extends EntryProvider<WellnessEntry> {
   }
 
   @Override
-  SecretKey getKey(Cycle cycle) {
+  public SecretKey getKey(Cycle cycle) {
     return cycle.keys.wellnessKey;
   }
 

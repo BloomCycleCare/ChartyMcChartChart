@@ -31,7 +31,7 @@ public class ChartEntryProvider extends EntryProvider<ChartEntry> {
   }
 
   @Override
-  SecretKey getKey(Cycle cycle) {
+  public SecretKey getKey(Cycle cycle) {
     return cycle.keys.chartKey;
   }
 

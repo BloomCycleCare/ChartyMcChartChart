@@ -3,7 +3,6 @@ package com.roamingroths.cmcc.data;
 import android.util.Log;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseError;
@@ -11,6 +10,9 @@ import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.Entry;
+import com.roamingroths.cmcc.logic.SymptomEntry;
+import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -22,9 +24,10 @@ import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collection;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Class holding application state for writing to JSON in plain text.
@@ -45,7 +48,6 @@ public class AppState {
   }
 
   private static AppState parseFromFile(InputStream in, Callback<?> callback) {
-    AppState appState = null;
     try {
       Log.v("AppState", "Reading file");
       BufferedReader r = new BufferedReader(new InputStreamReader(in));
@@ -69,12 +71,12 @@ public class AppState {
       @Override
       public void acceptData(Void data) {
         Log.v("AppState", "Existing cycles dropped");
-        callback.acceptData(putCycleData(appState.cycles, userId, cycleProvider, callback));
+        callback.acceptData(putCycleDatas(appState.cycles, userId, cycleProvider, callback));
       }
     });
   }
 
-  private static Cycle putCycleData(
+  private static Cycle putCycleDatas(
       Collection<CycleData> cycleDatas, String userId, final CycleProvider cycleProvider, final Callback<?> callback) {
     Cycle currentCycle = null;
     for (final CycleData cycleData : cycleDatas) {
@@ -88,19 +90,53 @@ public class AppState {
       cycleProvider.putCycle(userId, cycle, new Callbacks.ErrorForwardingCallback<Cycle>(callback) {
         @Override
         public void acceptData(Cycle data) {
-          for (ChartEntry entry : cycleData.entries) {
-            entry.swapKey(cycle.keys.chartKey);
-            try {
-              cycleProvider.getChartEntryProvider().putEntry(
-                  cycle.id, entry, Listeners.completionListener(callback));
-            } catch (CyrptoExceptions.CryptoException ce) {
-              callback.handleError(DatabaseError.fromException(ce));
-            }
+          for (EntrySet entrySet : cycleData.entrySets) {
+            putEntry(cycleProvider, cycle, entrySet.mChartEntry, callback);
+            putEntry(cycleProvider, cycle, entrySet.mWellnessEntry, callback);
+            putEntry(cycleProvider, cycle, entrySet.mSymptomEntry, callback);
           }
         }
       });
     }
     return currentCycle;
+  }
+
+  public static void putEntry(CycleProvider cycleProvider, Cycle cycle, Entry entry, Callback<?> callback) {
+    EntryProvider provider = cycleProvider.getProviderForEntry(entry);
+    entry.swapKey(provider.getKey(cycle));
+    try {
+      provider.putEntry(cycle.id, entry, Listeners.completionListener(callback));
+    } catch (CyrptoExceptions.CryptoException ce) {
+      callback.handleError(DatabaseError.fromException(ce));
+    }
+  }
+
+  private static void fetchCycleData(final Cycle cycle, CycleProvider cycleProvider, final Callback<CycleData> callback) {
+    final Map<Class<? extends Entry>, Map<LocalDate, Entry>> entryIndex = Maps.newConcurrentMap();
+    for (EntryProvider entryProvider : cycleProvider.getEntryProviders()) {
+      entryIndex.put(entryProvider.getEntryClazz(), Maps.<LocalDate, Entry>newConcurrentMap());
+    }
+    final AtomicInteger providersToProcess =
+        new AtomicInteger(cycleProvider.getEntryProviders().size());
+    for (EntryProvider entryProvider : cycleProvider.getEntryProviders()) {
+      final Class<? extends Entry> clazz = entryProvider.getEntryClazz();
+      entryProvider.getDecryptedEntries(cycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, Entry>>(callback) {
+        @Override
+        public void acceptData(Map<LocalDate, Entry> entries) {
+          entryIndex.put(clazz, entries);
+          if (providersToProcess.decrementAndGet() == 0) {
+            Set<EntrySet> entrySets = new HashSet<EntrySet>();
+            for (LocalDate entryDate : entries.keySet()) {
+              entrySets.add(new EntrySet(
+                  (ChartEntry) entryIndex.get(ChartEntry.class).get(entryDate),
+                  (WellnessEntry) entryIndex.get(WellnessEntry.class).get(entryDate),
+                  (SymptomEntry) entryIndex.get(SymptomEntry.class).get(entryDate)));
+            }
+            callback.acceptData(new CycleData(cycle, entrySets));
+          }
+        }
+      });
+    }
   }
 
   private static void fetchCycleDatas(final CycleProvider cycleProvider, final Callback<Set<CycleData>> callback) {
@@ -110,19 +146,18 @@ public class AppState {
       @Override
       public void acceptData(final Collection<Cycle> cycles) {
         Log.v("AppState", "Found " + cycles.size() + " cycles");
-        final Map<String, CycleData> data = Maps.newConcurrentMap();
+        final AtomicInteger cyclesProcessed = new AtomicInteger(0);
+        final Map<String, CycleData> cycleDatas = Maps.newConcurrentMap();
         for (final Cycle cycle : cycles) {
-          Callback<Map<LocalDate, ChartEntry>> entriesCallback = new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(callback) {
+          fetchCycleData(cycle, cycleProvider, new Callbacks.ErrorForwardingCallback<CycleData>(callback) {
             @Override
-            public void acceptData(Map<LocalDate, ChartEntry> entryMap) {
-              List<ChartEntry> entries = Lists.newArrayList(entryMap.values());
-              data.put(cycle.id, new CycleData(cycle, entries));
-              if (data.size() == cycles.size()) {
-                callback.acceptData(ImmutableSet.copyOf(data.values()));
+            public void acceptData(CycleData cycleData) {
+              cycleDatas.put(cycle.id, cycleData);
+              if (cyclesProcessed.incrementAndGet() == cycles.size()) {
+                callback.acceptData(ImmutableSet.copyOf(cycleDatas.values()));
               }
             }
-          };
-          cycleProvider.getChartEntryProvider().getDecryptedEntries(cycle, entriesCallback);
+          });
         }
       }
     });
@@ -134,11 +169,23 @@ public class AppState {
 
   public static class CycleData {
     public final Cycle cycle;
-    public final List<ChartEntry> entries;
+    public final Set<EntrySet> entrySets;
 
-    public CycleData(Cycle cycle, List<ChartEntry> entries) {
+    public CycleData(Cycle cycle, Set<EntrySet> entrySets) {
       this.cycle = cycle;
-      this.entries = entries;
+      this.entrySets = entrySets;
+    }
+  }
+
+  public static class EntrySet {
+    public final ChartEntry mChartEntry;
+    public final WellnessEntry mWellnessEntry;
+    public final SymptomEntry mSymptomEntry;
+
+    public EntrySet(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
+      mChartEntry = chartEntry;
+      mWellnessEntry = wellnessEntry;
+      mSymptomEntry = symptomEntry;
     }
   }
 }

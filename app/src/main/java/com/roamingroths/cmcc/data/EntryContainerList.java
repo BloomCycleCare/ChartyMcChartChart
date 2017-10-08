@@ -71,7 +71,7 @@ public class EntryContainerList {
       cycleProvider.maybeCreateNewEntries(mCycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
         @Override
         public void acceptData(Void data) {
-          fillFromProvider(cycleProvider.getChartEntryProvider(), doneCallback);
+          fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class), doneCallback);
         }
       });
     } else {
@@ -399,7 +399,7 @@ public class EntryContainerList {
   }
 
   private void fillFromProvider(
-      ChartEntryProvider chartEntryProvider,
+      EntryProvider<ChartEntry> chartEntryProvider,
       final Callbacks.Callback<Void> doneCallback) {
     logV("Begin filling from DB");
     chartEntryProvider.getDecryptedEntries(mCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(doneCallback) {

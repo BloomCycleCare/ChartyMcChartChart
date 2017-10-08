@@ -217,23 +217,28 @@ public class SplashActivity extends FragmentActivity {
   }
 
   private void confirmImport(final Callbacks.Callback<Boolean> callback) {
-    new AlertDialog.Builder(SplashActivity.this)
-        //set message, title, and icon
-        .setTitle("Import data from file?")
-        .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
-        .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-          public void onClick(final DialogInterface dialog, int whichButton) {
-            dialog.dismiss();
-            callback.acceptData(true);
-          }
-        })
-        .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-          public void onClick(DialogInterface dialog, int which) {
-            dialog.dismiss();
-            callback.acceptData(false);
-          }
-        })
-        .create().show();
+    runOnUiThread(new Runnable() {
+      @Override
+      public void run() {
+        new AlertDialog.Builder(SplashActivity.this)
+            //set message, title, and icon
+            .setTitle("Import data from file?")
+            .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
+            .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+              public void onClick(final DialogInterface dialog, int whichButton) {
+                dialog.dismiss();
+                callback.acceptData(true);
+              }
+            })
+            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+              public void onClick(DialogInterface dialog, int which) {
+                dialog.dismiss();
+                callback.acceptData(false);
+              }
+            })
+            .create().show();
+      }
+    });
   }
 
   private void getCurrentCycleForUser(final FirebaseUser user) {

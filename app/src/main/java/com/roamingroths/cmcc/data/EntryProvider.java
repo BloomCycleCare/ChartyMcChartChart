@@ -58,9 +58,13 @@ public abstract class EntryProvider<E extends Entry> {
 
   abstract E createEmptyEntry(LocalDate date, SecretKey key);
 
-  abstract SecretKey getKey(Cycle cycle);
+  public abstract SecretKey getKey(Cycle cycle);
 
   abstract void fromSnapshot(DataSnapshot snapshot, SecretKey key, Callback<E> callback);
+
+  public final Class<E> getEntryClazz() {
+    return mClazz;
+  }
 
   public final void maybeAddNewEntries(final Cycle cycle, final Callback<Void> doneCallback) {
     getMostRecentEntryDate(cycle, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
