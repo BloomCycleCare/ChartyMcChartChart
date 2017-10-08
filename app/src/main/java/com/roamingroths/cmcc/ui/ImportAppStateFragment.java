@@ -73,7 +73,7 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
 
   private void importDataFromIntent(Intent intent, String userId) {
     Uri uri = intent.getData();
-    Log.v("SplashActivity", "Reading data from " + uri.getPath());
+    Log.v("UserInitActivity", "Reading data from " + uri.getPath());
     try {
       InputStream in = getActivity().getContentResolver().openInputStream(uri);
       AppState.parseAndPushToDB(in, userId, mCycleProvider, new Callbacks.HaltingCallback<Cycle>() {

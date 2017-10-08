@@ -129,7 +129,7 @@ public class CycleListActivity extends AppCompatActivity
               mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
                 @Override
                 public void acceptData(Void data) {
-                  Intent intent = new Intent(CycleListActivity.this, SplashActivity.class);
+                  Intent intent = new Intent(CycleListActivity.this, UserInitActivity.class);
                   startActivity(intent);
                   dialog.dismiss();
                 }

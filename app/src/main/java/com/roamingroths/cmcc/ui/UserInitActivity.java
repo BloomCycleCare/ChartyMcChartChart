@@ -29,7 +29,7 @@ import java.util.Map;
 
 import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
 
-public class SplashActivity extends FragmentActivity {
+public class UserInitActivity extends FragmentActivity {
 
   private UserInitializationListener mUserListener;
   private SplashFragment mFragment;
@@ -40,7 +40,7 @@ public class SplashActivity extends FragmentActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_splash);
+    setContentView(R.layout.activity_user_init);
 
     final boolean importingData =
         getIntent().getAction() != null && getIntent().getAction().equals(Intent.ACTION_VIEW);
@@ -56,9 +56,13 @@ public class SplashActivity extends FragmentActivity {
     }
     mFragment.setArguments(getIntent().getExtras());
     getSupportFragmentManager().beginTransaction().add(R.id.fragment_container, mFragment).commit();
+    getSupportFragmentManager().executePendingTransactions();
+
+    mFragment.updateStatus("Loading user");
 
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
+      mFragment.updateStatus("Launching login");
       startActivityForResult(
           AuthUI.getInstance().createSignInIntentBuilder()
               .setProviders(AuthUI.GOOGLE_PROVIDER)
@@ -83,7 +87,7 @@ public class SplashActivity extends FragmentActivity {
         }
         break;
       default:
-        Log.w(SplashActivity.class.getName(), "Unknown request code: " + requestCode);
+        Log.w(UserInitActivity.class.getName(), "Unknown request code: " + requestCode);
     }
   }
 
@@ -95,7 +99,7 @@ public class SplashActivity extends FragmentActivity {
   private abstract class ErrorPrintingCallback<T> implements Callbacks.Callback<T> {
     @Override
     public void handleError(DatabaseError error) {
-      Log.e("SplashActivity", error.getMessage());
+      Log.e("UserInitActivity", error.getMessage());
       mFragment.showError(error.getMessage());
     }
   }
@@ -149,7 +153,7 @@ public class SplashActivity extends FragmentActivity {
         throw new IllegalStateException();
       }
     };
-    Log.v("SplashActivity", "Initializing user state");
+    Log.v("UserInitActivity", "Initializing user state");
     DatabaseReference userRef =
         FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
     userRef.keepSynced(true);
@@ -158,13 +162,13 @@ public class SplashActivity extends FragmentActivity {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
             if (dataSnapshot.getChildrenCount() == 0) {
-              Log.v("SplashActivity", "No user entry found in DB");
+              Log.v("UserInitActivity", "No user entry found in DB");
               createUserDbEntry(user, doneCallback);
             } else {
               // Found user in DB
-              Log.v("SplashActivity", "Found user entry in DB: " + dataSnapshot.getKey());
+              Log.v("UserInitActivity", "Found user entry in DB: " + dataSnapshot.getKey());
               if (CryptoUtil.initFromKeyStore()) {
-                Log.v("SplashActivity", "Crypto initialized from KeyStore");
+                Log.v("UserInitActivity", "Crypto initialized from KeyStore");
                 doneCallback.acceptData(null);
                 return;
               }
@@ -174,7 +178,7 @@ public class SplashActivity extends FragmentActivity {
                 @Override
                 public void acceptData(String phoneNumberStr) {
                   try {
-                    Log.v("SplashActivity", "Initializing crypto decoding");
+                    Log.v("UserInitActivity", "Initializing crypto decoding");
                     CryptoUtil.init(publicKeyStr, privateKeyStr, phoneNumberStr);
                     doneCallback.acceptData(null);
                   } catch (CyrptoExceptions.CryptoException ce) {
@@ -193,11 +197,11 @@ public class SplashActivity extends FragmentActivity {
   }
 
   private void promptForPhoneNumber(final Callbacks.Callback<String> callback) {
-    AlertDialog.Builder builder = new AlertDialog.Builder(SplashActivity.this);
+    AlertDialog.Builder builder = new AlertDialog.Builder(UserInitActivity.this);
     builder.setTitle("Current Phone Number");
     builder.setMessage("This is used to protect your backups and is not stored by the app. To migrate your data to another device you will need to log in with the same account and provide this number to access your data.");
     builder.setIcon(R.drawable.ic_key_black_24dp);
-    final EditText input = new EditText(SplashActivity.this);
+    final EditText input = new EditText(UserInitActivity.this);
     input.setInputType(InputType.TYPE_CLASS_PHONE);
     LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT,
@@ -211,7 +215,7 @@ public class SplashActivity extends FragmentActivity {
         callback.acceptData(phoneNumberStr);
       }
     });
-    Log.v("SplashActivity", "Prompting for phone number");
+    Log.v("UserInitActivity", "Prompting for phone number");
     builder.create().show();
   }
 }
