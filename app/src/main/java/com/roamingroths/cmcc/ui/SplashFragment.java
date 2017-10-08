@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.ui;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,6 +13,9 @@ import android.widget.TextView;
 import com.roamingroths.cmcc.R;
 
 public class SplashFragment extends Fragment {
+
+  private static boolean DEBUG = false;
+  private static String TAG = SplashFragment.class.getSimpleName();
 
   private ProgressBar mProgressBar;
   private TextView mErrorView;
@@ -73,6 +77,7 @@ public class SplashFragment extends Fragment {
   }
 
   public void updateStatus(final String status) {
+    if (DEBUG) Log.v(TAG, "Update: " + status);
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {

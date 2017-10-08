@@ -67,13 +67,7 @@ public class AppState {
     final AppState appState = parseFromFile(in, callback);
     Log.v("AppState", "Found " + appState.cycles.size() + " cycles in file");
     Log.v("AppState", "Dropping existing cycles");
-    cycleProvider.dropCycles(new Callbacks.ErrorForwardingCallback<Void>(callback) {
-      @Override
-      public void acceptData(Void data) {
-        Log.v("AppState", "Existing cycles dropped");
-        callback.acceptData(putCycleDatas(appState.cycles, userId, cycleProvider, callback));
-      }
-    });
+    callback.acceptData(putCycleDatas(appState.cycles, userId, cycleProvider, callback));
   }
 
   private static Cycle putCycleDatas(

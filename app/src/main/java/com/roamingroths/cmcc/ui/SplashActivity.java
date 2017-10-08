@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.ui;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.support.v7.app.AlertDialog;
@@ -18,25 +17,13 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
-import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.CyrptoExceptions;
-import com.roamingroths.cmcc.data.AppState;
-import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.EntryContainerList;
-import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.roamingroths.cmcc.data.UserInitializationListener;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Listeners;
-import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
-import org.joda.time.LocalDate;
-
-import java.io.FileNotFoundException;
-import java.io.InputStream;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -44,10 +31,7 @@ import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN
 
 public class SplashActivity extends FragmentActivity {
 
-  private CycleProvider mCycleProvider;
-
-  private Preferences mPreferences;
-
+  private UserInitializationListener mUserListener;
   private SplashFragment mFragment;
 
   // - Get FirebaseUser (or create one)
@@ -58,15 +42,22 @@ public class SplashActivity extends FragmentActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_splash);
 
-    mPreferences = Preferences.fromShared(getApplicationContext());
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+    final boolean importingData =
+        getIntent().getAction() != null && getIntent().getAction().equals(Intent.ACTION_VIEW);
 
-    mFragment = (SplashFragment) getSupportFragmentManager().findFragmentById(R.id.splash_fragment);
+    if (importingData) {
+      ImportAppStateFragment fragment = new ImportAppStateFragment();
+      mFragment = fragment;
+      mUserListener = fragment;
+    } else {
+      LoadCurrentCycleFragment fragment = new LoadCurrentCycleFragment();
+      mFragment = fragment;
+      mUserListener = fragment;
+    }
+    mFragment.setArguments(getIntent().getExtras());
+    getSupportFragmentManager().beginTransaction().add(R.id.fragment_container, mFragment).commit();
 
-    mFragment.showProgress("Loading user account");
-
-    // Get user
-    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
       startActivityForResult(
           AuthUI.getInstance().createSignInIntentBuilder()
@@ -77,23 +68,6 @@ public class SplashActivity extends FragmentActivity {
     } else {
       initUserState(user);
     }
-  }
-
-  private Callbacks.Callback<Void> userInitCompleteCallback(final FirebaseUser user) {
-    return new ErrorPrintingCallback<Void>() {
-
-      @Override
-      public void acceptData(Void unused) {
-        mFragment.showProgress("User initialization complete");
-        getCurrentCycleForUser(user);
-        // TODO: move off UI thread end
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException();
-      }
-    };
   }
 
   @Override
@@ -116,185 +90,6 @@ public class SplashActivity extends FragmentActivity {
   @Override
   protected void onSaveInstanceState(Bundle outState) {
     //No call for super(). Bug on API Level > 11.
-  }
-
-  private void preloadCycleData(final Cycle cycle) {
-    log("Preload cycle data: start");
-    mFragment.updateStatus("Decrypting cycle data");
-    EntryContainerList.builder(cycle, mPreferences).build().initialize(mCycleProvider, Callbacks.singleUse(new Callbacks.Callback<Void>() {
-      @Override
-      public void acceptData(Void data) {
-        log("Preload cycle data: finish");
-        Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
-        intent.putExtra(Cycle.class.getName(), cycle);
-        finish();
-        startActivity(intent);
-      }
-
-      @Override
-      public void handleNotFound() {
-        mFragment.showError("Could not decrypt cycle entries.");
-        new AlertDialog.Builder(SplashActivity.this)
-            //set message, title, and icon
-            .setTitle("Delete All Cycles?")
-            .setMessage("This is permanent and cannot be undone!")
-            .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-              public void onClick(final DialogInterface dialog, int whichButton) {
-                mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
-                  @Override
-                  public void acceptData(Void data) {
-                    dialog.dismiss();
-                    getCurrentCycleForUser(FirebaseAuth.getInstance().getCurrentUser());
-                  }
-                });
-              }
-            })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-              public void onClick(DialogInterface dialog, int which) {
-                mFragment.showError("Please restart the app.");
-                dialog.dismiss();
-              }
-            })
-            .create().show();
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        mFragment.showError(error.getMessage());
-      }
-    }));
-  }
-
-  private void promptForStartOfCurrentCycle(final FirebaseUser user) {
-    mFragment.updateStatus("Prompting for start of first cycle.");
-    mFragment.updateStatus("Creating first cycle");
-    DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
-        new DatePickerDialog.OnDateSetListener() {
-          @Override
-          public void onDateSet(
-              DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
-            LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
-            log("Creating new cycle starting " + cycleStartDate.toString());
-            Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
-              @Override
-              public void acceptData(final Cycle cycle) {
-                log("Done creating new cycle");
-                preloadCycleData(cycle);
-              }
-            };
-            Cycle previousCycle = null;
-            Cycle nextCycle = null;
-            LocalDate cycleEndDate = null;
-            mCycleProvider.createCycle(
-                user.getUid(),
-                previousCycle,
-                nextCycle,
-                cycleStartDate,
-                cycleEndDate,
-                cycleCallback);
-          }
-        });
-    datePickerDialog.setTitle("First day of current cycle");
-    datePickerDialog.setMaxDate(Calendar.getInstance());
-    datePickerDialog.show(getFragmentManager(), "datepickerdialog");
-  }
-
-  private void importDataFromIntent(Intent intent, String userId) {
-    Uri uri = intent.getData();
-    Log.v("SplashActivity", "Reading data from " + uri.getPath());
-    try {
-      InputStream in = getContentResolver().openInputStream(uri);
-      AppState.parseAndPushToDB(in, userId, mCycleProvider, new Callbacks.HaltingCallback<Cycle>() {
-        @Override
-        public void acceptData(Cycle cycle) {
-          preloadCycleData(cycle);
-        }
-      });
-    } catch (FileNotFoundException e) {
-      mFragment.showError("File " + uri.getPath() + " does not exist");
-      return;
-    }
-  }
-
-  private void confirmImport(final Callbacks.Callback<Boolean> callback) {
-    runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        new AlertDialog.Builder(SplashActivity.this)
-            //set message, title, and icon
-            .setTitle("Import data from file?")
-            .setMessage("This will wipe all existing data load the data from the file. This is permanent and cannot be undone!")
-            .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-              public void onClick(final DialogInterface dialog, int whichButton) {
-                dialog.dismiss();
-                callback.acceptData(true);
-              }
-            })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-              public void onClick(DialogInterface dialog, int which) {
-                dialog.dismiss();
-                callback.acceptData(false);
-              }
-            })
-            .create().show();
-      }
-    });
-  }
-
-  private void getCurrentCycleForUser(final FirebaseUser user) {
-    mFragment.updateStatus("Fetching current cycle");
-    final Intent intent = getIntent();
-    final boolean importingData =
-        intent.getAction() != null && intent.getAction().equals(Intent.ACTION_VIEW);
-    if (importingData) {
-      Log.v("SplashActivity", "Importing data from file");
-    }
-    mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
-      @Override
-      public void acceptData(Cycle cycle) {
-        mFragment.updateStatus("Received current cycle from DB.");
-        if (importingData) {
-          Log.v("SplashActivity", "Confirming data wipe");
-          confirmImport(new Callbacks.SwitchingCallback() {
-            @Override
-            public void positive() {
-              importDataFromIntent(intent, user.getUid());
-            }
-
-            @Override
-            public void negative() {
-              finish();
-            }
-          });
-        } else {
-          preloadCycleData(cycle);
-        }
-      }
-
-      @Override
-      public void handleNotFound() {
-        mFragment.updateStatus("No cycle found in DB.");
-        if (importingData) {
-          importDataFromIntent(intent, user.getUid());
-        } else {
-          promptForStartOfCurrentCycle(user);
-        }
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        mFragment.showError("Error fetching current cycle.");
-        error.toException().printStackTrace();
-      }
-    });
-  }
-
-  private abstract class ErrorPrintingListener implements ValueEventListener {
-    @Override
-    public final void onCancelled(DatabaseError error) {
-      Log.e("SplashActivity", error.getMessage());
-      mFragment.showError(error.getMessage());
-    }
   }
 
   private abstract class ErrorPrintingCallback<T> implements Callbacks.Callback<T> {
@@ -341,13 +136,25 @@ public class SplashActivity extends FragmentActivity {
 
   private void initUserState(final FirebaseUser user) {
     // TODO: move off UI thread start
-    final Callbacks.Callback<Void> doneCallback = userInitCompleteCallback(user);
+    final Callbacks.Callback<Void> doneCallback = new ErrorPrintingCallback<Void>() {
+      @Override
+      public void acceptData(Void unused) {
+        mFragment.showProgress("User initialization complete");
+        mUserListener.onUserInitialized(user);
+        // TODO: move off UI thread end
+      }
+
+      @Override
+      public void handleNotFound() {
+        throw new IllegalStateException();
+      }
+    };
     Log.v("SplashActivity", "Initializing user state");
     DatabaseReference userRef =
         FirebaseDatabase.getInstance().getReference("users").child(user.getUid());
     userRef.keepSynced(true);
     userRef.addListenerForSingleValueEvent(
-        new ErrorPrintingListener() {
+        new Listeners.SimpleValueEventListener(doneCallback) {
           @Override
           public void onDataChange(DataSnapshot dataSnapshot) {
             if (dataSnapshot.getChildrenCount() == 0) {
@@ -406,9 +213,5 @@ public class SplashActivity extends FragmentActivity {
     });
     Log.v("SplashActivity", "Prompting for phone number");
     builder.create().show();
-  }
-
-  private void log(String message) {
-    Log.v(SplashActivity.class.getName(), message);
   }
 }
