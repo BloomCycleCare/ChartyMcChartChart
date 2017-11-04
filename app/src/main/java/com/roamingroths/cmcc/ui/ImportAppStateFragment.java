@@ -10,9 +10,9 @@ import android.util.Log;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.UserInitializationListener;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -35,7 +35,7 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
   }
 
   @Override
-  public void onUserInitialized(final FirebaseUser user) {
+  public void onUserInitialized(final FirebaseUser user, RxCryptoUtil cryptoUtil) {
     mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
       @Override
       public void acceptData(Cycle cycle) {

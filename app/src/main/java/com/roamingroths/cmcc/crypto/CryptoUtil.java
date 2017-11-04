@@ -38,8 +38,14 @@ public class CryptoUtil {
   private static PublicKey PUBLIC_KEY = null;
   private static PrivateKey PRIVATE_KEY = null;
 
+  private static RxCryptoUtil RX_UTIL = null;
+
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
+
+  public static RxCryptoUtil getRxUtil() {
+    return RX_UTIL;
+  }
 
   public static boolean initFromKeyStore() {
     try {
@@ -100,11 +106,12 @@ public class CryptoUtil {
   private static void init(KeyPair keyPair) {
     PUBLIC_KEY = keyPair.getPublic();
     PRIVATE_KEY = keyPair.getPrivate();
+    RX_UTIL = new RxCryptoUtil(keyPair);
   }
 
   public static String getPublicKeyStr() throws CyrptoExceptions.CryptoException {
     try {
-      return RsaCryptoUtil.serializePublicKey(PUBLIC_KEY);
+      return RsaCryptoUtil.serializePublicKey(PUBLIC_KEY).call();
     } catch (Exception e) {
       throw new CyrptoExceptions.CryptoException(e);
     }
@@ -136,7 +143,7 @@ public class CryptoUtil {
       protected String doInBackground(String... params) {
         String rawText = params[0];
         try {
-          callback.acceptData(RsaCryptoUtil.encrypt(PUBLIC_KEY, rawText));
+          callback.acceptData(RsaCryptoUtil.encrypt(PUBLIC_KEY, rawText).call());
         } catch (Exception e) {
           callback.handleError(DatabaseError.fromException(e));
         }
@@ -230,7 +237,7 @@ public class CryptoUtil {
         try {
           if (DEBUG) Log.v(TAG, "Begin decryption");
           String encryptedText = params[0];
-          String decryptedText = RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText);
+          String decryptedText = RsaCryptoUtil.decrypt(PRIVATE_KEY, encryptedText).call();
           if (Strings.isNullOrEmpty(decryptedText)) {
             callback.handleNotFound();
           } else {

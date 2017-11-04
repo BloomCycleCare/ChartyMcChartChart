@@ -21,6 +21,7 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.concurrent.Callable;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -42,41 +43,51 @@ public class RsaCryptoUtil {
     return kpg.genKeyPair();
   }
 
-  public static String encrypt(PublicKey publicKey, String rawText) throws Exception {
-    Cipher input = Cipher.getInstance(TRANSFORM);
-    input.init(Cipher.ENCRYPT_MODE, publicKey);
+  public static Callable<String> encrypt(final PublicKey publicKey, final String rawText) {
+    return new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        Cipher input = Cipher.getInstance(TRANSFORM);
+        input.init(Cipher.ENCRYPT_MODE, publicKey);
 
-    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    CipherOutputStream cipherOutputStream = new CipherOutputStream(
-        outputStream, input);
-    cipherOutputStream.write(rawText.getBytes("UTF-8"));
-    cipherOutputStream.close();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        CipherOutputStream cipherOutputStream = new CipherOutputStream(
+            outputStream, input);
+        cipherOutputStream.write(rawText.getBytes("UTF-8"));
+        cipherOutputStream.close();
 
-    byte[] vals = outputStream.toByteArray();
-    return Base64.encodeToString(vals, Base64.NO_WRAP);
+        byte[] vals = outputStream.toByteArray();
+        return Base64.encodeToString(vals, Base64.NO_WRAP);
+      }
+    };
   }
 
-  public static String decrypt(PrivateKey privateKey, String cipherText) throws Exception {
-    if (Strings.isNullOrEmpty(cipherText)) {
-      return cipherText;
-    }
-    Cipher output = Cipher.getInstance(TRANSFORM);
-    output.init(Cipher.DECRYPT_MODE, privateKey);
+  public static Callable<String> decrypt(final PrivateKey privateKey, final String cipherText) {
+    return new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        if (Strings.isNullOrEmpty(cipherText)) {
+          return cipherText;
+        }
+        Cipher output = Cipher.getInstance(TRANSFORM);
+        output.init(Cipher.DECRYPT_MODE, privateKey);
 
-    CipherInputStream cipherInputStream = new CipherInputStream(
-        new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
-    ArrayList<Byte> values = new ArrayList<>();
-    int nextByte;
-    while ((nextByte = cipherInputStream.read()) != -1) {
-      values.add((byte) nextByte);
-    }
+        CipherInputStream cipherInputStream = new CipherInputStream(
+            new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
+        ArrayList<Byte> values = new ArrayList<>();
+        int nextByte;
+        while ((nextByte = cipherInputStream.read()) != -1) {
+          values.add((byte) nextByte);
+        }
 
-    byte[] bytes = new byte[values.size()];
-    for (int i = 0; i < bytes.length; i++) {
-      bytes[i] = values.get(i).byteValue();
-    }
+        byte[] bytes = new byte[values.size()];
+        for (int i = 0; i < bytes.length; i++) {
+          bytes[i] = values.get(i).byteValue();
+        }
 
-    return new String(bytes, 0, bytes.length, "UTF-8");
+        return new String(bytes, 0, bytes.length, "UTF-8");
+      }
+    };
   }
 
   public static Certificate createCertificate(KeyPair keyPair) throws Exception {
@@ -95,9 +106,14 @@ public class RsaCryptoUtil {
     return certGen.generate(keyPair.getPrivate(), "BC");
   }
 
-  public static String serializePublicKey(PublicKey key) throws Exception {
-    X509EncodedKeySpec keySpec = new X509EncodedKeySpec(key.getEncoded());
-    return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
+  public static Callable<String> serializePublicKey(final PublicKey key) {
+    return new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(key.getEncoded());
+        return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
+      }
+    };
   }
 
   public static PublicKey parsePublicKey(String keyStr) throws Exception {

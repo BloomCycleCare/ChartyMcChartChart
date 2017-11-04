@@ -10,9 +10,9 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Preferences;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryContainerList;
-import com.roamingroths.cmcc.data.UserInitializationListener;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -21,6 +21,13 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 import org.joda.time.LocalDate;
 
 import java.util.Calendar;
+
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
 
 import static com.facebook.FacebookSdk.getApplicationContext;
 
@@ -35,67 +42,53 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
 
   private Preferences mPreferences;
   private CycleProvider mCycleProvider;
+  private CompositeDisposable mDisposables;
+  private RxCryptoUtil mCryptoUtil;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     mPreferences = Preferences.fromShared(getApplicationContext());
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
   }
 
   @Override
-  public void onUserInitialized(final FirebaseUser user) {
-    mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
-      @Override
-      public void acceptData(Cycle cycle) {
-        preloadCycleData(cycle, user);
-      }
-
-      @Override
-      public void handleNotFound() {
-        promptForStartOfCurrentCycle(user);
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        showError("Error fetching current cycle.");
-        error.toException().printStackTrace();
-      }
-    });
+  public void onUserInitialized(final FirebaseUser user, RxCryptoUtil cryptoUtil) {
+    if (DEBUG) Log.v(TAG, "Getting current cycle");
+    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance(), cryptoUtil);
+    mCryptoUtil = cryptoUtil;
+    mDisposables.add(mCycleProvider.getCurrentCycleRx(user.getUid(), promptForStart(user))
+        .subscribe(new Consumer<Cycle>() {
+          @Override
+          public void accept(@NonNull Cycle cycle) throws Exception {
+            preloadCycleData(cycle, user);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(@NonNull Throwable throwable) throws Exception {
+            Log.e(TAG, "Error loading current cycle.", throwable);
+          }
+        }));
   }
 
-  private void promptForStartOfCurrentCycle(final FirebaseUser user) {
-    updateStatus("Prompting for start of first cycle.");
-    updateStatus("Creating first cycle");
-    DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
-        new DatePickerDialog.OnDateSetListener() {
-          @Override
-          public void onDateSet(
-              DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
-            LocalDate cycleStartDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
-            if (DEBUG) Log.v(TAG, "Creating new cycle starting " + cycleStartDate.toString());
-            Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
+  Single<LocalDate> promptForStart(final FirebaseUser user) {
+    return Single.create(new SingleOnSubscribe<LocalDate>() {
+      @Override
+      public void subscribe(final @NonNull SingleEmitter<LocalDate> e) throws Exception {
+        updateStatus("Prompting for start of first cycle.");
+        updateStatus("Creating first cycle");
+        DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
+            new DatePickerDialog.OnDateSetListener() {
               @Override
-              public void acceptData(final Cycle cycle) {
-                if (DEBUG) Log.v(TAG, "Done creating new cycle");
-                preloadCycleData(cycle, user);
+              public void onDateSet(
+                  DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
+                e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth));
               }
-            };
-            Cycle previousCycle = null;
-            Cycle nextCycle = null;
-            LocalDate cycleEndDate = null;
-            mCycleProvider.createCycle(
-                user.getUid(),
-                previousCycle,
-                nextCycle,
-                cycleStartDate,
-                cycleEndDate,
-                cycleCallback);
-          }
-        });
-    datePickerDialog.setTitle("First day of current cycle");
-    datePickerDialog.setMaxDate(Calendar.getInstance());
-    datePickerDialog.show(getActivity().getFragmentManager(), "datepickerdialog");
+            });
+        datePickerDialog.setTitle("First day of current cycle");
+        datePickerDialog.setMaxDate(Calendar.getInstance());
+        datePickerDialog.show(getActivity().getFragmentManager(), "datepickerdialog");
+      }
+    });
   }
 
   private void preloadCycleData(final Cycle cycle, final FirebaseUser user) {
@@ -124,7 +117,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                   @Override
                   public void acceptData(Void data) {
                     dialog.dismiss();
-                    onUserInitialized(user);
+                    onUserInitialized(user, mCryptoUtil);
                   }
                 });
               }

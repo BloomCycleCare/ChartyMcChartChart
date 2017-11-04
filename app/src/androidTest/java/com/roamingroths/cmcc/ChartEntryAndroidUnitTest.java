@@ -40,7 +40,7 @@ public class ChartEntryAndroidUnitTest {
     PublicKey originalPublicKey = RsaCryptoUtil.createKeyPair().getPublic();
 
     PublicKey parsedPublicKey =
-        RsaCryptoUtil.parsePublicKey(RsaCryptoUtil.serializePublicKey(originalPublicKey));
+        RsaCryptoUtil.parsePublicKey(RsaCryptoUtil.serializePublicKey(originalPublicKey).call());
     assertEquals(parsedPublicKey, originalPublicKey);
   }
 

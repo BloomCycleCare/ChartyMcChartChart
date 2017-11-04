@@ -20,6 +20,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -39,6 +40,17 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import durdinapps.rxfirebase2.RxFirebaseDatabase;
+import io.reactivex.Completable;
+import io.reactivex.Maybe;
+import io.reactivex.MaybeSource;
+import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.Single;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Function;
+import io.reactivex.internal.functions.Functions;
+
 /**
  * Created by parkeroth on 9/2/17.
  */
@@ -47,19 +59,24 @@ public class CycleProvider {
   // TODO: Remove FirebaseAuth stuff
 
   private final FirebaseDatabase db;
+  private final RxCryptoUtil cryptoUtil;
   private final CycleKeyProvider cycleKeyProvider;
-  private final ChartEntryProvider chartEntryProvider;
   private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
 
   public static CycleProvider forDb(FirebaseDatabase db) {
-    return new CycleProvider(db, CycleKeyProvider.forDb(db), ChartEntryProvider.forDb(db), WellnessEntryProvider.forDb(db), SymptomEntryProvider.forDb(db));
+    RxCryptoUtil cryptoUtil = CryptoProvider.forDb(db).createCryptoUtil().blockingGet();
+    return forDb(db, cryptoUtil);
+  }
+
+  public static CycleProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    return new CycleProvider(db, cryptoUtil, CycleKeyProvider.forDb(db, cryptoUtil), ChartEntryProvider.forDb(db), WellnessEntryProvider.forDb(db), SymptomEntryProvider.forDb(db));
   }
 
   private CycleProvider(
-      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
+      FirebaseDatabase db, RxCryptoUtil cryptoUtil, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
     this.db = db;
+    this.cryptoUtil = cryptoUtil;
     this.cycleKeyProvider = cycleKeyProvider;
-    this.chartEntryProvider = chartEntryProvider;
     entryProviders = ImmutableMap.<Class<? extends Entry>, EntryProvider>builder()
         .put(chartEntryProvider.getEntryClazz(), chartEntryProvider)
         .put(wellnessEntryProvider.getEntryClazz(), wellnessEntryProvider)
@@ -162,6 +179,69 @@ public class CycleProvider {
         });
       }
     });
+  }
+
+  public Completable putCycleRx(final String userId, final Cycle cycle) {
+    Map<String, Object> updates = new HashMap<>();
+    updates.put("previous-cycle-id", cycle.previousCycleId);
+    updates.put("next-cycle-id", cycle.nextCycleId);
+    updates.put("start-date", cycle.startDateStr);
+    updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
+    return RxFirebaseDatabase.updateChildren(reference(userId, cycle.id), updates)
+        .andThen(cycleKeyProvider.putChartKeysRx(cycle.keys, cycle.id, userId));
+  }
+
+  public Single<Cycle> createCycleRx(
+      final String userId,
+      @Nullable Cycle previousCycle,
+      @Nullable Cycle nextCycle,
+      final LocalDate startDate,
+      final @Nullable LocalDate endDate) {
+    DatabaseReference cycleRef = reference(userId).push();
+    logV("Creating new cycle: " + cycleRef.getKey());
+    final String cycleId = cycleRef.getKey();
+    Cycle.Keys keys = new Cycle.Keys(
+        CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey());
+    final Cycle cycle = new Cycle(
+        cycleId,
+        (previousCycle == null) ? null : previousCycle.id,
+        (nextCycle == null) ? null : nextCycle.id,
+        startDate,
+        endDate,
+        keys);
+    return putCycleRx(userId, cycle).toSingleDefault(cycle);
+  }
+
+  public Observable<Cycle> getCyclesRx(final String userId) {
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(userId), Functions.<DataSnapshot>identity())
+        .flatMapObservable(new Function<DataSnapshot, ObservableSource<Cycle>>() {
+          @Override
+          public ObservableSource<Cycle> apply(@NonNull DataSnapshot dataSnapshot) throws Exception {
+            Set<Maybe<Cycle>> cycles = new HashSet<>();
+            for (DataSnapshot child : dataSnapshot.getChildren()) {
+              cycles.add(cycleKeyProvider.getChartKeys(child.getKey(), userId).map(Cycle.fromSnapshot(child)));
+            }
+            return Maybe.merge(cycles).toObservable();
+          }
+        });
+  }
+
+  public Single<Cycle> getCurrentCycleRx(final String userId, Single<LocalDate> startOfFirstCycle) {
+    return getCyclesRx(userId)
+        .filter(new io.reactivex.functions.Predicate<Cycle>() {
+          @Override
+          public boolean test(@NonNull Cycle cycle) throws Exception {
+            return cycle.endDate == null;
+          }
+        })
+        .firstElement()
+        .switchIfEmpty(startOfFirstCycle.flatMapMaybe(new Function<LocalDate, MaybeSource<? extends Cycle>>() {
+          @Override
+          public MaybeSource<? extends Cycle> apply(@NonNull LocalDate startDate) throws Exception {
+            return createCycleRx(userId, null, null, startDate, null).toMaybe();
+          }
+        }))
+        .toSingle();
   }
 
   private void getCycles(

@@ -13,6 +13,9 @@ import org.joda.time.LocalDate;
 
 import javax.crypto.SecretKey;
 
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Function;
+
 /**
  * Created by parkeroth on 4/30/17.
  */
@@ -36,6 +39,15 @@ public class Cycle implements Parcelable {
       endDate = DateUtil.fromWireStr(snapshot.child("end-date").getValue(String.class));
     }
     return new Cycle(snapshot.getKey(), previousCycleId, nextCycleId, startDate, endDate, keys);
+  }
+
+  public static Function<Keys, Cycle> fromSnapshot(final DataSnapshot snapshot) {
+    return new Function<Keys, Cycle>() {
+      @Override
+      public Cycle apply(@NonNull Keys keys) throws Exception {
+        return fromSnapshot(snapshot, keys);
+      }
+    };
   }
 
   public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate, Keys keys) {
