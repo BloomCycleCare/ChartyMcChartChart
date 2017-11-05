@@ -36,8 +36,14 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 import java.io.File;
 import java.util.Calendar;
 
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+
 public class CycleListActivity extends AppCompatActivity
     implements CycleAdapter.OnClickHandler {
+
+  private static final String TAG = CycleListActivity.class.getSimpleName();
 
   private CycleProvider mCycleProvider;
 
@@ -126,14 +132,20 @@ public class CycleListActivity extends AppCompatActivity
           .setMessage("This is permanent and cannot be undone!")
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
-              mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
-                @Override
-                public void acceptData(Void data) {
-                  Intent intent = new Intent(CycleListActivity.this, UserInitActivity.class);
-                  startActivity(intent);
-                  dialog.dismiss();
-                }
-              });
+              mCycleProvider.dropCycles()
+                  .subscribe(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                      Intent intent = new Intent(CycleListActivity.this, UserInitActivity.class);
+                      startActivity(intent);
+                      dialog.dismiss();
+                    }
+                  }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+                      Log.e(TAG, "Could not drop cycles!", throwable);
+                    }
+                  });
             }
           })
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

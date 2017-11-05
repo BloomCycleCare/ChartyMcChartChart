@@ -32,16 +32,18 @@ import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
@@ -105,6 +107,7 @@ public class CycleProvider {
     ref.keepSynced(true);
   }
 
+  @Deprecated
   public void maybeCreateNewEntries(Cycle cycle, final Callback<Void> doneCallback) {
     if (cycle.endDate != null) {
       logV("No entries to add, end date set");
@@ -128,6 +131,7 @@ public class CycleProvider {
     reference(userId).removeEventListener(listener);
   }
 
+  @Deprecated
   public void putCycle(final String userId, final Cycle cycle, final Callback<Cycle> callback) {
     // Store key
     Map<String, Object> updates = new HashMap<>();
@@ -149,6 +153,7 @@ public class CycleProvider {
     }));
   }
 
+  @Deprecated
   public void createCycle(
       final String userId,
       @Nullable Cycle previousCycle,
@@ -226,7 +231,7 @@ public class CycleProvider {
         });
   }
 
-  public Single<Cycle> getCurrentCycleRx(final String userId, Single<LocalDate> startOfFirstCycle) {
+  public Maybe<Cycle> getCurrentCycle(final String userId) {
     return getCyclesRx(userId)
         .filter(new io.reactivex.functions.Predicate<Cycle>() {
           @Override
@@ -234,7 +239,11 @@ public class CycleProvider {
             return cycle.endDate == null;
           }
         })
-        .firstElement()
+        .firstElement();
+  }
+
+  public Single<Cycle> getOrCreateCurrentCycle(final String userId, Single<LocalDate> startOfFirstCycle) {
+    return getCurrentCycle(userId)
         .switchIfEmpty(startOfFirstCycle.flatMapMaybe(new Function<LocalDate, MaybeSource<? extends Cycle>>() {
           @Override
           public MaybeSource<? extends Cycle> apply(@NonNull LocalDate startDate) throws Exception {
@@ -244,6 +253,7 @@ public class CycleProvider {
         .toSingle();
   }
 
+  @Deprecated
   private void getCycles(
       final String userId, final Predicate<DataSnapshot> fetchPredicate, boolean criticalRead, final Callback<Collection<Cycle>> callback) {
     logV("Fetching cycles");
@@ -294,30 +304,7 @@ public class CycleProvider {
     getCycles(userId, Predicates.<DataSnapshot>alwaysTrue(), false, callback);
   }
 
-  public void getCurrentCycle(final String userId, final Callback<Cycle> callback) {
-    logV("Fetching user's cycles");
-    Predicate<DataSnapshot> fetchPredicate = new Predicate<DataSnapshot>() {
-      @Override
-      public boolean apply(DataSnapshot snapshot) {
-        return !snapshot.hasChild("end-date");
-      }
-    };
-    getCycles(userId, fetchPredicate, true, new Callbacks.ErrorForwardingCallback<Collection<Cycle>>(callback) {
-      @Override
-      public void acceptData(Collection<Cycle> data) {
-        if (data.size() == 0) {
-          callback.handleNotFound();
-          return;
-        }
-        if (data.size() == 1) {
-          callback.acceptData(data.iterator().next());
-          return;
-        }
-        callback.handleError(DatabaseError.fromException(new IllegalStateException()));
-      }
-    });
-  }
-
+  @Deprecated
   private void dropCycle(final String cycleId, final String userId, final Runnable onFinish) {
     logV("Dropping entries for cycle: " + cycleId);
     db.getReference("entries").child(cycleId).removeValue(new DatabaseReference.CompletionListener() {
@@ -336,33 +323,30 @@ public class CycleProvider {
     });
   }
 
-  public void dropCycles(final Callback<Void> doneCallback) {
-    logV("Dropping cycles");
-    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    ValueEventListener listener = new ValueEventListener() {
-      @Override
-      public void onCancelled(DatabaseError databaseError) {
-        databaseError.toException().printStackTrace();
-      }
-      @Override
-      public void onDataChange(DataSnapshot dataSnapshot) {
-        final AtomicLong cyclesToDrop = new AtomicLong(dataSnapshot.getChildrenCount());
-        for (DataSnapshot cycleSnapshot : dataSnapshot.getChildren()) {
-          Runnable onRemove = new Runnable() {
-            @Override
-            public void run() {
-              if (cyclesToDrop.decrementAndGet() == 0) {
-                doneCallback.acceptData(null);
-              }
-            }
-          };
-          dropCycle(cycleSnapshot.getKey(), user.getUid(), onRemove);
-        }
-      }
-    };
-    reference(user.getUid()).addListenerForSingleValueEvent(listener);
+  private Completable dropCycle(String cycleId, String userId) {
+    Completable dropEntries = RxFirebaseDatabase.removeValue(db.getReference("entries").child(cycleId));
+    Completable dropKeys = cycleKeyProvider.dropKeys(cycleId);
+    Completable dropCycle = RxFirebaseDatabase.removeValue(reference(userId, cycleId));
+    return Completable.mergeArray(dropEntries, dropKeys, dropCycle);
   }
 
+  public Completable dropCycles() {
+    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    DatabaseReference referenceToCycles = reference(user.getUid());
+    return RxFirebaseDatabase.observeSingleValueEvent(referenceToCycles)
+        .flatMapCompletable(new Function<DataSnapshot, CompletableSource>() {
+          @Override
+          public CompletableSource apply(@NonNull DataSnapshot snapshot) throws Exception {
+            List<Completable> completables = new ArrayList<>();
+            for (DataSnapshot cycleSnapshot : snapshot.getChildren()) {
+              completables.add(dropCycle(cycleSnapshot.getKey(), user.getUid()));
+            }
+            return Completable.merge(completables);
+          }
+        });
+  }
+
+  @Deprecated
   public void getCycle(
       final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
     if (Strings.isNullOrEmpty(cycleId)) {
@@ -382,6 +366,7 @@ public class CycleProvider {
     });
   }
 
+  @Deprecated
   public void combineCycles(
       final Cycle currentCycle,
       final String userId,
@@ -440,6 +425,7 @@ public class CycleProvider {
         }));
   }
 
+  @Deprecated
   public void splitCycle(
       final String userId,
       final Cycle currentCycle,

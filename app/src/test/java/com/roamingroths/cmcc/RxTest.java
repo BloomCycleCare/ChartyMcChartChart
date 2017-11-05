@@ -4,8 +4,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import io.reactivex.Maybe;
+import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeObserver;
+import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.MaybeSource;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.BiFunction;
@@ -18,6 +23,27 @@ import io.reactivex.functions.Function;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class RxTest {
+
+  @Test
+  public void runZipTest() throws Exception {
+    Set<Maybe<String>> maybes = new HashSet<>();
+    maybes.add(Maybe.just("foo"));
+    //maybes.add(Maybe.<String>empty());
+    //maybes.add(Maybe.<String>error(new Throwable()));
+    Maybe<String> baz = Maybe.zip(maybes, new Function<Object[], String>() {
+      @Override
+      public String apply(Object[] objects) throws Exception {
+        System.out.println(objects.length);
+        return null;
+      }
+    }).switchIfEmpty(Maybe.create(new MaybeOnSubscribe<String>() {
+      @Override
+      public void subscribe(MaybeEmitter<String> e) throws Exception {
+        System.out.println("FOO");
+      }
+    }));
+    baz.test().dispose();
+  }
 
   @Test
   public void runExceptionTest() throws Exception {

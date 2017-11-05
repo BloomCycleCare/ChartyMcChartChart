@@ -78,8 +78,9 @@ public class CycleKeyProvider {
       @Override
       public Cycle.Keys apply(@NonNull Object[] objects) throws Exception {
         Map<KeyAlias, SecretKey> keyMap = new HashMap<>();
-        for (KeyWithAlias key : (KeyWithAlias[]) objects) {
-          keyMap.put(key.alias, key.key);
+        for (Object object : objects) {
+          KeyWithAlias keyAndAlias = (KeyWithAlias) object;
+          keyMap.put(keyAndAlias.alias, keyAndAlias.key);
         }
         return new Cycle.Keys(keyMap.get(KeyAlias.CHART), keyMap.get(KeyAlias.WELLNESS), keyMap.get(KeyAlias.SYMPTOM));
       }
@@ -96,6 +97,10 @@ public class CycleKeyProvider {
                 encryptedKey);
           }
         });
+  }
+
+  public Completable dropKeys(String cycleId) {
+    return RxFirebaseDatabase.removeValue(db.getReference("keys").child(cycleId));
   }
 
   public Completable putChartKeysRx(Cycle.Keys keys, String cycleId, String userId) {
@@ -203,10 +208,6 @@ public class CycleKeyProvider {
           }
         }
       });
-    }
-
-    public void putChartKey(String encryptedKey, String userId, Callback<?> callback) {
-      ref.child(userId).child("chart").setValue(encryptedKey, Listeners.completionListener(callback));
     }
 
     public void dropKeys(DatabaseReference.CompletionListener listener) {

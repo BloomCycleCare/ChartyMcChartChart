@@ -23,12 +23,17 @@ import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.reactivex.functions.Consumer;
+
 /**
  * Created by parkeroth on 4/18/17.
  */
 
 public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder>
     implements ChildEventListener {
+
+  private static final boolean DEBUG = false;
+  private static final String TAG = CycleAdapter.class.getSimpleName();
 
   private final Activity mActivity;
   private final String mUserId;
@@ -158,18 +163,24 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
     String cycleId = dataSnapshot.getKey();
     Log.v("CycleAdapter", "onChildAdded id=" + cycleId);
-    mCycleKeyProvider.forCycle(cycleId).getChartKeys(mUserId, new Callbacks.HaltingCallback<Cycle.Keys>() {
-      @Override
-      public void acceptData(Cycle.Keys keys) {
-        Cycle cycle = Cycle.fromSnapshot(dataSnapshot, keys);
-        if (mCycleIndex.containsKey(cycle.id)) {
-          maybeChangeCycle(cycle);
-          return;
-        }
-        mCycleIndex.put(cycle.id, cycle);
-        mCycles.add(cycle);
-      }
-    });
+    mCycleKeyProvider.getChartKeys(cycleId, mUserId)
+        .subscribe(new Consumer<Cycle.Keys>() {
+          @Override
+          public void accept(Cycle.Keys keys) throws Exception {
+            Cycle cycle = Cycle.fromSnapshot(dataSnapshot, keys);
+            if (mCycleIndex.containsKey(cycle.id)) {
+              maybeChangeCycle(cycle);
+              return;
+            }
+            mCycleIndex.put(cycle.id, cycle);
+            mCycles.add(cycle);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(TAG, "Error fetching chart keys", throwable);
+          }
+        });
   }
 
   private void maybeChangeCycle(Cycle cycle) {

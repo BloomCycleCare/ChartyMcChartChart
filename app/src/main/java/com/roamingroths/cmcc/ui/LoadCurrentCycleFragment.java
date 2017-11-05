@@ -27,6 +27,7 @@ import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 
 import static com.facebook.FacebookSdk.getApplicationContext;
@@ -56,7 +57,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     if (DEBUG) Log.v(TAG, "Getting current cycle");
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance(), cryptoUtil);
     mCryptoUtil = cryptoUtil;
-    mDisposables.add(mCycleProvider.getCurrentCycleRx(user.getUid(), promptForStart(user))
+    mDisposables.add(mCycleProvider.getOrCreateCurrentCycle(user.getUid(), promptForStart(user))
         .subscribe(new Consumer<Cycle>() {
           @Override
           public void accept(@NonNull Cycle cycle) throws Exception {
@@ -113,13 +114,14 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
             .setMessage("This is permanent and cannot be undone!")
             .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
               public void onClick(final DialogInterface dialog, int whichButton) {
-                mCycleProvider.dropCycles(new Callbacks.HaltingCallback<Void>() {
-                  @Override
-                  public void acceptData(Void data) {
-                    dialog.dismiss();
-                    onUserInitialized(user, mCryptoUtil);
-                  }
-                });
+                mCycleProvider.dropCycles()
+                    .subscribe(new Action() {
+                      @Override
+                      public void run() throws Exception {
+                        dialog.dismiss();
+                        onUserInitialized(user, mCryptoUtil);
+                      }
+                    });
               }
             })
             .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

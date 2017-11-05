@@ -8,7 +8,6 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.AppState;
@@ -19,6 +18,14 @@ import com.roamingroths.cmcc.utils.Callbacks;
 
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.SingleSource;
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 10/8/17.
@@ -36,39 +43,23 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
 
   @Override
   public void onUserInitialized(final FirebaseUser user, RxCryptoUtil cryptoUtil) {
-    mCycleProvider.getCurrentCycle(user.getUid(), new Callbacks.Callback<Cycle>() {
-      @Override
-      public void acceptData(Cycle cycle) {
-        updateStatus("Received current cycle from DB.");
-        confirmImport(new Callbacks.SwitchingCallback() {
+    mCycleProvider.getCurrentCycle(user.getUid())
+        .isEmpty()
+        .flatMap(new Function<Boolean, SingleSource<Boolean>>() {
           @Override
-          public void positive() {
-            mCycleProvider.dropCycles(new Callbacks.ErrorForwardingCallback<Void>(this) {
-              @Override
-              public void acceptData(Void data) {
-                importDataFromIntent(getActivity().getIntent(), user.getUid());
-              }
-            });
+          public SingleSource<Boolean> apply(@NonNull Boolean isEmpty) throws Exception {
+            if (!isEmpty) {
+              return confirmImport();
+            }
+            return Single.just(true);
           }
-
+        })
+        .subscribe(new Consumer<Boolean>() {
           @Override
-          public void negative() {
-            getActivity().finish();
+          public void accept(@NonNull Boolean shouldImport) throws Exception {
+            importDataFromIntent(getActivity().getIntent(), user.getUid());
           }
         });
-      }
-
-      @Override
-      public void handleNotFound() {
-        importDataFromIntent(getActivity().getIntent(), user.getUid());
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        showError("Error fetching current cycle.");
-        error.toException().printStackTrace();
-      }
-    });
   }
 
   private void importDataFromIntent(Intent intent, String userId) {
@@ -91,10 +82,10 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
     }
   }
 
-  private void confirmImport(final Callbacks.Callback<Boolean> callback) {
-    getActivity().runOnUiThread(new Runnable() {
+  private Single<Boolean> confirmImport() {
+    return Single.create(new SingleOnSubscribe<Boolean>() {
       @Override
-      public void run() {
+      public void subscribe(final @NonNull SingleEmitter<Boolean> e) throws Exception {
         new AlertDialog.Builder(getActivity())
             //set message, title, and icon
             .setTitle("Import data from file?")
@@ -102,18 +93,17 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
             .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
               public void onClick(final DialogInterface dialog, int whichButton) {
                 dialog.dismiss();
-                callback.acceptData(true);
+                e.onSuccess(true);
               }
             })
             .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
               public void onClick(DialogInterface dialog, int which) {
                 dialog.dismiss();
-                callback.acceptData(false);
+                e.onSuccess(false);
               }
             })
             .create().show();
       }
     });
   }
-
 }

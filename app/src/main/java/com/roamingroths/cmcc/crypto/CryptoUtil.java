@@ -103,7 +103,7 @@ public class CryptoUtil {
     }
   }
 
-  private static void init(KeyPair keyPair) {
+  public static void init(KeyPair keyPair) {
     PUBLIC_KEY = keyPair.getPublic();
     PRIVATE_KEY = keyPair.getPrivate();
     RX_UTIL = new RxCryptoUtil(keyPair);
