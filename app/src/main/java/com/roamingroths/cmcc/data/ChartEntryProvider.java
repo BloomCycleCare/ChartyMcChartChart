@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
@@ -16,12 +17,12 @@ import javax.crypto.SecretKey;
 
 public class ChartEntryProvider extends EntryProvider<ChartEntry> {
 
-  public static ChartEntryProvider forDb(FirebaseDatabase db) {
-    return new ChartEntryProvider(db);
+  public static ChartEntryProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    return new ChartEntryProvider(db, cryptoUtil);
   }
 
-  private ChartEntryProvider(FirebaseDatabase db) {
-    super(db, ChildId.CHART, ChartEntry.class);
+  private ChartEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    super(db, cryptoUtil, ChildId.CHART, ChartEntry.class);
   }
 
 

@@ -1,10 +1,8 @@
 package com.roamingroths.cmcc.data;
 
-import android.os.AsyncTask;
 import android.support.annotation.Nullable;
 import android.util.Log;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
@@ -49,7 +47,10 @@ import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.functions.Functions;
 
@@ -59,6 +60,9 @@ import io.reactivex.internal.functions.Functions;
 public class CycleProvider {
 
   // TODO: Remove FirebaseAuth stuff
+
+  private static final boolean DEBUG = true;
+  private static final String TAG = CycleProvider.class.getSimpleName();
 
   private final FirebaseDatabase db;
   private final RxCryptoUtil cryptoUtil;
@@ -71,7 +75,13 @@ public class CycleProvider {
   }
 
   public static CycleProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
-    return new CycleProvider(db, cryptoUtil, CycleKeyProvider.forDb(db, cryptoUtil), ChartEntryProvider.forDb(db), WellnessEntryProvider.forDb(db), SymptomEntryProvider.forDb(db));
+    return new CycleProvider(
+        db,
+        cryptoUtil,
+        CycleKeyProvider.forDb(db, cryptoUtil),
+        ChartEntryProvider.forDb(db, cryptoUtil),
+        WellnessEntryProvider.forDb(db, cryptoUtil),
+        SymptomEntryProvider.forDb(db, cryptoUtil));
   }
 
   private CycleProvider(
@@ -214,7 +224,7 @@ public class CycleProvider {
         startDate,
         endDate,
         keys);
-    return putCycleRx(userId, cycle).toSingleDefault(cycle);
+    return putCycleRx(userId, cycle).andThen(Single.just(cycle));
   }
 
   public Observable<Cycle> getCyclesRx(final String userId) {
@@ -346,6 +356,26 @@ public class CycleProvider {
         });
   }
 
+  public Maybe<Cycle> getCycle(final String userId, final @Nullable String cycleId) {
+    if (Strings.isNullOrEmpty(cycleId)) {
+      return Maybe.empty();
+    }
+    return cycleKeyProvider.getChartKeys(cycleId, userId)
+        .flatMap(new Function<Cycle.Keys, MaybeSource<Cycle>>() {
+          @Override
+          public MaybeSource<Cycle> apply(final Cycle.Keys keys) throws Exception {
+            DatabaseReference referenceToCycle = reference(userId, cycleId);
+            return RxFirebaseDatabase.observeSingleValueEvent(referenceToCycle)
+                .map(new Function<DataSnapshot, Cycle>() {
+                  @Override
+                  public Cycle apply(DataSnapshot dataSnapshot) throws Exception {
+                    return Cycle.fromSnapshot(dataSnapshot, keys);
+                  }
+                });
+          }
+        });
+  }
+
   @Deprecated
   public void getCycle(
       final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
@@ -366,128 +396,147 @@ public class CycleProvider {
     });
   }
 
-  @Deprecated
-  public void combineCycles(
-      final Cycle currentCycle,
-      final String userId,
-      final Callback<Cycle> mergedCycleCallback) {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(currentCycle.previousCycleId));
-    getCycle(
-        userId,
-        currentCycle.previousCycleId,
-        Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Cycle>(mergedCycleCallback) {
+  public Single<Cycle> combineCycleRx(final String userId, final Cycle currentCycle) {
+    Single<Cycle> previousCycle = getCycle(userId, currentCycle.id).toSingle().cache();
+
+    Single<Cycle> updateNextAndReturnPrevious = previousCycle
+        .flatMap(new Function<Cycle, Single<Cycle>>() {
           @Override
-          public void acceptData(final Cycle previousCycle) {
+          public Single<Cycle> apply(Cycle previousCycle) throws Exception {
+            if (previousCycle.nextCycleId == null) {
+              if (DEBUG) Log.v(TAG, "No next cycle, skipping update");
+              return Single.just(previousCycle);
+            }
+            if (DEBUG) Log.v(TAG, currentCycle.nextCycleId + " previous -> " + previousCycle.id);
+            previousCycle.nextCycleId = currentCycle.nextCycleId;
+            return RxFirebaseDatabase.setValue(reference(userId, currentCycle.nextCycleId).child("previous_cycle_id"), previousCycle.id)
+                .andThen(Single.just(previousCycle));
+          }
+        });
+
+    Completable updatePrevious = previousCycle
+        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle previousCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Updating previous cycle fields");
             Map<String, Object> updates = new HashMap<>();
             updates.put("next-cycle-id", currentCycle.nextCycleId);
             previousCycle.nextCycleId = currentCycle.nextCycleId;
             updates.put("end-date", DateUtil.toWireStr(currentCycle.endDate));
             previousCycle.endDate = currentCycle.endDate;
-            reference(userId, previousCycle.id).updateChildren(updates, Listeners.completionListener(this));
-            if (currentCycle.nextCycleId != null) {
-              previousCycle.nextCycleId = currentCycle.nextCycleId;
-              reference(userId, currentCycle.nextCycleId).child("previous-cycle-id").setValue(
-                  previousCycle.id, Listeners.completionListener(this));
+            return RxFirebaseDatabase.updateChildren(reference(userId, previousCycle.id), updates);
+          }
+        });
+
+    Completable moveEntries = previousCycle
+        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle previousCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Moving entries");
+            Set<Completable> entryMoves = new HashSet<>();
+            for (final EntryProvider provider : entryProviders.values()) {
+              entryMoves.add(provider.moveEntries(currentCycle, previousCycle, Predicates.alwaysTrue()));
             }
-            final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
-            final Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(mergedCycleCallback) {
+            return Completable.merge(entryMoves);
+          }
+        }).andThen(cycleKeyProvider.dropKeys(currentCycle.id));
+
+    Completable dropCycle = dropCycle(currentCycle.id, userId);
+
+    return Completable.mergeArray(updatePrevious, moveEntries).andThen(dropCycle).andThen(updateNextAndReturnPrevious);
+  }
+
+  public Single<Cycle> splitCycleRx(final String userId, final Cycle currentCycle, Single<ChartEntry> firstEntry) {
+    return firstEntry.flatMap(new Function<ChartEntry, SingleSource<Cycle>>() {
+      @Override
+      public SingleSource<Cycle> apply(final ChartEntry firstEntry) throws Exception {
+        if (DEBUG) Log.v(TAG, "First entry: " + firstEntry.getDateStr());
+
+        Single<Cycle> newCycle = getCycle(userId, currentCycle.nextCycleId)
+            .flatMap(new Function<Cycle, MaybeSource<Cycle>>() {
               @Override
-              public void acceptData(Void done) {
-                if (entryMoves.decrementAndGet() == 0) {
-                  final Runnable onDone = new Runnable() {
-                    @Override
-                    public void run() {
-                      mergedCycleCallback.acceptData(previousCycle);
-                    }
-                  };
-                  Runnable dropCycle = new Runnable() {
-                    @Override
-                    public void run() {
-                      dropCycle(currentCycle.id, userId, onDone);
-                    }
-                  };
-                  cycleKeyProvider.forCycle(currentCycle.id).dropKeys(
-                      Listeners.completionListener(mergedCycleCallback, dropCycle));
+              public MaybeSource<Cycle> apply(Cycle nextCycle) throws Exception {
+                if (DEBUG) Log.v(TAG, "Create new cycle with next");
+                return createCycleRx(
+                    userId, currentCycle, nextCycle, firstEntry.getDate(), currentCycle.endDate)
+                    .toMaybe();
+              }
+            })
+            .switchIfEmpty(
+                createCycleRx(userId, currentCycle, null, firstEntry.getDate(), currentCycle.endDate).toMaybe())
+            .toSingle().cache();
+
+        Completable updateNextPrevious = newCycle.flatMapCompletable(new Function<Cycle, Completable>() {
+          @Override
+          public Completable apply(Cycle newCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Update next's previous.");
+            if (Strings.isNullOrEmpty(newCycle.nextCycleId)) {
+              return Completable.complete().doOnComplete(new Action() {
+                @Override
+                public void run() throws Exception {
+                  if (DEBUG) Log.v(TAG, "Done updating next's previous.");
                 }
+              });
+            }
+            return RxFirebaseDatabase.setValue(reference(userId, newCycle.nextCycleId).child("previous-cycle-id"), newCycle.id).doOnComplete(new Action() {
+              @Override
+              public void run() throws Exception {
+                if (DEBUG) Log.v(TAG, "Done updating next's previous.");
+              }
+            });
+          }
+        });
+
+        Completable updateCurrentNext = newCycle.flatMapCompletable(new Function<Cycle, Completable>() {
+          @Override
+          public Completable apply(Cycle newCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Update current's fields.");
+            Map<String, Object> updates = new HashMap<>();
+            updates.put("next-cycle-id", newCycle.id);
+            updates.put("end-date", DateUtil.toWireStr(firstEntry.getDate().minusDays(1)));
+            return RxFirebaseDatabase.updateChildren(reference(userId, currentCycle.id), updates).doOnComplete(new Action() {
+              @Override
+              public void run() throws Exception {
+                if (DEBUG) Log.v(TAG, "Done updating current's fields.");
+              }
+            });
+          }
+        });
+
+        Completable moveEntries = newCycle.flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle newCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Moving entries.");
+            final Predicate<LocalDate> ifEqualOrAfter = new Predicate<LocalDate>() {
+              @Override
+              public boolean apply(LocalDate entryDate) {
+                return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
               }
             };
+            Set<Completable> entryMoves = new HashSet<>();
             for (final EntryProvider provider : entryProviders.values()) {
-              new AsyncTask<Void, Integer, Void>() {
-                @Override
-                protected Void doInBackground(Void... params) {
-                  provider.moveEntries(
-                      currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue(), callback);
-                  return null;
-                }
-              }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+              entryMoves.add(provider.moveEntries(currentCycle, newCycle, ifEqualOrAfter));
             }
+            return Completable.merge(entryMoves).doOnComplete(new Action() {
+              @Override
+              public void run() throws Exception {
+                if (DEBUG) Log.v(TAG, "Done moving entries.");
+              }
+            });
           }
-        }));
-  }
+        });
 
-  @Deprecated
-  public void splitCycle(
-      final String userId,
-      final Cycle currentCycle,
-      final ChartEntry firstEntry,
-      final Callback<Cycle> resultCallback) {
-    logV("Splitting cycle: " + currentCycle.id);
-    logV("Next cycle: " + currentCycle.nextCycleId);
-    getCycle(
-        userId,
-        currentCycle.nextCycleId,
-        Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Cycle>(resultCallback) {
-          @Override
-          public void acceptData(@Nullable final Cycle nextCycle) {
-            createCycle(
-                userId,
-                currentCycle,
-                nextCycle,
-                firstEntry.getDate(),
-                currentCycle.endDate,
-                Callbacks.singleUse(new Callbacks.ErrorForwardingCallback<Cycle>(this) {
-                  @Override
-                  public void acceptData(final Cycle newCycle) {
-                    if (nextCycle != null) {
-                      reference(userId, nextCycle.id).child("previous-cycle-id")
-                          .setValue(newCycle.id, Listeners.completionListener(this));
-                    }
-                    Map<String, Object> updates = new HashMap<>();
-                    updates.put("next-cycle-id", newCycle.id);
-                    updates.put("end-date", DateUtil.toWireStr(firstEntry.getDate().minusDays(1)));
-                    reference(userId, currentCycle.id).updateChildren(
-                        updates, Listeners.completionListener(this));
-                    final Predicate<LocalDate> ifEqualOrAfter = new Predicate<LocalDate>() {
-                      @Override
-                      public boolean apply(LocalDate entryDate) {
-                        return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
-                      }
-                    };
-                    final AtomicInteger entryMoves = new AtomicInteger(entryProviders.size());
-                    final Callback<Void> callback = new Callbacks.ErrorForwardingCallback<Void>(this) {
-                      @Override
-                      public void acceptData(Void done) {
-                        if (entryMoves.decrementAndGet() == 0) {
-                          resultCallback.acceptData(newCycle);
-                        }
-                      }
-                    };
-                    logV("Moving entries: " + entryProviders.size());
-                    for (final EntryProvider provider : entryProviders.values()) {
-                      new AsyncTask<Void, Integer, Void>() {
-                        @Override
-                        protected Void doInBackground(Void... params) {
-                          provider.moveEntries(currentCycle, newCycle, ifEqualOrAfter, callback);
-                          return null;
-                        }
-                      }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-                    }
-                  }
-                }));
-          }
-        }));
+        return Completable.mergeArray(updateNextPrevious, updateCurrentNext, moveEntries)
+            .andThen(newCycle)
+            .doOnSuccess(new Consumer<Cycle>() {
+              @Override
+              public void accept(Cycle cycle) throws Exception {
+                if (DEBUG) Log.v(TAG, "Returning cycle: " + cycle.id);
+              }
+            });
+      }
+    });
   }
-
 
   private DatabaseReference reference(String userId, String cycleId) {
     return reference(userId).child(cycleId);

@@ -66,11 +66,13 @@ public class ChartEntry extends Entry implements Parcelable {
     return new ChartEntry(date, null, false, false, false, false, false, secretKey);
   }
 
+  @Deprecated
   public static void fromEncryptedString(
       String encryptedEntry, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
     CryptoUtil.decrypt(encryptedEntry, secretKey, ChartEntry.class, callback);
   }
 
+  @Deprecated
   public static void fromSnapshot(
       DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
     fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);

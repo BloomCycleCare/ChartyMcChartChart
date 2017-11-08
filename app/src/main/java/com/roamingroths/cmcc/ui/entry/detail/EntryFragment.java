@@ -13,6 +13,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -22,6 +24,10 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 
 import java.util.Set;
+
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
 
 /**
  * Created by parkeroth on 9/17/17.
@@ -50,7 +56,9 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     this.mClazz = clazz;
     this.mTag = tag;
     this.layoutId = layoutId;
-    mEntryProvider = createEntryProvider(FirebaseDatabase.getInstance());
+    mEntryProvider = createEntryProvider(
+        FirebaseDatabase.getInstance(),
+        CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil().blockingGet());
   }
 
   @Override
@@ -146,6 +154,15 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   public abstract E getEntryFromUi() throws Exception;
 
+  public Single<E> getEntryFromUiRx() {
+    return Single.create(new SingleOnSubscribe<E>() {
+      @Override
+      public void subscribe(SingleEmitter<E> e) throws Exception {
+        e.onSuccess(getEntryFromUi());
+      }
+    });
+  }
+
   /**
    * Process an existing entry found in DB before storing it as a member.
    *
@@ -158,7 +175,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   abstract void duringCreateView(View view, Bundle args, Bundle savedInstanceState);
 
-  abstract EntryProvider<E> createEntryProvider(FirebaseDatabase db);
+  abstract EntryProvider<E> createEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil);
 
   abstract void updateUiWithEntry(E entry);
 

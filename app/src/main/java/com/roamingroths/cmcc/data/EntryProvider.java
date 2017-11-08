@@ -14,6 +14,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.CyrptoExceptions;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -32,6 +33,16 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import javax.crypto.SecretKey;
 
+import durdinapps.rxfirebase2.RxFirebaseDatabase;
+import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
+import io.reactivex.Single;
+import io.reactivex.functions.Function;
+
 /**
  * Created by parkeroth on 9/2/17.
  */
@@ -43,14 +54,16 @@ public abstract class EntryProvider<E extends Entry> {
   private final Class<E> mClazz;
   private final String mChildId;
   private final FirebaseDatabase db;
+  private final RxCryptoUtil mCryptoUtil;
   private final String mLogId;
 
   enum ChildId {
     CHART, WELLNESS, SYMPTOM
   }
 
-  EntryProvider(FirebaseDatabase db, ChildId childId, Class<E> clazz) {
+  EntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil, ChildId childId, Class<E> clazz) {
     this.db = db;
+    this.mCryptoUtil = cryptoUtil;
     this.mChildId = childId.name().toLowerCase();
     this.mClazz = clazz;
     this.mLogId = "EntryProvider<" + mClazz.getName() + ">";
@@ -60,7 +73,12 @@ public abstract class EntryProvider<E extends Entry> {
 
   public abstract SecretKey getKey(Cycle cycle);
 
+  @Deprecated
   abstract void fromSnapshot(DataSnapshot snapshot, SecretKey key, Callback<E> callback);
+
+  public Single<E> fromSnapshot(DataSnapshot snapshot, SecretKey key) {
+    return mCryptoUtil.decrypt(snapshot.getValue(String.class), key, mClazz);
+  }
 
   public final Class<E> getEntryClazz() {
     return mClazz;
@@ -149,6 +167,17 @@ public abstract class EntryProvider<E extends Entry> {
     });
   }
 
+  public Completable putEntry(final String cycleId, final E entry) {
+    return mCryptoUtil.encrypt(entry)
+        .flatMapCompletable(new Function<String, CompletableSource>() {
+          @Override
+          public CompletableSource apply(String encryptedStr) throws Exception {
+            return RxFirebaseDatabase.setValue(reference(cycleId, entry.getDateStr()), encryptedStr);
+          }
+        });
+  }
+
+  @Deprecated
   public final void putEntry(
       final String cycleId, final E entry,
       final DatabaseReference.CompletionListener completionListener) throws CyrptoExceptions.CryptoException {
@@ -160,6 +189,11 @@ public abstract class EntryProvider<E extends Entry> {
     });
   }
 
+  public final Completable deleteEntry(String cycleId, LocalDate entryDate) {
+    return RxFirebaseDatabase.removeValue(reference(cycleId, DateUtil.toWireStr(entryDate)));
+  }
+
+  @Deprecated
   public final void deleteEntry(
       String cycleId, LocalDate entryDate, DatabaseReference.CompletionListener completionListener) {
     if (DEBUG) Log.v(mLogId, "Deleting " + DateUtil.toWireStr(entryDate) + " " + cycleId);
@@ -176,6 +210,7 @@ public abstract class EntryProvider<E extends Entry> {
     });
   }
 
+  @Deprecated
   public final void getEncryptedEntries(
       String cycleId, final Callback<Map<LocalDate, String>> callback) {
     reference(cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
@@ -197,6 +232,35 @@ public abstract class EntryProvider<E extends Entry> {
     });
   }
 
+  public final Observable<String> getEncryptedEntries(Cycle cycle) {
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id))
+        .flatMapObservable(new Function<DataSnapshot, ObservableSource<String>>() {
+          @Override
+          public ObservableSource<String> apply(final DataSnapshot dataSnapshot) throws Exception {
+            return Observable.create(new ObservableOnSubscribe<String>() {
+              @Override
+              public void subscribe(ObservableEmitter<String> e) throws Exception {
+                for (DataSnapshot entrySnapshot : dataSnapshot.getChildren()) {
+                  e.onNext(entrySnapshot.getValue(String.class));
+                }
+                e.onComplete();
+              }
+            });
+          }
+        });
+  }
+
+  public final Observable<E> getDecryptedEntries(final Cycle cycle) {
+    return getEncryptedEntries(cycle)
+        .flatMap(new Function<String, ObservableSource<E>>() {
+          @Override
+          public ObservableSource<E> apply(String encryptedEntry) throws Exception {
+            return mCryptoUtil.decrypt(encryptedEntry, getKey(cycle), mClazz).toObservable();
+          }
+        });
+  }
+
+  @Deprecated
   public final void getDecryptedEntries(final Cycle cycle, final Callback<Map<LocalDate, E>> callback) {
     getEncryptedEntries(cycle.id, new Callbacks.ErrorForwardingCallback<Map<LocalDate, String>>(callback) {
       @Override
@@ -244,6 +308,28 @@ public abstract class EntryProvider<E extends Entry> {
         }
       }
     });
+  }
+
+  public Completable moveEntries(
+      final Cycle fromCycle,
+      final Cycle toCycle,
+      final Predicate<LocalDate> datePredicate) {
+    logV("Source cycle id: " + fromCycle.id);
+    logV("Destination cycle id: " + toCycle.id);
+    return getDecryptedEntries(fromCycle)
+        .filter(new io.reactivex.functions.Predicate<E>() {
+          @Override
+          public boolean test(E entry) throws Exception {
+            return datePredicate.apply(entry.getDate());
+          }
+        })
+        .flatMapCompletable(new Function<E, CompletableSource>() {
+          @Override
+          public CompletableSource apply(E decryptedEntry) throws Exception {
+            decryptedEntry.swapKey(getKey(toCycle));
+            return putEntry(toCycle.id, decryptedEntry).andThen(deleteEntry(fromCycle.id, decryptedEntry.getDate()));
+          }
+        });
   }
 
   public void moveEntries(

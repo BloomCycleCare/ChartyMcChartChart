@@ -16,6 +16,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.data.SymptomEntryProvider;
 import com.roamingroths.cmcc.logic.SymptomEntry;
@@ -38,8 +39,8 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
   }
 
   @Override
-  EntryProvider<SymptomEntry> createEntryProvider(FirebaseDatabase db) {
-    return SymptomEntryProvider.forDb(db);
+  EntryProvider<SymptomEntry> createEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    return SymptomEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override

@@ -15,6 +15,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
@@ -52,7 +53,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mClickHandler = clickHandler;
     mPreferences = Preferences.fromShared(mContext);
     mContainerList = EntryContainerList.builder(cycle, mPreferences).withAdapter(this).build();
-    mListener = new EntryContainerListener(context, mContainerList);
+    mListener = new EntryContainerListener(context, mContainerList, cycleProvider.getProviderForClazz(ChartEntry.class));
     mContainerList.initialize(cycleProvider, initializationCompleteCallback);
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(

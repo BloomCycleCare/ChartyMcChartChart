@@ -15,6 +15,7 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.WellnessEntryProvider;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
@@ -36,8 +37,8 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
   }
 
   @Override
-  WellnessEntryProvider createEntryProvider(FirebaseDatabase db) {
-    return WellnessEntryProvider.forDb(db);
+  WellnessEntryProvider createEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    return WellnessEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override

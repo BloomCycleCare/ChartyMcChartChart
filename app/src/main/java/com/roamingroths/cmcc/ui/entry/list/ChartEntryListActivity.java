@@ -17,7 +17,6 @@ import com.google.common.base.Preconditions;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
@@ -38,7 +37,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private FirebaseDatabase mDb;
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
-  private ChartEntryProvider mChartEntryProvider;
   private CycleProvider mCycleProvider;
 
   @Override
@@ -50,7 +48,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
     mDb = FirebaseDatabase.getInstance();
-    mChartEntryProvider = ChartEntryProvider.forDb(mDb);
     mCycleProvider = CycleProvider.forDb(mDb);
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());

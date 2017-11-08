@@ -1,16 +1,20 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.EntryContainer;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 5/27/17.
@@ -20,32 +24,48 @@ public class EntryContainerListener implements ChildEventListener {
 
   private final Context mContext;
   private final EntryContainerList mList;
+  private final EntryProvider<ChartEntry> mProvider;
 
-  public EntryContainerListener(Context context, EntryContainerList list) {
+  public EntryContainerListener(Context context, EntryContainerList list, EntryProvider<ChartEntry> provider) {
     mContext = context;
     mList = list;
+    mProvider = provider;
   }
 
   @Override
   public void onChildAdded(DataSnapshot dataSnapshot, String s) {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
-    ChartEntry.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey, new Callbacks.HaltingCallback<ChartEntry>() {
-      @Override
-      public void acceptData(ChartEntry entry) {
-        mList.addEntry(new EntryContainer(entryDate, entry));
-      }
-    });
+    mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey)
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Consumer<ChartEntry>() {
+          @Override
+          public void accept(ChartEntry chartEntry) throws Exception {
+            mList.addEntry(new EntryContainer(entryDate, chartEntry));
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(EntryContainerList.class.getSimpleName(), "Error decoding ChartEntry from DataSnapshot", throwable);
+          }
+        });
   }
 
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
-    String encryptedPayload = dataSnapshot.getValue(String.class);
-    ChartEntry.fromEncryptedString(
-        encryptedPayload, mList.mCycle.keys.chartKey, new Callbacks.HaltingCallback<ChartEntry>() {
+    mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey)
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Consumer<ChartEntry>() {
           @Override
-          public void acceptData(ChartEntry entry) {
-            mList.changeEntry(new EntryContainer(entryDate, entry));
+          public void accept(ChartEntry chartEntry) throws Exception {
+            mList.changeEntry(new EntryContainer(entryDate, chartEntry));
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(EntryContainerList.class.getSimpleName(), "Error decoding ChartEntry from DataSnapshot", throwable);
           }
         });
   }

@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
@@ -16,14 +17,13 @@ import javax.crypto.SecretKey;
 
 public class SymptomEntryProvider extends EntryProvider<SymptomEntry> {
 
-  public static SymptomEntryProvider forDb(FirebaseDatabase db) {
-    return new SymptomEntryProvider(db);
+  public static SymptomEntryProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    return new SymptomEntryProvider(db, cryptoUtil);
   }
 
-  private SymptomEntryProvider(FirebaseDatabase db) {
-    super(db, ChildId.SYMPTOM, SymptomEntry.class);
+  private SymptomEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+    super(db, cryptoUtil, ChildId.SYMPTOM, SymptomEntry.class);
   }
-
 
   @Override
   SymptomEntry createEmptyEntry(LocalDate date, SecretKey key) {

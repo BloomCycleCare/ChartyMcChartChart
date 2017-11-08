@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentManager;
@@ -22,28 +21,34 @@ import com.google.common.base.Strings;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+
+import io.reactivex.Completable;
+import io.reactivex.Maybe;
+import io.reactivex.MaybeSource;
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 import static com.roamingroths.cmcc.ui.entry.detail.ChartEntryFragment.OK_RESPONSE;
 
@@ -244,7 +249,21 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
     if (issues.isEmpty()) {
-      doSave();
+      doSave().subscribe(new Consumer<Cycle>() {
+        @Override
+        public void accept(Cycle cycle) throws Exception {
+          if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
+          Intent returnIntent = new Intent();
+          returnIntent.putExtra(Cycle.class.getName(), cycle);
+          setResult(OK_RESPONSE, returnIntent);
+          finish();
+        }
+      }, new Consumer<Throwable>() {
+        @Override
+        public void accept(Throwable throwable) throws Exception {
+          Log.e(TAG, "Error saving entry.", throwable);
+        }
+      });
       return;
     }
     EntryFragment.ValidationIssue issue = issues.remove();
@@ -267,31 +286,21 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     builder.create().show();
   }
 
-  private void doSave() {
-    final Callbacks.Callback<Cycle> cycleCallback = new Callbacks.HaltingCallback<Cycle>() {
-      @Override
-      public void acceptData(final Cycle cycleForEntries) {
-        Intent returnIntent = new Intent();
-        returnIntent.putExtra(Cycle.class.getName(), cycleForEntries);
-        setResult(OK_RESPONSE, returnIntent);
-        finish();
-      }
-    };
-
+  private Maybe<Cycle> doSave() {
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
-    final AtomicInteger numSaves = new AtomicInteger(mSectionsPagerAdapter.getCount());
+    Set<Completable> saveOps = new HashSet<>();
     for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
       final EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
       Class<? extends Entry> clazz = fragment.getClazz();
+
       if (!mEntries.containsKey(clazz)) {
         if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no entry");
-        numSaves.decrementAndGet();
         continue;
       }
+
       if (mEntries.containsKey(clazz) && mExistingEntries.containsKey(clazz)
           && mEntries.get(clazz).equals(mExistingEntries.get(clazz))) {
         if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no change");
-        numSaves.decrementAndGet();
         continue;
       }
 
@@ -299,59 +308,54 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       final EntryProvider provider =
           mSectionsPagerAdapter.getCachedItem(mViewPager, i).getEntryProvider();
 
-      new AsyncTask<Void, Integer, Void>() {
-        @Override
-        protected Void doInBackground(Void... params) {
-          try {
-            provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz()), Listeners.completionListener(cycleCallback, new Runnable() {
-              @Override
-              public void run() {
-                if (numSaves.decrementAndGet() == 0) {
-                  if (DEBUG) Log.v(TAG, "Done putting entries");
-                  ChartEntryFragment chartEntryFragment =
-                      (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
-
-                  if (chartEntryFragment.shouldSplitCycle()) {
-                    if (DEBUG) Log.v(TAG, "Splitting cycle");
-                    try {
-                      mCycleProvider.splitCycle(
-                          mUserId, mCycle, chartEntryFragment.getEntryFromUi(), cycleCallback);
-                    } catch (Exception e) {
-                      cycleCallback.handleError(DatabaseError.fromException(e));
-                    }
-                  } else if (chartEntryFragment.shouldJoinCycle()) {
-                    if (DEBUG) Log.v(TAG, "Joining cycle with previous");
-                    joinCycle(cycleCallback);
-                  } else {
-                    cycleCallback.acceptData(mCycle);
-                  }
-                }
-              }
-            }));
-          } catch (CyrptoExceptions.CryptoException ce) {
-            cycleCallback.handleError(DatabaseError.fromException(ce));
-          }
-          return null;
-        }
-      }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+      saveOps.add(provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz())));
     }
-  }
 
-  private void joinCycle(final Callbacks.Callback<Cycle> newCycleCallback) {
-    if (Strings.isNullOrEmpty(mCycle.previousCycleId)) {
-      AlertDialog.Builder builder = new AlertDialog.Builder(this);
-      builder.setTitle("No Previous Cycle");
-      builder.setMessage("Please add cycle before this entry to proceed.");
-      builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+    Completable allDone = Completable.merge(saveOps);
+
+    if (DEBUG) Log.v(TAG, "Done putting entries");
+    ChartEntryFragment chartEntryFragment =
+        (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
+
+    if (chartEntryFragment.shouldSplitCycle()) {
+      if (DEBUG) Log.v(TAG, "Splitting cycle");
+      return allDone
+          .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, chartEntryFragment.getEntryFromUiRx()))
+          .toMaybe();
+    } else if (chartEntryFragment.shouldJoinCycle()) {
+      if (DEBUG) Log.v(TAG, "Joining cycle with previous");
+      return allDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<Cycle>>() {
         @Override
-        public void onClick(DialogInterface dialog, int which) {
-          dialog.dismiss();
+        public MaybeSource<Cycle> apply(Boolean canJoin) throws Exception {
+          if (!canJoin) {
+            return Maybe.empty();
+          }
+          return mCycleProvider.combineCycleRx(mUserId, mCycle).toMaybe();
         }
       });
-      builder.create().show();
-    } else {
-      mCycleProvider.combineCycles(mCycle, mUserId, newCycleCallback);
     }
+    return allDone.andThen(Maybe.just(mCycle));
+  }
+
+  private Single<Boolean> canJoin() {
+    if (!Strings.isNullOrEmpty(mCycle.previousCycleId)) {
+      return Single.just(true);
+    }
+    return Single.create(new SingleOnSubscribe<Boolean>() {
+      @Override
+      public void subscribe(final SingleEmitter<Boolean> e) throws Exception {
+        AlertDialog.Builder builder = new AlertDialog.Builder(EntryDetailActivity.this);
+        builder.setTitle("No Previous Cycle");
+        builder.setMessage("Please add cycle before this entry to proceed.");
+        builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+          @Override
+          public void onClick(DialogInterface dialog, int which) {
+            e.onSuccess(false);
+          }
+        });
+        builder.create().show();
+      }
+    });
   }
 
   /**

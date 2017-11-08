@@ -26,11 +26,13 @@ public class WellnessEntry extends Entry implements Parcelable, Cipherable {
 
   public Map<String, Boolean> wellnessItems;
 
+  @Deprecated
   public static void fromEncryptedString(
       String encryptedEntry, SecretKey secretKey, Callbacks.Callback<WellnessEntry> callback) {
     CryptoUtil.decrypt(encryptedEntry, secretKey, WellnessEntry.class, callback);
   }
 
+  @Deprecated
   public static void fromSnapshot(
       DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<WellnessEntry> callback) {
     fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);

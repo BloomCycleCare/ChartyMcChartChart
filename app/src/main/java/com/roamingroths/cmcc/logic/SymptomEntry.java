@@ -26,11 +26,13 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
 
   public Map<String, Boolean> symptoms;
 
+  @Deprecated
   public static void fromEncryptedString(
       String encryptedEntry, SecretKey secretKey, Callbacks.Callback<SymptomEntry> callback) {
     CryptoUtil.decrypt(encryptedEntry, secretKey, SymptomEntry.class, callback);
   }
 
+  @Deprecated
   public static void fromSnapshot(
       DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<SymptomEntry> callback) {
     fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);

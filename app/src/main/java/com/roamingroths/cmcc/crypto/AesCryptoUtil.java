@@ -15,6 +15,9 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
 
@@ -34,27 +37,47 @@ public class AesCryptoUtil {
     return keyGen.generateKey();
   }
 
+  @Deprecated
   public static String encrypt(SecretKey key, String rawText) throws Exception {
-    Cipher cipher = Cipher.getInstance(ALG);
-    IvParameterSpec iv = new IvParameterSpec(createKey().getEncoded());
-    String ivStr = Base64.encodeToString(iv.getIV(), Base64.NO_WRAP);
-    cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
-
-    byte[] cipherBytes = cipher.doFinal(rawText.getBytes(Charsets.UTF_8));
-    String cipherStr = Base64.encodeToString(cipherBytes, Base64.NO_WRAP);
-
-    return ON_BAR.join(ivStr, cipherStr);
+    return encryptRx(key, rawText).blockingGet();
   }
 
-  public static String decrypt(SecretKey key, String combinedStr) throws Exception {
-    Preconditions.checkArgument(!Strings.isNullOrEmpty(combinedStr));
-    String[] parts = combinedStr.split("\\|");
-    IvParameterSpec iv = new IvParameterSpec(Base64.decode(parts[0], Base64.NO_WRAP));
-    byte[] cipherBytes = Base64.decode(parts[1], Base64.NO_WRAP);
+  public static Single<String> encryptRx(final SecretKey key, final String decryptedStr) {
+    return Single.create(new SingleOnSubscribe<String>() {
+      @Override
+      public void subscribe(SingleEmitter<String> e) throws Exception {
+        Cipher cipher = Cipher.getInstance(ALG);
+        IvParameterSpec iv = new IvParameterSpec(createKey().getEncoded());
+        String ivStr = Base64.encodeToString(iv.getIV(), Base64.NO_WRAP);
+        cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
 
-    Cipher cipher = Cipher.getInstance(ALG);
-    cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
-    return new String(cipher.doFinal(cipherBytes), Charsets.UTF_8);
+        byte[] cipherBytes = cipher.doFinal(decryptedStr.getBytes(Charsets.UTF_8));
+        String cipherStr = Base64.encodeToString(cipherBytes, Base64.NO_WRAP);
+
+        e.onSuccess(ON_BAR.join(ivStr, cipherStr));
+      }
+    });
+  }
+
+  public static Single<String> decryptRx(final SecretKey key, final String encryptedStr) {
+    return Single.create(new SingleOnSubscribe<String>() {
+      @Override
+      public void subscribe(SingleEmitter<String> e) throws Exception {
+        Preconditions.checkArgument(!Strings.isNullOrEmpty(encryptedStr));
+        String[] parts = encryptedStr.split("\\|");
+        IvParameterSpec iv = new IvParameterSpec(Base64.decode(parts[0], Base64.NO_WRAP));
+        byte[] cipherBytes = Base64.decode(parts[1], Base64.NO_WRAP);
+
+        Cipher cipher = Cipher.getInstance(ALG);
+        cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
+        e.onSuccess(new String(cipher.doFinal(cipherBytes), Charsets.UTF_8));
+      }
+    });
+  }
+
+  @Deprecated
+  public static String decrypt(SecretKey key, String combinedStr) throws Exception {
+    return decryptRx(key, combinedStr).blockingGet();
   }
 
   public static String serializeKey(SecretKey key) {
