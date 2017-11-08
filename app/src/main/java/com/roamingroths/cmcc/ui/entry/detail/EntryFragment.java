@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
@@ -18,7 +17,6 @@ import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -28,6 +26,7 @@ import java.util.Set;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by parkeroth on 9/17/17.
@@ -81,23 +80,20 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     mCycle = getArguments().getParcelable(Cycle.class.getName());
     mExistingEntry = null;
 
-    mEntryProvider.getEntry(mCycle, getEntryDateStr(), new Callbacks.Callback<E>() {
-      @Override
-      public void acceptData(E entry) {
-        mExistingEntry = processExistingEntry(entry);
-        mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException("Could not load Entry");
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        error.toException().printStackTrace();
-      }
-    });
+    mEntryProvider.getEntry(mCycle, getEntryDateStr())
+        .toSingle()
+        .subscribe(new Consumer<E>() {
+          @Override
+          public void accept(E entry) throws Exception {
+            mExistingEntry = processExistingEntry(entry);
+            mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(EntryFragment.class.getSimpleName(), "Error loading Entry", throwable);
+          }
+        });
   }
 
   @Override
@@ -111,23 +107,20 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     View view = inflater.inflate(layoutId, container, false);
     duringCreateView(view, getArguments(), savedInstanceState);
 
-    mEntryProvider.getEntry(mCycle, getEntryDateStr(), new Callbacks.Callback<E>() {
-      @Override
-      public void acceptData(E entry) {
-        mExistingEntry = processExistingEntry(entry);
-        updateUiWithEntry(mExistingEntry);
-      }
-
-      @Override
-      public void handleNotFound() {
-        throw new IllegalStateException("Could not load Entry");
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        error.toException().printStackTrace();
-      }
-    });
+    mEntryProvider.getEntry(mCycle, getEntryDateStr())
+        .toSingle()
+        .subscribe(new Consumer<E>() {
+          @Override
+          public void accept(E entry) throws Exception {
+            mExistingEntry = processExistingEntry(entry);
+            mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(EntryFragment.class.getSimpleName(), "Error loading Entry", throwable);
+          }
+        });
 
     mUiActive = true;
     return view;

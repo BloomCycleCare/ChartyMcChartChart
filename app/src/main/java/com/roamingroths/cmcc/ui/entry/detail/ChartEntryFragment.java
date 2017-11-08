@@ -20,8 +20,6 @@ import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Observation;
-import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -141,10 +139,6 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
       issues.add(new ValidationIssue("Unusual bleeding?", "Are yousure this bleedin is typical?"));
     }
     return issues;
-  }
-
-  public void onDelete(final Callbacks.Callback<Void> onDone) {
-    getEntryProvider().deleteEntry(getCycle().id, getEntryDate(), Listeners.doneOnCompletion(onDone));
   }
 
   public boolean shouldJoinCycle() {

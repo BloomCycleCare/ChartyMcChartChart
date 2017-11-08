@@ -29,13 +29,14 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 
 import javax.crypto.SecretKey;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
+import io.reactivex.Maybe;
+import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
@@ -193,21 +194,15 @@ public abstract class EntryProvider<E extends Entry> {
     return RxFirebaseDatabase.removeValue(reference(cycleId, DateUtil.toWireStr(entryDate)));
   }
 
-  @Deprecated
-  public final void deleteEntry(
-      String cycleId, LocalDate entryDate, DatabaseReference.CompletionListener completionListener) {
-    if (DEBUG) Log.v(mLogId, "Deleting " + DateUtil.toWireStr(entryDate) + " " + cycleId);
-    reference(cycleId, DateUtil.toWireStr(entryDate)).removeValue(completionListener);
-  }
-
-  public final void getEntry(
-      final Cycle cycle, String entryDateStr, final Callback<E> callback) {
-    reference(cycle.id, entryDateStr).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
-      @Override
-      public void onDataChange(DataSnapshot dataSnapshot) {
-        fromSnapshot(dataSnapshot, getKey(cycle), callback);
-      }
-    });
+  public Maybe<E> getEntry(Cycle cycle, String entryDateStr) {
+    final SecretKey key = getKey(cycle);
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id, entryDateStr))
+        .flatMap(new Function<DataSnapshot, MaybeSource<E>>() {
+          @Override
+          public MaybeSource<E> apply(DataSnapshot snapshot) throws Exception {
+            return fromSnapshot(snapshot, key).toMaybe();
+          }
+        });
   }
 
   @Deprecated
@@ -330,59 +325,6 @@ public abstract class EntryProvider<E extends Entry> {
             return putEntry(toCycle.id, decryptedEntry).andThen(deleteEntry(fromCycle.id, decryptedEntry.getDate()));
           }
         });
-  }
-
-  public void moveEntries(
-      final Cycle fromCycle,
-      final Cycle toCycle,
-      final Predicate<LocalDate> datePredicate,
-      final Callback<Void> callback) {
-    logV("Source cycle id: " + fromCycle.id);
-    logV("Destination cycle id: " + toCycle.id);
-    getDecryptedEntries(fromCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, E>>(callback) {
-      @Override
-      public void acceptData(Map<LocalDate, E> decryptedEntries) {
-        Map<LocalDate, E> entriesToMove = Maps.filterKeys(decryptedEntries, datePredicate);
-        final AtomicLong outstandingRemovals = new AtomicLong(entriesToMove.size());
-
-        logV("Moving " + outstandingRemovals.get() + " entries");
-        for (Map.Entry<LocalDate, E> mapEntry : entriesToMove.entrySet()) {
-          final LocalDate entryDate = mapEntry.getKey();
-          final String dateStr = DateUtil.toWireStr(entryDate);
-          final E decryptedEntry = mapEntry.getValue();
-          decryptedEntry.swapKey(getKey(toCycle));
-
-          new AsyncTask<Void, Integer, Void>() {
-            @Override
-            protected Void doInBackground(Void... params) {
-              final DatabaseReference.CompletionListener rmListener = Listeners.completionListener(callback, new Runnable() {
-                @Override
-                public void run() {
-                  logV("Removed entry: " + dateStr);
-                  if (outstandingRemovals.decrementAndGet() == 0) {
-                    logV("Entry moves complete");
-                    callback.acceptData(null);
-                  }
-                }
-              });
-              final DatabaseReference.CompletionListener moveCompleteListener = Listeners.completionListener(callback, new Runnable() {
-                @Override
-                public void run() {
-                  logV("Added entry: " + dateStr);
-                  deleteEntry(fromCycle.id, entryDate, rmListener);
-                }
-              });
-              try {
-                putEntry(toCycle.id, decryptedEntry, moveCompleteListener);
-              } catch (CyrptoExceptions.CryptoException ce) {
-                handleError(DatabaseError.fromException(ce));
-              }
-              return null;
-            }
-          }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-        }
-      }
-    });
   }
 
   private DatabaseReference reference(String cycleId) {
