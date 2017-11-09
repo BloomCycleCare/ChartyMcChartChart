@@ -1,11 +1,9 @@
 package com.roamingroths.cmcc.data;
 
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.WellnessEntry;
-import com.roamingroths.cmcc.utils.Callbacks.Callback;
 
 import org.joda.time.LocalDate;
 
@@ -34,10 +32,5 @@ public class WellnessEntryProvider extends EntryProvider<WellnessEntry> {
   @Override
   public SecretKey getKey(Cycle cycle) {
     return cycle.keys.wellnessKey;
-  }
-
-  @Override
-  void fromSnapshot(DataSnapshot snapshot, SecretKey key, Callback<WellnessEntry> callback) {
-    WellnessEntry.fromSnapshot(snapshot, key, callback);
   }
 }

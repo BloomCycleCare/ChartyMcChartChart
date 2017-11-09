@@ -72,9 +72,6 @@ public abstract class EntryProvider<E extends Entry> {
 
   public abstract SecretKey getKey(Cycle cycle);
 
-  @Deprecated
-  abstract void fromSnapshot(DataSnapshot snapshot, SecretKey key, Callback<E> callback);
-
   public Single<E> fromSnapshot(DataSnapshot snapshot, SecretKey key) {
     return mCryptoUtil.decrypt(snapshot.getValue(String.class), key, mClazz);
   }

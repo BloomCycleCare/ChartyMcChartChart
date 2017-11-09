@@ -26,6 +26,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+
 /**
  * Created by parkeroth on 6/24/17.
  */
@@ -68,12 +71,18 @@ public class EntryContainerList {
   public void initialize(final CycleProvider cycleProvider, final Callbacks.Callback<Void> doneCallback) {
     if (DEBUG) Log.v(TAG, "Initialize");
     if (mInitialized.compareAndSet(false, true)) {
-      cycleProvider.maybeCreateNewEntries(mCycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
-        @Override
-        public void acceptData(Void data) {
-          fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class), doneCallback);
-        }
-      });
+      cycleProvider.maybeCreateNewEntries(mCycle)
+          .subscribe(new Action() {
+            @Override
+            public void run() throws Exception {
+              fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class), doneCallback);
+            }
+          }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+              doneCallback.handleError(DatabaseError.fromException(throwable));
+            }
+          });
     } else {
       doneCallback.handleError(DatabaseError.fromException(new IllegalStateException()));
     }
