@@ -18,10 +18,7 @@ import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
@@ -32,7 +29,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
@@ -112,83 +108,20 @@ public class CycleProvider {
     ref.keepSynced(true);
   }
 
-  @Deprecated
-  public void maybeCreateNewEntries(Cycle cycle, final Callback<Void> doneCallback) {
+  public Completable maybeCreateNewEntries(Cycle cycle) {
     if (cycle.endDate != null) {
       logV("No entries to add, end date set");
-      doneCallback.acceptData(null);
-      return;
+      return Completable.complete();
     }
-    final AtomicInteger providersToCheck = new AtomicInteger(entryProviders.size());
+    List<Completable> results = new ArrayList<>(entryProviders.size());
     for (EntryProvider provider : entryProviders.values()) {
-      provider.maybeAddNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(doneCallback) {
-        @Override
-        public void acceptData(Void data) {
-          if (providersToCheck.decrementAndGet() == 0) {
-            doneCallback.acceptData(null);
-          }
-        }
-      });
+      results.add(provider.maybeAddNewEntries(cycle));
     }
+    return Completable.merge(results);
   }
 
   public void detachListener(ChildEventListener listener, String userId) {
     reference(userId).removeEventListener(listener);
-  }
-
-  @Deprecated
-  public void putCycle(final String userId, final Cycle cycle, final Callback<Cycle> callback) {
-    // Store key
-    Map<String, Object> updates = new HashMap<>();
-    updates.put("previous-cycle-id", cycle.previousCycleId);
-    updates.put("next-cycle-id", cycle.nextCycleId);
-    updates.put("start-date", cycle.startDateStr);
-    updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
-    reference(userId, cycle.id).updateChildren(updates, Listeners.completionListener(callback, new Runnable() {
-      @Override
-      public void run() {
-        cycleKeyProvider.forCycle(cycle.id).putChartKeys(cycle.keys, userId, new Callbacks.ErrorForwardingCallback<Void>(callback) {
-          @Override
-          public void acceptData(Void data) {
-            logV("Storing keys for cycle: " + cycle.id);
-            callback.acceptData(cycle);
-          }
-        });
-      }
-    }));
-  }
-
-  @Deprecated
-  public void createCycle(
-      final String userId,
-      @Nullable Cycle previousCycle,
-      @Nullable Cycle nextCycle,
-      final LocalDate startDate,
-      final @Nullable LocalDate endDate,
-      final Callback<Cycle> callback) {
-    DatabaseReference cycleRef = reference(userId).push();
-    logV("Creating new cycle: " + cycleRef.getKey());
-    final String cycleId = cycleRef.getKey();
-    Cycle.Keys keys = new Cycle.Keys(
-        CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey());
-    final Cycle cycle = new Cycle(
-        cycleId,
-        (previousCycle == null) ? null : previousCycle.id,
-        (nextCycle == null) ? null : nextCycle.id,
-        startDate,
-        endDate,
-        keys);
-    putCycle(userId, cycle, new Callbacks.ErrorForwardingCallback<Cycle>(callback) {
-      @Override
-      public void acceptData(Cycle data) {
-        maybeCreateNewEntries(cycle, new Callbacks.ErrorForwardingCallback<Void>(callback) {
-          @Override
-          public void acceptData(Void data) {
-            callback.acceptData(cycle);
-          }
-        });
-      }
-    });
   }
 
   public Completable putCycleRx(final String userId, final Cycle cycle) {
@@ -303,26 +236,6 @@ public class CycleProvider {
                 });
           }
         });
-  }
-
-  @Deprecated
-  public void getCycle(
-      final String userId, final @Nullable String cycleId, final Callback<Cycle> callback) {
-    if (Strings.isNullOrEmpty(cycleId)) {
-      callback.acceptData(null);
-      return;
-    }
-    cycleKeyProvider.forCycle(cycleId).getChartKeys(userId, new Callbacks.ErrorForwardingCallback<Cycle.Keys>(callback) {
-      @Override
-      public void acceptData(final Cycle.Keys keys) {
-        reference(userId, cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
-          @Override
-          public void onDataChange(DataSnapshot dataSnapshot) {
-            callback.acceptData(Cycle.fromSnapshot(dataSnapshot, keys));
-          }
-        });
-      }
-    });
   }
 
   public Single<Cycle> combineCycleRx(final String userId, final Cycle currentCycle) {

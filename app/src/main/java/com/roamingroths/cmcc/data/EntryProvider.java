@@ -3,7 +3,6 @@ package com.roamingroths.cmcc.data;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -22,11 +21,10 @@ import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.Listeners;
 
-import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -85,87 +83,47 @@ public abstract class EntryProvider<E extends Entry> {
     return mClazz;
   }
 
-  public final void maybeAddNewEntries(final Cycle cycle, final Callback<Void> doneCallback) {
-    getMostRecentEntryDate(cycle, new Callbacks.ErrorForwardingCallback<LocalDate>(doneCallback) {
-      @Override
-      public void handleNotFound() {
-        logV("No entries found");
-        LocalDate today = DateUtil.now();
-        final int numDaysWithoutEntries = Days.daysBetween(cycle.startDate, today).getDays() + 1;
-        logV(numDaysWithoutEntries + " days need entries starting " + today);
-        Set<LocalDate> daysWithoutEntries = new HashSet<>(numDaysWithoutEntries);
-        for (int i = 0; i < numDaysWithoutEntries; i++) {
-          daysWithoutEntries.add(today.minusDays(i));
-        }
-        makeEntries(daysWithoutEntries);
-      }
-
-      @Override
-      public void acceptData(LocalDate lastEntryDate) {
-        final int numDaysWithoutEntries = Days.daysBetween(lastEntryDate, DateUtil.now()).getDays();
-        if (numDaysWithoutEntries == 0) {
-          logV("No entries to add");
-          doneCallback.acceptData(null);
-        }
-        logV(numDaysWithoutEntries + " days need entries starting " + lastEntryDate);
-        Set<LocalDate> daysWithoutEntries = new HashSet<>(numDaysWithoutEntries);
-        for (int i = 0; i < numDaysWithoutEntries; i++) {
-          daysWithoutEntries.add(lastEntryDate.plusDays(i + 1));
-        }
-        Preconditions.checkState(daysWithoutEntries.size() == numDaysWithoutEntries);
-        makeEntries(daysWithoutEntries);
-      }
-
-      private void makeEntries(final Set<LocalDate> daysWithoutEntries) {
-        final Runnable onDone = new Runnable() {
+  public final Completable maybeAddNewEntries(final Cycle cycle) {
+    return getDecryptedEntries(cycle)
+        .toList()
+        // find most recent entry
+        .flatMapMaybe(new Function<List<E>, MaybeSource<LocalDate>>() {
           @Override
-          public void run() {
-            logV("Done adding new entries");
-            doneCallback.acceptData(null);
-          }
-        };
-        if (daysWithoutEntries.isEmpty()) {
-          onDone.run();
-        }
-        final Map<String, Object> updates = Maps.newConcurrentMap();
-        for (final LocalDate date : daysWithoutEntries) {
-          E emptyEntry = createEmptyEntry(date, getKey(cycle));
-          CryptoUtil.encrypt(emptyEntry, new Callbacks.ErrorForwardingCallback<String>(doneCallback) {
-            @Override
-            public void acceptData(String encryptedEntry) {
-              updates.put(DateUtil.toWireStr(date), encryptedEntry);
-              if (updates.size() == daysWithoutEntries.size()) {
-                logV("New entries encrypted");
-                reference(cycle.id).updateChildren(
-                    updates, Listeners.completionListener(doneCallback, onDone));
+          public MaybeSource<LocalDate> apply(List<E> entries) throws Exception {
+            LocalDate lastEntryDate = null;
+            for (E entry : entries) {
+              LocalDate entryDate = entry.getDate();
+              if (lastEntryDate == null || lastEntryDate.isBefore(entryDate)) {
+                lastEntryDate = entryDate;
               }
             }
-          });
-        }
-      }
-    });
-  }
-
-  private final void getMostRecentEntryDate(Cycle cycle, final Callback<LocalDate> callback) {
-    final Callbacks.Callback<LocalDate> wrappedCallback =
-        Callbacks.singleUse(Preconditions.checkNotNull(callback));
-    getDecryptedEntries(cycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, E>>(wrappedCallback) {
-      @Override
-      public void acceptData(Map<LocalDate, E> entries) {
-        LocalDate lastEntryDate = null;
-        for (Map.Entry<LocalDate, E> mapEntry : entries.entrySet()) {
-          LocalDate entryDate = mapEntry.getKey();
-          if (lastEntryDate == null || lastEntryDate.isBefore(entryDate)) {
-            lastEntryDate = entryDate;
+            return Maybe.just(lastEntryDate);
           }
-        }
-        if (lastEntryDate != null) {
-          wrappedCallback.acceptData(lastEntryDate);
-        } else {
-          wrappedCallback.handleNotFound();
-        }
-      }
-    });
+        })
+        // use tomorrow if no entries exist
+        .switchIfEmpty(Maybe.just(cycle.startDate.minusDays(1)))
+        // emit days between now and most recent entry
+        .flatMapObservable(new Function<LocalDate, ObservableSource<LocalDate>>() {
+          @Override
+          public ObservableSource<LocalDate> apply(final LocalDate localDate) throws Exception {
+            return Observable.create(new ObservableOnSubscribe<LocalDate>() {
+              @Override
+              public void subscribe(ObservableEmitter<LocalDate> e) throws Exception {
+                for (LocalDate date = localDate; date.isBefore(DateUtil.now().plusDays(1)); date = date.plusDays(1)) {
+                  e.onNext(date);
+                }
+                e.onComplete();
+              }
+            });
+          }
+        })
+        // store the entries
+        .flatMapCompletable(new Function<LocalDate, CompletableSource>() {
+          @Override
+          public CompletableSource apply(LocalDate localDate) throws Exception {
+            return putEntry(cycle.id, createEmptyEntry(localDate, getKey(cycle)));
+          }
+        });
   }
 
   public Completable putEntry(final String cycleId, final E entry) {
