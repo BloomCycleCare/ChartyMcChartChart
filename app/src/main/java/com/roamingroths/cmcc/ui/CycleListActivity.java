@@ -28,7 +28,6 @@ import com.roamingroths.cmcc.data.CycleAdapter;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.FileUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -159,43 +158,40 @@ public class CycleListActivity extends AppCompatActivity
     if (id == R.id.action_export) {
       Log.v("CycleListActivity", "Begin export");
       final CycleListActivity activity = this;
-      AppState.create(mCycleProvider, new Callbacks.HaltingCallback<AppState>() {
-        @Override
-        public void acceptData(AppState appState) {
-          try {
-            String json = GsonUtil.getGsonInstance().toJson(appState);
+      AppState.create(mCycleProvider)
+          .subscribe(new Consumer<AppState>() {
+            @Override
+            public void accept(AppState appState) throws Exception {
+              String json = GsonUtil.getGsonInstance().toJson(appState);
 
-            FileUtil.shareAppState(appState, activity);
-            File path = new File(activity.getFilesDir(), "tmp/");
-            if (!path.exists()) {
-              path.mkdir();
+              FileUtil.shareAppState(appState, activity);
+              File path = new File(activity.getFilesDir(), "tmp/");
+              if (!path.exists()) {
+                path.mkdir();
+              }
+              File file = new File(path, "cmcc_export.chart");
+
+              Files.write(json, file, Charsets.UTF_8);
+
+              Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+
+              Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
+                  .setSubject("CMCC Export")
+                  .setEmailTo(null)
+                  .setType("application/json")
+                  .setStream(uri)
+                  .getIntent();
+              shareIntent.setData(uri);
+              shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+              startActivity(shareIntent);
             }
-            File file = new File(path, "cmcc_export.chart");
-
-            Files.write(json, file, Charsets.UTF_8);
-
-            Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
-
-            Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
-                .setSubject("CMCC Export")
-                .setEmailTo(null)
-                .setType("application/json")
-                .setStream(uri)
-                .getIntent();
-            shareIntent.setData(uri);
-            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-            startActivity(shareIntent);
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-        }
-
-        @Override
-        public void handleNotFound() {
-          Log.w("CycleListActivity", "Could not create AppState");
-        }
-      });
+          }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+              Log.w("CycleListActivity", "Could not create AppState", throwable);
+            }
+          });
     }
     return super.onOptionsItemSelected(item);
   }

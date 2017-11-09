@@ -14,10 +14,9 @@ import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
-import com.roamingroths.cmcc.utils.Callbacks;
 
-import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.concurrent.Callable;
 
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
@@ -57,29 +56,42 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
         .subscribe(new Consumer<Boolean>() {
           @Override
           public void accept(@NonNull Boolean shouldImport) throws Exception {
-            importDataFromIntent(getActivity().getIntent(), user.getUid());
+            importDataFromIntent(getActivity().getIntent(), user);
           }
         });
   }
 
-  private void importDataFromIntent(Intent intent, String userId) {
-    Uri uri = intent.getData();
+  private void importDataFromIntent(Intent intent, final FirebaseUser user) {
+    final Uri uri = intent.getData();
     Log.v("UserInitActivity", "Reading data from " + uri.getPath());
-    try {
-      InputStream in = getActivity().getContentResolver().openInputStream(uri);
-      AppState.parseAndPushToDB(in, userId, mCycleProvider, new Callbacks.HaltingCallback<Cycle>() {
-        @Override
-        public void acceptData(Cycle cycle) {
-          Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
-          intent.putExtra(Cycle.class.getName(), cycle);
-          getActivity().finish();
-          startActivity(intent);
-        }
-      });
-    } catch (FileNotFoundException e) {
-      showError("File " + uri.getPath() + " does not exist");
-      return;
-    }
+    Callable<InputStream> openFile = new Callable<InputStream>() {
+      @Override
+      public InputStream call() throws Exception {
+        return getActivity().getContentResolver().openInputStream(uri);
+      }
+    };
+    Single.fromCallable(openFile)
+        .flatMap(new Function<InputStream, SingleSource<Cycle>>() {
+          @Override
+          public SingleSource<Cycle> apply(InputStream is) throws Exception {
+            return AppState.parseAndPushToDB(is, user, mCycleProvider);
+          }
+        })
+        .subscribe(new Consumer<Cycle>() {
+          @Override
+          public void accept(Cycle cycle) throws Exception {
+            Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
+            intent.putExtra(Cycle.class.getName(), cycle);
+            getActivity().finish();
+            startActivity(intent);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable t) throws Exception {
+            showError("Error importing data");
+            Log.e(ImportAppStateFragment.class.getSimpleName(), "Error importing data", t);
+          }
+        });
   }
 
   private Single<Boolean> confirmImport() {

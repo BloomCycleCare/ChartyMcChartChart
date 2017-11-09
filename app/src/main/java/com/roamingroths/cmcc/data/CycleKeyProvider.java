@@ -58,6 +58,7 @@ public class CycleKeyProvider {
   }
 
   private Maybe<KeyWithAlias> getKey(String cycleId, String userId, final KeyAlias alias) {
+    if (DEBUG) Log.v(TAG, "Loading key alias: " + alias.name());
     return RxFirebaseDatabase.observeSingleValueEvent(
         db.getReference("keys").child(cycleId).child(userId).child(alias.name().toLowerCase()),
         DataSnapshotMapper.of(String.class))
@@ -70,6 +71,7 @@ public class CycleKeyProvider {
   }
 
   public Maybe<Cycle.Keys> getChartKeys(String cycleId, String userId) {
+    if (DEBUG) Log.v(TAG, "Getting keys for cycle: " + cycleId + ", user: " + userId);
     Set<Maybe<KeyWithAlias>> keys = new HashSet<>();
     for (KeyAlias alias : KeyAlias.values()) {
       keys.add(getKey(cycleId, userId, alias));

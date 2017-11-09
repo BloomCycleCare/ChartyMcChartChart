@@ -7,16 +7,12 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -25,7 +21,6 @@ import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.FirebaseUtil;
 import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
@@ -227,22 +222,8 @@ public class CycleProvider {
     return putCycleRx(userId, cycle).andThen(Single.just(cycle));
   }
 
-  public Observable<Cycle> getCyclesRx(final String userId) {
-    return RxFirebaseDatabase.observeSingleValueEvent(reference(userId), Functions.<DataSnapshot>identity())
-        .flatMapObservable(new Function<DataSnapshot, ObservableSource<Cycle>>() {
-          @Override
-          public ObservableSource<Cycle> apply(@NonNull DataSnapshot dataSnapshot) throws Exception {
-            Set<Maybe<Cycle>> cycles = new HashSet<>();
-            for (DataSnapshot child : dataSnapshot.getChildren()) {
-              cycles.add(cycleKeyProvider.getChartKeys(child.getKey(), userId).map(Cycle.fromSnapshot(child)));
-            }
-            return Maybe.merge(cycles).toObservable();
-          }
-        });
-  }
-
   public Maybe<Cycle> getCurrentCycle(final String userId) {
-    return getCyclesRx(userId)
+    return getAllCycles(userId)
         .filter(new io.reactivex.functions.Predicate<Cycle>() {
           @Override
           public boolean test(@NonNull Cycle cycle) throws Exception {
@@ -263,74 +244,22 @@ public class CycleProvider {
         .toSingle();
   }
 
-  @Deprecated
-  private void getCycles(
-      final String userId, final Predicate<DataSnapshot> fetchPredicate, boolean criticalRead, final Callback<Collection<Cycle>> callback) {
+  public Observable<Cycle> getAllCycles(final String userId) {
     logV("Fetching cycles");
-    ValueEventListener listener = new Listeners.SimpleValueEventListener(callback) {
-      @Override
-      public void onDataChange(DataSnapshot dataSnapshot) {
-        logV("Received " + dataSnapshot.getChildrenCount() + " cycles");
-        if (dataSnapshot.getChildrenCount() == 0) {
-          callback.acceptData(ImmutableSet.<Cycle>of());
-        }
-        final Set<DataSnapshot> snapshots = new HashSet<>();
-        for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-          if (fetchPredicate.apply(snapshot)) {
-            snapshots.add(snapshot);
-          }
-        }
-        final Map<String, Cycle> cycles = Maps.newConcurrentMap();
-        for (final DataSnapshot snapshot : snapshots) {
-          final String cycleId = snapshot.getKey();
-          cycleKeyProvider.forCycle(cycleId).getChartKeys(userId, new Callbacks.ErrorForwardingCallback<Cycle.Keys>(callback) {
-            @Override
-            public void acceptData(Cycle.Keys keys) {
-              Cycle cycle = Cycle.fromSnapshot(snapshot, keys);
-              cycles.put(cycle.id, cycle);
-              if (cycles.size() == snapshots.size()) {
-                callback.acceptData(cycles.values());
-              }
-            }
-
-            @Override
-            public void handleNotFound() {
-              Log.w("CycleProvider", "Could not find key for user " + userId + " cycle " + cycleId);
-              callback.handleNotFound();
-            }
-          });
-        }
-      }
-    };
-    DatabaseReference ref = reference(userId);
-    if (criticalRead) {
-      FirebaseUtil.criticalRead(ref, callback, listener);
-    } else {
-      ref.addListenerForSingleValueEvent(listener);
-    }
-  }
-
-  public void getAllCycles(String userId, Callback<Collection<Cycle>> callback) {
-    getCycles(userId, Predicates.<DataSnapshot>alwaysTrue(), false, callback);
-  }
-
-  @Deprecated
-  private void dropCycle(final String cycleId, final String userId, final Runnable onFinish) {
-    logV("Dropping entries for cycle: " + cycleId);
-    db.getReference("entries").child(cycleId).removeValue(new DatabaseReference.CompletionListener() {
-      @Override
-      public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-        logV("Dropping keys for cycle: " + cycleId);
-        db.getReference("keys").child(cycleId).removeValue(new DatabaseReference.CompletionListener() {
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(userId), Functions.<DataSnapshot>identity())
+        .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
           @Override
-          public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
-            logV("Dropping cycle: " + cycleId);
-            reference(userId, cycleId).removeValue();
-            onFinish.run();
+          public ObservableSource<DataSnapshot> apply(DataSnapshot snapshot) throws Exception {
+
+            return Observable.fromIterable(snapshot.getChildren());
+          }
+        })
+        .flatMap(new Function<DataSnapshot, ObservableSource<Cycle>>() {
+          @Override
+          public ObservableSource<Cycle> apply(DataSnapshot snapshot) throws Exception {
+            return cycleKeyProvider.getChartKeys(snapshot.getKey(), userId).map(Cycle.fromSnapshot(snapshot)).toObservable();
           }
         });
-      }
-    });
   }
 
   private Completable dropCycle(String cycleId, String userId) {
@@ -542,8 +471,13 @@ public class CycleProvider {
     return reference(userId).child(cycleId);
   }
 
+  @Deprecated
   private DatabaseReference reference(String userId) {
     return db.getReference("cycles").child(userId);
+  }
+
+  private DatabaseReference reference(FirebaseUser user) {
+    return db.getReference("cycles").child(user.getUid());
   }
 
   private void logV(String message) {
