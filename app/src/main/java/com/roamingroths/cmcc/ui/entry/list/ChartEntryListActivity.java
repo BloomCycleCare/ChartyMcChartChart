@@ -100,15 +100,15 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
+      if (data.hasExtra(EntryContainer.class.getName())) {
+        EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
+        mChartEntryAdapter.updateContainer(container);
+      }
       if (data.hasExtra(Cycle.class.getName())) {
         Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
         if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
           swapCycles(cycleFromResponse);
         }
-      }
-      if (data.hasExtra(EntryContainer.class.getName())) {
-        EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
-        mChartEntryAdapter.updateContainer(container);
       }
     }
     switch (requestCode) {
@@ -176,17 +176,24 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     log("Switching to cycle: " + newCycle.id);
     showProgress();
 
+    getSupportActionBar().setTitle("Cycle starting " + newCycle.startDateStr);
+
     mChartEntryAdapter = new ChartEntryAdapter(
         getApplicationContext(), newCycle, this, mDb, mCycleProvider);
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
     mChartEntryAdapter.initialize(mCycleProvider)
         .subscribeOn(AndroidSchedulers.mainThread())
-        .doOnComplete(new Action() {
+        .subscribe(new Action() {
           @Override
           public void run() throws Exception {
             log("Adapter initialized");
             showList();
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable t) throws Exception {
+            Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
           }
         });
   }

@@ -267,7 +267,20 @@ public class CycleProvider {
   }
 
   public Single<Cycle> combineCycleRx(final String userId, final Cycle currentCycle) {
-    Single<Cycle> previousCycle = getCycle(userId, currentCycle.id).toSingle().cache();
+    Single<Cycle> previousCycle = getCycle(userId, currentCycle.previousCycleId).toSingle().cache();
+
+    Completable moveEntries = previousCycle
+        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle previousCycle) throws Exception {
+            if (DEBUG) Log.v(TAG, "Moving entries");
+            Set<Completable> entryMoves = new HashSet<>();
+            for (final EntryProvider provider : entryProviders.values()) {
+              entryMoves.add(provider.moveEntries(currentCycle, previousCycle, Predicates.alwaysTrue()));
+            }
+            return Completable.merge(entryMoves);
+          }
+        }).andThen(cycleKeyProvider.dropKeys(currentCycle.id));
 
     Single<Cycle> updateNextAndReturnPrevious = previousCycle
         .flatMap(new Function<Cycle, Single<Cycle>>() {
@@ -298,22 +311,9 @@ public class CycleProvider {
           }
         });
 
-    Completable moveEntries = previousCycle
-        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
-          @Override
-          public CompletableSource apply(Cycle previousCycle) throws Exception {
-            if (DEBUG) Log.v(TAG, "Moving entries");
-            Set<Completable> entryMoves = new HashSet<>();
-            for (final EntryProvider provider : entryProviders.values()) {
-              entryMoves.add(provider.moveEntries(currentCycle, previousCycle, Predicates.alwaysTrue()));
-            }
-            return Completable.merge(entryMoves);
-          }
-        }).andThen(cycleKeyProvider.dropKeys(currentCycle.id));
-
     Completable dropCycle = dropCycle(currentCycle.id, userId);
 
-    return Completable.mergeArray(updatePrevious, moveEntries).andThen(dropCycle).andThen(updateNextAndReturnPrevious);
+    return moveEntries.andThen(updatePrevious).andThen(dropCycle).andThen(updateNextAndReturnPrevious);
   }
 
   public Single<Cycle> splitCycleRx(final String userId, final Cycle currentCycle, Single<ChartEntry> firstEntry) {

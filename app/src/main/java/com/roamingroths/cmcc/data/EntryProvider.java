@@ -75,6 +75,9 @@ public abstract class EntryProvider<E extends Entry> {
         .flatMapMaybe(new Function<List<E>, MaybeSource<LocalDate>>() {
           @Override
           public MaybeSource<LocalDate> apply(List<E> entries) throws Exception {
+            if (entries.isEmpty()) {
+              return Maybe.empty();
+            }
             LocalDate lastEntryDate = null;
             for (E entry : entries) {
               LocalDate entryDate = entry.getDate();
@@ -90,11 +93,12 @@ public abstract class EntryProvider<E extends Entry> {
         // emit days between now and most recent entry
         .flatMapObservable(new Function<LocalDate, ObservableSource<LocalDate>>() {
           @Override
-          public ObservableSource<LocalDate> apply(final LocalDate localDate) throws Exception {
+          public ObservableSource<LocalDate> apply(final LocalDate endDate) throws Exception {
             return Observable.create(new ObservableOnSubscribe<LocalDate>() {
               @Override
               public void subscribe(ObservableEmitter<LocalDate> e) throws Exception {
-                for (LocalDate date = localDate; date.isBefore(DateUtil.now().plusDays(1)); date = date.plusDays(1)) {
+                LocalDate today = DateUtil.now();
+                for (LocalDate date = today; date.isAfter(endDate); date = date.minusDays(1)) {
                   e.onNext(date);
                 }
                 e.onComplete();

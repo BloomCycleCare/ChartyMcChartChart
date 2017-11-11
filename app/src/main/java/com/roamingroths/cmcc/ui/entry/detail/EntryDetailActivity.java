@@ -51,8 +51,10 @@ import io.reactivex.MaybeSource;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 import static com.roamingroths.cmcc.ui.entry.detail.ChartEntryFragment.OK_RESPONSE;
 
@@ -271,7 +273,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
     if (issues.isEmpty()) {
-      doSave().subscribe(new Consumer<Cycle>() {
+      doSave().subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Cycle>() {
         @Override
         public void accept(Cycle cycle) throws Exception {
           if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
