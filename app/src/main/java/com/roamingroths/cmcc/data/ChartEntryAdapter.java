@@ -22,6 +22,7 @@ import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.Completable;
@@ -64,6 +65,17 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
           }
         }
     );
+  }
+
+  public boolean initFromIntent(Intent intent) {
+    if (!intent.hasExtra(EntryContainer.class.getName())) {
+      return false;
+    }
+    List<EntryContainer> containers = intent.getParcelableArrayListExtra(EntryContainer.class.getName());
+    for (EntryContainer container : containers) {
+      mContainerList.addEntry(container);
+    }
+    return true;
   }
 
   public Completable initialize(CycleProvider cycleProvider) {

@@ -18,6 +18,9 @@ import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
+import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.SymptomEntry;
+import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -43,6 +46,7 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Function3;
 import io.reactivex.internal.functions.Functions;
 import io.reactivex.schedulers.Schedulers;
 
@@ -107,6 +111,18 @@ public class CycleProvider {
     DatabaseReference ref = reference(userId);
     ref.addChildEventListener(listener);
     ref.keepSynced(true);
+  }
+
+  public Observable<EntryContainer> getEntryContainers(Cycle cycle) {
+    Observable<ChartEntry> chartEntries = entryProviders.get(ChartEntry.class).getDecryptedEntries(cycle);
+    Observable<WellnessEntry> wellnessEntries = entryProviders.get(WellnessEntry.class).getDecryptedEntries(cycle);
+    Observable<SymptomEntry> symptomEntries = entryProviders.get(SymptomEntry.class).getDecryptedEntries(cycle);
+    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ChartEntry, WellnessEntry, SymptomEntry, EntryContainer>() {
+      @Override
+      public EntryContainer apply(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
+        return new EntryContainer(chartEntry.getDate(), chartEntry, wellnessEntry, symptomEntry);
+      }
+    });
   }
 
   public Completable maybeCreateNewEntries(Cycle cycle) {

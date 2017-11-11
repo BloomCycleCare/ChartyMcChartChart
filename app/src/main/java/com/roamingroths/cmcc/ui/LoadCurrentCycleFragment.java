@@ -6,24 +6,25 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
+import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
 
 import java.util.Calendar;
+import java.util.List;
 
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Action;
@@ -94,14 +95,16 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private void preloadCycleData(final Cycle cycle, final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    EntryContainerList.builder(cycle, mPreferences).build().initialize(mCycleProvider)
-        .subscribeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Action() {
+    mCycleProvider.maybeCreateNewEntries(cycle)
+        .andThen(mCycleProvider.getEntryContainers(cycle))
+        .toList()
+        .subscribe(new Consumer<List<EntryContainer>>() {
           @Override
-          public void run() throws Exception {
+          public void accept(List<EntryContainer> entryContainers) throws Exception {
             if (DEBUG) Log.v(TAG, "Preload cycle data: finish");
             Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
             intent.putExtra(Cycle.class.getName(), cycle);
+            intent.putParcelableArrayListExtra(EntryContainer.class.getName(), Lists.newArrayList(entryContainers));
             getActivity().finish();
             startActivity(intent);
           }

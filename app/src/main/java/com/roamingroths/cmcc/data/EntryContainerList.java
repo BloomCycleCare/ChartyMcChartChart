@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.data;
 
 import android.content.Context;
+import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.v7.util.SortedList;
 import android.util.Log;
@@ -12,8 +13,6 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.EntryContainer;
-import com.roamingroths.cmcc.logic.SymptomEntry;
-import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -21,6 +20,7 @@ import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -28,11 +28,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
-import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Function3;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -402,30 +400,28 @@ public class EntryContainerList {
     }
   }
 
+  private void fillFromIntent(Intent intent) {
+    List<EntryContainer> containers = intent.getParcelableArrayListExtra(EntryContainer.class.getName());
+    for (EntryContainer container : containers) {
+      addEntry(container);
+    }
+  }
+
   private Completable fillFromProvider(CycleProvider cycleProvider) {
     logV("Begin filling from DB");
-    Observable<ChartEntry> chartEntries =
-        cycleProvider.getProviderForClazz(ChartEntry.class).getDecryptedEntries(mCycle);
-    Observable<WellnessEntry> wellnessEntries =
-        cycleProvider.getProviderForClazz(WellnessEntry.class).getDecryptedEntries(mCycle);
-    Observable<SymptomEntry> symptomEntries =
-        cycleProvider.getProviderForClazz(SymptomEntry.class).getDecryptedEntries(mCycle);
-    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ChartEntry, WellnessEntry, SymptomEntry, EntryContainer>() {
-      @Override
-      public EntryContainer apply(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
-        return new EntryContainer(chartEntry.getDate(), chartEntry, wellnessEntry, symptomEntry);
-      }
-    }).observeOn(AndroidSchedulers.mainThread()).flatMapCompletable(new Function<EntryContainer, CompletableSource>() {
-      @Override
-      public CompletableSource apply(final EntryContainer entryContainer) throws Exception {
-        return Completable.fromAction(new Action() {
+    return cycleProvider.getEntryContainers(mCycle)
+        .observeOn(AndroidSchedulers.mainThread())
+        .flatMapCompletable(new Function<EntryContainer, CompletableSource>() {
           @Override
-          public void run() throws Exception {
-            addEntry(entryContainer);
+          public CompletableSource apply(final EntryContainer entryContainer) throws Exception {
+            return Completable.fromAction(new Action() {
+              @Override
+              public void run() throws Exception {
+                addEntry(entryContainer);
+              }
+            });
           }
         });
-      }
-    });
   }
 
   private void logV(String message) {

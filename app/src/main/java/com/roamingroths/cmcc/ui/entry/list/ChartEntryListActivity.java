@@ -65,6 +65,20 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mChartEntryAdapter = new ChartEntryAdapter(
         getApplicationContext(), cycle, this, mDb, mCycleProvider);
 
+    mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
+    boolean shouldReverseLayout = false;
+    LinearLayoutManager layoutManager
+        = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
+    mRecyclerView.setLayoutManager(layoutManager);
+    mRecyclerView.setHasFixedSize(false);
+    mRecyclerView.setAdapter(mChartEntryAdapter);
+
+    if (mChartEntryAdapter.initFromIntent(intentThatStartedThisActivity)) {
+      showList();
+    } else {
+      showProgress();
+    }
+
     mChartEntryAdapter.initialize(mCycleProvider)
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
@@ -80,16 +94,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
             Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
           }
         });
-
-    mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
-    boolean shouldReverseLayout = false;
-    LinearLayoutManager layoutManager
-        = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
-    mRecyclerView.setLayoutManager(layoutManager);
-    mRecyclerView.setHasFixedSize(false);
-    mRecyclerView.setAdapter(mChartEntryAdapter);
-
-    showProgress();
   }
 
   @Override
