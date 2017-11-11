@@ -143,8 +143,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     return ImmutableSet.of();
   }
 
-  //public abstract void onDelete(Callbacks.Callback<Void> onDone);
-
   LocalDate getEntryDate() {
     return mEntryDate;
   }
