@@ -7,7 +7,6 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
@@ -15,7 +14,6 @@ import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryContainerList;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
@@ -25,6 +23,7 @@ import java.util.Calendar;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Action;
@@ -95,48 +94,45 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private void preloadCycleData(final Cycle cycle, final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    EntryContainerList.builder(cycle, mPreferences).build().initialize(mCycleProvider, Callbacks.singleUse(new Callbacks.Callback<Void>() {
-      @Override
-      public void acceptData(Void data) {
-        if (DEBUG) Log.v(TAG, "Preload cycle data: finish");
-        Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
-        intent.putExtra(Cycle.class.getName(), cycle);
-        getActivity().finish();
-        startActivity(intent);
-      }
-
-      @Override
-      public void handleNotFound() {
-        showError("Could not decrypt cycle entries.");
-        new AlertDialog.Builder(getActivity())
-            //set message, title, and icon
-            .setTitle("Delete All Cycles?")
-            .setMessage("This is permanent and cannot be undone!")
-            .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-              public void onClick(final DialogInterface dialog, int whichButton) {
-                mCycleProvider.dropCycles()
-                    .subscribe(new Action() {
-                      @Override
-                      public void run() throws Exception {
-                        dialog.dismiss();
-                        onUserInitialized(user, mCryptoUtil);
-                      }
-                    });
-              }
-            })
-            .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-              public void onClick(DialogInterface dialog, int which) {
-                showError("Please restart the app.");
-                dialog.dismiss();
-              }
-            })
-            .create().show();
-      }
-
-      @Override
-      public void handleError(DatabaseError error) {
-        showError(error.getMessage());
-      }
-    }));
+    EntryContainerList.builder(cycle, mPreferences).build().initialize(mCycleProvider)
+        .subscribeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Action() {
+          @Override
+          public void run() throws Exception {
+            if (DEBUG) Log.v(TAG, "Preload cycle data: finish");
+            Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
+            intent.putExtra(Cycle.class.getName(), cycle);
+            getActivity().finish();
+            startActivity(intent);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            showError("Could not decrypt cycle entries.");
+            new AlertDialog.Builder(getActivity())
+                //set message, title, and icon
+                .setTitle("Delete All Cycles?")
+                .setMessage("This is permanent and cannot be undone!")
+                .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+                  public void onClick(final DialogInterface dialog, int whichButton) {
+                    mCycleProvider.dropCycles()
+                        .subscribe(new Action() {
+                          @Override
+                          public void run() throws Exception {
+                            dialog.dismiss();
+                            onUserInitialized(user, mCryptoUtil);
+                          }
+                        });
+                  }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                  public void onClick(DialogInterface dialog, int which) {
+                    showError("Please restart the app.");
+                    dialog.dismiss();
+                  }
+                })
+                .create().show();
+          }
+        });
   }
 }

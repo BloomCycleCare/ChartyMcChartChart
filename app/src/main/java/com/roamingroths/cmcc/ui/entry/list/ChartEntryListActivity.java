@@ -23,7 +23,11 @@ import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
-import com.roamingroths.cmcc.utils.Callbacks;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
     ChartEntryAdapter.OnClickHandler {
@@ -44,6 +48,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_main);
 
+    log("onCreate");
+
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
 
@@ -56,20 +62,24 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
 
-    Callbacks.Callback<Void> adapterInitialzationCallback = new Callbacks.HaltingCallback<Void>() {
-      @Override
-      public void acceptData(Void data) {
-        runOnUiThread(new Runnable() {
+    mChartEntryAdapter = new ChartEntryAdapter(
+        getApplicationContext(), cycle, this, mDb, mCycleProvider);
+
+    mChartEntryAdapter.initialize(mCycleProvider)
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Action() {
           @Override
-          public void run() {
+          public void run() throws Exception {
+            log("Adapter initialization complete");
             showList();
           }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable t) throws Exception {
+            Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
+          }
         });
-      }
-    };
-
-    mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, mDb, mCycleProvider, adapterInitialzationCallback);
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
     boolean shouldReverseLayout = false;
@@ -78,7 +88,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mChartEntryAdapter);
-
 
     showProgress();
   }
@@ -156,21 +165,20 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   private void swapCycles(Cycle newCycle) {
     log("Switching to cycle: " + newCycle.id);
     showProgress();
-    Callbacks.Callback<Void> adapterInitialzationCallback = new Callbacks.HaltingCallback<Void>() {
-      @Override
-      public void acceptData(Void data) {
-        log("Adapter initialized");
-        runOnUiThread(new Runnable() {
+
+    mChartEntryAdapter = new ChartEntryAdapter(
+        getApplicationContext(), newCycle, this, mDb, mCycleProvider);
+    mRecyclerView.setAdapter(mChartEntryAdapter);
+
+    mChartEntryAdapter.initialize(mCycleProvider)
+        .subscribeOn(AndroidSchedulers.mainThread())
+        .doOnComplete(new Action() {
           @Override
-          public void run() {
+          public void run() throws Exception {
+            log("Adapter initialized");
             showList();
           }
         });
-      }
-    };
-    mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), newCycle, this, mDb, mCycleProvider, adapterInitialzationCallback);
-    mRecyclerView.setAdapter(mChartEntryAdapter);
   }
 
   private void showList() {

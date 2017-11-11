@@ -1,32 +1,19 @@
 package com.roamingroths.cmcc.data;
 
-import android.os.AsyncTask;
 import android.util.Log;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.crypto.CyrptoExceptions;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.utils.Callbacks;
-import com.roamingroths.cmcc.utils.Callbacks.Callback;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.Listeners;
 
 import org.joda.time.LocalDate;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import javax.crypto.SecretKey;
 
@@ -41,6 +28,7 @@ import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 9/2/17.
@@ -133,18 +121,6 @@ public abstract class EntryProvider<E extends Entry> {
         });
   }
 
-  @Deprecated
-  public final void putEntry(
-      final String cycleId, final E entry,
-      final DatabaseReference.CompletionListener completionListener) throws CyrptoExceptions.CryptoException {
-    CryptoUtil.encrypt(entry, new Callbacks.HaltingCallback<String>() {
-      @Override
-      public void acceptData(String encryptedEntry) {
-        reference(cycleId, entry.getDateStr()).setValue(encryptedEntry, completionListener);
-      }
-    });
-  }
-
   public final Completable deleteEntry(String cycleId, LocalDate entryDate) {
     return RxFirebaseDatabase.removeValue(reference(cycleId, DateUtil.toWireStr(entryDate)));
   }
@@ -160,28 +136,6 @@ public abstract class EntryProvider<E extends Entry> {
         });
   }
 
-  @Deprecated
-  public final void getEncryptedEntries(
-      String cycleId, final Callback<Map<LocalDate, String>> callback) {
-    reference(cycleId).addListenerForSingleValueEvent(new Listeners.SimpleValueEventListener(callback) {
-      @Override
-      public void onDataChange(final DataSnapshot entrySnapshots) {
-        new AsyncTask<Void, Integer, Void>() {
-          @Override
-          protected Void doInBackground(Void... params) {
-            Map<LocalDate, String> entries = new HashMap<>();
-            for (DataSnapshot entrySnapshot : entrySnapshots.getChildren()) {
-              LocalDate entryDate = DateUtil.fromWireStr(entrySnapshot.getKey());
-              entries.put(entryDate, entrySnapshot.getValue(String.class));
-            }
-            callback.acceptData(entries);
-            return null;
-          }
-        }.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-      }
-    });
-  }
-
   public final Observable<String> getEncryptedEntries(Cycle cycle) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id))
         .flatMapObservable(new Function<DataSnapshot, ObservableSource<String>>() {
@@ -190,6 +144,7 @@ public abstract class EntryProvider<E extends Entry> {
             return Observable.create(new ObservableOnSubscribe<String>() {
               @Override
               public void subscribe(ObservableEmitter<String> e) throws Exception {
+                logV("Found " + dataSnapshot.getChildrenCount() + " children for " + mChildId);
                 for (DataSnapshot entrySnapshot : dataSnapshot.getChildren()) {
                   e.onNext(entrySnapshot.getValue(String.class));
                 }
@@ -201,63 +156,15 @@ public abstract class EntryProvider<E extends Entry> {
   }
 
   public final Observable<E> getDecryptedEntries(final Cycle cycle) {
+    logV("Getting decrypted entries");
     return getEncryptedEntries(cycle)
+        .subscribeOn(Schedulers.computation())
         .flatMap(new Function<String, ObservableSource<E>>() {
           @Override
           public ObservableSource<E> apply(String encryptedEntry) throws Exception {
             return mCryptoUtil.decrypt(encryptedEntry, getKey(cycle), mClazz).toObservable();
           }
         });
-  }
-
-  @Deprecated
-  public final void getDecryptedEntries(final Cycle cycle, final Callback<Map<LocalDate, E>> callback) {
-    getEncryptedEntries(cycle.id, new Callbacks.ErrorForwardingCallback<Map<LocalDate, String>>(callback) {
-      @Override
-      public void acceptData(final Map<LocalDate, String> encryptedEntries) {
-        final Map<LocalDate, E> decryptedEntries = Maps.newConcurrentMap();
-        final Set<LocalDate> brokenEntries = Sets.newConcurrentHashSet();
-        logV("Found " + encryptedEntries.size() + " entries to decrypt.");
-        if (encryptedEntries.isEmpty()) {
-          callback.acceptData(ImmutableMap.<LocalDate, E>of());
-        }
-        for (Map.Entry<LocalDate, String> entry : encryptedEntries.entrySet()) {
-          final LocalDate entryDate = entry.getKey();
-          final String encryptedEntry = entry.getValue();
-          CryptoUtil.decrypt(encryptedEntry, getKey(cycle), mClazz, new Callbacks.Callback<E>() {
-            @Override
-            public void acceptData(E decryptedEntry) {
-              decryptedEntries.put(decryptedEntry.getDate(), decryptedEntry);
-              maybeRespond();
-            }
-
-            @Override
-            public void handleNotFound() {
-              logV("Decrypted entry not found for " + entryDate);
-              brokenEntries.add(entryDate);
-              maybeRespond();
-            }
-
-            @Override
-            public void handleError(DatabaseError error) {
-              logV("Error decrypting entry for " + entryDate);
-              brokenEntries.add(entryDate);
-              maybeRespond();
-            }
-
-            private synchronized void maybeRespond() {
-              if (decryptedEntries.size() + brokenEntries.size() == encryptedEntries.size()) {
-                if (brokenEntries.size() == 0) {
-                  callback.acceptData(decryptedEntries);
-                } else {
-                  callback.handleError(DatabaseError.fromException(new IllegalStateException()));
-                }
-              }
-            }
-          });
-        }
-      }
-    });
   }
 
   public Completable moveEntries(

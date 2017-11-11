@@ -20,10 +20,11 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.reactivex.Completable;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -44,8 +45,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       Cycle cycle,
       OnClickHandler clickHandler,
       FirebaseDatabase db,
-      CycleProvider cycleProvider,
-      Callbacks.Callback<Void> initializationCompleteCallback) {
+      CycleProvider cycleProvider) {
     mEntriesDbRef = db.getReference("entries").child(cycle.id).child("chart");
     mEntriesDbRef.keepSynced(true);
     mEntryListenerAttached = new AtomicBoolean(false);
@@ -54,7 +54,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mPreferences = Preferences.fromShared(mContext);
     mContainerList = EntryContainerList.builder(cycle, mPreferences).withAdapter(this).build();
     mListener = new EntryContainerListener(context, mContainerList, cycleProvider.getProviderForClazz(ChartEntry.class));
-    mContainerList.initialize(cycleProvider, initializationCompleteCallback);
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -65,6 +64,10 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
           }
         }
     );
+  }
+
+  public Completable initialize(CycleProvider cycleProvider) {
+    return mContainerList.initialize(cycleProvider);
   }
 
   public synchronized void attachListener() {

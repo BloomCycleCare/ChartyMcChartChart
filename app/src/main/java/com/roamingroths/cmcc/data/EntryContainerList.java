@@ -6,7 +6,6 @@ import android.support.v7.util.SortedList;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -14,20 +13,22 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -68,23 +69,13 @@ public class EntryContainerList {
     holder.setShowBaby(shouldShowBaby(position, entry));
   }
 
-  public void initialize(final CycleProvider cycleProvider, final Callbacks.Callback<Void> doneCallback) {
+  public Completable initialize(final CycleProvider cycleProvider) {
     if (DEBUG) Log.v(TAG, "Initialize");
     if (mInitialized.compareAndSet(false, true)) {
-      cycleProvider.maybeCreateNewEntries(mCycle)
-          .subscribe(new Action() {
-            @Override
-            public void run() throws Exception {
-              fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class), doneCallback);
-            }
-          }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-              doneCallback.handleError(DatabaseError.fromException(throwable));
-            }
-          });
+      return cycleProvider.maybeCreateNewEntries(mCycle)
+          .andThen(fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class)));
     } else {
-      doneCallback.handleError(DatabaseError.fromException(new IllegalStateException()));
+      return Completable.error(new IllegalStateException());
     }
   }
 
@@ -407,19 +398,38 @@ public class EntryContainerList {
     }
   }
 
-  private void fillFromProvider(
-      EntryProvider<ChartEntry> chartEntryProvider,
-      final Callbacks.Callback<Void> doneCallback) {
+  private Completable fillFromProvider(EntryProvider<ChartEntry> chartEntryProvider) {
     logV("Begin filling from DB");
-    chartEntryProvider.getDecryptedEntries(mCycle, new Callbacks.ErrorForwardingCallback<Map<LocalDate, ChartEntry>>(doneCallback) {
-      @Override
-      public void acceptData(Map<LocalDate, ChartEntry> entries) {
-        for (Map.Entry<LocalDate, ChartEntry> entry : entries.entrySet()) {
-          addEntry(new EntryContainer(entry.getKey(), entry.getValue()));
-        }
-        doneCallback.acceptData(null);
-      }
-    });
+    return chartEntryProvider.getDecryptedEntries(mCycle)
+        .toList()
+        .flatMapCompletable(new Function<List<ChartEntry>, CompletableSource>() {
+          @Override
+          public CompletableSource apply(final List<ChartEntry> chartEntries) throws Exception {
+            logV("Found " + chartEntries.size() + " entries");
+            return Completable.fromAction(new Action() {
+              @Override
+              public void run() throws Exception {
+                for (ChartEntry entry : chartEntries) {
+                  addEntry(new EntryContainer(entry.getDate(), entry));
+                }
+              }
+            });
+          }
+        });
+        /*.subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .flatMapCompletable(new Function<ChartEntry, CompletableSource>() {
+          @Override
+          public CompletableSource apply(final ChartEntry chartEntry) throws Exception {
+            logV("Adding entry");
+            return Completable.fromAction(new Action() {
+              @Override
+              public void run() throws Exception {
+                addEntry(new EntryContainer(chartEntry.getDate(), chartEntry));
+              }
+            });
+          }
+        });*/
   }
 
   private void logV(String message) {

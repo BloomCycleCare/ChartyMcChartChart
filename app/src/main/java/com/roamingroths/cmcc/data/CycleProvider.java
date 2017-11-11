@@ -44,6 +44,7 @@ import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.functions.Functions;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 9/2/17.
@@ -341,7 +342,7 @@ public class CycleProvider {
               public void run() throws Exception {
                 if (DEBUG) Log.v(TAG, "Done updating current's fields.");
               }
-            });
+            }).subscribeOn(Schedulers.io());
           }
         });
 
