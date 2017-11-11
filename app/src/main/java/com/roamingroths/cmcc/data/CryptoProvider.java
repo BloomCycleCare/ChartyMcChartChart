@@ -7,7 +7,6 @@ import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.KeyUtil;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 
@@ -48,22 +47,6 @@ public class CryptoProvider {
 
   public static CryptoProvider forDb(FirebaseDatabase db) {
     return new CryptoProvider(db);
-  }
-
-  public Single<RxCryptoUtil> createCryptoUtil() {
-    try {
-      KeyStore ks = KeyStore.getInstance(KEY_STORE_ALIAS);
-      return getKeyPairFromKeyStore(ks).toSingle()
-          .map(new Function<KeyPair, RxCryptoUtil>() {
-            @Override
-            public RxCryptoUtil apply(@NonNull KeyPair keyPair) throws Exception {
-              CryptoUtil.init(keyPair);
-              return new RxCryptoUtil(keyPair);
-            }
-          });
-    } catch (KeyStoreException kse) {
-      return Single.error(kse);
-    }
   }
 
   public Single<RxCryptoUtil> createCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {

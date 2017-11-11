@@ -12,8 +12,8 @@ import android.view.ViewGroup;
 import com.google.common.collect.ImmutableSet;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
+import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
-import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -54,7 +54,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     this.layoutId = layoutId;
     mEntryProvider = createEntryProvider(
         FirebaseDatabase.getInstance(),
-        CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil().blockingGet());
+        FirebaseApplication.getCryptoUtil());
   }
 
   @Override

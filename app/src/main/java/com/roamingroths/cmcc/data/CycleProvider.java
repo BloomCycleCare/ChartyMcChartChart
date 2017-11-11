@@ -13,6 +13,7 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -66,8 +67,7 @@ public class CycleProvider {
   private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
 
   public static CycleProvider forDb(FirebaseDatabase db) {
-    RxCryptoUtil cryptoUtil = CryptoProvider.forDb(db).createCryptoUtil().blockingGet();
-    return forDb(db, cryptoUtil);
+    return forDb(db, FirebaseApplication.getCryptoUtil());
   }
 
   public static CycleProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {

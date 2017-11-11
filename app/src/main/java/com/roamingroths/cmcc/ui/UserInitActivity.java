@@ -16,6 +16,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.data.CryptoProvider;
 
@@ -110,7 +111,7 @@ public class UserInitActivity extends FragmentActivity {
 
   private void initUserState(final FirebaseUser user) {
     mFragment.updateStatus("Initializing user");
-    mCryptoProvider.createCryptoUtil(user, promptForPhoneNumber())
+    FirebaseApplication.initCryptoUtil(user, promptForPhoneNumber())
         .observeOn(Schedulers.computation())
         .subscribeOn(AndroidSchedulers.mainThread())
         .subscribe(new SingleObserver<RxCryptoUtil>() {
