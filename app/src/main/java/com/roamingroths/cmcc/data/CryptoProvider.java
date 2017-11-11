@@ -7,6 +7,7 @@ import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.CachingRxCryptoUtil;
 import com.roamingroths.cmcc.crypto.KeyUtil;
 import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 
@@ -56,7 +57,7 @@ public class CryptoProvider {
           .map(new Function<KeyPair, RxCryptoUtil>() {
             @Override
             public RxCryptoUtil apply(@NonNull KeyPair keyPair) throws Exception {
-              return new RxCryptoUtil(keyPair);
+              return new CachingRxCryptoUtil(keyPair);
             }
           });
     } catch (KeyStoreException kse) {

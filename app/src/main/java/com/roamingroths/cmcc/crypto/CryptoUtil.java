@@ -106,7 +106,7 @@ public class CryptoUtil {
   public static void init(KeyPair keyPair) {
     PUBLIC_KEY = keyPair.getPublic();
     PRIVATE_KEY = keyPair.getPrivate();
-    RX_UTIL = new RxCryptoUtil(keyPair);
+    RX_UTIL = new CachingRxCryptoUtil(keyPair);
   }
 
   public static String getPublicKeyStr() throws CyrptoExceptions.CryptoException {
