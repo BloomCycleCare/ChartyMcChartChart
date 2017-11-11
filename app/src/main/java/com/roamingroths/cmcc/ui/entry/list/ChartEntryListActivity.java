@@ -99,14 +99,18 @@ public class ChartEntryListActivity extends AppCompatActivity implements
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    if (data != null && data.hasExtra(Cycle.class.getName())) {
-      Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
-      if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
-        swapCycles(cycleFromResponse);
+    if (data != null) {
+      if (data.hasExtra(Cycle.class.getName())) {
+        Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
+        if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
+          swapCycles(cycleFromResponse);
+        }
+      }
+      if (data.hasExtra(EntryContainer.class.getName())) {
+        EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
+        mChartEntryAdapter.updateContainer(container);
       }
     }
-    EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
-    mChartEntryAdapter.updateContainer(container);
     switch (requestCode) {
       default:
         Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);
