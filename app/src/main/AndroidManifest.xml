@@ -23,6 +23,7 @@
         <activity android:name=".ui.settings.SettingsActivity"/>
         <activity
             android:name=".ui.UserInitActivity"
+            android:noHistory="true"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
