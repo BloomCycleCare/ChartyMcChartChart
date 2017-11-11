@@ -27,7 +27,6 @@ import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
 
 public class ChartEntryListActivity extends AppCompatActivity implements
     ChartEntryAdapter.OnClickHandler {
@@ -74,14 +73,14 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     mRecyclerView.setAdapter(mChartEntryAdapter);
 
     if (mChartEntryAdapter.initFromIntent(intentThatStartedThisActivity)) {
+      log("Initialized from Intent");
       showList();
     } else {
       showProgress();
     }
 
     mChartEntryAdapter.initialize(mCycleProvider)
-        .subscribeOn(Schedulers.computation())
-        .observeOn(AndroidSchedulers.mainThread())
+        .subscribeOn(AndroidSchedulers.mainThread())
         .subscribe(new Action() {
           @Override
           public void run() throws Exception {

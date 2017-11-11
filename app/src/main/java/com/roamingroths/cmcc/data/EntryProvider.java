@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
@@ -27,6 +28,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
@@ -50,7 +52,7 @@ public abstract class EntryProvider<E extends Entry> {
 
   EntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil, ChildId childId, Class<E> clazz) {
     this.db = db;
-    this.mCryptoUtil = cryptoUtil;
+    this.mCryptoUtil = Preconditions.checkNotNull(cryptoUtil);
     this.mChildId = childId.name().toLowerCase();
     this.mClazz = clazz;
     this.mLogId = "EntryProvider<" + mClazz.getName() + ">";
@@ -116,7 +118,14 @@ public abstract class EntryProvider<E extends Entry> {
   }
 
   public Completable putEntry(final String cycleId, final E entry) {
-    return mCryptoUtil.encrypt(entry)
+    return Single.just(entry)
+        .observeOn(Schedulers.computation())
+        .flatMap(new Function<E, SingleSource<String>>() {
+          @Override
+          public SingleSource<String> apply(E e) throws Exception {
+            return mCryptoUtil.encrypt(e);
+          }
+        })
         .flatMapCompletable(new Function<String, CompletableSource>() {
           @Override
           public CompletableSource apply(String encryptedStr) throws Exception {
@@ -129,20 +138,9 @@ public abstract class EntryProvider<E extends Entry> {
     return RxFirebaseDatabase.removeValue(reference(cycleId, DateUtil.toWireStr(entryDate)));
   }
 
-  public Maybe<E> getEntry(Cycle cycle, String entryDateStr) {
-    final SecretKey key = getKey(cycle);
-    return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id, entryDateStr))
-        .observeOn(Schedulers.computation())
-        .flatMap(new Function<DataSnapshot, MaybeSource<E>>() {
-          @Override
-          public MaybeSource<E> apply(DataSnapshot snapshot) throws Exception {
-            return fromSnapshot(snapshot, key).toMaybe();
-          }
-        });
-  }
-
   public final Observable<String> getEncryptedEntries(Cycle cycle) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id))
+        .observeOn(Schedulers.computation())
         .flatMapObservable(new Function<DataSnapshot, ObservableSource<String>>() {
           @Override
           public ObservableSource<String> apply(final DataSnapshot dataSnapshot) throws Exception {
