@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Preferences;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
@@ -44,7 +44,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private Preferences mPreferences;
   private CycleProvider mCycleProvider;
   private CompositeDisposable mDisposables;
-  private RxCryptoUtil mCryptoUtil;
+  private CryptoUtil mCryptoUtil;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -53,7 +53,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   }
 
   @Override
-  public void onUserInitialized(final FirebaseUser user, RxCryptoUtil cryptoUtil) {
+  public void onUserInitialized(final FirebaseUser user, CryptoUtil cryptoUtil) {
     if (DEBUG) Log.v(TAG, "Getting current cycle");
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance(), cryptoUtil);
     mCryptoUtil = cryptoUtil;

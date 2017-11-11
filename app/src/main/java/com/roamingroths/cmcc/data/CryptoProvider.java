@@ -7,9 +7,9 @@ import com.google.common.base.Strings;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.CachingRxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CachingCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.crypto.KeyUtil;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 
 import java.security.KeyPair;
 import java.security.KeyStore;
@@ -50,14 +50,14 @@ public class CryptoProvider {
     return new CryptoProvider(db);
   }
 
-  public Single<RxCryptoUtil> createCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {
+  public Single<CryptoUtil> createCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {
     try {
       KeyStore ks = KeyStore.getInstance(KEY_STORE_ALIAS);
       return getUserKeyPair(user, phoneNumber, ks)
-          .map(new Function<KeyPair, RxCryptoUtil>() {
+          .map(new Function<KeyPair, CryptoUtil>() {
             @Override
-            public RxCryptoUtil apply(@NonNull KeyPair keyPair) throws Exception {
-              return new CachingRxCryptoUtil(keyPair);
+            public CryptoUtil apply(@NonNull KeyPair keyPair) throws Exception {
+              return new CachingCryptoUtil(keyPair);
             }
           });
     } catch (KeyStoreException kse) {

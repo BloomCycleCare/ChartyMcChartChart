@@ -17,21 +17,21 @@ import io.reactivex.functions.Consumer;
  * Created by parkeroth on 11/11/17.
  */
 
-public class CachingRxCryptoUtil implements RxCryptoUtil {
+public class CachingCryptoUtil implements CryptoUtil {
 
   private static final boolean DEBUG = false;
-  private static final String TAG = CachingRxCryptoUtil.class.getSimpleName();
+  private static final String TAG = CachingCryptoUtil.class.getSimpleName();
 
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
 
-  private final RxCryptoUtil mDelegate;
+  private final CryptoUtil mDelegate;
 
-  public CachingRxCryptoUtil(KeyPair keyPair) {
-    this(new BaseRxCryptoUtil(keyPair));
+  public CachingCryptoUtil(KeyPair keyPair) {
+    this(new BaseCryptoUtil(keyPair));
   }
 
-  CachingRxCryptoUtil(RxCryptoUtil delegate) {
+  CachingCryptoUtil(CryptoUtil delegate) {
     mDelegate = delegate;
   }
 

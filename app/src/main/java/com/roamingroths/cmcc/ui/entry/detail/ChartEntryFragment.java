@@ -15,7 +15,7 @@ import android.widget.TextView;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -55,7 +55,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  EntryProvider<ChartEntry> createEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  EntryProvider<ChartEntry> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     return ChartEntryProvider.forDb(db, cryptoUtil);
   }
 

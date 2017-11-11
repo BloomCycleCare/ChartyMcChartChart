@@ -20,10 +20,10 @@ import io.reactivex.functions.Function;
  * Created by parkeroth on 10/15/17.
  */
 
-public class BaseRxCryptoUtil implements RxCryptoUtil {
+public class BaseCryptoUtil implements CryptoUtil {
 
   private static final boolean DEBUG = true;
-  private static final String TAG = BaseRxCryptoUtil.class.getSimpleName();
+  private static final String TAG = BaseCryptoUtil.class.getSimpleName();
 
   private final PrivateKey mPrivateKey;
   private final PublicKey mPublicKey;
@@ -31,7 +31,7 @@ public class BaseRxCryptoUtil implements RxCryptoUtil {
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
 
-  public BaseRxCryptoUtil(KeyPair keyPair) {
+  public BaseCryptoUtil(KeyPair keyPair) {
     mPrivateKey = keyPair.getPrivate();
     mPublicKey = keyPair.getPublic();
   }

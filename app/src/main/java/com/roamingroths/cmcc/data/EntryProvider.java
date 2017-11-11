@@ -6,7 +6,7 @@ import com.google.common.base.Predicate;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -41,14 +41,14 @@ public abstract class EntryProvider<E extends Entry> {
   private final Class<E> mClazz;
   private final String mChildId;
   private final FirebaseDatabase db;
-  private final RxCryptoUtil mCryptoUtil;
+  private final CryptoUtil mCryptoUtil;
   private final String mLogId;
 
   enum ChildId {
     CHART, WELLNESS, SYMPTOM
   }
 
-  EntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil, ChildId childId, Class<E> clazz) {
+  EntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil, ChildId childId, Class<E> clazz) {
     this.db = db;
     this.mCryptoUtil = cryptoUtil;
     this.mChildId = childId.name().toLowerCase();

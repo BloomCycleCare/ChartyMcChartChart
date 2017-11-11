@@ -16,7 +16,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.utils.Callbacks;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -209,12 +208,18 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
     Log.v("CycleAdapter", "onChildChanged");
-    mCycleKeyProvider.forCycle(dataSnapshot.getKey()).getChartKeys(mUserId, new Callbacks.HaltingCallback<Cycle.Keys>() {
-      @Override
-      public void acceptData(Cycle.Keys keys) {
-        maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, keys));
-      }
-    });
+    mCycleKeyProvider.getChartKeys(dataSnapshot.getKey(), mUserId)
+        .subscribe(new Consumer<Cycle.Keys>() {
+          @Override
+          public void accept(Cycle.Keys keys) throws Exception {
+            maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, keys));
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(TAG, "Error getting keys", throwable);
+          }
+        });
   }
 
   @Override

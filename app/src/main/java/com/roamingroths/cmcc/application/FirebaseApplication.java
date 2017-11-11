@@ -6,7 +6,7 @@ import android.support.v7.preference.PreferenceManager;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.CryptoProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -23,7 +23,7 @@ import io.reactivex.functions.Consumer;
 
 public class FirebaseApplication extends Application {
 
-  private static RxCryptoUtil mCryptoUtil;
+  private static CryptoUtil mCryptoUtil;
 
   @Override
   public void onCreate() {
@@ -35,17 +35,17 @@ public class FirebaseApplication extends Application {
     PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
   }
 
-  public static Single<RxCryptoUtil> initCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {
+  public static Single<CryptoUtil> initCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {
     return CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil(user, phoneNumber)
-        .doOnSuccess(new Consumer<RxCryptoUtil>() {
+        .doOnSuccess(new Consumer<CryptoUtil>() {
           @Override
-          public void accept(RxCryptoUtil cryptoUtil) throws Exception {
+          public void accept(CryptoUtil cryptoUtil) throws Exception {
             mCryptoUtil = cryptoUtil;
           }
         });
   }
 
-  public static RxCryptoUtil getCryptoUtil() {
+  public static CryptoUtil getCryptoUtil() {
     return mCryptoUtil;
   }
 }

@@ -27,13 +27,5 @@ public class ChartEntryTest {
     KeyPair keyPair = generator.generateKeyPair();
     PublicKey pubKey = keyPair.getPublic();
     PrivateKey privKey = keyPair.getPrivate();
-
-    for (String observationStr : OBSERVATION_STRS) {
-      /**ChartEntry entry =
-          new ChartEntry(LocalDate.now(), Observation.fromString(observationStr), true, false, false);
-      assertEquals(
-          entry, CryptoUtil.decrypt(CryptoUtil.encrypt(entry, pubKey), privKey, ChartEntry.class));
-       */
-    }
   }
 }

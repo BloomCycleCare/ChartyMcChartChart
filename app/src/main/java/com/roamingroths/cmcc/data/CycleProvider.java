@@ -14,8 +14,8 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.application.FirebaseApplication;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -62,7 +62,7 @@ public class CycleProvider {
   private static final String TAG = CycleProvider.class.getSimpleName();
 
   private final FirebaseDatabase db;
-  private final RxCryptoUtil cryptoUtil;
+  private final CryptoUtil cryptoUtil;
   private final CycleKeyProvider cycleKeyProvider;
   private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
 
@@ -70,7 +70,7 @@ public class CycleProvider {
     return forDb(db, FirebaseApplication.getCryptoUtil());
   }
 
-  public static CycleProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  public static CycleProvider forDb(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     return new CycleProvider(
         db,
         cryptoUtil,
@@ -81,7 +81,7 @@ public class CycleProvider {
   }
 
   private CycleProvider(
-      FirebaseDatabase db, RxCryptoUtil cryptoUtil, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
+      FirebaseDatabase db, CryptoUtil cryptoUtil, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
     this.db = db;
     this.cryptoUtil = cryptoUtil;
     this.cycleKeyProvider = cycleKeyProvider;
@@ -167,16 +167,20 @@ public class CycleProvider {
     DatabaseReference cycleRef = reference(userId).push();
     logV("Creating new cycle: " + cycleRef.getKey());
     final String cycleId = cycleRef.getKey();
-    Cycle.Keys keys = new Cycle.Keys(
-        CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey());
-    final Cycle cycle = new Cycle(
-        cycleId,
-        (previousCycle == null) ? null : previousCycle.id,
-        (nextCycle == null) ? null : nextCycle.id,
-        startDate,
-        endDate,
-        keys);
-    return putCycleRx(userId, cycle).andThen(Single.just(cycle));
+    try {
+      Cycle.Keys keys = new Cycle.Keys(
+          AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
+      final Cycle cycle = new Cycle(
+          cycleId,
+          (previousCycle == null) ? null : previousCycle.id,
+          (nextCycle == null) ? null : nextCycle.id,
+          startDate,
+          endDate,
+          keys);
+      return putCycleRx(userId, cycle).andThen(Single.just(cycle));
+    } catch (Exception e) {
+      return Single.error(e);
+    }
   }
 
   public Maybe<Cycle> getCurrentCycle(final String userId) {

@@ -1,7 +1,7 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 
@@ -15,11 +15,11 @@ import javax.crypto.SecretKey;
 
 public class SymptomEntryProvider extends EntryProvider<SymptomEntry> {
 
-  public static SymptomEntryProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  public static SymptomEntryProvider forDb(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     return new SymptomEntryProvider(db, cryptoUtil);
   }
 
-  private SymptomEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  private SymptomEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     super(db, cryptoUtil, ChildId.SYMPTOM, SymptomEntry.class);
   }
 

@@ -1,7 +1,7 @@
 package com.roamingroths.cmcc.data;
 
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 
@@ -15,11 +15,11 @@ import javax.crypto.SecretKey;
 
 public class WellnessEntryProvider extends EntryProvider<WellnessEntry> {
 
-  public static WellnessEntryProvider forDb(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  public static WellnessEntryProvider forDb(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     return new WellnessEntryProvider(db, cryptoUtil);
   }
 
-  private WellnessEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil) {
+  private WellnessEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     super(db, cryptoUtil, ChildId.WELLNESS, WellnessEntry.class);
   }
 

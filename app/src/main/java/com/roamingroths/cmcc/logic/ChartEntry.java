@@ -5,10 +5,7 @@ import android.os.Parcelable;
 import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
-import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -64,18 +61,6 @@ public class ChartEntry extends Entry implements Parcelable {
 
   public static ChartEntry emptyEntry(LocalDate date, SecretKey secretKey) {
     return new ChartEntry(date, null, false, false, false, false, false, secretKey);
-  }
-
-  @Deprecated
-  public static void fromEncryptedString(
-      String encryptedEntry, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
-    CryptoUtil.decrypt(encryptedEntry, secretKey, ChartEntry.class, callback);
-  }
-
-  @Deprecated
-  public static void fromSnapshot(
-      DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<ChartEntry> callback) {
-    fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {

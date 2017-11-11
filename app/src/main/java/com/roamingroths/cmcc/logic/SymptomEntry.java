@@ -5,11 +5,8 @@ import android.os.Parcelable;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.google.firebase.database.DataSnapshot;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.Cipherable;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.utils.Callbacks;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -26,18 +23,6 @@ import javax.crypto.SecretKey;
 public class SymptomEntry extends Entry implements Parcelable, Cipherable {
 
   public Map<String, Boolean> symptoms;
-
-  @Deprecated
-  public static void fromEncryptedString(
-      String encryptedEntry, SecretKey secretKey, Callbacks.Callback<SymptomEntry> callback) {
-    CryptoUtil.decrypt(encryptedEntry, secretKey, SymptomEntry.class, callback);
-  }
-
-  @Deprecated
-  public static void fromSnapshot(
-      DataSnapshot snapshot, SecretKey secretKey, Callbacks.Callback<SymptomEntry> callback) {
-    fromEncryptedString(snapshot.getValue(String.class), secretKey, callback);
-  }
 
   public static SymptomEntry emptyEntry(LocalDate date, SecretKey key) {
     return new SymptomEntry(date, new HashMap<String, Boolean>(), key);

@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.application.FirebaseApplication;
-import com.roamingroths.cmcc.crypto.RxCryptoUtil;
+import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -135,7 +135,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   abstract void duringCreateView(View view, Bundle args, Bundle savedInstanceState);
 
-  abstract EntryProvider<E> createEntryProvider(FirebaseDatabase db, RxCryptoUtil cryptoUtil);
+  abstract EntryProvider<E> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil);
 
   abstract void updateUiWithEntry(E entry);
 

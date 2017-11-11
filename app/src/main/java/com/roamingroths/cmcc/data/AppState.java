@@ -5,7 +5,7 @@ import android.util.Log;
 import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -78,7 +78,7 @@ public class AppState {
           public ObservableSource<Cycle> apply(CycleData cycleData) throws Exception {
             Cycle cycle = cycleData.cycle;
             Log.v("AppState", "Creating new keys for cycle starting " + cycle.startDateStr);
-            cycle.setKeys(new Cycle.Keys(CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey(), CryptoUtil.createSecretKey()));
+            cycle.setKeys(new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey()));
             Set<Completable> putResults = new HashSet<>();
             putResults.add(cycleProvider.putCycleRx(user.getUid(), cycle));
             for (EntrySet entrySet : cycleData.entrySets) {
