@@ -101,6 +101,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements
         swapCycles(cycleFromResponse);
       }
     }
+    EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
+    mChartEntryAdapter.updateContainer(container);
     switch (requestCode) {
       default:
         Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);

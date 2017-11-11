@@ -83,6 +83,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
   private Cycle mCycle;
   private CycleProvider mCycleProvider;
   private String mUserId;
+  private LocalDate mDate;
 
   private Map<Class<? extends Entry>, Entry> mExistingEntries = new HashMap<>();
   private Map<Class<? extends Entry>, Entry> mEntries = new HashMap<>();
@@ -99,6 +100,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     setContentView(R.layout.activity_entry_detail);
 
     EntryContainer container = getEntryContainer(getIntent());
+    mDate = container.entryDate;
 
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     mCycle = getCycle(getIntent());
@@ -259,6 +261,14 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     }
   }
 
+  private EntryContainer getContainer() {
+    return new EntryContainer(
+        mDate,
+        (ChartEntry) mEntries.get(ChartEntry.class),
+        (WellnessEntry) mEntries.get(WellnessEntry.class),
+        (SymptomEntry) mEntries.get(SymptomEntry.class));
+  }
+
   private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
     if (issues.isEmpty()) {
       doSave().subscribe(new Consumer<Cycle>() {
@@ -267,6 +277,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
           Intent returnIntent = new Intent();
           returnIntent.putExtra(Cycle.class.getName(), cycle);
+          returnIntent.putExtra(EntryContainer.class.getName(), getContainer());
           setResult(OK_RESPONSE, returnIntent);
           finish();
         }

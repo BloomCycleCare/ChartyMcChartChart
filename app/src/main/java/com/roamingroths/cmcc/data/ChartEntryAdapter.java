@@ -70,6 +70,10 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return mContainerList.initialize(cycleProvider);
   }
 
+  public void updateContainer(EntryContainer container) {
+    mContainerList.changeEntry(container);
+  }
+
   public synchronized void attachListener() {
     if (mEntryListenerAttached.compareAndSet(false, true)) {
       //mEntriesDbRef.addChildEventListener(mListener);
