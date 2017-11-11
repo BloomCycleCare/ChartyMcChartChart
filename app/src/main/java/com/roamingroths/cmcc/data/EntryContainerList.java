@@ -12,6 +12,8 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.SymptomEntry;
+import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -19,7 +21,6 @@ import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,8 +28,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Function3;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -73,7 +77,7 @@ public class EntryContainerList {
     if (DEBUG) Log.v(TAG, "Initialize");
     if (mInitialized.compareAndSet(false, true)) {
       return cycleProvider.maybeCreateNewEntries(mCycle)
-          .andThen(fillFromProvider(cycleProvider.getProviderForClazz(ChartEntry.class)));
+          .andThen(fillFromProvider(cycleProvider));
     } else {
       return Completable.error(new IllegalStateException());
     }
@@ -398,38 +402,30 @@ public class EntryContainerList {
     }
   }
 
-  private Completable fillFromProvider(EntryProvider<ChartEntry> chartEntryProvider) {
+  private Completable fillFromProvider(CycleProvider cycleProvider) {
     logV("Begin filling from DB");
-    return chartEntryProvider.getDecryptedEntries(mCycle)
-        .toList()
-        .flatMapCompletable(new Function<List<ChartEntry>, CompletableSource>() {
+    Observable<ChartEntry> chartEntries =
+        cycleProvider.getProviderForClazz(ChartEntry.class).getDecryptedEntries(mCycle);
+    Observable<WellnessEntry> wellnessEntries =
+        cycleProvider.getProviderForClazz(WellnessEntry.class).getDecryptedEntries(mCycle);
+    Observable<SymptomEntry> symptomEntries =
+        cycleProvider.getProviderForClazz(SymptomEntry.class).getDecryptedEntries(mCycle);
+    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ChartEntry, WellnessEntry, SymptomEntry, EntryContainer>() {
+      @Override
+      public EntryContainer apply(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
+        return new EntryContainer(chartEntry.getDate(), chartEntry, wellnessEntry, symptomEntry);
+      }
+    }).observeOn(AndroidSchedulers.mainThread()).flatMapCompletable(new Function<EntryContainer, CompletableSource>() {
+      @Override
+      public CompletableSource apply(final EntryContainer entryContainer) throws Exception {
+        return Completable.fromAction(new Action() {
           @Override
-          public CompletableSource apply(final List<ChartEntry> chartEntries) throws Exception {
-            logV("Found " + chartEntries.size() + " entries");
-            return Completable.fromAction(new Action() {
-              @Override
-              public void run() throws Exception {
-                for (ChartEntry entry : chartEntries) {
-                  addEntry(new EntryContainer(entry.getDate(), entry));
-                }
-              }
-            });
+          public void run() throws Exception {
+            addEntry(entryContainer);
           }
         });
-        /*.subscribeOn(Schedulers.io())
-        .observeOn(AndroidSchedulers.mainThread())
-        .flatMapCompletable(new Function<ChartEntry, CompletableSource>() {
-          @Override
-          public CompletableSource apply(final ChartEntry chartEntry) throws Exception {
-            logV("Adding entry");
-            return Completable.fromAction(new Action() {
-              @Override
-              public void run() throws Exception {
-                addEntry(new EntryContainer(chartEntry.getDate(), chartEntry));
-              }
-            });
-          }
-        });*/
+      }
+    });
   }
 
   private void logV(String message) {

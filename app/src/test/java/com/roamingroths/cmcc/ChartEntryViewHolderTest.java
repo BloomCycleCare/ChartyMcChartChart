@@ -303,7 +303,7 @@ public class ChartEntryViewHolderTest {
     EntryContainerList entryList = EntryContainerList.builder(CYCLE, preferences).build();
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(entryList.size());
-      entryList.addEntry(new EntryContainer(entryDate, anEntry.getKey().asChartEntry(entryDate)));
+      entryList.addEntry(new EntryContainer(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
     }
     int i = entryList.size() - 1;
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {

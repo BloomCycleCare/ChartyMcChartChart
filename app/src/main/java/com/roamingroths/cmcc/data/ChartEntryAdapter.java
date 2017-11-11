@@ -72,7 +72,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   public synchronized void attachListener() {
     if (mEntryListenerAttached.compareAndSet(false, true)) {
-      mEntriesDbRef.addChildEventListener(mListener);
+      //mEntriesDbRef.addChildEventListener(mListener);
     } else {
       Log.w("ChartEntryAdapter", "Already attached!");
     }
@@ -80,7 +80,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   public synchronized void detachListener() {
     if (mEntryListenerAttached.compareAndSet(true, false)) {
-      mEntriesDbRef.removeEventListener(mListener);
+      //mEntriesDbRef.removeEventListener(mListener);
     } else {
       Log.w("ChartEntryAdapter", "Not attached!");
     }
@@ -129,6 +129,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     intent.putExtra(Extras.ENTRY_DATE_STR, DateUtil.toWireStr(container.entryDate));
     intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mContainerList.expectUnusualBleeding(index));
     intent.putExtra(Cycle.class.getName(), mContainerList.mCycle);
+    intent.putExtra(EntryContainer.class.getName(), container);
     return intent;
   }
 }

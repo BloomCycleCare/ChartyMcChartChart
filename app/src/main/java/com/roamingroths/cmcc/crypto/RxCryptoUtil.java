@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.crypto;
 
+import android.util.Log;
+
 import com.roamingroths.cmcc.utils.GsonUtil;
 
 import java.security.KeyPair;
@@ -30,6 +32,7 @@ public class RxCryptoUtil {
   }
 
   public <T> Single<T> decrypt(String encryptedStr, SecretKey key, final Class<T> clazz) {
+    if (DEBUG) Log.v(TAG, "Decrypting " + clazz.getSimpleName());
     return AesCryptoUtil.decryptRx(key, encryptedStr)
         .map(new Function<String, T>() {
           @Override

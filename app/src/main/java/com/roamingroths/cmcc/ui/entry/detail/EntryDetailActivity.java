@@ -26,8 +26,12 @@ import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
+import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.SymptomEntry;
+import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -90,19 +94,20 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
   }
 
   @Override
-  public void onExistingEntryLoaded(Entry entry, Class<? extends Entry> clazz) {
-    if (DEBUG) Log.v(TAG, "Received existing entry for " + clazz.toString());
-    mExistingEntries.put(clazz, entry);
-  }
-
-  @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
 
+    EntryContainer container = getEntryContainer(getIntent());
+
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     mCycle = getCycle(getIntent());
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+
+
+    mExistingEntries.put(ChartEntry.class, container.chartEntry);
+    mExistingEntries.put(WellnessEntry.class, container.wellnessEntry);
+    mExistingEntries.put(SymptomEntry.class, container.symptomEntry);
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -207,6 +212,13 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       throw new IllegalStateException();
     }
     return intent.getParcelableExtra(Cycle.class.getName());
+  }
+
+  private static EntryContainer getEntryContainer(Intent intent) {
+    if (!intent.hasExtra(EntryContainer.class.getName())) {
+      throw new IllegalStateException();
+    }
+    return intent.getParcelableExtra(EntryContainer.class.getName());
   }
 
   private static String getEntryDateStr(Intent intent) {
@@ -391,17 +403,20 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           args.putBoolean(
               Extras.EXPECT_UNUSUAL_BLEEDING,
               intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
+          args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(ChartEntry.class));
 
           fragment = new ChartEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of ChartEntryFragment");
           return fragment;
         case 1:
+          args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(WellnessEntry.class));
           fragment = new WellnessEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of WellnessEntryFragment");
           return fragment;
         case 2:
+          args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(SymptomEntry.class));
           fragment = new SymptomEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of SymptomEntryFragment");
@@ -428,5 +443,9 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       }
       return null;
     }
+  }
+
+  private Entry getExistingEntry(Class<? extends Entry> clazz) {
+    return mExistingEntries.get(clazz);
   }
 }

@@ -26,7 +26,6 @@ import java.util.Set;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
-import io.reactivex.functions.Consumer;
 
 /**
  * Created by parkeroth on 9/17/17.
@@ -35,8 +34,6 @@ import io.reactivex.functions.Consumer;
 public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   public interface EntryListener {
-    void onExistingEntryLoaded(Entry entry, Class<? extends Entry> clazz);
-
     void onEntryUpdated(Entry entry, Class<? extends Entry> clazz);
   }
 
@@ -78,49 +75,19 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     String entryDateStr = getArguments().getString(Extras.ENTRY_DATE_STR);
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
     mCycle = getArguments().getParcelable(Cycle.class.getName());
-    mExistingEntry = null;
-
-    mEntryProvider.getEntry(mCycle, getEntryDateStr())
-        .toSingle()
-        .subscribe(new Consumer<E>() {
-          @Override
-          public void accept(E entry) throws Exception {
-            mExistingEntry = processExistingEntry(entry);
-            mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-            Log.e(EntryFragment.class.getSimpleName(), "Error loading Entry", throwable);
-          }
-        });
+    mExistingEntry = getArguments().getParcelable(Entry.class.getSimpleName());
   }
 
   @Override
   public final View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     Log.v(mTag, "onCreateView: " + String.valueOf(savedInstanceState != null));
 
-    if (mExistingEntry != null) {
-      updateUiWithEntry(mExistingEntry);
-    }
-
     View view = inflater.inflate(layoutId, container, false);
     duringCreateView(view, getArguments(), savedInstanceState);
 
-    mEntryProvider.getEntry(mCycle, getEntryDateStr())
-        .toSingle()
-        .subscribe(new Consumer<E>() {
-          @Override
-          public void accept(E entry) throws Exception {
-            mExistingEntry = processExistingEntry(entry);
-            mUpdateListener.onExistingEntryLoaded(mExistingEntry, mClazz);
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-            Log.e(EntryFragment.class.getSimpleName(), "Error loading Entry", throwable);
-          }
-        });
+    if (mExistingEntry != null) {
+      updateUiWithEntry(processExistingEntry(mExistingEntry));
+    }
 
     mUiActive = true;
     return view;

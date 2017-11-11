@@ -118,6 +118,7 @@ public class ChartEntry extends Entry implements Parcelable {
     dest.writeByte((byte) (firstDay ? 1 : 0));
     dest.writeByte((byte) (pointOfChange ? 1 : 0));
     dest.writeByte((byte) (unusualBleeding ? 1 : 0));
+    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
   @Override

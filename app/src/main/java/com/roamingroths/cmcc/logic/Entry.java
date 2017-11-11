@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.logic;
 
+import android.os.Parcelable;
+
 import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -11,7 +13,7 @@ import javax.crypto.SecretKey;
  * Created by parkeroth on 9/20/17.
  */
 
-public abstract class Entry implements Cipherable {
+public abstract class Entry implements Cipherable, Parcelable {
 
   private final LocalDate mEntryDate;
   private transient volatile SecretKey mKey;

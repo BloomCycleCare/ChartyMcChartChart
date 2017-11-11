@@ -110,15 +110,22 @@ public class CycleProvider {
   }
 
   public Completable maybeCreateNewEntries(Cycle cycle) {
-    if (cycle.endDate != null) {
-      logV("No entries to add, end date set");
-      return Completable.complete();
-    }
-    List<Completable> results = new ArrayList<>(entryProviders.size());
-    for (EntryProvider provider : entryProviders.values()) {
-      results.add(provider.maybeAddNewEntries(cycle));
-    }
-    return Completable.merge(results);
+    return Single.just(cycle)
+        .observeOn(Schedulers.computation())
+        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle cycle) throws Exception {
+            if (cycle.endDate != null) {
+              logV("No entries to add, end date set");
+              return Completable.complete();
+            }
+            List<Completable> results = new ArrayList<>(entryProviders.size());
+            for (EntryProvider provider : entryProviders.values()) {
+              results.add(provider.maybeAddNewEntries(cycle));
+            }
+            return Completable.merge(results);
+          }
+        });
   }
 
   public void detachListener(ChildEventListener listener, String userId) {

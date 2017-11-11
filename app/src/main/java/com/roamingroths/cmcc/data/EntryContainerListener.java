@@ -12,8 +12,11 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -33,15 +36,21 @@ public class EntryContainerListener implements ChildEventListener {
   }
 
   @Override
-  public void onChildAdded(DataSnapshot dataSnapshot, String s) {
+  public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
-    mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey)
-        .subscribeOn(Schedulers.computation())
+    Single.just(dataSnapshot)
+        .observeOn(Schedulers.computation())
+        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
+          @Override
+          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+            return mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey);
+          }
+        })
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Consumer<ChartEntry>() {
           @Override
           public void accept(ChartEntry chartEntry) throws Exception {
-            mList.addEntry(new EntryContainer(entryDate, chartEntry));
+            mList.addEntry(new EntryContainer(entryDate, chartEntry, null, null));
           }
         }, new Consumer<Throwable>() {
           @Override
@@ -54,13 +63,19 @@ public class EntryContainerListener implements ChildEventListener {
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
-    mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey)
+    Single.just(dataSnapshot)
         .subscribeOn(Schedulers.computation())
+        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
+          @Override
+          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+            return mProvider.fromSnapshot(snapshot, mList.mCycle.keys.chartKey);
+          }
+        })
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Consumer<ChartEntry>() {
           @Override
           public void accept(ChartEntry chartEntry) throws Exception {
-            mList.changeEntry(new EntryContainer(entryDate, chartEntry));
+            mList.changeEntry(new EntryContainer(entryDate, chartEntry, null, null));
           }
         }, new Consumer<Throwable>() {
           @Override

@@ -128,6 +128,7 @@ public abstract class EntryProvider<E extends Entry> {
   public Maybe<E> getEntry(Cycle cycle, String entryDateStr) {
     final SecretKey key = getKey(cycle);
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle.id, entryDateStr))
+        .observeOn(Schedulers.computation())
         .flatMap(new Function<DataSnapshot, MaybeSource<E>>() {
           @Override
           public MaybeSource<E> apply(DataSnapshot snapshot) throws Exception {
@@ -158,11 +159,18 @@ public abstract class EntryProvider<E extends Entry> {
   public final Observable<E> getDecryptedEntries(final Cycle cycle) {
     logV("Getting decrypted entries");
     return getEncryptedEntries(cycle)
-        .subscribeOn(Schedulers.computation())
+        .observeOn(Schedulers.computation())
         .flatMap(new Function<String, ObservableSource<E>>() {
           @Override
           public ObservableSource<E> apply(String encryptedEntry) throws Exception {
-            return mCryptoUtil.decrypt(encryptedEntry, getKey(cycle), mClazz).toObservable();
+            return mCryptoUtil.decrypt(encryptedEntry, getKey(cycle), mClazz)
+                .map(new Function<E, E>() {
+                  @Override
+                  public E apply(E e) throws Exception {
+                    e.swapKey(getKey(cycle));
+                    return e;
+                  }
+                }).toObservable();
           }
         });
   }

@@ -6,6 +6,7 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.DataSnapshot;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.utils.Callbacks;
@@ -55,6 +56,7 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
     for (int i = 0; i < size; i++) {
       symptoms.put(in.readString(), in.readByte() != 0);
     }
+    swapKey(AesCryptoUtil.parseKey(in.readString()));
   }
 
   @Override
@@ -70,6 +72,7 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
       dest.writeString(entry.getKey());
       dest.writeByte((byte) (entry.getValue() ? 1 : 0));
     }
+    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
   @Override
