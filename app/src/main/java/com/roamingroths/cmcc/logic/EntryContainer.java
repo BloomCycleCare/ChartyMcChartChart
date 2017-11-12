@@ -43,7 +43,6 @@ public class EntryContainer implements Parcelable {
     List<String> lines = new ArrayList<>();
     List<String> chartEntryLines = chartEntry.getSummaryLines();
     if (!chartEntryLines.isEmpty()) {
-      lines.add(" ");
       lines.addAll(chartEntryLines);
     }
     List<String> wellnessLines = wellnessEntry.getSummaryLines();

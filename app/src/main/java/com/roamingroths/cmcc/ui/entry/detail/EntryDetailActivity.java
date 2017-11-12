@@ -498,9 +498,9 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
   private String getSaveMessage(EntryContainer container) {
     List<String> lines = new ArrayList<>();
 
-    int dayNum = Days.daysBetween(mCycle.startDate, container.entryDate).getDays();
+    int dayNum = 1 + Days.daysBetween(mCycle.startDate, container.entryDate).getDays();
     lines.add("Day #" + dayNum + " Summary\n");
     lines.addAll(container.getSummaryLines());
-    return ON_NEW_LINE.join(container.getSummaryLines());
+    return ON_NEW_LINE.join(lines);
   }
 }
