@@ -96,10 +96,22 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     mEntries.put(clazz, entry);
   }
 
+  private void updateMaps(EntryContainer container) {
+    mExistingEntries.put(ChartEntry.class, container.chartEntry);
+    mExistingEntries.put(WellnessEntry.class, container.wellnessEntry);
+    mExistingEntries.put(SymptomEntry.class, container.symptomEntry);
+
+    mEntries.put(ChartEntry.class, container.chartEntry);
+    mEntries.put(WellnessEntry.class, container.wellnessEntry);
+    mEntries.put(SymptomEntry.class, container.symptomEntry);
+  }
+
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
+
+    if (DEBUG) Log.v(TAG, "onCreate: Start");
 
     EntryContainer container = getEntryContainer(getIntent());
     mDate = container.entryDate;
@@ -108,10 +120,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     mCycle = getCycle(getIntent());
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
 
-
-    mExistingEntries.put(ChartEntry.class, container.chartEntry);
-    mExistingEntries.put(WellnessEntry.class, container.wellnessEntry);
-    mExistingEntries.put(SymptomEntry.class, container.symptomEntry);
+    updateMaps(container);
 
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -127,6 +136,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
+
+    if (DEBUG) Log.v(TAG, "onCreate: Finish");
   }
 
 

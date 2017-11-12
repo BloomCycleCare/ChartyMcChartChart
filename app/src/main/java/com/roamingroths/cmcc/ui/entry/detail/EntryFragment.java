@@ -60,6 +60,8 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   @Override
   public void onAttach(Context context) {
     super.onAttach(context);
+    Log.v(mTag, "onAttach (" + mClazz.getSimpleName() + "): Start");
+
     try {
       mUpdateListener = (EntryListener) context;
     } catch (ClassCastException cce) {
@@ -70,26 +72,33 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    Log.v(mTag, "onCreate: " + String.valueOf(savedInstanceState != null));
+    Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Start");
 
     String entryDateStr = getArguments().getString(Extras.ENTRY_DATE_STR);
     mEntryDate = DateUtil.fromWireStr(entryDateStr);
     mCycle = getArguments().getParcelable(Cycle.class.getName());
     mExistingEntry = getArguments().getParcelable(Entry.class.getSimpleName());
+
+    Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Finish");
   }
 
   @Override
   public final View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    Log.v(mTag, "onCreateView: " + String.valueOf(savedInstanceState != null));
+    Log.v(mTag, "onCreateView: (" + mClazz.getSimpleName() + "): Start");
 
     View view = inflater.inflate(layoutId, container, false);
+
+    Log.v(mTag, "duringCreateView: (" + mClazz.getSimpleName() + "): Start");
     duringCreateView(view, getArguments(), savedInstanceState);
+    Log.v(mTag, "duringCreateView: (" + mClazz.getSimpleName() + "): Finish");
 
     if (mExistingEntry != null) {
       updateUiWithEntry(processExistingEntry(mExistingEntry));
     }
 
     mUiActive = true;
+
+    Log.v(mTag, "onCreateView: (" + mClazz.getSimpleName() + "): Finish");
     return view;
   }
 

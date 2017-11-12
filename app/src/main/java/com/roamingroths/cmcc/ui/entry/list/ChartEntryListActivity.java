@@ -166,6 +166,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
   @Override
   public void onClick(EntryContainer container, int index) {
+    log("Satring detail activity");
     startActivityForResult(
         mChartEntryAdapter.getIntentForModification(container, index),
         EntryDetailActivity.MODIFY_REQUEST);
