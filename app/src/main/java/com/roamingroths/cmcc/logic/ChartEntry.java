@@ -10,6 +10,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.crypto.SecretKey;
 
 /**
@@ -61,6 +64,14 @@ public class ChartEntry extends Entry implements Parcelable {
 
   public static ChartEntry emptyEntry(LocalDate date, SecretKey secretKey) {
     return new ChartEntry(date, null, false, false, false, false, false, secretKey);
+  }
+
+  @Override
+  public List<String> getSummaryLines() {
+    List<String> lines = new ArrayList<>();
+    //lines.add(observation.toString());
+    lines.addAll(observation.getSummaryLines());
+    return lines;
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {

@@ -11,7 +11,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.crypto.SecretKey;
@@ -42,6 +44,21 @@ public class WellnessEntry extends Entry implements Parcelable, Cipherable {
       wellnessItems.put(in.readString(), in.readByte() != 0);
     }
     swapKey(AesCryptoUtil.parseKey(in.readString()));
+  }
+
+  @Override
+  public List<String> getSummaryLines() {
+    List<String> lines = new ArrayList<>();
+    lines.add("Wellness Items");
+    for (Map.Entry<String, Boolean> entry : wellnessItems.entrySet()) {
+      if (entry.getValue()) {
+        lines.add(entry.getKey());
+      }
+    }
+    if (lines.size() == 1) {
+      return new ArrayList<>();
+    }
+    return lines;
   }
 
   @Override

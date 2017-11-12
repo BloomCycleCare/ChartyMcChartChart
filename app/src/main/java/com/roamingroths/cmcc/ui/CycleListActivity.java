@@ -9,7 +9,6 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.ShareCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -20,12 +19,9 @@ import android.view.View;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleAdapter;
-import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.FileUtil;
@@ -39,16 +35,13 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 
-public class CycleListActivity extends AppCompatActivity
+public class CycleListActivity extends BaseActivity
     implements CycleAdapter.OnClickHandler {
 
   private static final String TAG = CycleListActivity.class.getSimpleName();
 
-  private CycleProvider mCycleProvider;
-
   private RecyclerView mRecyclerView;
   private CycleAdapter mCycleAdapter;
-  private String mUserId;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -57,12 +50,10 @@ public class CycleListActivity extends AppCompatActivity
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     //setSupportActionBar(toolbar);
 
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
-
     setTitle("Your Cycles");
 
-    String userId = FirebaseAuth.getInstance().getCurrentUser().getUid();
-    mCycleAdapter = new CycleAdapter(this, this, userId, mCycleProvider.getCycleKeyProvider());
+    mCycleAdapter = new CycleAdapter(
+        this, this, getUser().getUid(), getProvider().forCycle().getCycleKeyProvider());
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_cycle_entry);
     boolean shouldReverseLayout = false;
@@ -88,21 +79,19 @@ public class CycleListActivity extends AppCompatActivity
         datePickerDialog.show(getFragmentManager(), "datepickerdialog");
       }
     });
-
-    mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
   }
 
   @Override
   protected void onResume() {
     super.onResume();
     mCycleAdapter.clear(); // TODO: fix this
-    mCycleProvider.attachListener(mCycleAdapter, mUserId);
+    getProvider().forCycle().attachListener(mCycleAdapter, getUser().getUid());
   }
 
   @Override
   protected void onPause() {
     super.onPause();
-    mCycleProvider.detachListener(mCycleAdapter, mUserId);
+    getProvider().forCycle().detachListener(mCycleAdapter, getUser().getUid());
   }
 
   @Override
@@ -131,7 +120,7 @@ public class CycleListActivity extends AppCompatActivity
           .setMessage("This is permanent and cannot be undone!")
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
-              mCycleProvider.dropCycles()
+              getProvider().forCycle().dropCycles()
                   .subscribe(new Action() {
                     @Override
                     public void run() throws Exception {
@@ -158,7 +147,7 @@ public class CycleListActivity extends AppCompatActivity
     if (id == R.id.action_export) {
       Log.v("CycleListActivity", "Begin export");
       final CycleListActivity activity = this;
-      AppState.create(mCycleProvider)
+      AppState.create(getProvider().forCycle())
           .subscribe(new Consumer<AppState>() {
             @Override
             public void accept(AppState appState) throws Exception {

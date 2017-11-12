@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.MapDifference;
@@ -38,8 +39,10 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
@@ -62,6 +65,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private static final boolean DEBUG = true;
   private static final String TAG = EntryDetailActivity.class.getSimpleName();
+
+  private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
   public static final int CREATE_REQUEST = 1;
   public static final int MODIFY_REQUEST = 2;
@@ -162,13 +167,29 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     }
 
     if (id == R.id.action_save) {
-      updateEntryMapFromUIs();
-      Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
-      for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-        EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
-        issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
-      }
-      addressValidationIssues(issues);
+      EntryContainer container = updateEntryMapFromUIs();
+
+      new AlertDialog.Builder(this)
+          //set message, title, and icon
+          .setTitle("Save Entry?")
+          .setMessage(getSaveMessage(getContainer()))
+          .setIcon(R.drawable.ic_assignment_black_24dp)
+          .setPositiveButton("Save", new DialogInterface.OnClickListener() {
+            public void onClick(final DialogInterface dialog, int whichButton) {
+              Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
+              for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+                EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+                issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
+              }
+              addressValidationIssues(issues);
+            }
+          })
+          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+            }
+          })
+          .create().show();
       return true;
     }
     if (id == R.id.action_delete) {
@@ -259,7 +280,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return !difference.areEqual();
   }
 
-  private void updateEntryMapFromUIs() {
+  private EntryContainer updateEntryMapFromUIs() {
     for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
       EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
       try {
@@ -272,6 +293,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       } catch (Exception e) {
       }
     }
+    return getContainer();
   }
 
   private EntryContainer getContainer() {
@@ -471,5 +493,14 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private Entry getExistingEntry(Class<? extends Entry> clazz) {
     return mExistingEntries.get(clazz);
+  }
+
+  private String getSaveMessage(EntryContainer container) {
+    List<String> lines = new ArrayList<>();
+
+    int dayNum = Days.daysBetween(mCycle.startDate, container.entryDate).getDays();
+    lines.add("Day #" + dayNum + " Summary\n");
+    lines.addAll(container.getSummaryLines());
+    return ON_NEW_LINE.join(container.getSummaryLines());
   }
 }

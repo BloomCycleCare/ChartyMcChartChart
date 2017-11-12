@@ -62,7 +62,6 @@ public class CycleProvider {
   private static final String TAG = CycleProvider.class.getSimpleName();
 
   private final FirebaseDatabase db;
-  private final CryptoUtil cryptoUtil;
   private final CycleKeyProvider cycleKeyProvider;
   private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
 
@@ -73,7 +72,6 @@ public class CycleProvider {
   public static CycleProvider forDb(FirebaseDatabase db, CryptoUtil cryptoUtil) {
     return new CycleProvider(
         db,
-        cryptoUtil,
         CycleKeyProvider.forDb(db, cryptoUtil),
         ChartEntryProvider.forDb(db, cryptoUtil),
         WellnessEntryProvider.forDb(db, cryptoUtil),
@@ -81,9 +79,8 @@ public class CycleProvider {
   }
 
   private CycleProvider(
-      FirebaseDatabase db, CryptoUtil cryptoUtil, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
+      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
     this.db = db;
-    this.cryptoUtil = cryptoUtil;
     this.cycleKeyProvider = cycleKeyProvider;
     entryProviders = ImmutableMap.<Class<? extends Entry>, EntryProvider>builder()
         .put(chartEntryProvider.getEntryClazz(), chartEntryProvider)

@@ -7,6 +7,8 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.List;
+
 import javax.crypto.SecretKey;
 
 /**
@@ -40,4 +42,5 @@ public abstract class Entry implements Cipherable, Parcelable {
     mKey = key;
   }
 
+  public abstract List<String> getSummaryLines();
 }

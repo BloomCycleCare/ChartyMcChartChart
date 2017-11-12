@@ -73,19 +73,23 @@ public class Observation implements Parcelable {
     return getDescription(ON_NEW_LINE);
   }
 
-  private String getDescription(Joiner joiner) {
+  public List<String> getSummaryLines() {
     List<String> strs = new ArrayList<>();
     if (flow != null) {
       strs.add(flow.getDescription());
     }
     if (dischargeSummary != null) {
       // TODO: Get unit system preference
-      strs.add(dischargeSummary.getMetricDesciption(joiner));
+      strs.addAll(dischargeSummary.getSummaryLinesMetric());
     }
     if (occurrences != null) {
       strs.add(occurrences.getDescription());
     }
-    return joiner.join(strs);
+    return strs;
+  }
+
+  private String getDescription(Joiner joiner) {
+    return joiner.join(getSummaryLines());
   }
 
   @Override

@@ -96,6 +96,24 @@ public class DischargeSummary implements Parcelable {
     return getDescription(joiner, mType.getMetricDescription());
   }
 
+  public List<String> getSummaryLinesMetric() {
+    List<String> lines = new ArrayList<>();
+    lines.add(mType.getMetricDescription());
+
+    List<String> modifierStrs = new ArrayList<>();
+    switch (mType) {
+      case STICKY:
+      case TACKY:
+      case STRETCHY:
+        for (MucusModifier modifier : mModifiers) {
+          modifierStrs.add(modifier.getDescription());
+        }
+        break;
+    }
+    lines.add(ON_SPACE.join(modifierStrs));
+    return lines;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (o instanceof DischargeSummary) {

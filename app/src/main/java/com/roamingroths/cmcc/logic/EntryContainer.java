@@ -9,6 +9,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
  * Created by parkeroth on 9/23/17.
@@ -34,6 +37,26 @@ public class EntryContainer implements Parcelable {
     chartEntry = in.readParcelable(ChartEntry.class.getClassLoader());
     wellnessEntry = in.readParcelable(WellnessEntry.class.getClassLoader());
     symptomEntry = in.readParcelable(SymptomEntry.class.getClassLoader());
+  }
+
+  public List<String> getSummaryLines() {
+    List<String> lines = new ArrayList<>();
+    List<String> chartEntryLines = chartEntry.getSummaryLines();
+    if (!chartEntryLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(chartEntryLines);
+    }
+    List<String> wellnessLines = wellnessEntry.getSummaryLines();
+    if (!wellnessLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(wellnessLines);
+    }
+    List<String> symptomLines = symptomEntry.getSummaryLines();
+    if (!symptomLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(symptomLines);
+    }
+    return lines;
   }
 
   @Override
