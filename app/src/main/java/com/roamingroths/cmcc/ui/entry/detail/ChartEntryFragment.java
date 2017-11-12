@@ -94,7 +94,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
         try {
           Observation observation = getObservationFromEditText();
           if (observation != null) {
-            mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+            mObservationDescriptionTextView.setText(observation.getDescription());
           }
           if (observation != null && observation.hasBlood()) {
             mUnusualBleedingLayout.setVisibility(View.VISIBLE);
@@ -198,7 +198,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
 
   private void updateUiWithObservation(@Nullable Observation observation) {
     if (observation != null) {
-      mObservationDescriptionTextView.setText(observation.getMultiLineDescription());
+      mObservationDescriptionTextView.setText(observation.getDescription());
       mObservationEditText.setText(observation.toString());
       mObservationEditText.setError(null);
     }
