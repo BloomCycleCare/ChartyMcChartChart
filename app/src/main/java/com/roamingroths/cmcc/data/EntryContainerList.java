@@ -61,6 +61,7 @@ public class EntryContainerList {
   }
 
   public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
+    if (DEBUG) Log.v(TAG, "bindViewHolder(" + position + ")");
     ChartEntry entry = mEntries.get(position).chartEntry;
     holder.setEntrySummary(entry.getListUiText());
     holder.setBackgroundColor(getEntryColorResource(entry, context));

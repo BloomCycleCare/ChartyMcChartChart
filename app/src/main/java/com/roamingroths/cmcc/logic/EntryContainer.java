@@ -85,12 +85,16 @@ public class EntryContainer implements Parcelable {
 
   @Override
   public boolean equals(Object obj) {
+    if (obj == null) {
+      return false;
+    }
     if (obj instanceof EntryContainer) {
       EntryContainer that = (EntryContainer) obj;
-      return this.entryDate.equals(that.entryDate)
-          && this.chartEntry.equals(that.chartEntry)
-          && this.symptomEntry.equals(that.symptomEntry)
-          && this.wellnessEntry.equals(that.wellnessEntry);
+
+      return Objects.equal(this.entryDate, that.entryDate)
+          && Objects.equal(this.chartEntry, that.chartEntry)
+          && Objects.equal(this.wellnessEntry, that.wellnessEntry)
+          && Objects.equal(this.symptomEntry, that.symptomEntry);
     }
     return false;
   }

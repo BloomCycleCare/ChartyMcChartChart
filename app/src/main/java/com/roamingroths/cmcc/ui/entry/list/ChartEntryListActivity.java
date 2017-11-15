@@ -2,45 +2,29 @@ package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.Fragment;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.LinearLayoutManager;
-import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.ChartEntryAdapter;
-import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.CycleListActivity;
-import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
-
-public class ChartEntryListActivity extends AppCompatActivity implements
-    ChartEntryAdapter.OnClickHandler {
+public class ChartEntryListActivity extends AppCompatActivity implements EntryListView {
 
   public static final int RC_SIGN_IN = 1;
 
   private TextView mErrorView;
   private ProgressBar mProgressBar;
-  private FloatingActionButton mFab;
-
-  private FirebaseDatabase mDb;
-  private RecyclerView mRecyclerView;
-  private ChartEntryAdapter mChartEntryAdapter;
-  private CycleProvider mCycleProvider;
+  private FrameLayout mFragmentContainer;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -51,9 +35,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
-
-    mDb = FirebaseDatabase.getInstance();
-    mCycleProvider = CycleProvider.forDb(mDb);
+    mFragmentContainer = (FrameLayout) findViewById(R.id.fragment_container);
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
     Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
@@ -61,44 +43,22 @@ public class ChartEntryListActivity extends AppCompatActivity implements
 
     getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
 
-    mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), cycle, this, mDb, mCycleProvider);
+    showList();
 
-    mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_entry);
-    boolean shouldReverseLayout = false;
-    LinearLayoutManager layoutManager
-        = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
-    mRecyclerView.setLayoutManager(layoutManager);
-    mRecyclerView.setHasFixedSize(false);
-    mRecyclerView.setAdapter(mChartEntryAdapter);
+    // Avoid creating overlapping fragments
+    if (savedInstanceState == null) {
+      Fragment fragment = new EntryListFragment();
+      fragment.setArguments(getIntent().getExtras());
 
-    if (mChartEntryAdapter.initFromIntent(intentThatStartedThisActivity)) {
-      log("Initialized from Intent");
-      showList();
-    } else {
-      showProgress();
+      getSupportFragmentManager().beginTransaction()
+          .add(R.id.fragment_container, fragment).commit();
     }
-
-    mChartEntryAdapter.initialize(mCycleProvider)
-        .subscribeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Action() {
-          @Override
-          public void run() throws Exception {
-            log("Adapter initialization complete");
-            showList();
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable t) throws Exception {
-            Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
-          }
-        });
   }
 
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    if (data != null) {
+    /*if (data != null) {
       if (data.hasExtra(EntryContainer.class.getName())) {
         EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
         mChartEntryAdapter.updateContainer(container);
@@ -114,24 +74,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
       default:
         Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);
         break;
-    }
-  }
-
-  @Override
-  protected void onResume() {
-    super.onResume();
-    log("onResume");
-
-    mChartEntryAdapter.attachListener();
-    mRecyclerView.scrollToPosition(0);
-  }
-
-  @Override
-  protected void onPause() {
-    super.onPause();
-    log("onPause");
-
-    mChartEntryAdapter.detachListener();
+    }*/
   }
 
   @Override
@@ -164,15 +107,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements
     return super.onOptionsItemSelected(item);
   }
 
-  @Override
-  public void onClick(EntryContainer container, int index) {
-    log("Satring detail activity");
-    startActivityForResult(
-        mChartEntryAdapter.getIntentForModification(container, index),
-        EntryDetailActivity.MODIFY_REQUEST);
-  }
-
-  private void swapCycles(Cycle newCycle) {
+  /*private void swapCycles(Cycle newCycle) {
     log("Switching to cycle: " + newCycle.id);
     showProgress();
 
@@ -196,18 +131,27 @@ public class ChartEntryListActivity extends AppCompatActivity implements
             Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
           }
         });
-  }
+  }*/
 
-  private void showList() {
-    mRecyclerView.setVisibility(View.VISIBLE);
+  @Override
+  public void showList() {
+    mFragmentContainer.setVisibility(View.VISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
     mProgressBar.setVisibility(View.INVISIBLE);
   }
 
-  private void showProgress() {
+  @Override
+  public void showProgress() {
     mProgressBar.setVisibility(View.VISIBLE);
-    mRecyclerView.setVisibility(View.INVISIBLE);
+    mFragmentContainer.setVisibility(View.INVISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
+  }
+
+  @Override
+  public void showError(String message) {
+    mProgressBar.setVisibility(View.INVISIBLE);
+    mFragmentContainer.setVisibility(View.INVISIBLE);
+    mErrorView.setVisibility(View.VISIBLE);
   }
 
   @Override

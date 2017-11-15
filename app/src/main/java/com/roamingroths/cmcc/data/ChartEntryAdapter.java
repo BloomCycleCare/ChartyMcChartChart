@@ -78,6 +78,13 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return true;
   }
 
+  public void initialize(List<EntryContainer> containers) {
+    for (EntryContainer container : containers) {
+      mContainerList.addEntry(container);
+    }
+    notifyDataSetChanged();
+  }
+
   public Completable initialize(CycleProvider cycleProvider) {
     return mContainerList.initialize(cycleProvider);
   }

@@ -97,6 +97,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   @Override
   public void onEntryUpdated(Entry entry, Class<? extends Entry> clazz) {
+    Preconditions.checkNotNull(entry);
     if (DEBUG) Log.v(TAG, "Received entry for " + clazz.toString());
     mEntries.put(clazz, entry);
   }

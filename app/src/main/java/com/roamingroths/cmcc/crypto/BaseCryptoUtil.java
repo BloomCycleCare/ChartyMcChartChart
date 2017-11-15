@@ -22,7 +22,7 @@ import io.reactivex.functions.Function;
 
 public class BaseCryptoUtil implements CryptoUtil {
 
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
   private static final String TAG = BaseCryptoUtil.class.getSimpleName();
 
   private final PrivateKey mPrivateKey;
