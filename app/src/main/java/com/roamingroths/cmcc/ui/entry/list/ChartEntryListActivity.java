@@ -16,6 +16,7 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 
@@ -68,23 +69,11 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    /*if (data != null) {
-      if (data.hasExtra(EntryContainer.class.getName())) {
-        EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
-        mChartEntryAdapter.updateContainer(container);
-      }
-      if (data.hasExtra(Cycle.class.getName())) {
-        Cycle cycleFromResponse = data.getParcelableExtra(Cycle.class.getName());
-        if (!mChartEntryAdapter.getCycle().equals(cycleFromResponse)) {
-          swapCycles(cycleFromResponse);
-        }
-      }
+    if (data != null) {
+      EntryContainer container = data.getParcelableExtra(EntryContainer.class.getName());
+      Cycle cycle = data.getParcelableExtra(Cycle.class.getName());
+      mPageAdapter.getFragment(cycle, mViewPager).updateContainer(container);
     }
-    switch (requestCode) {
-      default:
-        Log.w(ChartEntryListActivity.class.getName(), "Unknown request code: " + requestCode);
-        break;
-    }*/
   }
 
   @Override

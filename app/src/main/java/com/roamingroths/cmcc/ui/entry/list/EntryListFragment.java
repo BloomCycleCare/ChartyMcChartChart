@@ -40,6 +40,10 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private ArrayList<EntryContainer> mEntryContainers;
   private Cycle mCycle;
 
+  public void updateContainer(EntryContainer entryContainer) {
+    mChartEntryAdapter.updateContainer(entryContainer);
+  }
+
   @Override
   public void onAttach(Context context) {
     super.onAttach(context);

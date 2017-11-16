@@ -4,8 +4,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.app.FragmentStatePagerAdapter;
 import android.util.Log;
+import android.view.ViewGroup;
 
 import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseAuth;
@@ -32,7 +33,7 @@ import io.reactivex.functions.Predicate;
  * Created by parkeroth on 11/16/17.
  */
 
-public class EntryListPageAdapter extends FragmentPagerAdapter {
+public class EntryListPageAdapter extends FragmentStatePagerAdapter {
 
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
@@ -96,6 +97,11 @@ public class EntryListPageAdapter extends FragmentPagerAdapter {
 
   public void shutdown() {
     mDisposables.clear();
+  }
+
+  public EntryListFragment getFragment(Cycle cycle, ViewGroup viewGroup) {
+    int index = mCycles.indexOf(cycle);
+    return (EntryListFragment) instantiateItem(viewGroup, index);
   }
 
   // Returns total number of pages

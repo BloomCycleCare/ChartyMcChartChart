@@ -347,6 +347,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private Maybe<Cycle> doSave() {
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
+    updateEntryMapFromUIs();
     Set<Completable> saveOps = new HashSet<>();
     for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
       final EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
