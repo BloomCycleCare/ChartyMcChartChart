@@ -11,6 +11,8 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.Comparator;
+
 import javax.crypto.SecretKey;
 
 import io.reactivex.annotations.NonNull;
@@ -46,6 +48,18 @@ public class Cycle implements Parcelable {
       @Override
       public Cycle apply(@NonNull Keys keys) throws Exception {
         return fromSnapshot(snapshot, keys);
+      }
+    };
+  }
+
+  public static Comparator<Cycle> comparator() {
+    return new Comparator<Cycle>() {
+      @Override
+      public int compare(Cycle c1, Cycle c2) {
+        if (c1.equals(c2)) {
+          return 0;
+        }
+        return c1.startDate.isBefore(c2.startDate) ? -1 : 1;
       }
     };
   }

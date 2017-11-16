@@ -19,7 +19,7 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 
-import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Created by parkeroth on 11/13/17.
@@ -37,7 +37,8 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   private FirebaseDatabase mDb;
   private CycleProvider mCycleProvider;
-  private List<EntryContainer> mEntryContainers;
+  private ArrayList<EntryContainer> mEntryContainers;
+  private Cycle mCycle;
 
   @Override
   public void onAttach(Context context) {
@@ -55,14 +56,14 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     Bundle arguments = getArguments();
     mEntryContainers = arguments.getParcelableArrayList(EntryContainer.class.getName());
-    Cycle cycle = arguments.getParcelable(Cycle.class.getName());
+    mCycle = arguments.getParcelable(Cycle.class.getName());
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getActivity().getApplicationContext(), cycle, this, mDb, mCycleProvider);
+        getActivity().getApplicationContext(), mCycle, this, mDb, mCycleProvider);
     mChartEntryAdapter.initialize(mEntryContainers);
 
     if (DEBUG)
-      Log.v(TAG, "onCreate() cycle:" + cycle.id + ", mEntryContainers:" + mEntryContainers.size());
+      Log.v(TAG, "onCreate() cycle:" + mCycle.id + ", mEntryContainers:" + mEntryContainers.size());
   }
 
   @Nullable
@@ -103,5 +104,9 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     startActivityForResult(
         mChartEntryAdapter.getIntentForModification(container, index),
         EntryDetailActivity.MODIFY_REQUEST);
+  }
+
+  public Cycle getCycle() {
+    return mCycle;
   }
 }

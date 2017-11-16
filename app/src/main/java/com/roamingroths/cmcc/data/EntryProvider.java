@@ -38,7 +38,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public abstract class EntryProvider<E extends Entry> {
 
-  private static boolean DEBUG = true;
+  private static boolean DEBUG = false;
 
   private final Class<E> mClazz;
   private final String mChildId;

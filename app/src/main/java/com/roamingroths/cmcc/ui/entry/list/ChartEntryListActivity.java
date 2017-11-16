@@ -2,18 +2,19 @@ package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.FrameLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.common.base.Preconditions;
+import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
@@ -24,7 +25,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
   private TextView mErrorView;
   private ProgressBar mProgressBar;
-  private FrameLayout mFragmentContainer;
+  private ViewPager mViewPager;
+
+  private EntryListPageAdapter mPageAdapter;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -33,26 +36,33 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
     log("onCreate");
 
+    setTitle("Current Cycle");
+
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
-    mFragmentContainer = (FrameLayout) findViewById(R.id.fragment_container);
+    mViewPager = (ViewPager) findViewById(R.id.view_pager);
+
+    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), getIntent(), CycleProvider.forDb(FirebaseDatabase.getInstance()));
+    mViewPager.setAdapter(mPageAdapter);
+    mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+      @Override
+      public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+      }
+
+      @Override
+      public void onPageScrollStateChanged(int state) {
+      }
+
+      @Override
+      public void onPageSelected(int position) {
+        setTitle(position == 0 ? "Current Cycle" : position + " Cycles Ago");
+      }
+    });
 
     Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
     Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
-    Cycle cycle = intentThatStartedThisActivity.getParcelableExtra(Cycle.class.getName());
-
-    getSupportActionBar().setTitle("Cycle starting " + cycle.startDateStr);
 
     showList();
-
-    // Avoid creating overlapping fragments
-    if (savedInstanceState == null) {
-      Fragment fragment = new EntryListFragment();
-      fragment.setArguments(getIntent().getExtras());
-
-      getSupportFragmentManager().beginTransaction()
-          .add(R.id.fragment_container, fragment).commit();
-    }
   }
 
   @Override
@@ -135,7 +145,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
   @Override
   public void showList() {
-    mFragmentContainer.setVisibility(View.VISIBLE);
+    mViewPager.setVisibility(View.VISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
     mProgressBar.setVisibility(View.INVISIBLE);
   }
@@ -143,14 +153,14 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   @Override
   public void showProgress() {
     mProgressBar.setVisibility(View.VISIBLE);
-    mFragmentContainer.setVisibility(View.INVISIBLE);
+    mViewPager.setVisibility(View.INVISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
   }
 
   @Override
   public void showError(String message) {
     mProgressBar.setVisibility(View.INVISIBLE);
-    mFragmentContainer.setVisibility(View.INVISIBLE);
+    mViewPager.setVisibility(View.INVISIBLE);
     mErrorView.setVisibility(View.VISIBLE);
   }
 
@@ -158,6 +168,11 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   protected void onDestroy() {
     super.onDestroy();
     log("onDestroy");
+  }
+
+  @Override
+  public void setTitle(String message) {
+    getSupportActionBar().setTitle(message);
   }
 
   private void log(String message) {
