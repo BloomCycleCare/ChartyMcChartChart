@@ -5,13 +5,10 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
@@ -22,9 +19,10 @@ import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
-import io.reactivex.Completable;
+import durdinapps.rxfirebase2.RxFirebaseChildEvent;
+import io.reactivex.exceptions.OnErrorNotImplementedException;
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -34,9 +32,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  //private final ChartEntryListener mListener;
-  private final AtomicBoolean mEntryListenerAttached;
-  private final DatabaseReference mEntriesDbRef;
   private final Preferences mPreferences;
   private ChartEntryList mContainerList;
 
@@ -44,16 +39,36 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       Context context,
       Cycle cycle,
       OnClickHandler clickHandler,
-      FirebaseDatabase db,
-      CycleProvider cycleProvider) {
-    mEntriesDbRef = db.getReference("entries").child(cycle.id).child("chart");
-    mEntriesDbRef.keepSynced(true);
-    mEntryListenerAttached = new AtomicBoolean(false);
+      ChartEntryProvider chartEntryProvider) {
     mContext = context;
     mClickHandler = clickHandler;
     mPreferences = Preferences.fromShared(mContext);
     mContainerList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
-    //mListener = new ChartEntryListener(context, mContainerList, cycleProvider.getProviderForClazz(ObservationEntry.class));
+
+    chartEntryProvider.entryStream(cycle).subscribe(
+        new Consumer<RxFirebaseChildEvent<ChartEntry>>() {
+          @Override
+          public void accept(RxFirebaseChildEvent<ChartEntry> childEvent) throws Exception {
+            switch (childEvent.getEventType()) {
+              case ADDED:
+                mContainerList.addEntry(childEvent.getValue());
+                break;
+              case CHANGED:
+                mContainerList.changeEntry(childEvent.getValue());
+                break;
+              case MOVED:
+                throw new UnsupportedOperationException();
+              case REMOVED:
+                mContainerList.removeEntry(childEvent.getValue());
+                break;
+            }
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            throw new OnErrorNotImplementedException(throwable);
+          }
+        });
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -66,17 +81,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     );
   }
 
-  public boolean initFromIntent(Intent intent) {
-    if (!intent.hasExtra(ChartEntry.class.getName())) {
-      return false;
-    }
-    List<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
-    for (ChartEntry container : containers) {
-      mContainerList.addEntry(container);
-    }
-    return true;
-  }
-
   public void initialize(List<ChartEntry> containers) {
     for (ChartEntry container : containers) {
       mContainerList.addEntry(container);
@@ -84,28 +88,8 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     notifyDataSetChanged();
   }
 
-  public Completable initialize(CycleProvider cycleProvider) {
-    return mContainerList.initialize(cycleProvider);
-  }
-
   public void updateContainer(ChartEntry container) {
     mContainerList.changeEntry(container);
-  }
-
-  public synchronized void attachListener() {
-    if (mEntryListenerAttached.compareAndSet(false, true)) {
-      //mEntriesDbRef.addChildEventListener(mListener);
-    } else {
-      Log.w("ChartEntryAdapter", "Already attached!");
-    }
-  }
-
-  public synchronized void detachListener() {
-    if (mEntryListenerAttached.compareAndSet(true, false)) {
-      //mEntriesDbRef.removeEventListener(mListener);
-    } else {
-      Log.w("ChartEntryAdapter", "Not attached!");
-    }
   }
 
   public Cycle getCycle() {

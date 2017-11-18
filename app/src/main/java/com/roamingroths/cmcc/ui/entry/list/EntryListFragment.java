@@ -13,7 +13,9 @@ import android.view.ViewGroup;
 
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -63,7 +65,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mCycle = arguments.getParcelable(Cycle.class.getName());
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getActivity().getApplicationContext(), mCycle, this, mDb, mCycleProvider);
+        getActivity().getApplicationContext(), mCycle, this, new ChartEntryProvider(mDb, FirebaseApplication.getCryptoUtil()));
     mChartEntryAdapter.initialize(mChartEntries);
 
     if (DEBUG)
@@ -92,7 +94,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onResume() {
     super.onResume();
-    mChartEntryAdapter.attachListener();
     mRecyclerView.scrollToPosition(0);
 
   }
@@ -100,7 +101,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onPause() {
     super.onPause();
-    mChartEntryAdapter.detachListener();
   }
 
   @Override

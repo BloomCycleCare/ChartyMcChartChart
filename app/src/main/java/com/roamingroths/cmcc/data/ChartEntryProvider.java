@@ -16,6 +16,7 @@ import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+import org.reactivestreams.Publisher;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,9 +26,12 @@ import java.util.Set;
 
 import javax.crypto.SecretKey;
 
+import durdinapps.rxfirebase2.RxFirebaseChildEvent;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
@@ -70,6 +74,22 @@ public class ChartEntryProvider {
     return new ChartEntry(entryDate, observation, wellness, symptomEntry);
   }
 
+  public Flowable<RxFirebaseChildEvent<ChartEntry>> entryStream(final Cycle cycle) {
+    return RxFirebaseDatabase.observeChildEvent(reference(cycle))
+        .flatMap(new Function<RxFirebaseChildEvent<DataSnapshot>, Publisher<RxFirebaseChildEvent<ChartEntry>>>() {
+          @Override
+          public Publisher<RxFirebaseChildEvent<ChartEntry>> apply(final RxFirebaseChildEvent<DataSnapshot> childEvent) throws Exception {
+            return snapshotToEntry(cycle).apply(childEvent.getValue())
+                .map(new Function<ChartEntry, RxFirebaseChildEvent<ChartEntry>>() {
+                  @Override
+                  public RxFirebaseChildEvent<ChartEntry> apply(ChartEntry chartEntry) throws Exception {
+                    return new RxFirebaseChildEvent<ChartEntry>(childEvent.getKey(), chartEntry, childEvent.getEventType());
+                  }
+                }).toFlowable(BackpressureStrategy.BUFFER);
+          }
+        });
+  }
+
   public Observable<ChartEntry> getEntries(final Cycle cycle) {
     return getEntries(RxFirebaseDatabase.observeSingleValueEvent(reference(cycle))
         .observeOn(Schedulers.computation())
@@ -91,10 +111,10 @@ public class ChartEntryProvider {
         }), cycle);
   }
 
-  public Observable<ChartEntry> getEntries(Observable<DataSnapshot> snapshots, final Cycle cycle) {
-    return snapshots.flatMap(new Function<DataSnapshot, ObservableSource<ChartEntry>>() {
+  private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(final Cycle cycle) {
+    return new Function<DataSnapshot, Observable<ChartEntry>>() {
       @Override
-      public ObservableSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+      public Observable<ChartEntry> apply(DataSnapshot snapshot) {
         LocalDate entryDate = DateUtil.fromWireStr(snapshot.getKey());
         Single<ObservationEntry> observation =
             mObservationEntryProvider.decryptEntry(snapshot, cycle.keys);
@@ -109,7 +129,11 @@ public class ChartEntryProvider {
           }
         }).toObservable();
       }
-    });
+    };
+  }
+
+  public Observable<ChartEntry> getEntries(Observable<DataSnapshot> snapshots, final Cycle cycle) {
+    return snapshots.flatMap(snapshotToEntry(cycle));
   }
 
   public Completable putEntry(final Cycle cycle, final ChartEntry chartEntry) {
