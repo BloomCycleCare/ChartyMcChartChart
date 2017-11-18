@@ -25,8 +25,9 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.FirebaseApplication;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
@@ -41,11 +42,9 @@ import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.reactivex.Completable;
@@ -89,6 +88,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
   private ViewPager mViewPager;
   private Cycle mCycle;
   private CycleProvider mCycleProvider;
+  private ChartEntryProvider mChartEntryProvider;
   private String mUserId;
   private LocalDate mDate;
 
@@ -125,6 +125,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     mCycle = getCycle(getIntent());
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), FirebaseApplication.getCryptoUtil());
 
     updateMaps(container);
 
@@ -173,7 +174,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       new AlertDialog.Builder(this)
           //set message, title, and icon
           .setTitle("Save Entry?")
-          .setMessage(getSaveMessage(getContainer()))
+          .setMessage(getSaveMessage(getChartEntry()))
           .setIcon(R.drawable.ic_assignment_black_24dp)
           .setPositiveButton("Save", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
@@ -294,10 +295,10 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       } catch (Exception e) {
       }
     }
-    return getContainer();
+    return getChartEntry();
   }
 
-  private ChartEntry getContainer() {
+  private ChartEntry getChartEntry() {
     return new ChartEntry(
         mDate,
         (ObservationEntry) mEntries.get(ObservationEntry.class),
@@ -313,7 +314,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
           Intent returnIntent = new Intent();
           returnIntent.putExtra(Cycle.class.getName(), cycle);
-          returnIntent.putExtra(ChartEntry.class.getName(), getContainer());
+          returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
           setResult(OK_RESPONSE, returnIntent);
           finish();
         }
@@ -347,31 +348,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private Maybe<Cycle> doSave() {
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
-    updateEntryMapFromUIs();
-    Set<Completable> saveOps = new HashSet<>();
-    for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-      final EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
-      Class<? extends Entry> clazz = fragment.getClazz();
-
-      if (!mEntries.containsKey(clazz)) {
-        if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no entry");
-        continue;
-      }
-
-      if (mEntries.containsKey(clazz) && mExistingEntries.containsKey(clazz)
-          && mEntries.get(clazz).equals(mExistingEntries.get(clazz))) {
-        if (DEBUG) Log.v(TAG, "Skipping " + clazz + " no change");
-        continue;
-      }
-
-      if (DEBUG) Log.v(TAG, "Putting " + clazz);
-      final EntryProvider provider =
-          mSectionsPagerAdapter.getCachedItem(mViewPager, i).getEntryProvider();
-
-      saveOps.add(provider.putEntry(mCycle.id, mEntries.get(fragment.getClazz())));
-    }
-
-    Completable allDone = Completable.merge(saveOps);
+    ChartEntry entry = updateEntryMapFromUIs();
+    Completable putDone = mChartEntryProvider.putEntry(mCycle, entry);
 
     if (DEBUG) Log.v(TAG, "Done putting entries");
     ObservationEntryFragment observationEntryFragment =
@@ -379,12 +357,12 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     if (observationEntryFragment.shouldSplitCycle()) {
       if (DEBUG) Log.v(TAG, "Splitting cycle");
-      return allDone
+      return putDone
           .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, observationEntryFragment.getEntryFromUiRx()))
           .toMaybe();
     } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycle with previous");
-      return allDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<Cycle>>() {
+      return putDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<Cycle>>() {
         @Override
         public MaybeSource<Cycle> apply(Boolean canJoin) throws Exception {
           if (!canJoin) {
@@ -394,7 +372,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         }
       });
     }
-    return allDone.andThen(Maybe.just(mCycle));
+    return putDone.andThen(Maybe.just(mCycle));
   }
 
   private Single<Boolean> canJoin() {

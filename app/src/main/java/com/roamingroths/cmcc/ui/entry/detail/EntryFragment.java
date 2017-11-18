@@ -10,11 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
-import com.roamingroths.cmcc.application.FirebaseApplication;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -40,7 +36,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   private final Class<E> mClazz;
   private final String mTag;
   private final int layoutId;
-  private final EntryProvider<E> mEntryProvider;
   private EntryListener mUpdateListener;
   private Cycle mCycle;
   private LocalDate mEntryDate;
@@ -52,9 +47,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     this.mClazz = clazz;
     this.mTag = tag;
     this.layoutId = layoutId;
-    mEntryProvider = createEntryProvider(
-        FirebaseDatabase.getInstance(),
-        FirebaseApplication.getCryptoUtil());
   }
 
   @Override
@@ -117,10 +109,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     return mClazz;
   }
 
-  public EntryProvider<E> getEntryProvider() {
-    return mEntryProvider;
-  }
-
   public abstract E getEntryFromUi() throws Exception;
 
   public Single<E> getEntryFromUiRx() {
@@ -143,8 +131,6 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   }
 
   abstract void duringCreateView(View view, Bundle args, Bundle savedInstanceState);
-
-  abstract EntryProvider<E> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil);
 
   abstract void updateUiWithEntry(E entry);
 

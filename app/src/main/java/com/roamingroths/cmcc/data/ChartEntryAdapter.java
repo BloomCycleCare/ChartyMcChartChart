@@ -17,7 +17,6 @@ import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -35,7 +34,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final ChartEntryListener mListener;
+  //private final ChartEntryListener mListener;
   private final AtomicBoolean mEntryListenerAttached;
   private final DatabaseReference mEntriesDbRef;
   private final Preferences mPreferences;
@@ -54,7 +53,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mClickHandler = clickHandler;
     mPreferences = Preferences.fromShared(mContext);
     mContainerList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
-    mListener = new ChartEntryListener(context, mContainerList, cycleProvider.getProviderForClazz(ObservationEntry.class));
+    //mListener = new ChartEntryListener(context, mContainerList, cycleProvider.getProviderForClazz(ObservationEntry.class));
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {

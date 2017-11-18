@@ -96,7 +96,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     if (DEBUG) Log.v(TAG, "Preload cycle data: start");
     updateStatus("Decrypting cycle data");
     mCycleProvider.maybeCreateNewEntries(cycle)
-        .andThen(mCycleProvider.getEntryContainers(cycle))
+        .andThen(mCycleProvider.getEntries(cycle))
         .toList()
         .subscribe(new Consumer<List<ChartEntry>>() {
           @Override

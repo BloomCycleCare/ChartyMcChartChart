@@ -6,7 +6,6 @@ import android.util.Log;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -18,21 +17,15 @@ import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.logic.ObservationEntry;
-import com.roamingroths.cmcc.logic.SymptomEntry;
-import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
@@ -47,7 +40,6 @@ import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Function3;
 import io.reactivex.internal.functions.Functions;
 import io.reactivex.schedulers.Schedulers;
 
@@ -63,7 +55,7 @@ public class CycleProvider {
 
   private final FirebaseDatabase db;
   private final CycleKeyProvider cycleKeyProvider;
-  private final ImmutableMap<Class<? extends Entry>, EntryProvider> entryProviders;
+  private final ChartEntryProvider chartEntryProvider;
 
   public static CycleProvider forDb(FirebaseDatabase db) {
     return forDb(db, FirebaseApplication.getCryptoUtil());
@@ -73,31 +65,18 @@ public class CycleProvider {
     return new CycleProvider(
         db,
         CycleKeyProvider.forDb(db, cryptoUtil),
-        ObservationEntryProvider.forDb(db, cryptoUtil),
-        WellnessEntryProvider.forDb(db, cryptoUtil),
-        SymptomEntryProvider.forDb(db, cryptoUtil));
+        new ChartEntryProvider(db, cryptoUtil));
   }
 
   private CycleProvider(
-      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ObservationEntryProvider observationEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
+      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider) {
     this.db = db;
     this.cycleKeyProvider = cycleKeyProvider;
-    entryProviders = ImmutableMap.<Class<? extends Entry>, EntryProvider>builder()
-        .put(observationEntryProvider.getEntryClazz(), observationEntryProvider)
-        .put(wellnessEntryProvider.getEntryClazz(), wellnessEntryProvider)
-        .put(symptomEntryProvider.getEntryClazz(), symptomEntryProvider).build();
+    this.chartEntryProvider = chartEntryProvider;
   }
 
-  public <E extends Entry> EntryProvider<E> getProviderForEntry(E entry) {
-    return getProviderForClazz((Class<E>) entry.getClass());
-  }
-
-  public <E extends Entry> EntryProvider<E> getProviderForClazz(Class<E> clazz) {
-    return entryProviders.get(clazz);
-  }
-
-  public Collection<EntryProvider> getEntryProviders() {
-    return entryProviders.values();
+  public ChartEntryProvider getEntryProvider() {
+    return chartEntryProvider;
   }
 
   public CycleKeyProvider getCycleKeyProvider() {
@@ -110,35 +89,12 @@ public class CycleProvider {
     ref.keepSynced(true);
   }
 
-  public Observable<ChartEntry> getEntryContainers(Cycle cycle) {
-    Observable<ObservationEntry> chartEntries = entryProviders.get(ObservationEntry.class).getDecryptedEntries(cycle);
-    Observable<WellnessEntry> wellnessEntries = entryProviders.get(WellnessEntry.class).getDecryptedEntries(cycle);
-    Observable<SymptomEntry> symptomEntries = entryProviders.get(SymptomEntry.class).getDecryptedEntries(cycle);
-    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ObservationEntry, WellnessEntry, SymptomEntry, ChartEntry>() {
-      @Override
-      public ChartEntry apply(ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
-        return new ChartEntry(observationEntry.getDate(), observationEntry, wellnessEntry, symptomEntry);
-      }
-    });
+  public Observable<ChartEntry> getEntries(Cycle cycle) {
+    return chartEntryProvider.getEntries(cycle);
   }
 
   public Completable maybeCreateNewEntries(Cycle cycle) {
-    return Single.just(cycle)
-        .observeOn(Schedulers.computation())
-        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
-          @Override
-          public CompletableSource apply(Cycle cycle) throws Exception {
-            if (cycle.endDate != null) {
-              logV("No entries to add, end date set");
-              return Completable.complete();
-            }
-            List<Completable> results = new ArrayList<>(entryProviders.size());
-            for (EntryProvider provider : entryProviders.values()) {
-              results.add(provider.maybeAddNewEntries(cycle));
-            }
-            return Completable.merge(results);
-          }
-        });
+    return chartEntryProvider.maybeAddNewEntries(cycle);
   }
 
   public void detachListener(ChildEventListener listener, String userId) {
@@ -271,11 +227,7 @@ public class CycleProvider {
           @Override
           public CompletableSource apply(Cycle previousCycle) throws Exception {
             if (DEBUG) Log.v(TAG, "Moving entries");
-            Set<Completable> entryMoves = new HashSet<>();
-            for (final EntryProvider provider : entryProviders.values()) {
-              entryMoves.add(provider.moveEntries(currentCycle, previousCycle, Predicates.alwaysTrue()));
-            }
-            return Completable.merge(entryMoves);
+            return chartEntryProvider.moveEntries(currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue());
           }
         }).andThen(cycleKeyProvider.dropKeys(currentCycle.id));
 
@@ -380,16 +332,7 @@ public class CycleProvider {
                 return entryDate.equals(firstEntry.getDate()) || entryDate.isAfter(firstEntry.getDate());
               }
             };
-            Set<Completable> entryMoves = new HashSet<>();
-            for (final EntryProvider provider : entryProviders.values()) {
-              entryMoves.add(provider.moveEntries(currentCycle, newCycle, ifEqualOrAfter));
-            }
-            return Completable.merge(entryMoves).doOnComplete(new Action() {
-              @Override
-              public void run() throws Exception {
-                if (DEBUG) Log.v(TAG, "Done moving entries.");
-              }
-            });
+            return chartEntryProvider.moveEntries(currentCycle, newCycle, ifEqualOrAfter);
           }
         });
 

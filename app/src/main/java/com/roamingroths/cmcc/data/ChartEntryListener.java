@@ -7,11 +7,8 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.ObservationEntry;
-import com.roamingroths.cmcc.utils.DateUtil;
 
-import org.joda.time.LocalDate;
-
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -27,9 +24,9 @@ public class ChartEntryListener implements ChildEventListener {
 
   private final Context mContext;
   private final ChartEntryList mList;
-  private final EntryProvider<ObservationEntry> mProvider;
+  private final ChartEntryProvider mProvider;
 
-  public ChartEntryListener(Context context, ChartEntryList list, EntryProvider<ObservationEntry> provider) {
+  public ChartEntryListener(Context context, ChartEntryList list, ChartEntryProvider provider) {
     mContext = context;
     mList = list;
     mProvider = provider;
@@ -37,20 +34,19 @@ public class ChartEntryListener implements ChildEventListener {
 
   @Override
   public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-    final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
     Single.just(dataSnapshot)
         .observeOn(Schedulers.computation())
-        .flatMap(new Function<DataSnapshot, SingleSource<ObservationEntry>>() {
+        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
           @Override
-          public SingleSource<ObservationEntry> apply(DataSnapshot snapshot) throws Exception {
-            return mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey);
+          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+            return mProvider.getEntries(Observable.just(snapshot), mList.mCycle).firstOrError();
           }
         })
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Consumer<ObservationEntry>() {
+        .subscribe(new Consumer<ChartEntry>() {
           @Override
-          public void accept(ObservationEntry observationEntry) throws Exception {
-            mList.addEntry(new ChartEntry(entryDate, observationEntry, null, null));
+          public void accept(ChartEntry entry) throws Exception {
+            mList.addEntry(entry);
           }
         }, new Consumer<Throwable>() {
           @Override
@@ -62,20 +58,19 @@ public class ChartEntryListener implements ChildEventListener {
 
   @Override
   public void onChildChanged(DataSnapshot dataSnapshot, String s) {
-    final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
     Single.just(dataSnapshot)
         .subscribeOn(Schedulers.computation())
-        .flatMap(new Function<DataSnapshot, SingleSource<ObservationEntry>>() {
+        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
           @Override
-          public SingleSource<ObservationEntry> apply(DataSnapshot snapshot) throws Exception {
-            return mProvider.fromSnapshot(snapshot, mList.mCycle.keys.chartKey);
+          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+            return mProvider.getEntries(Observable.just(snapshot), mList.mCycle).singleOrError();
           }
         })
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Consumer<ObservationEntry>() {
+        .subscribe(new Consumer<ChartEntry>() {
           @Override
-          public void accept(ObservationEntry observationEntry) throws Exception {
-            mList.changeEntry(new ChartEntry(entryDate, observationEntry, null, null));
+          public void accept(ChartEntry entry) throws Exception {
+            mList.changeEntry(entry);
           }
         }, new Consumer<Throwable>() {
           @Override

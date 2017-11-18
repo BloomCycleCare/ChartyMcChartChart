@@ -13,10 +13,7 @@ import android.view.inputmethod.InputMethodManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.data.WellnessEntryProvider;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
@@ -34,11 +31,6 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
 
   public WellnessEntryFragment() {
     super(WellnessEntry.class, "WellnessEntryFragment", R.layout.fragment_wellness_entry);
-  }
-
-  @Override
-  WellnessEntryProvider createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-    return WellnessEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override

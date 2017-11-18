@@ -11,9 +11,9 @@ import io.reactivex.Single;
 
 public interface CryptoUtil {
 
-  <T> Single<T> decrypt(String encryptedStr, SecretKey key, final Class<T> clazz);
+  <T extends Cipherable> Single<T> decrypt(String encryptedStr, SecretKey key, final Class<T> clazz);
 
-  <T> Single<String> encrypt(Cipherable cipherable);
+  Single<String> encrypt(Cipherable cipherable);
 
   Maybe<SecretKey> decryptKey(String encryptedKeyStr);
 

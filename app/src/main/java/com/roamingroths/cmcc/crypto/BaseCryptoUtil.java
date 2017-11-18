@@ -37,19 +37,21 @@ public class BaseCryptoUtil implements CryptoUtil {
   }
 
   @Override
-  public <T> Single<T> decrypt(String encryptedStr, SecretKey key, final Class<T> clazz) {
+  public <T extends Cipherable> Single<T> decrypt(String encryptedStr, final SecretKey key, final Class<T> clazz) {
     if (DEBUG) Log.v(TAG, "Decrypting " + clazz.getSimpleName());
     return AesCryptoUtil.decryptRx(key, encryptedStr)
         .map(new Function<String, T>() {
           @Override
           public T apply(String decryptedStr) throws Exception {
-            return GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+            T t = GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+            t.swapKey(key);
+            return t;
           }
         });
   }
 
   @Override
-  public <T> Single<String> encrypt(Cipherable cipherable) {
+  public Single<String> encrypt(Cipherable cipherable) {
     return AesCryptoUtil.encryptRx(cipherable.getKey(), GsonUtil.getGsonInstance().toJson(cipherable));
   }
 

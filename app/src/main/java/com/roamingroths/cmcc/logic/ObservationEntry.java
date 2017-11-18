@@ -69,8 +69,11 @@ public class ObservationEntry extends Entry implements Parcelable {
   @Override
   public List<String> getSummaryLines() {
     List<String> lines = new ArrayList<>();
-    //lines.add(observation.toString());
-    lines.addAll(observation.getSummaryLines());
+    if (observation != null) {
+      lines.addAll(observation.getSummaryLines());
+    } else {
+      lines.add("Empty Observation");
+    }
     return lines;
   }
 

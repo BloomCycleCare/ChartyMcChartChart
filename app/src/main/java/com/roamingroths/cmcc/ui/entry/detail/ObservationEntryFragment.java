@@ -12,12 +12,8 @@ import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.data.EntryProvider;
-import com.roamingroths.cmcc.data.ObservationEntryProvider;
 import com.roamingroths.cmcc.logic.Observation;
 import com.roamingroths.cmcc.logic.ObservationEntry;
 
@@ -52,11 +48,6 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
   @Override
   public void onAttach(Context context) {
     super.onAttach(context);
-  }
-
-  @Override
-  EntryProvider<ObservationEntry> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-    return ObservationEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override

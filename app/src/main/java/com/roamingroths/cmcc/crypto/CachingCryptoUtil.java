@@ -36,7 +36,7 @@ public class CachingCryptoUtil implements CryptoUtil {
   }
 
   @Override
-  public <T> Single<T> decrypt(final String encryptedStr, SecretKey key, Class<T> clazz) {
+  public <T extends Cipherable> Single<T> decrypt(final String encryptedStr, SecretKey key, Class<T> clazz) {
     Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedStr.hashCode());
     if (cachedObject != null) {
       if (DEBUG) Log.v(TAG, "Served " + clazz.getName() + " from local cache");
@@ -51,7 +51,7 @@ public class CachingCryptoUtil implements CryptoUtil {
   }
 
   @Override
-  public <T> Single<String> encrypt(final Cipherable cipherable) {
+  public Single<String> encrypt(final Cipherable cipherable) {
     return mDelegate.encrypt(cipherable).doOnSuccess(new Consumer<String>() {
       @Override
       public void accept(String s) throws Exception {

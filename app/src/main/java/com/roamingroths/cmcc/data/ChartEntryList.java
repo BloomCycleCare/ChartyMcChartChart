@@ -410,7 +410,7 @@ public class ChartEntryList {
 
   private Completable fillFromProvider(CycleProvider cycleProvider) {
     logV("Begin filling from DB");
-    return cycleProvider.getEntryContainers(mCycle)
+    return cycleProvider.getEntries(mCycle)
         .observeOn(AndroidSchedulers.mainThread())
         .flatMapCompletable(new Function<ChartEntry, CompletableSource>() {
           @Override

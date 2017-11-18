@@ -14,11 +14,7 @@ import android.view.inputmethod.InputMethodManager;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.data.EntryProvider;
-import com.roamingroths.cmcc.data.SymptomEntryProvider;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
@@ -36,11 +32,6 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
 
   public SymptomEntryFragment() {
     super(SymptomEntry.class, "SymptomEntryFragment", R.layout.fragment_symptom_entry);
-  }
-
-  @Override
-  EntryProvider<SymptomEntry> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-    return SymptomEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override

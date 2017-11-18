@@ -6,11 +6,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.logic.ObservationEntry;
-import com.roamingroths.cmcc.logic.SymptomEntry;
-import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
 import java.io.BufferedReader;
@@ -28,7 +25,6 @@ import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Function3;
 import io.reactivex.functions.Predicate;
 
 /**
@@ -81,10 +77,8 @@ public class AppState {
             cycle.setKeys(new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey()));
             Set<Completable> putResults = new HashSet<>();
             putResults.add(cycleProvider.putCycleRx(user.getUid(), cycle));
-            for (EntrySet entrySet : cycleData.entrySets) {
-              putResults.add(putEntry(cycleProvider, cycle, entrySet.mObservationEntry));
-              putResults.add(putEntry(cycleProvider, cycle, entrySet.mWellnessEntry));
-              putResults.add(putEntry(cycleProvider, cycle, entrySet.mSymptomEntry));
+            for (ChartEntry entry : cycleData.entries) {
+              putResults.add(cycleProvider.getEntryProvider().putEntry(cycle, entry));
             }
             return Completable.merge(putResults).andThen(Observable.just(cycle));
           }
@@ -98,12 +92,6 @@ public class AppState {
         .firstOrError();
   }
 
-  private static Completable putEntry(CycleProvider cycleProvider, Cycle cycle, Entry entry) {
-    EntryProvider provider = cycleProvider.getProviderForEntry(entry);
-    entry.swapKey(provider.getKey(cycle));
-    return provider.putEntry(cycle.id, entry);
-  }
-
   private static Observable<CycleData> fetchCycleDatas(final CycleProvider cycleProvider) {
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     Log.v("AppState", "Fetching cycle datas for user " + user.getUid());
@@ -111,24 +99,12 @@ public class AppState {
         .flatMap(new Function<Cycle, ObservableSource<CycleData>>() {
           @Override
           public ObservableSource<CycleData> apply(final Cycle cycle) throws Exception {
-            Observable<ObservationEntry> chartEntries =
-                cycleProvider.getProviderForClazz(ObservationEntry.class).getDecryptedEntries(cycle);
-            Observable<WellnessEntry> wellnessEntries =
-                cycleProvider.getProviderForClazz(WellnessEntry.class).getDecryptedEntries(cycle);
-            Observable<SymptomEntry> symptomEntries =
-                cycleProvider.getProviderForClazz(SymptomEntry.class).getDecryptedEntries(cycle);
-            Observable<EntrySet> entrySets = Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ObservationEntry, WellnessEntry, SymptomEntry, EntrySet>() {
+            return cycleProvider.getEntries(cycle).toList().map(new Function<List<ChartEntry>, CycleData>() {
               @Override
-              public EntrySet apply(ObservationEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
-                return new EntrySet(chartEntry, wellnessEntry, symptomEntry);
+              public CycleData apply(List<ChartEntry> chartEntries) throws Exception {
+                return new CycleData(cycle, chartEntries);
               }
-            });
-            return entrySets.toList().flatMapObservable(new Function<List<EntrySet>, ObservableSource<? extends CycleData>>() {
-              @Override
-              public ObservableSource<? extends CycleData> apply(List<EntrySet> entrySets) throws Exception {
-                return Observable.just(new CycleData(cycle, entrySets));
-              }
-            });
+            }).toObservable();
           }
         });
   }
@@ -139,23 +115,11 @@ public class AppState {
 
   public static class CycleData {
     public final Cycle cycle;
-    public final Set<EntrySet> entrySets;
+    public final Set<ChartEntry> entries;
 
-    public CycleData(Cycle cycle, Collection<EntrySet> entrySets) {
+    public CycleData(Cycle cycle, Collection<ChartEntry> entries) {
       this.cycle = cycle;
-      this.entrySets = ImmutableSet.copyOf(entrySets);
-    }
-  }
-
-  public static class EntrySet {
-    public final ObservationEntry mObservationEntry;
-    public final WellnessEntry mWellnessEntry;
-    public final SymptomEntry mSymptomEntry;
-
-    public EntrySet(ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
-      mObservationEntry = observationEntry;
-      mWellnessEntry = wellnessEntry;
-      mSymptomEntry = symptomEntry;
+      this.entries = ImmutableSet.copyOf(entries);
     }
   }
 }

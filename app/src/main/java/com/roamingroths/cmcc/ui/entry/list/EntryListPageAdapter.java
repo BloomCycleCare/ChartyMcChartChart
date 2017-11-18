@@ -71,7 +71,7 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
           public CompletableSource apply(Cycle cycle) throws Exception {
             return Completable.fromObservable(Observable.zip(
                 Observable.just(cycle),
-                mCycleProvider.getEntryContainers(cycle).toList().toObservable(), new BiFunction<Cycle, List<ChartEntry>, Void>() {
+                mCycleProvider.getEntries(cycle).toList().toObservable(), new BiFunction<Cycle, List<ChartEntry>, Void>() {
                   @Override
                   public Void apply(Cycle cycle, List<ChartEntry> chartEntries) throws Exception {
                     if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle.id);
@@ -100,6 +100,7 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
   }
 
   public EntryListFragment getFragment(Cycle cycle, ViewGroup viewGroup) {
+    // TODO: fix index out of bounds
     int index = mCycles.indexOf(cycle);
     return (EntryListFragment) instantiateItem(viewGroup, index);
   }
