@@ -12,7 +12,7 @@ import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -36,16 +36,16 @@ import io.reactivex.functions.Function;
  * Created by parkeroth on 6/24/17.
  */
 
-public class EntryContainerList {
+public class ChartEntryList {
 
   private final boolean DEBUG = true;
-  private final String TAG = EntryContainerList.class.getSimpleName();
+  private final String TAG = ChartEntryList.class.getSimpleName();
   private final AtomicBoolean mInitialized = new AtomicBoolean(false);
 
   // Chart state members
   public final Cycle mCycle;
-  private final SortedList<EntryContainer> mEntries;
-  private final Map<LocalDate, EntryContainer> mEntryIndex = new HashMap<>();
+  private final SortedList<ChartEntry> mEntries;
+  private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
   private final Preferences mPreferences;
   private LocalDate mPointOfChange;
@@ -54,7 +54,7 @@ public class EntryContainerList {
     return new Builder(cycle, preferences);
   }
 
-  private EntryContainerList(Cycle cycle, Preferences preferences, SortedList<EntryContainer> entries) {
+  private ChartEntryList(Cycle cycle, Preferences preferences, SortedList<ChartEntry> entries) {
     mEntries = entries;
     mCycle = cycle;
     mPreferences = preferences;
@@ -62,7 +62,7 @@ public class EntryContainerList {
 
   public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
     if (DEBUG) Log.v(TAG, "bindViewHolder(" + position + ")");
-    ChartEntry entry = mEntries.get(position).chartEntry;
+    ObservationEntry entry = mEntries.get(position).observationEntry;
     holder.setEntrySummary(entry.getListUiText());
     holder.setBackgroundColor(getEntryColorResource(entry, context));
     holder.setEntryNum(mEntries.size() - position);
@@ -82,22 +82,22 @@ public class EntryContainerList {
     }
   }
 
-  public synchronized void addEntry(EntryContainer entryContainer) {
-    if (mEntryIndex.containsKey(entryContainer.entryDate)) {
-      changeEntry(entryContainer);
+  public synchronized void addEntry(ChartEntry chartEntry) {
+    if (mEntryIndex.containsKey(chartEntry.entryDate)) {
+      changeEntry(chartEntry);
       return;
     }
     // Maybe add peak day to set
-    if (entryContainer.chartEntry.peakDay) {
-      mPeakDays.add(entryContainer.entryDate);
+    if (chartEntry.observationEntry.peakDay) {
+      mPeakDays.add(chartEntry.entryDate);
     }
     // Maybe set point of change
-    if (entryContainer.chartEntry.pointOfChange) {
-      setPointOfChange(entryContainer.entryDate);
+    if (chartEntry.observationEntry.pointOfChange) {
+      setPointOfChange(chartEntry.entryDate);
     }
     // Add entry to list
-    mEntries.add(entryContainer);
-    mEntryIndex.put(entryContainer.entryDate, entryContainer);
+    mEntries.add(chartEntry);
+    mEntryIndex.put(chartEntry.entryDate, chartEntry);
     return;
   }
 
@@ -108,27 +108,27 @@ public class EntryContainerList {
     mPointOfChange = date;
   }
 
-  public synchronized void changeEntry(EntryContainer entryContainer) {
+  public synchronized void changeEntry(ChartEntry chartEntry) {
     // Maybe add or remove from peak day set
-    if (mEntryIndex.containsKey(entryContainer.entryDate)
-        && mEntryIndex.get(entryContainer.entryDate).equals(entryContainer)) {
+    if (mEntryIndex.containsKey(chartEntry.entryDate)
+        && mEntryIndex.get(chartEntry.entryDate).equals(chartEntry)) {
       return;
     }
-    if (entryContainer.chartEntry.peakDay) {
-      mPeakDays.add(entryContainer.entryDate);
+    if (chartEntry.observationEntry.peakDay) {
+      mPeakDays.add(chartEntry.entryDate);
     } else {
-      mPeakDays.remove(entryContainer.entryDate);
+      mPeakDays.remove(chartEntry.entryDate);
     }
-    if (entryContainer.chartEntry.pointOfChange) {
-      setPointOfChange(entryContainer.entryDate);
+    if (chartEntry.observationEntry.pointOfChange) {
+      setPointOfChange(chartEntry.entryDate);
     } else {
       mPointOfChange = null;
     }
-    int entryIndex = getEntryIndex(entryContainer.entryDate);
+    int entryIndex = getEntryIndex(chartEntry.entryDate);
     if (entryIndex < 0) {
-      Log.w("ChartEntryList", "No entry to update for: " + entryContainer.entryDate + ", adding instead.");
+      Log.w("ChartEntryList", "No entry to update for: " + chartEntry.entryDate + ", adding instead.");
     } else {
-      mEntries.updateItemAt(entryIndex, entryContainer);
+      mEntries.updateItemAt(entryIndex, chartEntry);
     }
   }
 
@@ -136,18 +136,18 @@ public class EntryContainerList {
     removeEntry(findEntry(entryDateStr));
   }
 
-  public synchronized void removeEntry(EntryContainer entryContainer) {
-    if (entryContainer.chartEntry.pointOfChange) {
+  public synchronized void removeEntry(ChartEntry chartEntry) {
+    if (chartEntry.observationEntry.pointOfChange) {
       mPointOfChange = null;
     }
     // Maybe remove peak day from set
-    mEntryIndex.remove(entryContainer.entryDate);
-    mPeakDays.remove(entryContainer.entryDate);
-    mEntries.remove(entryContainer);
+    mEntryIndex.remove(chartEntry.entryDate);
+    mPeakDays.remove(chartEntry.entryDate);
+    mEntries.remove(chartEntry);
   }
 
   @Nullable
-  public EntryContainer findEntry(String dateStr) {
+  public ChartEntry findEntry(String dateStr) {
     int index = getEntryIndex(DateUtil.fromWireStr(dateStr));
     if (index < 0) {
       return null;
@@ -159,7 +159,7 @@ public class EntryContainerList {
     return mEntries.size();
   }
 
-  public EntryContainer get(int index) {
+  public ChartEntry get(int index) {
     return mEntries.get(index);
   }
 
@@ -168,38 +168,38 @@ public class EntryContainerList {
     if (previousIndex >= mEntries.size()) {
       return false;
     }
-    EntryContainer previousEntry = mEntries.get(previousIndex);
-    if (previousEntry.chartEntry.unusualBleeding) {
+    ChartEntry previousEntry = mEntries.get(previousIndex);
+    if (previousEntry.observationEntry.unusualBleeding) {
       return true;
     }
-    return !(previousEntry.chartEntry.observation != null
-        && previousEntry.chartEntry.observation.hasBlood());
+    return !(previousEntry.observationEntry.observation != null
+        && previousEntry.observationEntry.observation.hasBlood());
   }
 
-  private boolean isWithinCountOfThree(int position, ChartEntry entry) {
+  private boolean isWithinCountOfThree(int position, ObservationEntry entry) {
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
-      EntryContainer previousEntry = mEntries.get(i);
-      if (previousEntry.chartEntry.observation == null) {
+      ChartEntry previousEntry = mEntries.get(i);
+      if (previousEntry.observationEntry.observation == null) {
         continue;
       }
       // Check if any unusual bleeding within count of three (D.6)
-      if (previousEntry.chartEntry.unusualBleeding) {
+      if (previousEntry.observationEntry.unusualBleeding) {
         return true;
       }
-      if (previousEntry.chartEntry.observation.dischargeSummary == null) {
+      if (previousEntry.observationEntry.observation.dischargeSummary == null) {
         continue;
       }
-      if (previousEntry.chartEntry.observation.dischargeSummary.isPeakType()) {
+      if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
         // Check for 1 day of peak mucus (D.5)
         return true;
       }
-      if (previousEntry.chartEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
+      if (previousEntry.observationEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
         // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
         int lastNonPeakMucus = i + 3;
         boolean consecutiveNonPeakMucus = true;
         for (int j = i; i < mEntries.size() && j < lastNonPeakMucus; j++) {
-          if (!mEntries.get(j).chartEntry.hasMucus()) {
+          if (!mEntries.get(j).observationEntry.hasMucus()) {
             consecutiveNonPeakMucus = false;
             break;
           }
@@ -210,7 +210,7 @@ public class EntryContainerList {
     return false;
   }
 
-  private boolean shouldShowBaby(int position, ChartEntry entry) {
+  private boolean shouldShowBaby(int position, ObservationEntry entry) {
     if (entry == null || entry.observation == null) {
       return false;
     }
@@ -239,7 +239,7 @@ public class EntryContainerList {
     return entry.observation != null && entry.observation.hasMucus();
   }
 
-  private String getPeakDayViewText(ChartEntry entry) {
+  private String getPeakDayViewText(ObservationEntry entry) {
     if (entry == null || entry.observation == null) {
       return "";
     }
@@ -250,7 +250,7 @@ public class EntryContainerList {
     return getPeakDayViewText(entry, mostRecentPeakDay);
   }
 
-  public int getEntryColorResource(ChartEntry entry, Context context) {
+  public int getEntryColorResource(ObservationEntry entry, Context context) {
     if (entry.observation == null) {
       return R.color.entryGrey;
     }
@@ -278,25 +278,25 @@ public class EntryContainerList {
     return R.color.entryWhite;
   }
 
-  private boolean isPostPeak(ChartEntry entry) {
+  private boolean isPostPeak(ObservationEntry entry) {
     Preconditions.checkNotNull(entry);
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
     return mostRecentPeakDay != null && mostRecentPeakDay.isBefore(entry.getDate());
   }
 
-  private boolean isPreakPeak(ChartEntry entry) {
+  private boolean isPreakPeak(ObservationEntry entry) {
     Preconditions.checkNotNull(entry);
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
     return mostRecentPeakDay == null || mostRecentPeakDay.isAfter(entry.getDate());
   }
 
-  private boolean isBeforePointOfChange(ChartEntry entry) {
+  private boolean isBeforePointOfChange(ObservationEntry entry) {
     Preconditions.checkNotNull(entry);
     return mPointOfChange == null || mPointOfChange.isAfter(entry.getDate());
   }
 
   @Nullable
-  private LocalDate getMostRecentPeakDay(ChartEntry entry) {
+  private LocalDate getMostRecentPeakDay(ObservationEntry entry) {
     LocalDate mostRecentPeakDay = null;
     for (LocalDate peakDay : mPeakDays) {
       if (peakDay.isAfter(entry.getDate())) {
@@ -312,7 +312,7 @@ public class EntryContainerList {
     return mostRecentPeakDay;
   }
 
-  private String getPeakDayViewText(ChartEntry entry, LocalDate peakDay) {
+  private String getPeakDayViewText(ObservationEntry entry, LocalDate peakDay) {
     if (entry.getDate().isBefore(peakDay)) {
       return "";
     }
@@ -328,8 +328,8 @@ public class EntryContainerList {
 
   private int getEntryIndex(LocalDate entryDate) {
     for (int i = 0; i < mEntries.size(); i++) {
-      EntryContainer entryContainer = mEntries.get(i);
-      if (entryContainer.entryDate.equals(entryDate)) {
+      ChartEntry chartEntry = mEntries.get(i);
+      if (chartEntry.entryDate.equals(entryDate)) {
         return i;
       }
     }
@@ -352,8 +352,8 @@ public class EntryContainerList {
       return this;
     }
 
-    public EntryContainerList build() {
-      SortedList<EntryContainer> entries = new SortedList<EntryContainer>(EntryContainer.class, new SortedList.Callback<EntryContainer>() {
+    public ChartEntryList build() {
+      SortedList<ChartEntry> entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
         @Override
         public void onInserted(int position, int count) {
           if (adapter != null) {
@@ -383,27 +383,27 @@ public class EntryContainerList {
         }
 
         @Override
-        public int compare(EntryContainer e1, EntryContainer e2) {
+        public int compare(ChartEntry e1, ChartEntry e2) {
           return e2.entryDate.compareTo(e1.entryDate);
         }
 
         @Override
-        public boolean areContentsTheSame(EntryContainer oldItem, EntryContainer newItem) {
+        public boolean areContentsTheSame(ChartEntry oldItem, ChartEntry newItem) {
           return oldItem.equals(newItem);
         }
 
         @Override
-        public boolean areItemsTheSame(EntryContainer item1, EntryContainer item2) {
+        public boolean areItemsTheSame(ChartEntry item1, ChartEntry item2) {
           return item1 == item2;
         }
       });
-      return new EntryContainerList(cycle, preferences, entries);
+      return new ChartEntryList(cycle, preferences, entries);
     }
   }
 
   private void fillFromIntent(Intent intent) {
-    List<EntryContainer> containers = intent.getParcelableArrayListExtra(EntryContainer.class.getName());
-    for (EntryContainer container : containers) {
+    List<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
+    for (ChartEntry container : containers) {
       addEntry(container);
     }
   }
@@ -412,13 +412,13 @@ public class EntryContainerList {
     logV("Begin filling from DB");
     return cycleProvider.getEntryContainers(mCycle)
         .observeOn(AndroidSchedulers.mainThread())
-        .flatMapCompletable(new Function<EntryContainer, CompletableSource>() {
+        .flatMapCompletable(new Function<ChartEntry, CompletableSource>() {
           @Override
-          public CompletableSource apply(final EntryContainer entryContainer) throws Exception {
+          public CompletableSource apply(final ChartEntry chartEntry) throws Exception {
             return Completable.fromAction(new Action() {
               @Override
               public void run() throws Exception {
-                addEntry(entryContainer);
+                addEntry(chartEntry);
               }
             });
           }
@@ -426,6 +426,6 @@ public class EntryContainerList {
   }
 
   private void logV(String message) {
-    Log.v("EntryContainerList", message);
+    Log.v("ChartEntryList", message);
   }
 }

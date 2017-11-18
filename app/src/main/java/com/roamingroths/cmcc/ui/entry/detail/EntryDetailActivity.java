@@ -30,7 +30,7 @@ import com.roamingroths.cmcc.data.EntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
@@ -59,7 +59,7 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
-import static com.roamingroths.cmcc.ui.entry.detail.ChartEntryFragment.OK_RESPONSE;
+import static com.roamingroths.cmcc.ui.entry.detail.ObservationEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
 
@@ -102,12 +102,12 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     mEntries.put(clazz, entry);
   }
 
-  private void updateMaps(EntryContainer container) {
-    mExistingEntries.put(ChartEntry.class, container.chartEntry);
+  private void updateMaps(ChartEntry container) {
+    mExistingEntries.put(ObservationEntry.class, container.observationEntry);
     mExistingEntries.put(WellnessEntry.class, container.wellnessEntry);
     mExistingEntries.put(SymptomEntry.class, container.symptomEntry);
 
-    mEntries.put(ChartEntry.class, container.chartEntry);
+    mEntries.put(ObservationEntry.class, container.observationEntry);
     mEntries.put(WellnessEntry.class, container.wellnessEntry);
     mEntries.put(SymptomEntry.class, container.symptomEntry);
   }
@@ -119,7 +119,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     if (DEBUG) Log.v(TAG, "onCreate: Start");
 
-    EntryContainer container = getEntryContainer(getIntent());
+    ChartEntry container = getEntryContainer(getIntent());
     mDate = container.entryDate;
 
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
@@ -168,7 +168,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     }
 
     if (id == R.id.action_save) {
-      EntryContainer container = updateEntryMapFromUIs();
+      ChartEntry container = updateEntryMapFromUIs();
 
       new AlertDialog.Builder(this)
           //set message, title, and icon
@@ -251,11 +251,11 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return intent.getParcelableExtra(Cycle.class.getName());
   }
 
-  private static EntryContainer getEntryContainer(Intent intent) {
-    if (!intent.hasExtra(EntryContainer.class.getName())) {
+  private static ChartEntry getEntryContainer(Intent intent) {
+    if (!intent.hasExtra(ChartEntry.class.getName())) {
       throw new IllegalStateException();
     }
-    return intent.getParcelableExtra(EntryContainer.class.getName());
+    return intent.getParcelableExtra(ChartEntry.class.getName());
   }
 
   private static String getEntryDateStr(Intent intent) {
@@ -281,7 +281,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return !difference.areEqual();
   }
 
-  private EntryContainer updateEntryMapFromUIs() {
+  private ChartEntry updateEntryMapFromUIs() {
     for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
       EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
       try {
@@ -297,10 +297,10 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return getContainer();
   }
 
-  private EntryContainer getContainer() {
-    return new EntryContainer(
+  private ChartEntry getContainer() {
+    return new ChartEntry(
         mDate,
-        (ChartEntry) mEntries.get(ChartEntry.class),
+        (ObservationEntry) mEntries.get(ObservationEntry.class),
         (WellnessEntry) mEntries.get(WellnessEntry.class),
         (SymptomEntry) mEntries.get(SymptomEntry.class));
   }
@@ -313,7 +313,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
           Intent returnIntent = new Intent();
           returnIntent.putExtra(Cycle.class.getName(), cycle);
-          returnIntent.putExtra(EntryContainer.class.getName(), getContainer());
+          returnIntent.putExtra(ChartEntry.class.getName(), getContainer());
           setResult(OK_RESPONSE, returnIntent);
           finish();
         }
@@ -374,15 +374,15 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     Completable allDone = Completable.merge(saveOps);
 
     if (DEBUG) Log.v(TAG, "Done putting entries");
-    ChartEntryFragment chartEntryFragment =
-        (ChartEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
+    ObservationEntryFragment observationEntryFragment =
+        (ObservationEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
 
-    if (chartEntryFragment.shouldSplitCycle()) {
+    if (observationEntryFragment.shouldSplitCycle()) {
       if (DEBUG) Log.v(TAG, "Splitting cycle");
       return allDone
-          .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, chartEntryFragment.getEntryFromUiRx()))
+          .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, observationEntryFragment.getEntryFromUiRx()))
           .toMaybe();
-    } else if (chartEntryFragment.shouldJoinCycle()) {
+    } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycle with previous");
       return allDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<Cycle>>() {
         @Override
@@ -451,11 +451,11 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           args.putBoolean(
               Extras.EXPECT_UNUSUAL_BLEEDING,
               intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING, false));
-          args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(ChartEntry.class));
+          args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(ObservationEntry.class));
 
-          fragment = new ChartEntryFragment();
+          fragment = new ObservationEntryFragment();
           fragment.setArguments(args);
-          if (DEBUG) Log.v(TAG, "Creating new instance of ChartEntryFragment");
+          if (DEBUG) Log.v(TAG, "Creating new instance of ObservationEntryFragment");
           return fragment;
         case 1:
           args.putParcelable(Entry.class.getSimpleName(), getExistingEntry(WellnessEntry.class));
@@ -483,7 +483,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     public CharSequence getPageTitle(int position) {
       switch (position) {
         case 0:
-          return "Chart Entry";
+          return "Observation";
         case 1:
           return "Wellness";
         case 2:
@@ -497,7 +497,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return mExistingEntries.get(clazz);
   }
 
-  private String getSaveMessage(EntryContainer container) {
+  private String getSaveMessage(ChartEntry container) {
     List<String> lines = new ArrayList<>();
 
     int dayNum = 1 + Days.daysBetween(mCycle.startDate, container.entryDate).getDays();

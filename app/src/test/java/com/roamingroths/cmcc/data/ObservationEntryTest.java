@@ -14,7 +14,7 @@ import java.security.PublicKey;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class ChartEntryTest {
+public class ObservationEntryTest {
 
   private static final ImmutableList<String> OBSERVATION_STRS = ImmutableList.of(
       "H", "VL10CKAD", "0X1", "10WLAD"

@@ -12,8 +12,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -98,13 +98,13 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     mCycleProvider.maybeCreateNewEntries(cycle)
         .andThen(mCycleProvider.getEntryContainers(cycle))
         .toList()
-        .subscribe(new Consumer<List<EntryContainer>>() {
+        .subscribe(new Consumer<List<ChartEntry>>() {
           @Override
-          public void accept(List<EntryContainer> entryContainers) throws Exception {
+          public void accept(List<ChartEntry> chartEntries) throws Exception {
             if (DEBUG) Log.v(TAG, "Preload cycle data: finish");
             Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
             intent.putExtra(Cycle.class.getName(), cycle);
-            intent.putParcelableArrayListExtra(EntryContainer.class.getName(), Lists.newArrayList(entryContainers));
+            intent.putParcelableArrayListExtra(ChartEntry.class.getName(), Lists.newArrayList(chartEntries));
             startActivity(intent);
           }
         }, new Consumer<Throwable>() {

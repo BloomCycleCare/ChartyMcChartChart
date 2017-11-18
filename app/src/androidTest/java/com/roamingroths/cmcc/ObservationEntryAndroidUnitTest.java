@@ -20,7 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class ChartEntryAndroidUnitTest {
+public class ObservationEntryAndroidUnitTest {
 
   @Test
   public void testPbeWrappedRsa() throws Exception {

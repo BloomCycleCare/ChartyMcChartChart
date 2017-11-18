@@ -17,7 +17,7 @@ import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -35,11 +35,11 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final EntryContainerListener mListener;
+  private final ChartEntryListener mListener;
   private final AtomicBoolean mEntryListenerAttached;
   private final DatabaseReference mEntriesDbRef;
   private final Preferences mPreferences;
-  private EntryContainerList mContainerList;
+  private ChartEntryList mContainerList;
 
   public ChartEntryAdapter(
       Context context,
@@ -53,8 +53,8 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mContext = context;
     mClickHandler = clickHandler;
     mPreferences = Preferences.fromShared(mContext);
-    mContainerList = EntryContainerList.builder(cycle, mPreferences).withAdapter(this).build();
-    mListener = new EntryContainerListener(context, mContainerList, cycleProvider.getProviderForClazz(ChartEntry.class));
+    mContainerList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
+    mListener = new ChartEntryListener(context, mContainerList, cycleProvider.getProviderForClazz(ObservationEntry.class));
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -68,18 +68,18 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public boolean initFromIntent(Intent intent) {
-    if (!intent.hasExtra(EntryContainer.class.getName())) {
+    if (!intent.hasExtra(ChartEntry.class.getName())) {
       return false;
     }
-    List<EntryContainer> containers = intent.getParcelableArrayListExtra(EntryContainer.class.getName());
-    for (EntryContainer container : containers) {
+    List<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
+    for (ChartEntry container : containers) {
       mContainerList.addEntry(container);
     }
     return true;
   }
 
-  public void initialize(List<EntryContainer> containers) {
-    for (EntryContainer container : containers) {
+  public void initialize(List<ChartEntry> containers) {
+    for (ChartEntry container : containers) {
       mContainerList.addEntry(container);
     }
     notifyDataSetChanged();
@@ -89,7 +89,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return mContainerList.initialize(cycleProvider);
   }
 
-  public void updateContainer(EntryContainer container) {
+  public void updateContainer(ChartEntry container) {
     mContainerList.changeEntry(container);
   }
 
@@ -144,15 +144,15 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public interface OnClickHandler {
-    void onClick(EntryContainer container, int index);
+    void onClick(ChartEntry container, int index);
   }
 
-  public Intent getIntentForModification(EntryContainer container, int index) {
+  public Intent getIntentForModification(ChartEntry container, int index) {
     Intent intent = new Intent(mContext, EntryDetailActivity.class);
     intent.putExtra(Extras.ENTRY_DATE_STR, DateUtil.toWireStr(container.entryDate));
     intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mContainerList.expectUnusualBleeding(index));
     intent.putExtra(Cycle.class.getName(), mContainerList.mCycle);
-    intent.putExtra(EntryContainer.class.getName(), container);
+    intent.putExtra(ChartEntry.class.getName(), container);
     return intent;
   }
 }

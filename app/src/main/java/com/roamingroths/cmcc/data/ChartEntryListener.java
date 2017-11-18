@@ -7,7 +7,7 @@ import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -23,13 +23,13 @@ import io.reactivex.schedulers.Schedulers;
  * Created by parkeroth on 5/27/17.
  */
 
-public class EntryContainerListener implements ChildEventListener {
+public class ChartEntryListener implements ChildEventListener {
 
   private final Context mContext;
-  private final EntryContainerList mList;
-  private final EntryProvider<ChartEntry> mProvider;
+  private final ChartEntryList mList;
+  private final EntryProvider<ObservationEntry> mProvider;
 
-  public EntryContainerListener(Context context, EntryContainerList list, EntryProvider<ChartEntry> provider) {
+  public ChartEntryListener(Context context, ChartEntryList list, EntryProvider<ObservationEntry> provider) {
     mContext = context;
     mList = list;
     mProvider = provider;
@@ -40,22 +40,22 @@ public class EntryContainerListener implements ChildEventListener {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
     Single.just(dataSnapshot)
         .observeOn(Schedulers.computation())
-        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
+        .flatMap(new Function<DataSnapshot, SingleSource<ObservationEntry>>() {
           @Override
-          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+          public SingleSource<ObservationEntry> apply(DataSnapshot snapshot) throws Exception {
             return mProvider.fromSnapshot(dataSnapshot, mList.mCycle.keys.chartKey);
           }
         })
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Consumer<ChartEntry>() {
+        .subscribe(new Consumer<ObservationEntry>() {
           @Override
-          public void accept(ChartEntry chartEntry) throws Exception {
-            mList.addEntry(new EntryContainer(entryDate, chartEntry, null, null));
+          public void accept(ObservationEntry observationEntry) throws Exception {
+            mList.addEntry(new ChartEntry(entryDate, observationEntry, null, null));
           }
         }, new Consumer<Throwable>() {
           @Override
           public void accept(Throwable throwable) throws Exception {
-            Log.e(EntryContainerList.class.getSimpleName(), "Error decoding ChartEntry from DataSnapshot", throwable);
+            Log.e(ChartEntryList.class.getSimpleName(), "Error decoding ObservationEntry from DataSnapshot", throwable);
           }
         });
   }
@@ -65,22 +65,22 @@ public class EntryContainerListener implements ChildEventListener {
     final LocalDate entryDate = DateUtil.fromWireStr(dataSnapshot.getKey());
     Single.just(dataSnapshot)
         .subscribeOn(Schedulers.computation())
-        .flatMap(new Function<DataSnapshot, SingleSource<ChartEntry>>() {
+        .flatMap(new Function<DataSnapshot, SingleSource<ObservationEntry>>() {
           @Override
-          public SingleSource<ChartEntry> apply(DataSnapshot snapshot) throws Exception {
+          public SingleSource<ObservationEntry> apply(DataSnapshot snapshot) throws Exception {
             return mProvider.fromSnapshot(snapshot, mList.mCycle.keys.chartKey);
           }
         })
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Consumer<ChartEntry>() {
+        .subscribe(new Consumer<ObservationEntry>() {
           @Override
-          public void accept(ChartEntry chartEntry) throws Exception {
-            mList.changeEntry(new EntryContainer(entryDate, chartEntry, null, null));
+          public void accept(ObservationEntry observationEntry) throws Exception {
+            mList.changeEntry(new ChartEntry(entryDate, observationEntry, null, null));
           }
         }, new Consumer<Throwable>() {
           @Override
           public void accept(Throwable throwable) throws Exception {
-            Log.e(EntryContainerList.class.getSimpleName(), "Error decoding ChartEntry from DataSnapshot", throwable);
+            Log.e(ChartEntryList.class.getSimpleName(), "Error decoding ObservationEntry from DataSnapshot", throwable);
           }
         });
   }

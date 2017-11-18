@@ -3,11 +3,11 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.data.EntryContainerList;
+import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.logic.Observation;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 
 import org.joda.time.LocalDate;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.verify;
  * Created by parkeroth on 7/1/17.
  */
 @RunWith(MockitoJUnitRunner.class)
-public class ChartEntryViewHolderTest {
+public class ObservationEntryViewHolderTest {
 
   private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
   private static final String CYCLE_ID = "fake-cycle-id";
@@ -300,10 +300,10 @@ public class ChartEntryViewHolderTest {
 
   private void runTest(
       ImmutableMap<Entry, Expectations> entries, Preferences preferences) throws Exception {
-    EntryContainerList entryList = EntryContainerList.builder(CYCLE, preferences).build();
+    ChartEntryList entryList = ChartEntryList.builder(CYCLE, preferences).build();
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(entryList.size());
-      entryList.addEntry(new EntryContainer(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
+      entryList.addEntry(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
     }
     int i = entryList.size() - 1;
     for (Map.Entry<Entry, Expectations> anEntry : entries.entrySet()) {
@@ -437,9 +437,9 @@ public class ChartEntryViewHolderTest {
       return this;
     }
 
-    public ChartEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
+    public ObservationEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
       Observation observation = Observation.fromString(observationText);
-      return new ChartEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null);
+      return new ObservationEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null);
     }
   }
 

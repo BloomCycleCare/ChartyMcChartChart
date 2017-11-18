@@ -15,8 +15,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 
 import java.util.ArrayList;
@@ -37,11 +37,11 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   private FirebaseDatabase mDb;
   private CycleProvider mCycleProvider;
-  private ArrayList<EntryContainer> mEntryContainers;
+  private ArrayList<ChartEntry> mChartEntries;
   private Cycle mCycle;
 
-  public void updateContainer(EntryContainer entryContainer) {
-    mChartEntryAdapter.updateContainer(entryContainer);
+  public void updateContainer(ChartEntry chartEntry) {
+    mChartEntryAdapter.updateContainer(chartEntry);
   }
 
   @Override
@@ -59,15 +59,15 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mCycleProvider = CycleProvider.forDb(mDb);
 
     Bundle arguments = getArguments();
-    mEntryContainers = arguments.getParcelableArrayList(EntryContainer.class.getName());
+    mChartEntries = arguments.getParcelableArrayList(ChartEntry.class.getName());
     mCycle = arguments.getParcelable(Cycle.class.getName());
 
     mChartEntryAdapter = new ChartEntryAdapter(
         getActivity().getApplicationContext(), mCycle, this, mDb, mCycleProvider);
-    mChartEntryAdapter.initialize(mEntryContainers);
+    mChartEntryAdapter.initialize(mChartEntries);
 
     if (DEBUG)
-      Log.v(TAG, "onCreate() cycle:" + mCycle.id + ", mEntryContainers:" + mEntryContainers.size());
+      Log.v(TAG, "onCreate() cycle:" + mCycle.id + ", mChartEntries:" + mChartEntries.size());
   }
 
   @Nullable
@@ -82,7 +82,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     mChartEntryAdapter.notifyDataSetChanged();
 
-    if (!mEntryContainers.isEmpty()) {
+    if (!mChartEntries.isEmpty()) {
       mView.showList();
     }
 
@@ -104,7 +104,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   @Override
-  public void onClick(EntryContainer container, int index) {
+  public void onClick(ChartEntry container, int index) {
     startActivityForResult(
         mChartEntryAdapter.getIntentForModification(container, index),
         EntryDetailActivity.MODIFY_REQUEST);

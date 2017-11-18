@@ -2,10 +2,9 @@ package com.roamingroths.cmcc.logic;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.google.common.base.Preconditions;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -13,65 +12,63 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.crypto.SecretKey;
 
 /**
- * Created by parkeroth on 4/22/17.
+ * Created by parkeroth on 9/23/17.
  */
 
-public class ChartEntry extends Entry implements Parcelable {
+public class ChartEntry implements Parcelable {
+  public final LocalDate entryDate;
+  public final ObservationEntry observationEntry;
+  public final WellnessEntry wellnessEntry;
+  public final SymptomEntry symptomEntry;
 
-  @Nullable public Observation observation;
-  public boolean peakDay;
-  public boolean intercourse;
-  public boolean firstDay;
-  public boolean pointOfChange;
-  public boolean unusualBleeding;
+  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
+    this.entryDate = entryDate;
+    Preconditions.checkArgument(
+        observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
+    this.observationEntry = observationEntry;
+    this.wellnessEntry = wellnessEntry;
+    this.symptomEntry = symptomEntry;
+  }
 
-  public ChartEntry(
-      LocalDate date,
-      @Nullable Observation observation,
-      boolean peakDay,
-      boolean intercourse,
-      boolean firstDay,
-      boolean pointOfChange,
-      boolean unusualBleeding,
-      SecretKey key) {
-    super(date);
-    this.observation = observation;
-    this.peakDay = peakDay;
-    this.intercourse = intercourse;
-    this.firstDay = firstDay;
-    this.pointOfChange = pointOfChange;
-    if (unusualBleeding && (observation == null || !observation.hasBlood())) {
-      throw new IllegalArgumentException();
+  protected ChartEntry(Parcel in) {
+    entryDate = DateUtil.fromWireStr(in.readString());
+    observationEntry = in.readParcelable(ObservationEntry.class.getClassLoader());
+    wellnessEntry = in.readParcelable(WellnessEntry.class.getClassLoader());
+    symptomEntry = in.readParcelable(SymptomEntry.class.getClassLoader());
+  }
+
+  public List<String> getSummaryLines() {
+    List<String> lines = new ArrayList<>();
+    List<String> chartEntryLines = observationEntry.getSummaryLines();
+    if (!chartEntryLines.isEmpty()) {
+      lines.addAll(chartEntryLines);
     }
-    this.unusualBleeding = unusualBleeding;
-    swapKey(key);
-  }
-
-  public ChartEntry(Parcel in) {
-    this(
-        DateUtil.fromWireStr(in.readString()),
-        in.<Observation>readParcelable(Observation.class.getClassLoader()),
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        AesCryptoUtil.parseKey(in.readString()));
-  }
-
-  public static ChartEntry emptyEntry(LocalDate date, SecretKey secretKey) {
-    return new ChartEntry(date, null, false, false, false, false, false, secretKey);
+    List<String> wellnessLines = wellnessEntry.getSummaryLines();
+    if (!wellnessLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(wellnessLines);
+    }
+    List<String> symptomLines = symptomEntry.getSummaryLines();
+    if (!symptomLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(symptomLines);
+    }
+    return lines;
   }
 
   @Override
-  public List<String> getSummaryLines() {
-    List<String> lines = new ArrayList<>();
-    //lines.add(observation.toString());
-    lines.addAll(observation.getSummaryLines());
-    return lines;
+  public void writeToParcel(Parcel dest, int flags) {
+    dest.writeString(DateUtil.toWireStr(entryDate));
+    dest.writeParcelable(observationEntry, flags);
+    dest.writeParcelable(wellnessEntry, flags);
+    dest.writeParcelable(symptomEntry, flags);
+  }
+
+  @Override
+  public int describeContents() {
+    return 0;
   }
 
   public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
@@ -86,55 +83,24 @@ public class ChartEntry extends Entry implements Parcelable {
     }
   };
 
-  public boolean hasMucus() {
-    if (observation == null || observation.dischargeSummary == null) {
+  @Override
+  public boolean equals(Object obj) {
+    if (obj == null) {
       return false;
     }
-    return observation.dischargeSummary.hasMucus();
-  }
+    if (obj instanceof ChartEntry) {
+      ChartEntry that = (ChartEntry) obj;
 
-  public String getListUiText() {
-    if (observation == null) {
-      return "----";
-    }
-    return observation.toString();
-  }
-
-  @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(getDateStr());
-    dest.writeParcelable(observation, flags);
-    dest.writeByte((byte) (peakDay ? 1 : 0));
-    dest.writeByte((byte) (intercourse ? 1 : 0));
-    dest.writeByte((byte) (firstDay ? 1 : 0));
-    dest.writeByte((byte) (pointOfChange ? 1 : 0));
-    dest.writeByte((byte) (unusualBleeding ? 1 : 0));
-    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (o instanceof ChartEntry) {
-      ChartEntry that = (ChartEntry) o;
-      return Objects.equal(this.observation, that.observation) &&
-          Objects.equal(this.getDate(), that.getDate()) &&
-          this.peakDay == that.peakDay &&
-          this.intercourse == that.intercourse &&
-          this.firstDay == that.firstDay &&
-          this.pointOfChange == that.pointOfChange &&
-          this.unusualBleeding == that.unusualBleeding;
+      return Objects.equal(this.entryDate, that.entryDate)
+          && Objects.equal(this.observationEntry, that.observationEntry)
+          && Objects.equal(this.wellnessEntry, that.wellnessEntry)
+          && Objects.equal(this.symptomEntry, that.symptomEntry);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding);
+    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry);
   }
 }

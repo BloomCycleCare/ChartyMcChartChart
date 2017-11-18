@@ -11,8 +11,8 @@ import android.view.ViewGroup;
 import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseAuth;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.EntryContainer;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,7 +40,7 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
 
   private final CycleProvider mCycleProvider;
   private final List<Cycle> mCycles;
-  private final Map<Cycle, ArrayList<EntryContainer>> mContainers;
+  private final Map<Cycle, ArrayList<ChartEntry>> mContainers;
   private final CompositeDisposable mDisposables;
 
   public EntryListPageAdapter(FragmentManager fragmentManager, Intent intent, CycleProvider cycleProvider) {
@@ -51,7 +51,7 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
 
     Cycle cycle = intent.getParcelableExtra(Cycle.class.getName());
     if (DEBUG) Log.v(TAG, "Initial cycle: " + cycle.id);
-    ArrayList<EntryContainer> containers = intent.getParcelableArrayListExtra(EntryContainer.class.getName());
+    ArrayList<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
     mContainers.put(cycle, containers);
     mCycles.add(cycle);
     notifyDataSetChanged();
@@ -71,11 +71,11 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
           public CompletableSource apply(Cycle cycle) throws Exception {
             return Completable.fromObservable(Observable.zip(
                 Observable.just(cycle),
-                mCycleProvider.getEntryContainers(cycle).toList().toObservable(), new BiFunction<Cycle, List<EntryContainer>, Void>() {
+                mCycleProvider.getEntryContainers(cycle).toList().toObservable(), new BiFunction<Cycle, List<ChartEntry>, Void>() {
                   @Override
-                  public Void apply(Cycle cycle, List<EntryContainer> entryContainers) throws Exception {
+                  public Void apply(Cycle cycle, List<ChartEntry> chartEntries) throws Exception {
                     if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle.id);
-                    mContainers.put(cycle, Lists.newArrayList(entryContainers));
+                    mContainers.put(cycle, Lists.newArrayList(chartEntries));
                     mCycles.add(cycle);
                     notifyDataSetChanged();
                     return null;
@@ -117,7 +117,7 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
 
     Bundle args = new Bundle();
     args.putParcelable(Cycle.class.getName(), cycle);
-    args.putParcelableArrayList(EntryContainer.class.getName(), mContainers.get(cycle));
+    args.putParcelableArrayList(ChartEntry.class.getName(), mContainers.get(cycle));
 
     Fragment fragment = new EntryListFragment();
     fragment.setArguments(args);

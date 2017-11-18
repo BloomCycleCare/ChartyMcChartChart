@@ -18,10 +18,10 @@ public class GsonTest {
   @Test
   public void chartEntry() throws Exception {
     for (String observationStr : OBSERVATION_STRS) {
-      /**ChartEntry entry =
-          new ChartEntry(LocalDate.now(), Observation.fromString(observationStr), true, false);
+      /**ObservationEntry entry =
+       new ObservationEntry(LocalDate.now(), Observation.fromString(observationStr), true, false);
       Gson gson = GsonUtil.getGsonInstance();
-       gson.fromJson(gson.toJson(entry), ChartEntry.class);*/
+       gson.fromJson(gson.toJson(entry), ObservationEntry.class);*/
     }
   }
 }

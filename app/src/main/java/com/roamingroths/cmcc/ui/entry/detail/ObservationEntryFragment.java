@@ -16,10 +16,10 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.EntryProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.data.ObservationEntryProvider;
 import com.roamingroths.cmcc.logic.Observation;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -28,7 +28,7 @@ import java.util.Set;
  * Created by parkeroth on 9/11/17.
  */
 
-public class ChartEntryFragment extends EntryFragment<ChartEntry> {
+public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
   public static final int OK_RESPONSE = 0;
 
@@ -45,8 +45,8 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   private boolean expectUnusualBleeding;
   private boolean usingPrePeakYellowStickers;
 
-  public ChartEntryFragment() {
-    super(ChartEntry.class, "ChartEntryFragment", R.layout.fragment_chart_entry);
+  public ObservationEntryFragment() {
+    super(ObservationEntry.class, "ObservationEntryFragment", R.layout.fragment_chart_entry);
   }
 
   @Override
@@ -55,8 +55,8 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  EntryProvider<ChartEntry> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-    return ChartEntryProvider.forDb(db, cryptoUtil);
+  EntryProvider<ObservationEntry> createEntryProvider(FirebaseDatabase db, CryptoUtil cryptoUtil) {
+    return ObservationEntryProvider.forDb(db, cryptoUtil);
   }
 
   @Override
@@ -132,7 +132,7 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  public Set<ValidationIssue> validateEntry(ChartEntry entry) {
+  public Set<ValidationIssue> validateEntry(ObservationEntry entry) {
     Set<ValidationIssue> issues = new HashSet<>();
     boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
     if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
@@ -170,19 +170,19 @@ public class ChartEntryFragment extends EntryFragment<ChartEntry> {
   }
 
   @Override
-  public ChartEntry getEntryFromUi() throws Exception {
+  public ObservationEntry getEntryFromUi() throws Exception {
     Observation observation = getObservationFromEditText();
     boolean peakDay = mPeakDaySwitch.isChecked();
     boolean intercourse = mIntercourseSwitch.isChecked();
     boolean firstDay = mFirstDaySwitch.isChecked();
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
-    return new ChartEntry(
+    return new ObservationEntry(
         getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, getCycle().keys.chartKey);
   }
 
   @Override
-  void updateUiWithEntry(ChartEntry entry) {
+  void updateUiWithEntry(ObservationEntry entry) {
     updateUiWithObservation(entry.observation);
     mPeakDaySwitch.setChecked(entry.peakDay);
     mIntercourseSwitch.setChecked(entry.intercourse);

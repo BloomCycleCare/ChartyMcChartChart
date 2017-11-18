@@ -8,8 +8,8 @@ import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryAdapter;
-import com.roamingroths.cmcc.data.EntryContainerList;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.data.ChartEntryList;
+import com.roamingroths.cmcc.logic.ChartEntry;
 
 /**
  * Created by parkeroth on 7/1/17.
@@ -32,7 +32,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
-    private final EntryContainerList mContainerList;
+    private final ChartEntryList mContainerList;
     private final TextView mEntryNumTextView;
     private final TextView mEntryDateTextView;
     private final TextView mEntryDataTextView;
@@ -41,7 +41,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final View mEntryBackgroundView;
 
     public Impl(
-        View itemView, EntryContainerList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
+        View itemView, ChartEntryList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
       super(itemView);
       itemView.setOnClickListener(this);
       mContainerList = containerList;
@@ -100,7 +100,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      EntryContainer container = mContainerList.get(index);
+      ChartEntry container = mContainerList.get(index);
       mClickHandler.onClick(container, index);
     }
   }

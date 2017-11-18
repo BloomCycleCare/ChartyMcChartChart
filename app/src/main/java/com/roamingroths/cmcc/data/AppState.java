@@ -6,9 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -82,7 +82,7 @@ public class AppState {
             Set<Completable> putResults = new HashSet<>();
             putResults.add(cycleProvider.putCycleRx(user.getUid(), cycle));
             for (EntrySet entrySet : cycleData.entrySets) {
-              putResults.add(putEntry(cycleProvider, cycle, entrySet.mChartEntry));
+              putResults.add(putEntry(cycleProvider, cycle, entrySet.mObservationEntry));
               putResults.add(putEntry(cycleProvider, cycle, entrySet.mWellnessEntry));
               putResults.add(putEntry(cycleProvider, cycle, entrySet.mSymptomEntry));
             }
@@ -111,15 +111,15 @@ public class AppState {
         .flatMap(new Function<Cycle, ObservableSource<CycleData>>() {
           @Override
           public ObservableSource<CycleData> apply(final Cycle cycle) throws Exception {
-            Observable<ChartEntry> chartEntries =
-                cycleProvider.getProviderForClazz(ChartEntry.class).getDecryptedEntries(cycle);
+            Observable<ObservationEntry> chartEntries =
+                cycleProvider.getProviderForClazz(ObservationEntry.class).getDecryptedEntries(cycle);
             Observable<WellnessEntry> wellnessEntries =
                 cycleProvider.getProviderForClazz(WellnessEntry.class).getDecryptedEntries(cycle);
             Observable<SymptomEntry> symptomEntries =
                 cycleProvider.getProviderForClazz(SymptomEntry.class).getDecryptedEntries(cycle);
-            Observable<EntrySet> entrySets = Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ChartEntry, WellnessEntry, SymptomEntry, EntrySet>() {
+            Observable<EntrySet> entrySets = Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ObservationEntry, WellnessEntry, SymptomEntry, EntrySet>() {
               @Override
-              public EntrySet apply(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
+              public EntrySet apply(ObservationEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
                 return new EntrySet(chartEntry, wellnessEntry, symptomEntry);
               }
             });
@@ -148,12 +148,12 @@ public class AppState {
   }
 
   public static class EntrySet {
-    public final ChartEntry mChartEntry;
+    public final ObservationEntry mObservationEntry;
     public final WellnessEntry mWellnessEntry;
     public final SymptomEntry mSymptomEntry;
 
-    public EntrySet(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
-      mChartEntry = chartEntry;
+    public EntrySet(ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
+      mObservationEntry = observationEntry;
       mWellnessEntry = wellnessEntry;
       mSymptomEntry = symptomEntry;
     }

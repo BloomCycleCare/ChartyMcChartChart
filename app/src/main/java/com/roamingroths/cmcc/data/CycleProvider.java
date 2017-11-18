@@ -19,7 +19,7 @@ import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.logic.EntryContainer;
+import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.logic.SymptomEntry;
 import com.roamingroths.cmcc.logic.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -73,17 +73,17 @@ public class CycleProvider {
     return new CycleProvider(
         db,
         CycleKeyProvider.forDb(db, cryptoUtil),
-        ChartEntryProvider.forDb(db, cryptoUtil),
+        ObservationEntryProvider.forDb(db, cryptoUtil),
         WellnessEntryProvider.forDb(db, cryptoUtil),
         SymptomEntryProvider.forDb(db, cryptoUtil));
   }
 
   private CycleProvider(
-      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
+      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ObservationEntryProvider observationEntryProvider, WellnessEntryProvider wellnessEntryProvider, SymptomEntryProvider symptomEntryProvider) {
     this.db = db;
     this.cycleKeyProvider = cycleKeyProvider;
     entryProviders = ImmutableMap.<Class<? extends Entry>, EntryProvider>builder()
-        .put(chartEntryProvider.getEntryClazz(), chartEntryProvider)
+        .put(observationEntryProvider.getEntryClazz(), observationEntryProvider)
         .put(wellnessEntryProvider.getEntryClazz(), wellnessEntryProvider)
         .put(symptomEntryProvider.getEntryClazz(), symptomEntryProvider).build();
   }
@@ -110,14 +110,14 @@ public class CycleProvider {
     ref.keepSynced(true);
   }
 
-  public Observable<EntryContainer> getEntryContainers(Cycle cycle) {
-    Observable<ChartEntry> chartEntries = entryProviders.get(ChartEntry.class).getDecryptedEntries(cycle);
+  public Observable<ChartEntry> getEntryContainers(Cycle cycle) {
+    Observable<ObservationEntry> chartEntries = entryProviders.get(ObservationEntry.class).getDecryptedEntries(cycle);
     Observable<WellnessEntry> wellnessEntries = entryProviders.get(WellnessEntry.class).getDecryptedEntries(cycle);
     Observable<SymptomEntry> symptomEntries = entryProviders.get(SymptomEntry.class).getDecryptedEntries(cycle);
-    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ChartEntry, WellnessEntry, SymptomEntry, EntryContainer>() {
+    return Observable.zip(chartEntries, wellnessEntries, symptomEntries, new Function3<ObservationEntry, WellnessEntry, SymptomEntry, ChartEntry>() {
       @Override
-      public EntryContainer apply(ChartEntry chartEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
-        return new EntryContainer(chartEntry.getDate(), chartEntry, wellnessEntry, symptomEntry);
+      public ChartEntry apply(ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
+        return new ChartEntry(observationEntry.getDate(), observationEntry, wellnessEntry, symptomEntry);
       }
     });
   }
@@ -313,10 +313,10 @@ public class CycleProvider {
     return moveEntries.andThen(updatePrevious).andThen(dropCycle).andThen(updateNextAndReturnPrevious);
   }
 
-  public Single<Cycle> splitCycleRx(final String userId, final Cycle currentCycle, Single<ChartEntry> firstEntry) {
-    return firstEntry.flatMap(new Function<ChartEntry, SingleSource<Cycle>>() {
+  public Single<Cycle> splitCycleRx(final String userId, final Cycle currentCycle, Single<ObservationEntry> firstEntry) {
+    return firstEntry.flatMap(new Function<ObservationEntry, SingleSource<Cycle>>() {
       @Override
-      public SingleSource<Cycle> apply(final ChartEntry firstEntry) throws Exception {
+      public SingleSource<Cycle> apply(final ObservationEntry firstEntry) throws Exception {
         if (DEBUG) Log.v(TAG, "First entry: " + firstEntry.getDateStr());
 
         Single<Cycle> newCycle = getCycle(userId, currentCycle.nextCycleId)
