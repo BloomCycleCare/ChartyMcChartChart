@@ -1,7 +1,5 @@
 package com.roamingroths.cmcc.data;
 
-import android.content.Context;
-import android.content.Intent;
 import android.support.annotation.Nullable;
 import android.support.v7.util.SortedList;
 import android.util.Log;
@@ -20,17 +18,9 @@ import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -38,9 +28,8 @@ import io.reactivex.functions.Function;
 
 public class ChartEntryList {
 
-  private final boolean DEBUG = true;
+  private final boolean DEBUG = false;
   private final String TAG = ChartEntryList.class.getSimpleName();
-  private final AtomicBoolean mInitialized = new AtomicBoolean(false);
 
   // Chart state members
   public final Cycle mCycle;
@@ -60,26 +49,16 @@ public class ChartEntryList {
     mPreferences = preferences;
   }
 
-  public void bindViewHolder(ChartEntryViewHolder holder, int position, Context context) {
+  public void bindViewHolder(ChartEntryViewHolder holder, int position) {
     if (DEBUG) Log.v(TAG, "bindViewHolder(" + position + ")");
     ObservationEntry entry = mEntries.get(position).observationEntry;
     holder.setEntrySummary(entry.getListUiText());
-    holder.setBackgroundColor(getEntryColorResource(entry, context));
+    holder.setBackgroundColor(getEntryColorResource(entry));
     holder.setEntryNum(mEntries.size() - position);
     holder.setDate(DateUtil.toWireStr(entry.getDate()));
     holder.setPeakDayText(getPeakDayViewText(entry));
     holder.setIntercourse(entry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, entry));
-  }
-
-  public Completable initialize(final CycleProvider cycleProvider) {
-    if (DEBUG) Log.v(TAG, "Initialize");
-    if (mInitialized.compareAndSet(false, true)) {
-      return cycleProvider.maybeCreateNewEntries(mCycle)
-          .andThen(fillFromProvider(cycleProvider));
-    } else {
-      return Completable.error(new IllegalStateException());
-    }
   }
 
   public synchronized void addEntry(ChartEntry chartEntry) {
@@ -250,7 +229,7 @@ public class ChartEntryList {
     return getPeakDayViewText(entry, mostRecentPeakDay);
   }
 
-  public int getEntryColorResource(ObservationEntry entry, Context context) {
+  public int getEntryColorResource(ObservationEntry entry) {
     if (entry.observation == null) {
       return R.color.entryGrey;
     }
@@ -399,30 +378,6 @@ public class ChartEntryList {
       });
       return new ChartEntryList(cycle, preferences, entries);
     }
-  }
-
-  private void fillFromIntent(Intent intent) {
-    List<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
-    for (ChartEntry container : containers) {
-      addEntry(container);
-    }
-  }
-
-  private Completable fillFromProvider(CycleProvider cycleProvider) {
-    logV("Begin filling from DB");
-    return cycleProvider.getEntries(mCycle)
-        .observeOn(AndroidSchedulers.mainThread())
-        .flatMapCompletable(new Function<ChartEntry, CompletableSource>() {
-          @Override
-          public CompletableSource apply(final ChartEntry chartEntry) throws Exception {
-            return Completable.fromAction(new Action() {
-              @Override
-              public void run() throws Exception {
-                addEntry(chartEntry);
-              }
-            });
-          }
-        });
   }
 
   private void logV(String message) {

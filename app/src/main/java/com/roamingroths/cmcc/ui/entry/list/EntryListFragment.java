@@ -19,7 +19,6 @@ import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 
 import java.util.ArrayList;
 
@@ -64,12 +63,13 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mChartEntries = arguments.getParcelableArrayList(ChartEntry.class.getName());
     mCycle = arguments.getParcelable(Cycle.class.getName());
 
+    if (DEBUG) Log.v(TAG, "onCreate() cycle:" + mCycle.id);
+
     mChartEntryAdapter = new ChartEntryAdapter(
         getActivity().getApplicationContext(), mCycle, this, new ChartEntryProvider(mDb, FirebaseApplication.getCryptoUtil()));
-    mChartEntryAdapter.initialize(mChartEntries);
-
-    if (DEBUG)
-      Log.v(TAG, "onCreate() cycle:" + mCycle.id + ", mChartEntries:" + mChartEntries.size());
+    if (mChartEntries != null) {
+      mChartEntryAdapter.initialize(mChartEntries);
+    }
   }
 
   @Nullable
@@ -84,7 +84,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     mChartEntryAdapter.notifyDataSetChanged();
 
-    if (!mChartEntries.isEmpty()) {
+    if (mChartEntries != null && !mChartEntries.isEmpty()) {
       mView.showList();
     }
 
@@ -94,20 +94,31 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onResume() {
     super.onResume();
+    mChartEntryAdapter.start();
     mRecyclerView.scrollToPosition(0);
-
   }
 
   @Override
   public void onPause() {
     super.onPause();
+    mChartEntryAdapter.shutdown();
   }
 
   @Override
   public void onClick(ChartEntry container, int index) {
-    startActivityForResult(
-        mChartEntryAdapter.getIntentForModification(container, index),
-        EntryDetailActivity.MODIFY_REQUEST);
+    startActivityForResult(mChartEntryAdapter.getIntentForModification(container, index), 0);
+  }
+
+  public void shutdown() {
+    if (mChartEntryAdapter != null) {
+      mChartEntryAdapter.shutdown();
+    }
+  }
+
+  @Override
+  public void onDestroy() {
+    super.onDestroy();
+    mChartEntryAdapter.shutdown();
   }
 
   public Cycle getCycle() {

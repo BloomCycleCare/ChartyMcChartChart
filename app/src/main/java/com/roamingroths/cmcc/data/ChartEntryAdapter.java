@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.support.v7.preference.PreferenceManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,8 +22,10 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import java.util.List;
 
 import durdinapps.rxfirebase2.RxFirebaseChildEvent;
-import io.reactivex.exceptions.OnErrorNotImplementedException;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -30,9 +33,15 @@ import io.reactivex.functions.Consumer;
 
 public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
+  private static final boolean DEBUG = true;
+  private static final String TAG = ChartEntryAdapter.class.getSimpleName();
+
   private final Context mContext;
   private final OnClickHandler mClickHandler;
+  private final Cycle mCycle;
   private final Preferences mPreferences;
+  private final ChartEntryProvider mChartEntryProvider;
+  private final CompositeDisposable mDisposables;
   private ChartEntryList mContainerList;
 
   public ChartEntryAdapter(
@@ -41,34 +50,12 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
       OnClickHandler clickHandler,
       ChartEntryProvider chartEntryProvider) {
     mContext = context;
+    mCycle = cycle;
     mClickHandler = clickHandler;
+    mChartEntryProvider = chartEntryProvider;
+    mDisposables = new CompositeDisposable();
     mPreferences = Preferences.fromShared(mContext);
-    mContainerList = ChartEntryList.builder(cycle, mPreferences).withAdapter(this).build();
-
-    chartEntryProvider.entryStream(cycle).subscribe(
-        new Consumer<RxFirebaseChildEvent<ChartEntry>>() {
-          @Override
-          public void accept(RxFirebaseChildEvent<ChartEntry> childEvent) throws Exception {
-            switch (childEvent.getEventType()) {
-              case ADDED:
-                mContainerList.addEntry(childEvent.getValue());
-                break;
-              case CHANGED:
-                mContainerList.changeEntry(childEvent.getValue());
-                break;
-              case MOVED:
-                throw new UnsupportedOperationException();
-              case REMOVED:
-                mContainerList.removeEntry(childEvent.getValue());
-                break;
-            }
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-            throw new OnErrorNotImplementedException(throwable);
-          }
-        });
+    mContainerList = ChartEntryList.builder(mCycle, mPreferences).withAdapter(this).build();
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -79,6 +66,45 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
           }
         }
     );
+  }
+
+  public void start() {
+    mDisposables.add(mChartEntryProvider.entryStream(mCycle)
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Consumer<RxFirebaseChildEvent<ChartEntry>>() {
+          @Override
+          public void accept(RxFirebaseChildEvent<ChartEntry> childEvent) throws Exception {
+            switch (childEvent.getEventType()) {
+              case ADDED:
+                if (DEBUG)
+                  Log.v(TAG, "Add " + childEvent.getValue().entryDate + " to " + mContainerList.mCycle.id);
+                mContainerList.addEntry(childEvent.getValue());
+                break;
+              case CHANGED:
+                if (DEBUG)
+                  Log.v(TAG, "Change " + childEvent.getValue().entryDate + " for " + mContainerList.mCycle.id);
+                mContainerList.changeEntry(childEvent.getValue());
+                break;
+              case MOVED:
+                throw new UnsupportedOperationException();
+              case REMOVED:
+                if (DEBUG)
+                  Log.v(TAG, "Remove " + childEvent.getValue().entryDate + " from " + mContainerList.mCycle.id);
+                mContainerList.removeEntry(childEvent.getValue());
+                break;
+            }
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.e(TAG, "Error on child changed.", throwable);
+          }
+        }));
+  }
+
+  public void shutdown() {
+    mDisposables.clear();
   }
 
   public void initialize(List<ChartEntry> containers) {
@@ -118,7 +144,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
    */
   @Override
   public void onBindViewHolder(ChartEntryViewHolder.Impl holder, int position) {
-    mContainerList.bindViewHolder(holder, position, mContext);
+    mContainerList.bindViewHolder(holder, position);
   }
 
   @Override

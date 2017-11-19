@@ -39,6 +39,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Function4;
 import io.reactivex.schedulers.Schedulers;
@@ -100,7 +101,7 @@ public class ChartEntryProvider {
               @Override
               public void subscribe(ObservableEmitter<DataSnapshot> e) throws Exception {
                 if (DEBUG)
-                  Log.v(TAG, "Found " + dataSnapshot.getChildrenCount() + " children for " + cycle.id);
+                  Log.v(TAG, "Found " + dataSnapshot.getChildrenCount() + " children for " + cycle);
                 for (DataSnapshot entrySnapshot : dataSnapshot.getChildren()) {
                   e.onNext(entrySnapshot);
                 }
@@ -151,13 +152,20 @@ public class ChartEntryProvider {
             for (EncryptedEntry entry : encryptedEntries) {
               updates.put(entry.childId, entry.encryptedEntry);
             }
+            if (DEBUG) Log.v(TAG, "Put " + chartEntry.entryDate + " to " + cycle);
             return RxFirebaseDatabase.updateChildren(reference(cycle, chartEntry.entryDate), updates);
           }
         });
   }
 
-  public Completable deleteEntry(Cycle cycle, LocalDate entryDate) {
-    return RxFirebaseDatabase.removeValue(reference(cycle, entryDate));
+  public Completable deleteEntry(Cycle cycle, ChartEntry entry) {
+    if (DEBUG) Log.v(TAG, "Delete " + entry.entryDate + " from " + cycle.id);
+    return RxFirebaseDatabase.removeValue(reference(cycle, entry.entryDate)).observeOn(Schedulers.io()).doOnComplete(new Action() {
+      @Override
+      public void run() throws Exception {
+        Log.i(TAG, "Delete done");
+      }
+    });
   }
 
   public Completable maybeAddNewEntries(final Cycle cycle) {
@@ -224,7 +232,7 @@ public class ChartEntryProvider {
             entry.observationEntry.swapKey(mObservationEntryProvider.getKey(toCycle.keys));
             entry.wellnessEntry.swapKey(mWellnessEntryProvider.getKey(toCycle.keys));
             entry.symptomEntry.swapKey(mSymptomEntryProvider.getKey(toCycle.keys));
-            return putEntry(toCycle, entry).andThen(deleteEntry(fromCycle, entry.entryDate));
+            return putEntry(toCycle, entry).andThen(deleteEntry(fromCycle, entry));
           }
         });
   }

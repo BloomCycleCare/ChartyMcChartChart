@@ -1,33 +1,20 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
+import android.support.v7.util.SortedList;
 import android.util.Log;
 import android.view.ViewGroup;
 
-import com.google.common.collect.Lists;
-import com.google.firebase.auth.FirebaseAuth;
+import com.google.common.base.Preconditions;
+import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
-import io.reactivex.Observable;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
 
 /**
  * Created by parkeroth on 11/16/17.
@@ -38,71 +25,87 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
 
-  private final CycleProvider mCycleProvider;
-  private final List<Cycle> mCycles;
-  private final Map<Cycle, ArrayList<ChartEntry>> mContainers;
-  private final CompositeDisposable mDisposables;
+  private final SortedList<Cycle> mCycles;
 
-  public EntryListPageAdapter(FragmentManager fragmentManager, Intent intent, CycleProvider cycleProvider) {
+  public EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
-    mDisposables = new CompositeDisposable();
-    mCycles = new ArrayList<>();
-    mContainers = new HashMap<>();
+    mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
+      @Override
+      public int compare(Cycle o1, Cycle o2) {
+        return o2.startDate.compareTo(o1.startDate);
+      }
 
-    Cycle cycle = intent.getParcelableExtra(Cycle.class.getName());
+      @Override
+      public boolean areContentsTheSame(Cycle oldItem, Cycle newItem) {
+        return oldItem.equals(newItem);
+      }
+
+      @Override
+      public boolean areItemsTheSame(Cycle item1, Cycle item2) {
+        return item1.id.equals(item2.id);
+      }
+
+      @Override
+      public void onChanged(int position, int count) {
+        notifyDataSetChanged();
+      }
+
+      @Override
+      public void onInserted(int position, int count) {
+        notifyDataSetChanged();
+      }
+
+      @Override
+      public void onRemoved(int position, int count) {
+        notifyDataSetChanged();
+      }
+
+      @Override
+      public void onMoved(int fromPosition, int toPosition) {
+        notifyDataSetChanged();
+      }
+    });
+
+    /*Cycle cycle = intent.getParcelableExtra(Cycle.class.getName());
     if (DEBUG) Log.v(TAG, "Initial cycle: " + cycle.id);
     ArrayList<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
-    mContainers.put(cycle, containers);
     mCycles.add(cycle);
+    notifyDataSetChanged();*/
+  }
+
+  public void initialize(Cycle currentCycle, FirebaseUser user, CycleProvider cycleProvider) {
+    mCycles.add(currentCycle);
+    cycleProvider.getAllCycles(user.getUid())
+        .subscribe(new Consumer<Cycle>() {
+          @Override
+          public void accept(Cycle cycle) throws Exception {
+            mCycles.add(cycle);
+          }
+        });
+  }
+
+  public void shutdown(ViewGroup viewGroup) {
+    for (int i = 0; i < mCycles.size(); i++) {
+      EntryListFragment fragment = (EntryListFragment) instantiateItem(viewGroup, i);
+      fragment.shutdown();
+    }
+
     notifyDataSetChanged();
-
-    mCycleProvider = cycleProvider;
-    mDisposables.add(mCycleProvider
-        .getAllCycles(FirebaseAuth.getInstance().getCurrentUser().getUid())
-        .filter(new Predicate<Cycle>() {
-          @Override
-          public boolean test(Cycle cycle) throws Exception {
-            return !cycle.equals(mCycles.get(0));
-          }
-        })
-        .sorted(Cycle.comparator())
-        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
-          @Override
-          public CompletableSource apply(Cycle cycle) throws Exception {
-            return Completable.fromObservable(Observable.zip(
-                Observable.just(cycle),
-                mCycleProvider.getEntries(cycle).toList().toObservable(), new BiFunction<Cycle, List<ChartEntry>, Void>() {
-                  @Override
-                  public Void apply(Cycle cycle, List<ChartEntry> chartEntries) throws Exception {
-                    if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle.id);
-                    mContainers.put(cycle, Lists.newArrayList(chartEntries));
-                    mCycles.add(cycle);
-                    notifyDataSetChanged();
-                    return null;
-                  }
-                }));
-          }
-        })
-        .subscribe(new Action() {
-          @Override
-          public void run() throws Exception {
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-
-          }
-        }));
   }
 
-  public void shutdown() {
-    mDisposables.clear();
-  }
-
-  public EntryListFragment getFragment(Cycle cycle, ViewGroup viewGroup) {
-    // TODO: fix index out of bounds
-    int index = mCycles.indexOf(cycle);
-    return (EntryListFragment) instantiateItem(viewGroup, index);
+  public int onResult(EntrySaveResult result) {
+    for (Cycle cycle : result.droppedCycles) {
+      if (DEBUG) Log.v(TAG, "Dropping cycle: " + cycle);
+      mCycles.remove(cycle);
+    }
+    for (Cycle cycle : result.newCycles) {
+      if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle);
+      mCycles.add(cycle);
+    }
+    notifyDataSetChanged();
+    int index = mCycles.indexOf(result.cycle);
+    Preconditions.checkState(index >= 0);
+    return index;
   }
 
   // Returns total number of pages
@@ -116,9 +119,10 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
   public Fragment getItem(int position) {
     Cycle cycle = mCycles.get(position);
 
+    if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycle:" + cycle);
+
     Bundle args = new Bundle();
     args.putParcelable(Cycle.class.getName(), cycle);
-    args.putParcelableArrayList(ChartEntry.class.getName(), mContainers.get(cycle));
 
     Fragment fragment = new EntryListFragment();
     fragment.setArguments(args);
@@ -128,7 +132,14 @@ public class EntryListPageAdapter extends FragmentStatePagerAdapter {
   // Returns the page title for the top indicator
   @Override
   public CharSequence getPageTitle(int position) {
-    Cycle cycle = mCycles.get(position);
-    return cycle.endDate == null ? "Current Cycle" : position + " Cycle Ago";
+    return "Tab Title";
+  }
+
+  @Override
+  public int getItemPosition(Object object) {
+    EntryListFragment fragment = (EntryListFragment) object;
+    int index = mCycles.indexOf(fragment.getCycle());
+    //return index < 0 ? POSITION_NONE : index;
+    return POSITION_NONE;
   }
 }

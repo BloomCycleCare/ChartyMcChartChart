@@ -67,11 +67,6 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
-  public static final int CREATE_REQUEST = 1;
-  public static final int MODIFY_REQUEST = 2;
-
-  public static final int CANCEL_RESPONSE = 1;
-
   /**
    * The {@link android.support.v4.view.PagerAdapter} that will provide
    * fragments for each of the sections. We use a
@@ -224,7 +219,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
             .setPositiveButton("Discard", new DialogInterface.OnClickListener() {
               public void onClick(DialogInterface dialog, int whichButton) {
                 //your deleting code
-                setResult(CANCEL_RESPONSE, null);
+                setResult(0, null);
                 onBackPressed();
                 dialog.dismiss();
                 finish();
@@ -237,7 +232,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
             })
             .create().show();
       } else {
-        setResult(CANCEL_RESPONSE, null);
+        setResult(0, null);
         onBackPressed();
       }
       return true;
@@ -308,12 +303,11 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
     if (issues.isEmpty()) {
-      doSave().subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<Cycle>() {
+      doSave().subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<EntrySaveResult>() {
         @Override
-        public void accept(Cycle cycle) throws Exception {
-          if (DEBUG) Log.v(TAG, "Loading UI for: " + cycle.id);
+        public void accept(EntrySaveResult result) throws Exception {
           Intent returnIntent = new Intent();
-          returnIntent.putExtra(Cycle.class.getName(), cycle);
+          returnIntent.putExtra(EntrySaveResult.class.getName(), result);
           returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
           setResult(OK_RESPONSE, returnIntent);
           finish();
@@ -346,7 +340,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     builder.create().show();
   }
 
-  private Maybe<Cycle> doSave() {
+  private Maybe<EntrySaveResult> doSave() {
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
     ChartEntry entry = updateEntryMapFromUIs();
     Completable putDone = mChartEntryProvider.putEntry(mCycle, entry);
@@ -359,20 +353,35 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       if (DEBUG) Log.v(TAG, "Splitting cycle");
       return putDone
           .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, observationEntryFragment.getEntryFromUiRx()))
+          .map(new Function<Cycle, EntrySaveResult>() {
+            @Override
+            public EntrySaveResult apply(Cycle cycle) throws Exception {
+              EntrySaveResult result = new EntrySaveResult(cycle);
+              result.newCycles.add(cycle);
+              return result;
+            }
+          })
           .toMaybe();
     } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycle with previous");
-      return putDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<Cycle>>() {
+      return putDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<EntrySaveResult>>() {
         @Override
-        public MaybeSource<Cycle> apply(Boolean canJoin) throws Exception {
+        public MaybeSource<EntrySaveResult> apply(Boolean canJoin) throws Exception {
           if (!canJoin) {
             return Maybe.empty();
           }
-          return mCycleProvider.combineCycleRx(mUserId, mCycle).toMaybe();
+          return mCycleProvider.combineCycleRx(mUserId, mCycle).map(new Function<Cycle, EntrySaveResult>() {
+            @Override
+            public EntrySaveResult apply(Cycle cycle) throws Exception {
+              EntrySaveResult result = new EntrySaveResult(cycle);
+              result.droppedCycles.add(mCycle);
+              return result;
+            }
+          }).toMaybe();
         }
       });
     }
-    return putDone.andThen(Maybe.just(mCycle));
+    return putDone.andThen(Maybe.just(new EntrySaveResult(mCycle)));
   }
 
   private Single<Boolean> canJoin() {

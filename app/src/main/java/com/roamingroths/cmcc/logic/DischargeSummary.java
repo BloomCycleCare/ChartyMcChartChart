@@ -110,7 +110,9 @@ public class DischargeSummary implements Parcelable {
         }
         break;
     }
-    lines.add(ON_SPACE.join(modifierStrs));
+    if (!modifierStrs.isEmpty()) {
+      lines.add(ON_SPACE.join(modifierStrs));
+    }
     return lines;
   }
 

@@ -148,4 +148,9 @@ public class Cycle implements Parcelable {
       this.symptomKey = symptomKey;
     }
   }
+
+  @Override
+  public String toString() {
+    return id;
+  }
 }

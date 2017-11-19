@@ -21,15 +21,18 @@ import com.roamingroths.cmcc.logic.ObservationEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+import org.reactivestreams.Publisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import durdinapps.rxfirebase2.RxFirebaseChildEvent;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
@@ -158,6 +161,23 @@ public class CycleProvider {
         .toSingle();
   }
 
+  public Flowable<RxFirebaseChildEvent<Cycle>> getCycleStream(final FirebaseUser user) {
+    return RxFirebaseDatabase.observeChildEvent(reference(user))
+        .flatMap(new Function<RxFirebaseChildEvent<DataSnapshot>, Publisher<RxFirebaseChildEvent<Cycle>>>() {
+          @Override
+          public Publisher<RxFirebaseChildEvent<Cycle>> apply(final RxFirebaseChildEvent<DataSnapshot> childEvent) throws Exception {
+            return cycleKeyProvider.getChartKeys(childEvent.getKey(), user.getUid())
+                .map(Cycle.fromSnapshot(childEvent.getValue()))
+                .map(new Function<Cycle, RxFirebaseChildEvent<Cycle>>() {
+                  @Override
+                  public RxFirebaseChildEvent<Cycle> apply(Cycle cycle) throws Exception {
+                    return new RxFirebaseChildEvent<Cycle>(cycle.id, cycle, childEvent.getEventType());
+                  }
+                }).toFlowable();
+          }
+        });
+  }
+
   public Observable<Cycle> getAllCycles(final String userId) {
     logV("Fetching cycles");
     return RxFirebaseDatabase.observeSingleValueEvent(reference(userId), Functions.<DataSnapshot>identity())
@@ -177,6 +197,7 @@ public class CycleProvider {
   }
 
   private Completable dropCycle(String cycleId, String userId) {
+    if (DEBUG) Log.v(TAG, "Dropping cycle: " + cycleId);
     Completable dropEntries = RxFirebaseDatabase.removeValue(db.getReference("entries").child(cycleId));
     Completable dropKeys = cycleKeyProvider.dropKeys(cycleId);
     Completable dropCycle = RxFirebaseDatabase.removeValue(reference(userId, cycleId));
@@ -262,7 +283,12 @@ public class CycleProvider {
 
     Completable dropCycle = dropCycle(currentCycle.id, userId);
 
-    return moveEntries.andThen(updatePrevious).andThen(dropCycle).andThen(updateNextAndReturnPrevious);
+    return moveEntries.andThen(updatePrevious).andThen(dropCycle).andThen(updateNextAndReturnPrevious).doOnSuccess(new Consumer<Cycle>() {
+      @Override
+      public void accept(Cycle cycle) throws Exception {
+        if (DEBUG) Log.v(TAG, "Done combining");
+      }
+    });
   }
 
   public Single<Cycle> splitCycleRx(final String userId, final Cycle currentCycle, Single<ObservationEntry> firstEntry) {

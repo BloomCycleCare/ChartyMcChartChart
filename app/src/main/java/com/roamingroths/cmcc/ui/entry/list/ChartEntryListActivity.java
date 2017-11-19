@@ -1,8 +1,13 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.ShareCompat;
+import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Menu;
@@ -11,16 +16,30 @@ import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.google.common.base.Preconditions;
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.ui.CycleListActivity;
+import com.roamingroths.cmcc.ui.UserInitActivity;
+import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
+import com.roamingroths.cmcc.utils.FileUtil;
+import com.roamingroths.cmcc.utils.GsonUtil;
+
+import java.io.File;
+
+import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 
 public class ChartEntryListActivity extends AppCompatActivity implements EntryListView {
+
+  private static final boolean DEBUG = true;
+  private static final String TAG = ChartEntryListActivity.class.getSimpleName();
 
   public static final int RC_SIGN_IN = 1;
 
@@ -29,6 +48,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   private ViewPager mViewPager;
 
   private EntryListPageAdapter mPageAdapter;
+  private CycleProvider mCycleProvider;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -39,11 +59,15 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
     setTitle("Current Cycle");
 
+    Cycle cycle = getIntent().getParcelableExtra(Cycle.class.getName());
+
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
     mViewPager = (ViewPager) findViewById(R.id.view_pager);
 
-    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), getIntent(), CycleProvider.forDb(FirebaseDatabase.getInstance()));
+    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
+    mPageAdapter.initialize(cycle, FirebaseAuth.getInstance().getCurrentUser(), mCycleProvider);
     mViewPager.setAdapter(mPageAdapter);
     mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
       @Override
@@ -60,9 +84,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
       }
     });
 
-    Intent intentThatStartedThisActivity = Preconditions.checkNotNull(getIntent());
-    Preconditions.checkState(intentThatStartedThisActivity.hasExtra(Cycle.class.getName()));
-
     showList();
   }
 
@@ -70,9 +91,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
-      ChartEntry container = data.getParcelableExtra(ChartEntry.class.getName());
-      Cycle cycle = data.getParcelableExtra(Cycle.class.getName());
-      mPageAdapter.getFragment(cycle, mViewPager).updateContainer(container);
+      EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
+      if (DEBUG) Log.v(TAG, "Received cycle:" + result.cycle + " in result");
+      mViewPager.setCurrentItem(mPageAdapter.onResult(result));
     }
   }
 
@@ -96,11 +117,76 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
       return true;
     }
 
-    if (id == R.id.action_list_cycles) {
-      Intent startCycleList = new Intent(this, CycleListActivity.class);
-      finish();
-      startActivity(startCycleList);
+    if (id == R.id.action_drop_cycles) {
+      new AlertDialog.Builder(this)
+          //set message, title, and icon
+          .setTitle("Delete All Cycles?")
+          .setMessage("This is permanent and cannot be undone!")
+          .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+            public void onClick(final DialogInterface dialog, int whichButton) {
+              showProgress();
+              mPageAdapter.shutdown(mViewPager);
+              mCycleProvider.dropCycles()
+                  .subscribe(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                      Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
+                      startActivity(intent);
+                      dialog.dismiss();
+                    }
+                  }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(@NonNull Throwable throwable) throws Exception {
+                      Log.e(ChartEntryListActivity.class.getSimpleName(), "Could not drop cycles!", throwable);
+                    }
+                  });
+            }
+          })
+          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+              dialog.dismiss();
+            }
+          })
+          .create().show();
       return true;
+    }
+    if (id == R.id.action_export) {
+      Log.v("CycleListActivity", "Begin export");
+      final ChartEntryListActivity activity = this;
+      AppState.create(mCycleProvider)
+          .subscribe(new Consumer<AppState>() {
+            @Override
+            public void accept(AppState appState) throws Exception {
+              String json = GsonUtil.getGsonInstance().toJson(appState);
+
+              FileUtil.shareAppState(appState, activity);
+              File path = new File(activity.getFilesDir(), "tmp/");
+              if (!path.exists()) {
+                path.mkdir();
+              }
+              File file = new File(path, "cmcc_export.chart");
+
+              Files.write(json, file, Charsets.UTF_8);
+
+              Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+
+              Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
+                  .setSubject("CMCC Export")
+                  .setEmailTo(null)
+                  .setType("application/json")
+                  .setStream(uri)
+                  .getIntent();
+              shareIntent.setData(uri);
+              shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+              startActivity(shareIntent);
+            }
+          }, new Consumer<Throwable>() {
+            @Override
+            public void accept(Throwable throwable) throws Exception {
+              Log.w("CycleListActivity", "Could not create AppState", throwable);
+            }
+          });
     }
 
     return super.onOptionsItemSelected(item);
