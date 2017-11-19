@@ -3,6 +3,12 @@
       xmlns:tools="http://schemas.android.com/tools"
       tools:context="com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity">
     <item
+        android:id="@+id/action_layer"
+        android:icon="@drawable/ic_layers_white_24dp"
+        android:orderInCategory="1"
+        app:showAsAction="always"
+        android:title="Layers"/>
+    <item
         android:id="@+id/action_export"
         android:orderInCategory="1"
         app:showAsAction="never"

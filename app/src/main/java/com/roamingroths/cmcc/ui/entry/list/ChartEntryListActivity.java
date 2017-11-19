@@ -104,6 +104,10 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     return true;
   }
 
+  private void updateOverlay(String key, String val) {
+    Log.i(TAG, "Overlay key:" + key + " val:" + val);
+  }
+
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle action bar item clicks here. The action bar will
@@ -114,6 +118,22 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     if (id == R.id.action_settings) {
       Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
       startActivity(startSettingsActivity);
+      return true;
+    }
+
+    if (id == R.id.action_layer) {
+      new AlertDialog.Builder(this)
+          //set message, title, and icon
+          .setTitle("Select Item")
+          .setItems(R.array.pref_wellness_option_values, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+              String key = getResources().getStringArray(R.array.pref_wellness_option_keys)[which];
+              String val = getResources().getStringArray(R.array.pref_wellness_option_values)[which];
+              updateOverlay(key, val);
+              dialog.dismiss();
+            }
+          }).create().show();
       return true;
     }
 
