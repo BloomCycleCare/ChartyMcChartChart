@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Context;
 import android.content.Intent;
@@ -13,10 +13,11 @@ import android.view.ViewGroup;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.ChartEntryList;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
-import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.List;
@@ -33,7 +34,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
-  private static final boolean DEBUG = true;
+  private static final boolean DEBUG = false;
   private static final String TAG = ChartEntryAdapter.class.getSimpleName();
 
   private final Context mContext;

@@ -7,7 +7,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.logic.ChartEntry;
 

@@ -14,7 +14,6 @@ import android.view.ViewGroup;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.FirebaseApplication;
-import com.roamingroths.cmcc.data.ChartEntryAdapter;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
