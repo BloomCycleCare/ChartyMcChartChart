@@ -4,6 +4,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
 import android.support.v4.content.FileProvider;
 import android.support.v4.view.ViewPager;
@@ -122,18 +123,9 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     }
 
     if (id == R.id.action_layer) {
-      new AlertDialog.Builder(this)
-          //set message, title, and icon
-          .setTitle("Select Item")
-          .setItems(R.array.pref_wellness_option_values, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-              String key = getResources().getStringArray(R.array.pref_wellness_option_keys)[which];
-              String val = getResources().getStringArray(R.array.pref_wellness_option_values)[which];
-              updateOverlay(key, val);
-              dialog.dismiss();
-            }
-          }).create().show();
+      FragmentManager fm = getSupportFragmentManager();
+      LayerDialogFragment fragment = new LayerDialogFragment();
+      fragment.show(fm, "tag");
       return true;
     }
 
@@ -243,6 +235,16 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     mViewPager.setVisibility(View.VISIBLE);
     mErrorView.setVisibility(View.INVISIBLE);
     mProgressBar.setVisibility(View.INVISIBLE);
+  }
+
+  @Override
+  public void setOverlay(String key) {
+    Log.i(TAG, "Overlay: " + key);
+  }
+
+  @Override
+  public void clearOverlay() {
+    Log.i(TAG, "Overlay: clear");
   }
 
   @Override

@@ -12,4 +12,8 @@ public interface EntryListView {
   void showError(String message);
 
   void showList();
+
+  void setOverlay(String key);
+
+  void clearOverlay();
 }

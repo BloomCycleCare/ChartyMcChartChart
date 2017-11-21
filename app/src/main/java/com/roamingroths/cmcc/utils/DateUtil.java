@@ -17,12 +17,20 @@ import java.util.List;
 public class DateUtil {
 
   private static final DateTimeFormatter WIRE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter UI_FORMAT = DateTimeFormat.forPattern("EEE d MMM");
 
   public static String toWireStr(LocalDate date) {
     if (date == null) {
       return null;
     }
     return WIRE_FORMAT.print(date);
+  }
+
+  public static String toUiStr(LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+    return UI_FORMAT.print(date);
   }
 
   public static LocalDate fromWireStr(String dateStr) {

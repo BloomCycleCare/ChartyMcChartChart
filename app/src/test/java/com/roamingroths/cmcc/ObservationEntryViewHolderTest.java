@@ -310,7 +310,7 @@ public class ObservationEntryViewHolderTest {
       int entryNum = entryList.size() - i;
       ChartEntryViewHolder holder = Mockito.mock(ChartEntryViewHolder.class);
       Expectations expectations = anEntry.getValue();
-      entryList.bindViewHolder(holder, i, mContext);
+      //entryList.bindViewHolder(holder, i, mContext);
       try {
         checkBackgroundColor(holder, expectations);
         checkBaby(holder, expectations);

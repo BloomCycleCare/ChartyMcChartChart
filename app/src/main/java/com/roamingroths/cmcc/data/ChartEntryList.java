@@ -11,6 +11,7 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.ObservationEntry;
+import com.roamingroths.cmcc.logic.Occurrences;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -56,10 +57,11 @@ public class ChartEntryList {
     holder.setEntrySummary(entry.getListUiText());
     holder.setBackgroundColor(getEntryColorResource(entry));
     holder.setEntryNum(mEntries.size() - position);
-    holder.setDate(DateUtil.toWireStr(entry.getDate()));
+    holder.setDate(DateUtil.toUiStr(entry.getDate()));
     holder.setPeakDayText(getPeakDayViewText(entry));
     holder.setIntercourse(entry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, entry));
+    holder.setOverlay(entry.observation != null && Occurrences.AD.equals(entry.observation.occurrences));
   }
 
   public synchronized void addEntry(ChartEntry chartEntry) {

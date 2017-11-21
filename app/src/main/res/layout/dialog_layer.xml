@@ -4,23 +4,8 @@
               android:layout_height="wrap_content"
               android:orientation="vertical">
 
-    <TextView
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/layer_recycler_view"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
-        style="@style/TextAppearance.AppCompat.Large"
-        android:text="Select an Overlay"/>
-
-    <RadioGroup
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content">
-
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/layer_recycler_view"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </RadioGroup>
+        android:layout_height="wrap_content" />
 </LinearLayout>

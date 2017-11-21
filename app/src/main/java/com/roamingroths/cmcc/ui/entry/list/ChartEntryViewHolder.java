@@ -29,6 +29,8 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   void setShowBaby(boolean val);
 
+  void setOverlay(boolean val);
+
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
     private final ChartEntryList mContainerList;
@@ -37,6 +39,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final TextView mEntryDataTextView;
     private final TextView mEntryPeakTextView;
     private final ImageView mBabyImageView;
+    private final ImageView mStarImageView;
     private final View mEntryBackgroundView;
 
     public Impl(
@@ -50,6 +53,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
       mEntryPeakTextView = (TextView) itemView.findViewById(R.id.tv_peak_day);
       mBabyImageView = (ImageView) itemView.findViewById(R.id.baby_image_view);
+      mStarImageView = (ImageView) itemView.findViewById(R.id.star_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
     }
 
@@ -93,6 +97,15 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
         mBabyImageView.setVisibility(View.VISIBLE);
       } else {
         mBabyImageView.setVisibility(View.INVISIBLE);
+      }
+    }
+
+    @Override
+    public void setOverlay(boolean val) {
+      if (val) {
+        mStarImageView.setVisibility(View.VISIBLE);
+      } else {
+        mStarImageView.setVisibility(View.INVISIBLE);
       }
     }
 
