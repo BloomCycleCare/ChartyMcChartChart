@@ -44,15 +44,18 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private final ChartEntryProvider mChartEntryProvider;
   private final CompositeDisposable mDisposables;
   private ChartEntryList mContainerList;
+  private String mLayerKey;
 
   public ChartEntryAdapter(
       Context context,
       Cycle cycle,
       OnClickHandler clickHandler,
-      ChartEntryProvider chartEntryProvider) {
+      ChartEntryProvider chartEntryProvider,
+      String layerKey) {
     mContext = context;
     mCycle = cycle;
     mClickHandler = clickHandler;
+    mLayerKey = layerKey;
     mChartEntryProvider = chartEntryProvider;
     mDisposables = new CompositeDisposable();
     mPreferences = Preferences.fromShared(mContext);
@@ -67,6 +70,11 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
           }
         }
     );
+  }
+
+  public void updateLayerKey(String key) {
+    mLayerKey = key;
+    notifyDataSetChanged();
   }
 
   public void start() {
@@ -145,7 +153,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
    */
   @Override
   public void onBindViewHolder(ChartEntryViewHolder.Impl holder, int position) {
-    mContainerList.bindViewHolder(holder, position);
+    mContainerList.bindViewHolder(holder, position, mLayerKey);
   }
 
   @Override

@@ -11,15 +11,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.google.common.base.Strings;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.FirebaseApplication;
+import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 
 import java.util.ArrayList;
+
+import io.reactivex.functions.Consumer;
 
 /**
  * Created by parkeroth on 11/13/17.
@@ -65,10 +69,21 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     if (DEBUG) Log.v(TAG, "onCreate() cycle:" + mCycle.id);
 
     mChartEntryAdapter = new ChartEntryAdapter(
-        getActivity().getApplicationContext(), mCycle, this, new ChartEntryProvider(mDb, FirebaseApplication.getCryptoUtil()));
+        getActivity().getApplicationContext(),
+        mCycle,
+        this,
+        new ChartEntryProvider(mDb, FirebaseApplication.getCryptoUtil()),
+        "");
     if (mChartEntries != null) {
       mChartEntryAdapter.initialize(mChartEntries);
     }
+
+    ((ChartEntryListActivity) getActivity()).layerStream().subscribe(new Consumer<String>() {
+      @Override
+      public void accept(String s) throws Exception {
+        mChartEntryAdapter.updateLayerKey(s);
+      }
+    });
   }
 
   @Nullable

@@ -16,6 +16,7 @@ import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.joda.time.DateTimeConstants;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -51,17 +52,20 @@ public class ChartEntryList {
     mPreferences = preferences;
   }
 
-  public void bindViewHolder(ChartEntryViewHolder holder, int position) {
+  public void bindViewHolder(ChartEntryViewHolder holder, int position, String layerKey) {
     if (DEBUG) Log.v(TAG, "bindViewHolder(" + position + ")");
-    ObservationEntry entry = mEntries.get(position).observationEntry;
-    holder.setEntrySummary(entry.getListUiText());
-    holder.setBackgroundColor(getEntryColorResource(entry));
+    ChartEntry entry = mEntries.get(position);
+    ObservationEntry observationEntry = mEntries.get(position).observationEntry;
+    holder.setEntrySummary(observationEntry.getListUiText());
+    holder.setBackgroundColor(getEntryColorResource(observationEntry));
     holder.setEntryNum(mEntries.size() - position);
-    holder.setDate(DateUtil.toUiStr(entry.getDate()));
-    holder.setPeakDayText(getPeakDayViewText(entry));
-    holder.setIntercourse(entry.intercourse);
-    holder.setShowBaby(shouldShowBaby(position, entry));
-    holder.setOverlay(entry.observation != null && Occurrences.AD.equals(entry.observation.occurrences));
+    holder.setDate(DateUtil.toUiStr(observationEntry.getDate()));
+    holder.setPeakDayText(getPeakDayViewText(observationEntry));
+    holder.setIntercourse(observationEntry.intercourse);
+    holder.setShowBaby(shouldShowBaby(position, observationEntry));
+    holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
+    String foo = observationEntry.getDate().dayOfWeek().getAsString();
+    holder.setWeekTransition(foo == "6");
   }
 
   public synchronized void addEntry(ChartEntry chartEntry) {

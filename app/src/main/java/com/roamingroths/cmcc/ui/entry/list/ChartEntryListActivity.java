@@ -33,9 +33,13 @@ import com.roamingroths.cmcc.utils.GsonUtil;
 
 import java.io.File;
 
+import io.reactivex.Observable;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 public class ChartEntryListActivity extends AppCompatActivity implements EntryListView {
 
@@ -48,8 +52,17 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   private ProgressBar mProgressBar;
   private ViewPager mViewPager;
 
+  private final Subject<String> mLayerSubject;
   private EntryListPageAdapter mPageAdapter;
   private CycleProvider mCycleProvider;
+
+  public ChartEntryListActivity() {
+    mLayerSubject = BehaviorSubject.create();
+  }
+
+  public Observable<String> layerStream() {
+    return mLayerSubject;
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -239,11 +252,13 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
   @Override
   public void setOverlay(String key) {
+    mLayerSubject.onNext(key);
     Log.i(TAG, "Overlay: " + key);
   }
 
   @Override
   public void clearOverlay() {
+    mLayerSubject.onNext("");
     Log.i(TAG, "Overlay: clear");
   }
 

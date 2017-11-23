@@ -96,6 +96,7 @@
     </android.support.constraint.ConstraintLayout>
     <!-- This View serves as a visual divider between list items -->
     <View
+        android:id="@+id/observation_list_separator"
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#dadada"

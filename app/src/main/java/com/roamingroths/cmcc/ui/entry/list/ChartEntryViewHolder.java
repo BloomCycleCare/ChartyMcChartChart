@@ -31,6 +31,8 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   void setOverlay(boolean val);
 
+  void setWeekTransition(boolean val);
+
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
     private final ChartEntryList mContainerList;
@@ -41,6 +43,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final ImageView mBabyImageView;
     private final ImageView mStarImageView;
     private final View mEntryBackgroundView;
+    private final View mSeparator;
 
     public Impl(
         View itemView, ChartEntryList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
@@ -55,6 +58,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mBabyImageView = (ImageView) itemView.findViewById(R.id.baby_image_view);
       mStarImageView = (ImageView) itemView.findViewById(R.id.star_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
+      mSeparator = itemView.findViewById(R.id.observation_list_separator);
     }
 
     @Override
@@ -114,6 +118,11 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       int index = getAdapterPosition();
       ChartEntry container = mContainerList.get(index);
       mClickHandler.onClick(container, index);
+    }
+
+    @Override
+    public void setWeekTransition(boolean val) {
+      mSeparator.getLayoutParams().height = val ? 4 : 1;
     }
   }
 }

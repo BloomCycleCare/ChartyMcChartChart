@@ -46,6 +46,10 @@ public class WellnessEntry extends Entry implements Parcelable, Cipherable {
     swapKey(AesCryptoUtil.parseKey(in.readString()));
   }
 
+  public boolean hasItem(String key) {
+    return wellnessItems.containsKey(key) && wellnessItems.get(key);
+  }
+
   @Override
   public List<String> getSummaryLines() {
     List<String> lines = new ArrayList<>();

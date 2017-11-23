@@ -46,6 +46,10 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
     swapKey(AesCryptoUtil.parseKey(in.readString()));
   }
 
+  public boolean hasItem(String key) {
+    return symptoms.containsKey(key) && symptoms.get(key);
+  }
+
   @Override
   public List<String> getSummaryLines() {
     List<String> lines = new ArrayList<>();
