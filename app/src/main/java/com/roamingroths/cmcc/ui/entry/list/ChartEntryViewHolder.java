@@ -44,6 +44,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final ImageView mStarImageView;
     private final View mEntryBackgroundView;
     private final View mSeparator;
+    private final View mWeekSeparator;
 
     public Impl(
         View itemView, ChartEntryList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
@@ -59,6 +60,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mStarImageView = (ImageView) itemView.findViewById(R.id.star_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
       mSeparator = itemView.findViewById(R.id.observation_list_separator);
+      mWeekSeparator = itemView.findViewById(R.id.week_separator);
     }
 
     @Override
@@ -122,7 +124,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
     @Override
     public void setWeekTransition(boolean val) {
-      mSeparator.getLayoutParams().height = val ? 4 : 1;
+      mWeekSeparator.setVisibility(val ? View.VISIBLE : View.GONE);
     }
   }
 }

@@ -99,7 +99,11 @@
         android:id="@+id/observation_list_separator"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#dadada"
-        android:layout_marginLeft="8dp"
-        android:layout_marginRight="8dp" />
+        android:background="#dadada"/>
+    <View
+        android:visibility="gone"
+        android:id="@+id/week_separator"
+        android:layout_width="match_parent"
+        android:layout_height="3dp"
+        android:background="#000000"/>
 </LinearLayout>

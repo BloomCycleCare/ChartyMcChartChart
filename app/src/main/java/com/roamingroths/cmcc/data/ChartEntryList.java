@@ -65,7 +65,7 @@ public class ChartEntryList {
     holder.setShowBaby(shouldShowBaby(position, observationEntry));
     holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
     String foo = observationEntry.getDate().dayOfWeek().getAsString();
-    holder.setWeekTransition(foo == "6");
+    holder.setWeekTransition(foo.equals("1"));
   }
 
   public synchronized void addEntry(ChartEntry chartEntry) {
