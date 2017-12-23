@@ -13,6 +13,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
+import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
 import io.reactivex.functions.Consumer;
 
@@ -20,7 +21,7 @@ import io.reactivex.functions.Consumer;
  * Created by parkeroth on 11/16/17.
  */
 
-public class EntryListPageAdapter extends FragmentStatePagerAdapter {
+public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter {
 
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();

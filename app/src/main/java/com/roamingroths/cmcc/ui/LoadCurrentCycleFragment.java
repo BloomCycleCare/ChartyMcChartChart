@@ -105,6 +105,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
             Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
             intent.putExtra(Cycle.class.getName(), cycle);
             intent.putParcelableArrayListExtra(ChartEntry.class.getName(), Lists.newArrayList(chartEntries));
+            // TODO fix "not attached to activity"
             startActivity(intent);
           }
         }, new Consumer<Throwable>() {

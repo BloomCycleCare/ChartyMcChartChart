@@ -196,6 +196,14 @@ public class ChartEntryList {
     return false;
   }
 
+  public boolean shouldShowBaby(ChartEntry entry) {
+    if (entry.observationEntry == null) {
+      return false;
+    }
+    int position = getEntryIndex(entry.entryDate);
+    return shouldShowBaby(position, entry.observationEntry);
+  }
+
   private boolean shouldShowBaby(int position, ObservationEntry entry) {
     if (entry == null || entry.observation == null) {
       return false;
@@ -225,7 +233,7 @@ public class ChartEntryList {
     return entry.observation != null && entry.observation.hasMucus();
   }
 
-  private String getPeakDayViewText(ObservationEntry entry) {
+  public String getPeakDayViewText(ObservationEntry entry) {
     if (entry == null || entry.observation == null) {
       return "";
     }

@@ -1,17 +1,26 @@
 package com.roamingroths.cmcc;
 
+import com.google.common.collect.Lists;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeObserver;
 import io.reactivex.MaybeSource;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.BiFunction;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.observers.TestObserver;
 
 // I need the internet to compile the code :'(
 
@@ -20,6 +29,19 @@ import io.reactivex.functions.Function;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class RxTest {
+
+  @Test
+  public void runScanTest() throws Exception {
+    Observable<String> foo = Observable.just("a", "b", "c");
+    ArrayList<String> bar = foo.scan(new ArrayList<String>(), new BiFunction<ArrayList<String>, String, ArrayList<String>>() {
+      @Override
+      public ArrayList<String> apply(ArrayList<String> strings, String s) throws Exception {
+        strings.add(s);
+        return strings;
+      }
+    }).lastOrError().blockingGet();
+    bar.isEmpty();
+  }
 
   @Test
   public void runZipTest() throws Exception {
