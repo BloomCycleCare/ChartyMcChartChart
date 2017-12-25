@@ -18,6 +18,7 @@ public class DateUtil {
 
   private static final DateTimeFormatter WIRE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
   private static final DateTimeFormatter UI_FORMAT = DateTimeFormat.forPattern("EEE d MMM");
+  private static final DateTimeFormatter PRINT_UI_FORMAT = DateTimeFormat.forPattern("d MMM");
   private static final DateTimeFormatter PRINT_FORMAT = DateTimeFormat.forPattern("MM/dd");
 
   public static String toWireStr(LocalDate date) {
@@ -32,6 +33,13 @@ public class DateUtil {
       return null;
     }
     return UI_FORMAT.print(date);
+  }
+
+  public static String toPrintUiStr(LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+    return PRINT_UI_FORMAT.print(date);
   }
 
   public static String toPrintStr(LocalDate date) {

@@ -9,6 +9,7 @@ import org.joda.time.LocalDate;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.Notification;
 import io.reactivex.Observable;
@@ -33,8 +34,8 @@ public class CycleEntryProvider {
     this.mChartEntryProvider = mChartEntryProvider;
   }
 
-  public Observable<ChartEntryList> getChartEntryLists(FirebaseUser user, final Preferences prefs) {
-    return mCycleProvider.getAllCycles(user.getUid())
+  public Observable<ChartEntryList> getChartEntryLists(Set<Cycle> cycles, final Preferences prefs) {
+    return Observable.fromIterable(cycles)
         .flatMap(new Function<Cycle, ObservableSource<ChartEntryList>>() {
           @Override
           public ObservableSource<ChartEntryList> apply(Cycle cycle) throws Exception {

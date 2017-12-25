@@ -10,6 +10,8 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
+import com.roamingroths.cmcc.data.CycleEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 
 /**
@@ -23,8 +25,8 @@ public abstract class BaseActivity extends AppCompatActivity {
   private FirebaseUser mUser;
 
   @Override
-  public void onCreate(@Nullable Bundle savedInstanceState, @Nullable PersistableBundle persistentState) {
-    super.onCreate(savedInstanceState, persistentState);
+  protected void onCreate(@Nullable Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
 
     mUser = FirebaseAuth.getInstance().getCurrentUser();
     mCryptoUtil = FirebaseApplication.getCryptoUtil();
@@ -41,13 +43,25 @@ public abstract class BaseActivity extends AppCompatActivity {
 
   public static class Providers {
     private final CycleProvider mCycleProvider;
+    private final CycleEntryProvider mCycleEntryProvider;
+    private final ChartEntryProvider mChartEntryProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil) {
       mCycleProvider = CycleProvider.forDb(db, cryptoUtil);
+      mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
+      mCycleEntryProvider = new CycleEntryProvider(mCycleProvider, mChartEntryProvider);
+    }
+
+    public CycleEntryProvider forCycleEntry() {
+      return mCycleEntryProvider;
     }
 
     public CycleProvider forCycle() {
       return mCycleProvider;
+    }
+
+    public ChartEntryProvider forChartEntry() {
+      return mChartEntryProvider;
     }
   }
 }

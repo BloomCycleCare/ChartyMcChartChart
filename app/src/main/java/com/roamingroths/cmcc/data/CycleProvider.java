@@ -6,6 +6,7 @@ import android.util.Log;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.ChildEventListener;
@@ -24,6 +25,8 @@ import org.joda.time.LocalDate;
 import org.reactivestreams.Publisher;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -184,7 +187,6 @@ public class CycleProvider {
         .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
           @Override
           public ObservableSource<DataSnapshot> apply(DataSnapshot snapshot) throws Exception {
-
             return Observable.fromIterable(snapshot.getChildren());
           }
         })

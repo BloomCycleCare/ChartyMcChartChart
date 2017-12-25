@@ -1,14 +1,7 @@
 package com.roamingroths.cmcc.ui;
 
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.v4.app.ShareCompat;
-import android.support.v4.content.FileProvider;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -16,28 +9,25 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Toast;
 
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
+import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.AppState;
+import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.CycleAdapter;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
-import com.roamingroths.cmcc.utils.FileUtil;
-import com.roamingroths.cmcc.utils.GsonUtil;
-import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
+import com.roamingroths.cmcc.print.ChartPrinter;
 
-import java.io.File;
-import java.util.Calendar;
+import java.util.Comparator;
+import java.util.List;
 
-import io.reactivex.annotations.NonNull;
+import io.reactivex.Observable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 
-public class CycleListActivity extends BaseActivity
-    implements CycleAdapter.OnClickHandler {
+public class CycleListActivity extends BaseActivity {
 
+  private static final boolean DEBUG = true;
   private static final String TAG = CycleListActivity.class.getSimpleName();
 
   private RecyclerView mRecyclerView;
@@ -50,10 +40,7 @@ public class CycleListActivity extends BaseActivity
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     //setSupportActionBar(toolbar);
 
-    setTitle("Your Cycles");
-
-    mCycleAdapter = new CycleAdapter(
-        this, this, getUser().getUid(), getProvider().forCycle().getCycleKeyProvider());
+    setTitle("Select cycles to print");
 
     mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_cycle_entry);
     boolean shouldReverseLayout = false;
@@ -61,45 +48,70 @@ public class CycleListActivity extends BaseActivity
         = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
-    mRecyclerView.setAdapter(mCycleAdapter);
+
+    CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
+    if (adapter != null) {
+      mRecyclerView.setAdapter(adapter);
+    } else {
+      getProvider().forCycle()
+          .getAllCycles(getUser().getUid())
+          .sorted(new Comparator<Cycle>() {
+            @Override
+            public int compare(Cycle o1, Cycle o2) {
+              return o2.startDate.compareTo(o1.startDate);
+            }
+          })
+          .flatMap(CycleAdapter.cycleToViewModel(getProvider().forChartEntry()))
+          .toList()
+          .subscribe(new Consumer<List<CycleAdapter.ViewModel>>() {
+            @Override
+            public void accept(List<CycleAdapter.ViewModel> viewModels) throws Exception {
+              mRecyclerView.setAdapter(
+                  CycleAdapter.fromViewModels(CycleListActivity.this, viewModels));
+            }
+          });
+    }
 
     FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+    final Toast invalidSelectionToast =
+        Toast.makeText(this, "Continuous selection required", Toast.LENGTH_LONG);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
-        Calendar cal = Calendar.getInstance();
-        DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(new DatePickerDialog.OnDateSetListener() {
+        if (!getAdapter().hasValidSelection()) {
+          invalidSelectionToast.show();
+          return;
+        }
+        Observable<ChartEntryList> entryLists = getProvider().forCycleEntry().getChartEntryLists(
+            getAdapter().getSelectedCycles(), Preferences.fromShared(CycleListActivity.this));
+        ChartPrinter.create(CycleListActivity.this, entryLists).print().toCompletable().subscribe(new Action() {
           @Override
-          public void onDateSet(DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
-
+          public void run() throws Exception {
+            //finish();
           }
         });
-        datePickerDialog.setTitle("Select cycle start");
-        datePickerDialog.setMaxDate(cal);
-        datePickerDialog.show(getFragmentManager(), "datepickerdialog");
       }
     });
+  }
+
+  private CycleAdapter getAdapter() {
+    return (CycleAdapter) mRecyclerView.getAdapter();
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    super.onSaveInstanceState(outState);
+    getAdapter().fillBundle(outState);
   }
 
   @Override
   protected void onResume() {
     super.onResume();
-    mCycleAdapter.clear(); // TODO: fix this
-    getProvider().forCycle().attachListener(mCycleAdapter, getUser().getUid());
   }
 
   @Override
   protected void onPause() {
     super.onPause();
-    getProvider().forCycle().detachListener(mCycleAdapter, getUser().getUid());
-  }
-
-  @Override
-  public void onClick(Cycle cycle, int itemNum) {
-    Context context = this;
-    Intent intent = new Intent(context, ChartEntryListActivity.class);
-    intent.putExtra(Cycle.class.getName(), cycle);
-    startActivity(intent);
   }
 
   @Override
@@ -113,75 +125,6 @@ public class CycleListActivity extends BaseActivity
   public boolean onOptionsItemSelected(MenuItem item) {
     int id = item.getItemId();
 
-    if (id == R.id.action_drop_cycles) {
-      new AlertDialog.Builder(this)
-          //set message, title, and icon
-          .setTitle("Delete All Cycles?")
-          .setMessage("This is permanent and cannot be undone!")
-          .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-            public void onClick(final DialogInterface dialog, int whichButton) {
-              getProvider().forCycle().dropCycles()
-                  .subscribe(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                      Intent intent = new Intent(CycleListActivity.this, UserInitActivity.class);
-                      startActivity(intent);
-                      dialog.dismiss();
-                    }
-                  }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(@NonNull Throwable throwable) throws Exception {
-                      Log.e(TAG, "Could not drop cycles!", throwable);
-                    }
-                  });
-            }
-          })
-          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.dismiss();
-            }
-          })
-          .create().show();
-      return true;
-    }
-    if (id == R.id.action_export) {
-      Log.v("CycleListActivity", "Begin export");
-      final CycleListActivity activity = this;
-      AppState.create(getProvider().forCycle())
-          .subscribe(new Consumer<AppState>() {
-            @Override
-            public void accept(AppState appState) throws Exception {
-              String json = GsonUtil.getGsonInstance().toJson(appState);
-
-              FileUtil.shareAppState(appState, activity);
-              File path = new File(activity.getFilesDir(), "tmp/");
-              if (!path.exists()) {
-                path.mkdir();
-              }
-              File file = new File(path, "cmcc_export.chart");
-
-              Files.write(json, file, Charsets.UTF_8);
-
-              Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
-
-              Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
-                  .setSubject("CMCC Export")
-                  .setEmailTo(null)
-                  .setType("application/json")
-                  .setStream(uri)
-                  .getIntent();
-              shareIntent.setData(uri);
-              shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-              startActivity(shareIntent);
-            }
-          }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-              Log.w("CycleListActivity", "Could not create AppState", throwable);
-            }
-          });
-    }
     return super.onOptionsItemSelected(item);
   }
 }

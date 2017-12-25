@@ -33,6 +33,7 @@ import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.print.ChartPrinter;
+import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.UserInitActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
@@ -152,7 +153,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     }
 
     if (id == R.id.action_print) {
-      EntryListFragment fragment = (EntryListFragment) mPageAdapter.getRegisteredFragment(mViewPager.getCurrentItem());
+      /*EntryListFragment fragment = (EntryListFragment) mPageAdapter.getRegisteredFragment(mViewPager.getCurrentItem());
       CycleEntryProvider provider =
           new CycleEntryProvider(mCycleProvider, new ChartEntryProvider(FirebaseDatabase.getInstance(), FirebaseApplication.getCryptoUtil()));
 
@@ -162,7 +163,8 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
         public void accept(PrintJob printJob) throws Exception {
           if (DEBUG) Log.v(TAG, "Printing done");
         }
-      });
+      });*/
+      startActivity(new Intent(this, CycleListActivity.class));
       return true;
     }
 

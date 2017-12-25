@@ -75,6 +75,16 @@ public class ChartEntryProvider {
     return new ChartEntry(entryDate, observation, wellness, symptomEntry);
   }
 
+  public Single<Long> numEntriesForCycle(Cycle cycle) {
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle))
+        .map(new Function<DataSnapshot, Long>() {
+          @Override
+          public Long apply(DataSnapshot dataSnapshot) throws Exception {
+            return dataSnapshot.getChildrenCount();
+          }
+        }).toSingle();
+  }
+
   public Flowable<RxFirebaseChildEvent<ChartEntry>> entryStream(final Cycle cycle) {
     return RxFirebaseDatabase.observeChildEvent(reference(cycle))
         .flatMap(new Function<RxFirebaseChildEvent<DataSnapshot>, Publisher<RxFirebaseChildEvent<ChartEntry>>>() {

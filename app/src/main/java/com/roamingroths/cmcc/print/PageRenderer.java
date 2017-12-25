@@ -38,13 +38,29 @@ public class PageRenderer {
     return mLists.flatMap(createCycleRows()).buffer(NUM_ROWS_PER_PAGE).map(createPage());
   }
 
+  public static int numRowsPerPage() {
+    return NUM_ROWS_PER_PAGE;
+  }
+
+  public static int numRows(int numEntries) {
+    return numFullRows(numEntries) + (hasPartialRow(numEntries) ? 1 : 0);
+  }
+
+  private static int numFullRows(int numEntries) {
+    return numEntries / NUM_DAYS_PER_CHART;
+  }
+
+  private static boolean hasPartialRow(int numEntries) {
+    return numEntries % NUM_DAYS_PER_CHART != 0;
+  }
+
   private static Function<ChartEntryList, ObservableSource<String>> createCycleRows() {
     return new Function<ChartEntryList, ObservableSource<String>>() {
       @Override
       public ObservableSource<String> apply(ChartEntryList chartEntryList) throws Exception {
         List<String> rows = new ArrayList<>();
-        int numFullRows = chartEntryList.size() / NUM_DAYS_PER_CHART;
-        boolean hasPartialRow = chartEntryList.size() % NUM_DAYS_PER_CHART != 0;
+        int numFullRows = numFullRows(chartEntryList.size());
+        boolean hasPartialRow = hasPartialRow(chartEntryList.size());
         for (int i=0; i < numFullRows; i++) {
           StringBuilder builder = new StringBuilder();
           int startIndex = i * NUM_DAYS_PER_CHART;
@@ -81,7 +97,7 @@ public class PageRenderer {
   private static void appendHead(StringBuilder builder) {
     builder.append("<head>");
     builder.append("<style>");
-    builder.append("table { table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
+    builder.append("table { margin: auto; table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
     builder.append("tr.stickers { border-top: 4px solid black; font-size: 150%; font-style: bold; } ");
     builder.append("td { text-align: center; height: 70pt; width: 36pt; border: 1px solid black; } ");
     builder.append("tr.day-num td { height: 30px; } ");
@@ -205,7 +221,7 @@ public class PageRenderer {
         if (entry.observationEntry != null && entry.observationEntry.observation != null) {
           lines.addAll(Lists.newArrayList(entry.observationEntry.observation.toString().split(" ")));
         }
-        while (lines.size() < 3) {
+        while (lines.size() < 4) {
           lines.add("&nbsp;");
         }
         builder.append(openCellTag(i));

@@ -1,103 +1,142 @@
 package com.roamingroths.cmcc.data;
 
 import android.app.Activity;
+import android.os.Bundle;
+import android.os.Parcel;
+import android.os.Parcelable;
 import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.TextView;
 
-import com.google.common.base.Preconditions;
-import com.google.firebase.database.ChildEventListener;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.print.PageRenderer;
+import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
-import io.reactivex.functions.Consumer;
+import io.reactivex.ObservableSource;
+import io.reactivex.Single;
+import io.reactivex.annotations.Nullable;
+import io.reactivex.functions.BiFunction;
+import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 4/18/17.
  */
 
-public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder>
-    implements ChildEventListener {
+public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapterViewHolder> {
 
-  private static final boolean DEBUG = false;
+  private static final boolean DEBUG = true;
   private static final String TAG = CycleAdapter.class.getSimpleName();
 
   private final Activity mActivity;
-  private final String mUserId;
-  private final OnClickHandler mClickHandler;
-  private final Map<String, Cycle> mCycleIndex;
-  private final SortedList<Cycle> mCycles;
-  private final CycleKeyProvider mCycleKeyProvider;
+  private final ImmutableList<ViewModel> mViewModels;
+  private final Set<Integer> mSelectedIndexes;
+  private ImmutableSet<Integer> mBreakAfterIndexs;
 
-  public CycleAdapter(Activity activity, OnClickHandler clickHandler, String userId, CycleKeyProvider cycleKeyProvider) {
-    mUserId = userId;
-    mCycleIndex = new HashMap<>();
-    mActivity = activity;
-    mClickHandler = clickHandler;
-    mCycleKeyProvider = cycleKeyProvider;
-    mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
-      @Override
-      public int compare(Cycle c1, Cycle c2) {
-        return c2.startDate.compareTo(c1.startDate);
-      }
-
-      @Override
-      public void onChanged(int position, int count) {
-        notifyItemRangeChanged(position, count);
-      }
-
-      @Override
-      public boolean areContentsTheSame(Cycle oldItem, Cycle newItem) {
-        return oldItem.equals(newItem);
-      }
-
-      @Override
-      public boolean areItemsTheSame(Cycle item1, Cycle item2) {
-        return item1 == item2;
-      }
-
-      @Override
-      public void onInserted(final int position, final int count) {
-        mActivity.runOnUiThread(new Runnable() {
-          @Override
-          public void run() {
-            notifyItemRangeInserted(position, count);
-          }
-        });
-      }
-
-      @Override
-      public void onRemoved(int position, int count) {
-        notifyItemRangeRemoved(position, count);
-      }
-
-      @Override
-      public void onMoved(int fromPosition, int toPosition) {
-        notifyItemMoved(fromPosition, toPosition);
-      }
-    });
+  private enum BundleKey {
+    SELECTED_INDEXES, VIEW_MODELS;
   }
 
-  public Calendar[] getChartedDays() {
-    ArrayList<Calendar> days = new ArrayList<>();
-    for (int i=0; i<mCycles.size(); i++) {
-      Cycle cycle = mCycles.get(i);
-      if (cycle.endDate == null) {
+  @Nullable
+  public static CycleAdapter fromBundle(Activity activity, Bundle savedState) {
+    if (savedState == null
+        || !savedState.containsKey(BundleKey.VIEW_MODELS.name())
+        || !savedState.containsKey(BundleKey.SELECTED_INDEXES.name())) {
+      return null;
+    }
+    List<ViewModel> viewModels = savedState.getParcelableArrayList(BundleKey.VIEW_MODELS.name());
+    SortedSet<Integer> selectedIndexes = new TreeSet<>();
+    selectedIndexes.addAll(savedState.getIntegerArrayList(BundleKey.SELECTED_INDEXES.name()));
+    return new CycleAdapter(activity, viewModels, selectedIndexes);
+  }
+
+  public static CycleAdapter fromViewModels(Activity activity, List<ViewModel> viewModels) {
+    // Initialize selected items with most recent cycles
+    SortedSet<Integer> selectedIndexes = new TreeSet<>();
+    int rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
+    for (int i=0; i < viewModels.size(); i++) {
+      ViewModel viewModel = viewModels.get(i);
+      rowsLeftBeforeNextBreak -= PageRenderer.numRows(viewModel.mNumEntries);
+      if (rowsLeftBeforeNextBreak >= 0) {
+        selectedIndexes.add(i);
       }
     }
-    return (Calendar[]) days.toArray();
+    return new CycleAdapter(activity, viewModels, selectedIndexes);
+  }
+
+  private CycleAdapter(Activity activity, List<ViewModel> viewModels, SortedSet<Integer> selectedIndexes) {
+    if (DEBUG) Log.v(TAG, "Create CycleAdapter");
+    mActivity = activity;
+    mViewModels = ImmutableList.copyOf(viewModels);
+    mSelectedIndexes = selectedIndexes;
+    updatePageBreaks();
+  }
+
+  public void fillBundle(Bundle bundle) {
+    bundle.putParcelableArrayList(BundleKey.VIEW_MODELS.name(), Lists.newArrayList(mViewModels));
+    bundle.putIntegerArrayList(BundleKey.SELECTED_INDEXES.name(), Lists.newArrayList(mSelectedIndexes));
+  }
+
+  public static Function<Cycle, ObservableSource<ViewModel>> cycleToViewModel(final ChartEntryProvider chartEntryProvider) {
+    return new Function<Cycle, ObservableSource<CycleAdapter.ViewModel>>() {
+      @Override
+      public ObservableSource<CycleAdapter.ViewModel> apply(Cycle cycle) throws Exception {
+        return Single.zip(
+            Single.just(cycle),
+            chartEntryProvider.numEntriesForCycle(cycle),
+            new BiFunction<Cycle, Long, ViewModel>() {
+              @Override
+              public CycleAdapter.ViewModel apply(Cycle cycle, Long numEntries) throws Exception {
+                return new CycleAdapter.ViewModel(cycle, numEntries.intValue());
+              }
+            }).toObservable();
+      }
+    };
+  }
+
+  public boolean hasValidSelection() {
+    boolean selectionStarted = false;
+    boolean selectionFinished = false;
+    for (int i=0; i < mViewModels.size(); i++) {
+      if (mSelectedIndexes.contains(i)) {
+        if (!selectionStarted) {
+          selectionStarted = true;
+        }
+        if (selectionFinished) {
+          return false;
+        }
+      } else {
+        if (selectionStarted && !selectionFinished) {
+          selectionFinished = true;
+        }
+      }
+    }
+    return true;
+  }
+
+  public Set<Cycle> getSelectedCycles() {
+    Set<Cycle> cycles = new HashSet<>();
+    for (Integer index : mSelectedIndexes) {
+      cycles.add(mViewModels.get(index).mCycle);
+    }
+    return cycles;
   }
 
   /**
@@ -133,133 +172,125 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
    */
   @Override
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
-    // TODO: Bind real text to view
-    Cycle cycle = mCycles.get(position);
-    holder.mCycleDataTextView.setText("Cycle Starting: " + cycle.startDateStr);
+    ViewModel viewModel = mViewModels.get(position);
+    holder.mCycleDataTextView.setText("Starting: " + DateUtil.toPrintUiStr(viewModel.mCycle.startDate));
+    holder.mSelectBox.setChecked(mSelectedIndexes.contains(position));
+    if (mBreakAfterIndexs.contains(position + 1)) {
+      holder.showPageSeparator();
+    } else {
+      holder.hidePageSeparator();
+    }
+  }
+
+  private void updateCheckStates(int position, boolean val) {
+    if (val) {
+      mSelectedIndexes.add(position);
+    } else {
+      mSelectedIndexes.remove(position);
+    }
+    updatePageBreaks();
+  }
+
+  private void updatePageBreaks() {
+    int firstIndex = -1;
+    for (int i=0; i < mViewModels.size(); i++) {
+      if (mSelectedIndexes.contains(i) && firstIndex < 0) {
+        firstIndex = i;
+        break;
+      }
+    }
+    ImmutableSet.Builder<Integer> breakBuilder = ImmutableSet.builder();
+    int rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
+    for (int i=firstIndex; i < mViewModels.size(); i++) {
+      rowsLeftBeforeNextBreak -= PageRenderer.numRows(mViewModels.get(i).mNumEntries);
+      if (rowsLeftBeforeNextBreak < 0) {
+        breakBuilder.add(i);
+        rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
+      }
+    }
+    mBreakAfterIndexs = breakBuilder.build();
+    notifyDataSetChanged();
   }
 
   @Override
   public int getItemCount() {
-    return mCycles.size();
+    return mViewModels.size();
   }
 
-  private int findCycle(String cycleId) {
-    for (int i = 0; i < mCycles.size(); i++) {
-      Cycle curCycle = mCycles.get(i);
-      if (curCycle.id.equals(cycleId)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  public void clear() {
-    mCycleIndex.clear();
-    mCycles.clear();
-  }
-
-  @Override
-  public void onChildAdded(final DataSnapshot dataSnapshot, String s) {
-    String cycleId = dataSnapshot.getKey();
-    Log.v("CycleAdapter", "onChildAdded id=" + cycleId);
-    mCycleKeyProvider.getChartKeys(cycleId, mUserId)
-        .subscribe(new Consumer<Cycle.Keys>() {
-          @Override
-          public void accept(Cycle.Keys keys) throws Exception {
-            Cycle cycle = Cycle.fromSnapshot(dataSnapshot, keys);
-            if (mCycleIndex.containsKey(cycle.id)) {
-              maybeChangeCycle(cycle);
-              return;
-            }
-            mCycleIndex.put(cycle.id, cycle);
-            mCycles.add(cycle);
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-            Log.e(TAG, "Error fetching chart keys", throwable);
-          }
-        });
-  }
-
-  private void maybeChangeCycle(Cycle cycle) {
-    Preconditions.checkArgument(mCycleIndex.containsKey(cycle.id));
-    if (mCycleIndex.get(cycle.id).equals(cycle)) {
-      return;
-    }
-    int index = getCycleIndex(cycle.id);
-    if (index < 0) {
-      throw new IllegalStateException();
-    }
-    mCycleIndex.put(cycle.id, cycle);
-    mCycles.updateItemAt(index, cycle);
-  }
-
-  private int getCycleIndex(String cycleId) {
-    for (int i = 0; i < mCycles.size(); i++) {
-      Cycle cycle = mCycles.get(i);
-      if (cycle.id.equals(cycleId)) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  @Override
-  public void onChildChanged(final DataSnapshot dataSnapshot, String s) {
-    Log.v("CycleAdapter", "onChildChanged");
-    mCycleKeyProvider.getChartKeys(dataSnapshot.getKey(), mUserId)
-        .subscribe(new Consumer<Cycle.Keys>() {
-          @Override
-          public void accept(Cycle.Keys keys) throws Exception {
-            maybeChangeCycle(Cycle.fromSnapshot(dataSnapshot, keys));
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable throwable) throws Exception {
-            Log.e(TAG, "Error getting keys", throwable);
-          }
-        });
-  }
-
-  @Override
-  public void onChildRemoved(DataSnapshot dataSnapshot) {
-    Log.v("CycleAdapter", "onChildRemoved");
-    int index = findCycle(dataSnapshot.getKey());
-    if (index < 0) {
-      throw new IllegalStateException("Couldn't find cycle for update!");
-    }
-    mCycleIndex.remove(mCycles.get(index).id);
-    mCycles.removeItemAt(index);
-  }
-
-  @Override
-  public void onChildMoved(DataSnapshot dataSnapshot, String s) {
-    throw new IllegalStateException("NOT IMPLEMENTED");
-  }
-
-  @Override
-  public void onCancelled(DatabaseError databaseError) {
-    databaseError.toException().printStackTrace();
-  }
-
-  public interface OnClickHandler {
-    void onClick(Cycle cycle, int itemNum);
-  }
-
-  public class CycleAdapterViewHolder extends RecyclerView.ViewHolder implements OnClickListener {
+  public class CycleAdapterViewHolder extends RecyclerView.ViewHolder {
     public final TextView mCycleDataTextView;
+    public final CheckBox mSelectBox;
+    public final View mCycleSeparator;
+    public final View mPageSeparator;
 
     public CycleAdapterViewHolder(View itemView) {
       super(itemView);
-      itemView.setOnClickListener(this);
-      mCycleDataTextView = (TextView) itemView.findViewById(R.id.tv_cycle_data);
+      mCycleDataTextView = itemView.findViewById(R.id.tv_cycle_data);
+      mSelectBox = itemView.findViewById(R.id.checkbox_select);
+      mSelectBox.setOnClickListener(new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+          updateCheckStates(getAdapterPosition(), mSelectBox.isChecked());
+        }
+      });
+      mCycleSeparator = itemView.findViewById(R.id.cycle_separator);
+      mPageSeparator = itemView.findViewById(R.id.page_separator);
+      itemView.setOnClickListener(new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+          // Toggle checkbox
+          mSelectBox.setChecked(!mSelectBox.isChecked());
+          updateCheckStates(getAdapterPosition(), mSelectBox.isChecked());
+        }
+      });
+    }
+
+    public void showPageSeparator() {
+      mPageSeparator.setVisibility(View.VISIBLE);
+      mCycleSeparator.setVisibility(View.GONE);
+    }
+
+    public void hidePageSeparator() {
+      mPageSeparator.setVisibility(View.GONE);
+      mCycleSeparator.setVisibility(View.VISIBLE);
+    }
+  }
+
+  public static class ViewModel implements Parcelable {
+    public final Cycle mCycle;
+    public final int mNumEntries;
+
+    private ViewModel(Cycle mCycle, int mNumEntries) {
+      this.mCycle = mCycle;
+      this.mNumEntries = mNumEntries;
+    }
+
+    protected ViewModel(Parcel in) {
+      mCycle = in.readParcelable(Cycle.class.getClassLoader());
+      mNumEntries = in.readInt();
+    }
+
+    public static final Creator<ViewModel> CREATOR = new Creator<ViewModel>() {
+      @Override
+      public ViewModel createFromParcel(Parcel in) {
+        return new ViewModel(in);
+      }
+
+      @Override
+      public ViewModel[] newArray(int size) {
+        return new ViewModel[size];
+      }
+    };
+
+    @Override
+    public int describeContents() {
+      return 0;
     }
 
     @Override
-    public void onClick(View v) {
-      int adapterPosition = getAdapterPosition();
-      mClickHandler.onClick(mCycles.get(adapterPosition), adapterPosition);
+    public void writeToParcel(Parcel dest, int flags) {
+      dest.writeParcelable(mCycle, flags);
+      dest.writeInt(mNumEntries);
     }
   }
 }
