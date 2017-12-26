@@ -125,6 +125,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     @Override
     public void setWeekTransition(boolean val) {
       mWeekSeparator.setVisibility(val ? View.VISIBLE : View.GONE);
+      mSeparator.setVisibility(val ? View.GONE : View.VISIBLE);
     }
   }
 }

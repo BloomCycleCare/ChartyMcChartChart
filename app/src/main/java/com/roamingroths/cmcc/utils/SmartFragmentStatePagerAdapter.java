@@ -10,10 +10,10 @@ import android.view.ViewGroup;
  * Created by parkeroth on 11/26/17.
  */
 
-public abstract class SmartFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
+public abstract class SmartFragmentStatePagerAdapter<F extends Fragment> extends FragmentStatePagerAdapter {
 
   // Sparse array to keep track of registered fragments in memory
-  private SparseArray<Fragment> registeredFragments = new SparseArray<Fragment>();
+  private SparseArray<F> registeredFragments = new SparseArray<>();
 
   public SmartFragmentStatePagerAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
@@ -22,7 +22,7 @@ public abstract class SmartFragmentStatePagerAdapter extends FragmentStatePagerA
   // Register the fragment when the item is instantiated
   @Override
   public Object instantiateItem(ViewGroup container, int position) {
-    Fragment fragment = (Fragment) super.instantiateItem(container, position);
+    F fragment = (F) super.instantiateItem(container, position);
     registeredFragments.put(position, fragment);
     return fragment;
   }
@@ -35,7 +35,7 @@ public abstract class SmartFragmentStatePagerAdapter extends FragmentStatePagerA
   }
 
   // Returns the fragment for the position (if instantiated)
-  public Fragment getRegisteredFragment(int position) {
+  public F getRegisteredFragment(int position) {
     return registeredFragments.get(position);
   }
 }

@@ -3,7 +3,6 @@ package com.roamingroths.cmcc.ui.entry.list;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v7.util.SortedList;
 import android.util.Log;
 import android.view.ViewGroup;
@@ -15,13 +14,16 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
+import java.util.Comparator;
+import java.util.List;
+
 import io.reactivex.functions.Consumer;
 
 /**
  * Created by parkeroth on 11/16/17.
  */
 
-public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter {
+public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryListFragment> {
 
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
@@ -75,12 +77,21 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter {
   }
 
   public void initialize(Cycle currentCycle, FirebaseUser user, CycleProvider cycleProvider) {
-    mCycles.add(currentCycle);
+    //mCycles.add(currentCycle);
     cycleProvider.getAllCycles(user.getUid())
-        .subscribe(new Consumer<Cycle>() {
+        .sorted(new Comparator<Cycle>() {
           @Override
-          public void accept(Cycle cycle) throws Exception {
-            mCycles.add(cycle);
+          public int compare(Cycle o1, Cycle o2) {
+            return o2.startDate.compareTo(o1.startDate);
+          }
+        })
+        .toList()
+        .subscribe(new Consumer<List<Cycle>>() {
+          @Override
+          public void accept(List<Cycle> cycles) throws Exception {
+            mCycles.beginBatchedUpdates();
+            mCycles.addAll(cycles);
+            mCycles.endBatchedUpdates();
           }
         });
   }
@@ -125,7 +136,19 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter {
     Bundle args = new Bundle();
     args.putParcelable(Cycle.class.getName(), cycle);
 
-    Fragment fragment = new EntryListFragment();
+    EntryListFragment fragment = new EntryListFragment();
+
+    EntryListFragment leftNeighbor = getRegisteredFragment(position - 1);
+    if (leftNeighbor != null) {
+      fragment.setNeighbor(leftNeighbor, EntryListFragment.Neighbor.LEFT);
+      leftNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.RIGHT);
+    }
+    EntryListFragment rightNeighbor = getRegisteredFragment(position + 1);
+    if (rightNeighbor != null) {
+      fragment.setNeighbor(rightNeighbor, EntryListFragment.Neighbor.RIGHT);
+      rightNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.LEFT);
+    }
+
     fragment.setArguments(args);
     return fragment;
   }

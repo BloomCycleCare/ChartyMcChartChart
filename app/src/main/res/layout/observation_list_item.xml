@@ -98,12 +98,12 @@
     <View
         android:id="@+id/observation_list_separator"
         android:layout_width="match_parent"
-        android:layout_height="1dp"
+        android:layout_height="2dp"
         android:background="#dadada"/>
     <View
         android:visibility="gone"
         android:id="@+id/week_separator"
         android:layout_width="match_parent"
-        android:layout_height="3dp"
+        android:layout_height="2dp"
         android:background="#000000"/>
 </LinearLayout>
