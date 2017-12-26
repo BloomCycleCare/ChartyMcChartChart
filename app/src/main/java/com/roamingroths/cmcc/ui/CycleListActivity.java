@@ -1,11 +1,11 @@
 package com.roamingroths.cmcc.ui;
 
 import android.os.Bundle;
+import android.print.PrintJob;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -20,10 +20,13 @@ import com.roamingroths.cmcc.print.ChartPrinter;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
-import io.reactivex.functions.Action;
+import io.reactivex.ObservableSource;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
 
 public class CycleListActivity extends BaseActivity {
 
@@ -84,14 +87,53 @@ public class CycleListActivity extends BaseActivity {
         }
         Observable<ChartEntryList> entryLists = getProvider().forCycleEntry().getChartEntryLists(
             getAdapter().getSelectedCycles(), Preferences.fromShared(CycleListActivity.this));
-        ChartPrinter.create(CycleListActivity.this, entryLists).print().toCompletable().subscribe(new Action() {
+        ChartPrinter.create(CycleListActivity.this, entryLists)
+            .print()
+            .flatMapObservable(emitPrintJob())
+            .filter(new Predicate<PrintJob>() {
+              @Override
+              public boolean test(PrintJob printJob) throws Exception {
+                return printJob.isCancelled() || printJob.isFailed() || printJob.isCompleted();
+              }
+            })
+            .firstOrError()
+            .subscribe(new Consumer<PrintJob>() {
+              @Override
+              public void accept(PrintJob printJob) throws Exception {
+                if (printJob.isCompleted()) {
+                  printJobComplete();
+                  return;
+                }
+                if (printJob.isFailed()) {
+                  printJobFailed();
+                  return;
+                }
+              }
+            });
+      }
+    });
+  }
+
+  private void printJobComplete() {
+    finish();
+  }
+
+  private void printJobFailed() {
+    Toast.makeText(this, "Print failed", Toast.LENGTH_LONG).show();
+  }
+
+  private Function<PrintJob, ObservableSource<PrintJob>> emitPrintJob() {
+    return new Function<PrintJob, ObservableSource<PrintJob>>() {
+      @Override
+      public ObservableSource<PrintJob> apply(final PrintJob printJob) throws Exception {
+        return Observable.interval(100, TimeUnit.MILLISECONDS).map(new Function<Long, PrintJob>() {
           @Override
-          public void run() throws Exception {
-            //finish();
+          public PrintJob apply(Long aLong) throws Exception {
+            return printJob;
           }
         });
       }
-    });
+    };
   }
 
   private CycleAdapter getAdapter() {
