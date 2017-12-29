@@ -18,6 +18,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 import org.reactivestreams.Publisher;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,17 +55,49 @@ public class ChartEntryProvider {
   private static String TAG = ChartEntryProvider.class.getSimpleName();
 
   private final FirebaseDatabase mDB;
-  private final CryptoUtil mCryptoUtil;
+  private final ChartEntryCache mCache;
   private final ObservationEntryProvider mObservationEntryProvider;
   private final WellnessEntryProvider mWellnessEntryProvider;
   private final SymptomEntryProvider mSymptomEntryProvider;
 
+
   public ChartEntryProvider(FirebaseDatabase db, CryptoUtil mCryptoUtil) {
     this.mDB = db;
-    this.mCryptoUtil = mCryptoUtil;
+    this.mCache = new ChartEntryCache();
     this.mObservationEntryProvider = new ObservationEntryProvider(mCryptoUtil);
     this.mWellnessEntryProvider = new WellnessEntryProvider(mCryptoUtil);
     this.mSymptomEntryProvider = new SymptomEntryProvider(mCryptoUtil);
+  }
+
+  public Completable initCache(CycleProvider cycleProvider, int numCycles) {
+    return cycleProvider
+        .getCachedCycles()
+        .sorted(new Comparator<Cycle>() {
+          @Override
+          public int compare(Cycle o1, Cycle o2) {
+            return o2.startDate.compareTo(o1.startDate);
+          }
+        })
+        .take(numCycles)
+        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+          @Override
+          public CompletableSource apply(Cycle cycle) throws Exception {
+            return fillCache(cycle);
+          }
+        });
+  }
+
+  public Completable fillCache(final Cycle cycle) {
+    return getEntries(cycle).toList().flatMapCompletable(new Function<List<ChartEntry>, CompletableSource>() {
+      @Override
+      public CompletableSource apply(List<ChartEntry> chartEntries) throws Exception {
+        return Completable.fromAction(mCache.fillCache(cycle, chartEntries));
+      }
+    });
+  }
+
+  public Observable<ChartEntry> getCachedEntries(final Cycle cycle) {
+    return Observable.fromIterable(mCache.getEntries(cycle));
   }
 
   private ChartEntry createEmpty(LocalDate entryDate, Cycle.Keys keys) {

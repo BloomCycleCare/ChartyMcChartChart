@@ -14,7 +14,7 @@ import android.view.ViewGroup;
 import com.google.common.collect.Maps;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.application.FirebaseApplication;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -56,7 +56,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public EntryListFragment() {
-    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), FirebaseApplication.getCryptoUtil());
+    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil());
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
@@ -109,7 +109,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
         getActivity().getApplicationContext(),
         mCycle,
         this,
-        new ChartEntryProvider(mDb, FirebaseApplication.getCryptoUtil()),
+        new ChartEntryProvider(mDb, MyApplication.getCryptoUtil()),
         "");
     if (mChartEntries != null) {
       mChartEntryAdapter.initialize(mChartEntries);

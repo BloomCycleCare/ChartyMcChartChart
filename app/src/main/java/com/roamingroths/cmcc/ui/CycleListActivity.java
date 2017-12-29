@@ -57,7 +57,7 @@ public class CycleListActivity extends BaseActivity {
       mRecyclerView.setAdapter(adapter);
     } else {
       getProvider().forCycle()
-          .getAllCycles(getUser().getUid())
+          .getCachedCycles()
           .sorted(new Comparator<Cycle>() {
             @Override
             public int compare(Cycle o1, Cycle o2) {

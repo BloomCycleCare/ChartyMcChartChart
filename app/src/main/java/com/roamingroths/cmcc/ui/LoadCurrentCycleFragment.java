@@ -8,9 +8,7 @@ import android.util.Log;
 
 import com.google.common.collect.Lists;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.Preferences;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -41,27 +39,28 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private static boolean DEBUG = false;
   private static String TAG = LoadCurrentCycleFragment.class.getSimpleName();
 
-  private Preferences mPreferences;
-  private CycleProvider mCycleProvider;
-  private CompositeDisposable mDisposables;
-  private CryptoUtil mCryptoUtil;
+  private CompositeDisposable mDisposables = new CompositeDisposable();
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    mPreferences = Preferences.fromShared(getApplicationContext());
   }
 
   @Override
-  public void onUserInitialized(final FirebaseUser user, CryptoUtil cryptoUtil) {
+  public void onDestroy() {
+    mDisposables.clear();
+    super.onDestroy();
+  }
+
+  @Override
+  public void onUserInitialized(final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Getting current cycle");
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance(), cryptoUtil);
-    mCryptoUtil = cryptoUtil;
-    mDisposables.add(mCycleProvider.getOrCreateCurrentCycle(user.getUid(), promptForStart(user))
+    final CycleProvider cycleProvider = MyApplication.getProviders().forCycle();
+    mDisposables.add(cycleProvider.getOrCreateCurrentCycle(user.getUid(), promptForStart())
         .subscribe(new Consumer<Cycle>() {
           @Override
           public void accept(@NonNull Cycle cycle) throws Exception {
-            preloadCycleData(cycle, user);
+            preloadCycleData(cycleProvider, cycle, user);
           }
         }, new Consumer<Throwable>() {
           @Override
@@ -71,7 +70,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         }));
   }
 
-  Single<LocalDate> promptForStart(final FirebaseUser user) {
+  Single<LocalDate> promptForStart() {
     return Single.create(new SingleOnSubscribe<LocalDate>() {
       @Override
       public void subscribe(final @NonNull SingleEmitter<LocalDate> e) throws Exception {
@@ -92,11 +91,11 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     });
   }
 
-  private void preloadCycleData(final Cycle cycle, final FirebaseUser user) {
+  private void preloadCycleData(final CycleProvider cycleProvider, final Cycle cycle, final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Preload cycle data: start");
     updateStatus("Decrypting cycle data");
-    mCycleProvider.maybeCreateNewEntries(cycle)
-        .andThen(mCycleProvider.getEntries(cycle))
+    cycleProvider.maybeCreateNewEntries(cycle)
+        .andThen(cycleProvider.getEntries(cycle))
         .toList()
         .subscribe(new Consumer<List<ChartEntry>>() {
           @Override
@@ -118,12 +117,12 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 .setMessage("This is permanent and cannot be undone!")
                 .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
                   public void onClick(final DialogInterface dialog, int whichButton) {
-                    mCycleProvider.dropCycles()
+                    cycleProvider.dropCycles()
                         .subscribe(new Action() {
                           @Override
                           public void run() throws Exception {
                             dialog.dismiss();
-                            onUserInitialized(user, mCryptoUtil);
+                            onUserInitialized(user);
                           }
                         });
                   }

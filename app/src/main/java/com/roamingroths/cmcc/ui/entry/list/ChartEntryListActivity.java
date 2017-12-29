@@ -4,7 +4,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.print.PrintJob;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
 import android.support.v4.content.FileProvider;
@@ -22,17 +21,10 @@ import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.application.FirebaseApplication;
 import com.roamingroths.cmcc.data.AppState;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
-import com.roamingroths.cmcc.data.CycleEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.print.ChartPrinter;
 import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.UserInitActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
@@ -43,12 +35,10 @@ import com.roamingroths.cmcc.utils.GsonUtil;
 import java.io.File;
 
 import io.reactivex.Observable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
 public class ChartEntryListActivity extends AppCompatActivity implements EntryListView {
@@ -155,7 +145,7 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     if (id == R.id.action_print) {
       /*EntryListFragment fragment = (EntryListFragment) mPageAdapter.getRegisteredFragment(mViewPager.getCurrentItem());
       CycleEntryProvider provider =
-          new CycleEntryProvider(mCycleProvider, new ChartEntryProvider(FirebaseDatabase.getInstance(), FirebaseApplication.getCryptoUtil()));
+          new CycleEntryProvider(mCycleProvider, new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil()));
 
       Observable<ChartEntryList> lists = provider.getChartEntryLists(FirebaseAuth.getInstance().getCurrentUser(), Preferences.fromShared(this));
       ChartPrinter.create(this, lists).print().subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<PrintJob>() {

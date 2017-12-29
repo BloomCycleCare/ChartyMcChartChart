@@ -25,7 +25,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.application.FirebaseApplication;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -120,7 +120,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     mCycle = getCycle(getIntent());
     mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
-    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), FirebaseApplication.getCryptoUtil());
+    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil());
 
     updateMaps(container);
 

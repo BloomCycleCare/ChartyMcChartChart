@@ -16,17 +16,15 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.application.FirebaseApplication;
-import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.CryptoProvider;
 
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
-import io.reactivex.SingleObserver;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
@@ -111,24 +109,14 @@ public class UserInitActivity extends FragmentActivity {
 
   private void initUserState(final FirebaseUser user) {
     mFragment.updateStatus("Initializing user");
-    FirebaseApplication.initCryptoUtil(user, promptForPhoneNumber())
+    MyApplication.initProviders(user, promptForPhoneNumber())
         .observeOn(Schedulers.computation())
         .subscribeOn(AndroidSchedulers.mainThread())
-        .subscribe(new SingleObserver<CryptoUtil>() {
+        .subscribe(new Action() {
           @Override
-          public void onSubscribe(@NonNull Disposable d) {
-          }
-
-          @Override
-          public void onSuccess(@NonNull CryptoUtil cryptoUtil) {
+          public void run() throws Exception {
             mFragment.updateStatus("User initialization complete");
-            mUserListener.onUserInitialized(user, cryptoUtil);
-          }
-
-          @Override
-          public void onError(@NonNull Throwable e) {
-            Log.e(TAG, "Error initializing user", e);
-            mFragment.showError("Error initializing user");
+            mUserListener.onUserInitialized(user);
           }
         });
   }
