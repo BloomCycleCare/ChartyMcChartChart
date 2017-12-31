@@ -36,6 +36,7 @@ import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -89,6 +90,7 @@ public class CycleProvider {
     return chartEntryProvider.maybeAddNewEntries(cycle);
   }
 
+  @Deprecated
   public Completable putCycleRx(final String userId, final Cycle cycle) {
     Map<String, Object> updates = new HashMap<>();
     updates.put("previous-cycle-id", cycle.previousCycleId);
@@ -96,7 +98,13 @@ public class CycleProvider {
     updates.put("start-date", cycle.startDateStr);
     updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
     return RxFirebaseDatabase.updateChildren(reference(userId, cycle.id), updates)
-        .andThen(cycleKeyProvider.putChartKeysRx(cycle.keys, cycle.id, userId));
+        .andThen(cycleKeyProvider.putChartKeysRx(cycle.keys, cycle.id, userId))
+        .doOnComplete(new Action() {
+          @Override
+          public void run() throws Exception {
+            mCycleCache.put(cycle.id, cycle);
+          }
+        });
   }
 
   private Single<Cycle> createCycle(
@@ -177,12 +185,17 @@ public class CycleProvider {
         });
   }
 
-  private Completable dropCycle(String cycleId, String userId) {
+  private Completable dropCycle(final String cycleId, String userId) {
     if (DEBUG) Log.v(TAG, "Dropping cycle: " + cycleId);
     Completable dropEntries = RxFirebaseDatabase.removeValue(db.getReference("entries").child(cycleId));
     Completable dropKeys = cycleKeyProvider.dropKeys(cycleId);
     Completable dropCycle = RxFirebaseDatabase.removeValue(reference(userId, cycleId));
-    return Completable.mergeArray(dropEntries, dropKeys, dropCycle);
+    return Completable.mergeArray(dropEntries, dropKeys, dropCycle).doOnComplete(new Action() {
+      @Override
+      public void run() throws Exception {
+        mCycleCache.remove(cycleId);
+      }
+    });
   }
 
   public Completable dropCycles() {
