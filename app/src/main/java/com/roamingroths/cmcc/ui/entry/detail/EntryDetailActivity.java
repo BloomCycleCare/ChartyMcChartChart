@@ -22,7 +22,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -119,8 +118,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
     mCycle = getCycle(getIntent());
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
-    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil());
+    mCycleProvider = MyApplication.getProviders().forCycle();
+    mChartEntryProvider = MyApplication.getProviders().forChartEntry();
 
     updateMaps(container);
 
@@ -353,14 +352,6 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       if (DEBUG) Log.v(TAG, "Splitting cycle");
       return putDone
           .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, observationEntryFragment.getEntryFromUiRx()))
-          .map(new Function<Cycle, EntrySaveResult>() {
-            @Override
-            public EntrySaveResult apply(Cycle cycle) throws Exception {
-              EntrySaveResult result = new EntrySaveResult(cycle);
-              result.newCycles.add(cycle);
-              return result;
-            }
-          })
           .toMaybe();
     } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycle with previous");
@@ -370,14 +361,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           if (!canJoin) {
             return Maybe.empty();
           }
-          return mCycleProvider.combineCycleRx(mUserId, mCycle).map(new Function<Cycle, EntrySaveResult>() {
-            @Override
-            public EntrySaveResult apply(Cycle cycle) throws Exception {
-              EntrySaveResult result = new EntrySaveResult(cycle);
-              result.droppedCycles.add(mCycle);
-              return result;
-            }
-          }).toMaybe();
+          return mCycleProvider.combineCycleRx(mUserId, mCycle).toMaybe();
         }
       });
     }

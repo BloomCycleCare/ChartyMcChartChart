@@ -12,6 +12,7 @@ import java.util.ArrayList;
  */
 public class EntrySaveResult implements Parcelable {
   public ArrayList<Cycle> droppedCycles = new ArrayList<>();
+  public ArrayList<Cycle> changedCycles = new ArrayList<>();
   public ArrayList<Cycle> newCycles = new ArrayList<>();
   public Cycle cycle;
 
@@ -21,6 +22,7 @@ public class EntrySaveResult implements Parcelable {
 
   protected EntrySaveResult(Parcel in) {
     droppedCycles = in.createTypedArrayList(Cycle.CREATOR);
+    changedCycles = in.createTypedArrayList(Cycle.CREATOR);
     newCycles = in.createTypedArrayList(Cycle.CREATOR);
     cycle = in.readParcelable(Cycle.class.getClassLoader());
   }
@@ -28,6 +30,7 @@ public class EntrySaveResult implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeTypedList(droppedCycles);
+    dest.writeTypedList(changedCycles);
     dest.writeTypedList(newCycles);
     dest.writeParcelable(cycle, flags);
   }

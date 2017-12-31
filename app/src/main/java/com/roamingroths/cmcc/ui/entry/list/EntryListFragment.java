@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
@@ -38,7 +39,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   private static boolean DEBUG = false;
   private static String TAG = EntryListFragment.class.getSimpleName();
-  private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 100;
+  private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 200;
 
   private final Subject<ScrollState> mScrollState;
 
@@ -56,7 +57,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public EntryListFragment() {
-    mChartEntryProvider = new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil());
+    mChartEntryProvider = MyApplication.getProviders().forChartEntry();
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
@@ -165,23 +166,28 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     });
     mChartEntryAdapter.notifyDataSetChanged();
 
-    mChartEntryProvider.getEntries(mCycle).toList().observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<List<ChartEntry>>() {
-      @Override
-      public void accept(List<ChartEntry> chartEntries) throws Exception {
-        mChartEntryAdapter.initialize(chartEntries);
-        for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
-          EntryListFragment neighbor = ref.get();
-          if (neighbor != null) {
-            if (DEBUG) Log.v(TAG, "Cycle starting " + mCycle.startDateStr + " has neighbor starting " + neighbor.mCycle.startDateStr);
-            ScrollState scrollState = neighbor.getScrollState();
-            if (scrollState != null) {
-              if (DEBUG) Log.v(TAG, "ScrollState: " + scrollState);
-              setScrollState(scrollState);
+    mChartEntryProvider
+        .getEntries(mCycle)
+        .subscribeOn(Schedulers.io())
+        .toList()
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(new Consumer<List<ChartEntry>>() {
+          @Override
+          public void accept(List<ChartEntry> chartEntries) throws Exception {
+            mChartEntryAdapter.initialize(chartEntries);
+            for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
+              EntryListFragment neighbor = ref.get();
+              if (neighbor != null) {
+                if (DEBUG) Log.v(TAG, "Cycle starting " + mCycle.startDateStr + " has neighbor starting " + neighbor.mCycle.startDateStr);
+                ScrollState scrollState = neighbor.getScrollState();
+                if (scrollState != null) {
+                  if (DEBUG) Log.v(TAG, "ScrollState: " + scrollState);
+                  setScrollState(scrollState);
+                }
+              }
             }
           }
-        }
-      }
-    });
+        });
 
     if (mChartEntries != null && !mChartEntries.isEmpty()) {
       mView.showList();

@@ -25,7 +25,7 @@ import io.reactivex.functions.Function;
 public class Cycle implements Parcelable {
 
   public final String id;
-  public final String previousCycleId;
+  public String previousCycleId;
   public String nextCycleId;
   public final LocalDate startDate;
   public LocalDate endDate;

@@ -25,7 +25,7 @@ public class KeyUtil {
 
   public static KeyPair parseKeyPair(String publicKeyStr, String privateKeyStr, String privateKeyPassword) throws Exception {
     PublicKey publicKey = RsaCryptoUtil.parsePublicKey(publicKeyStr);
-    PrivateKey privatKey = PbeCryptoUtil.unwrapPrivateKey(privateKeyPassword, privateKeyPassword);
+    PrivateKey privatKey = PbeCryptoUtil.unwrapPrivateKey(privateKeyPassword, privateKeyStr);
     return new KeyPair(publicKey, privatKey);
   }
 

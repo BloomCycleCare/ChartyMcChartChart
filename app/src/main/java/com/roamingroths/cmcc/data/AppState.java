@@ -95,7 +95,7 @@ public class AppState {
   private static Observable<CycleData> fetchCycleDatas(final CycleProvider cycleProvider) {
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     Log.v("AppState", "Fetching cycle datas for user " + user.getUid());
-    return cycleProvider.getAllCycles(user.getUid())
+    return cycleProvider.getAllCycles(user)
         .flatMap(new Function<Cycle, ObservableSource<CycleData>>() {
           @Override
           public ObservableSource<CycleData> apply(final Cycle cycle) throws Exception {

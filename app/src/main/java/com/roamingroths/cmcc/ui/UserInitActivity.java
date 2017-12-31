@@ -110,8 +110,8 @@ public class UserInitActivity extends FragmentActivity {
   private void initUserState(final FirebaseUser user) {
     mFragment.updateStatus("Initializing user");
     MyApplication.initProviders(user, promptForPhoneNumber())
-        .observeOn(Schedulers.computation())
-        .subscribeOn(AndroidSchedulers.mainThread())
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Action() {
           @Override
           public void run() throws Exception {
@@ -146,6 +146,6 @@ public class UserInitActivity extends FragmentActivity {
         Log.v("UserInitActivity", "Prompting for phone number");
         builder.create().show();
       }
-    }).observeOn(AndroidSchedulers.mainThread());
+    }).subscribeOn(AndroidSchedulers.mainThread());
   }
 }

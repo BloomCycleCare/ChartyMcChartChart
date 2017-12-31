@@ -20,11 +20,10 @@ import android.widget.TextView;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.CycleListActivity;
 import com.roamingroths.cmcc.ui.UserInitActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
@@ -73,15 +72,13 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
 
     setTitle("Current Cycle");
 
-    Cycle cycle = getIntent().getParcelableExtra(Cycle.class.getName());
-
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
     mViewPager = (ViewPager) findViewById(R.id.view_pager);
 
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
-    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
-    mPageAdapter.initialize(cycle, FirebaseAuth.getInstance().getCurrentUser(), mCycleProvider);
+    mCycleProvider = MyApplication.getProviders().forCycle();
+    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), MyApplication.getProviders().forChartEntry());
+    mPageAdapter.initialize(FirebaseAuth.getInstance().getCurrentUser(), mCycleProvider);
     mViewPager.setAdapter(mPageAdapter);
     mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
       @Override

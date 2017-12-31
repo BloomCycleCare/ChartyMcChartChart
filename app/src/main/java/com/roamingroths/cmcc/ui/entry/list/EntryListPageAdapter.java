@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseUser;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
@@ -18,6 +19,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 11/16/17.
@@ -28,10 +30,12 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
 
+  private final ChartEntryProvider mChartEntryProvider;
   private final SortedList<Cycle> mCycles;
 
-  public EntryListPageAdapter(FragmentManager fragmentManager) {
+  public EntryListPageAdapter(FragmentManager fragmentManager, ChartEntryProvider chartEntryProvider) {
     super(fragmentManager);
+    mChartEntryProvider = chartEntryProvider;
     mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
       @Override
       public int compare(Cycle o1, Cycle o2) {
@@ -76,9 +80,8 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     notifyDataSetChanged();*/
   }
 
-  public void initialize(Cycle currentCycle, FirebaseUser user, CycleProvider cycleProvider) {
-    //mCycles.add(currentCycle);
-    cycleProvider.getAllCycles(user.getUid())
+  public void initialize(FirebaseUser user, CycleProvider cycleProvider) {
+    cycleProvider.getAllCycles(user)
         .sorted(new Comparator<Cycle>() {
           @Override
           public int compare(Cycle o1, Cycle o2) {
@@ -114,6 +117,10 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
       if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle);
       mCycles.add(cycle);
     }
+    for (Cycle cycle : result.changedCycles) {
+      if (DEBUG) Log.v(TAG, "Updating cycle: " + cycle);
+      mCycles.updateItemAt(mCycles.indexOf(cycle), cycle);
+    }
     notifyDataSetChanged();
     int index = mCycles.indexOf(result.cycle);
     Preconditions.checkState(index >= 0);
@@ -130,6 +137,15 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   @Override
   public Fragment getItem(int position) {
     Cycle cycle = mCycles.get(position);
+
+    int leftPosition = position - 1;
+    if (leftPosition >= 0) {
+      mChartEntryProvider.fillCache(mCycles.get(leftPosition)).subscribeOn(Schedulers.io()).subscribe();
+    }
+    int rightPosition = position + 1;
+    if (rightPosition < mCycles.size()) {
+      mChartEntryProvider.fillCache(mCycles.get(rightPosition)).subscribeOn(Schedulers.io()).subscribe();
+    }
 
     if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycle:" + cycle);
 

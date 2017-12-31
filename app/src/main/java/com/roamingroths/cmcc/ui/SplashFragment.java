@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.ui;
 
+import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -62,7 +63,11 @@ public class SplashFragment extends Fragment {
   }
 
   public void showProgress(final String message) {
-    getActivity().runOnUiThread(new Runnable() {
+    Activity activity = getActivity();
+    if (activity == null) {
+      return;
+    }
+    activity.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         mProgressBar.setVisibility(View.VISIBLE);
@@ -78,6 +83,10 @@ public class SplashFragment extends Fragment {
 
   public void updateStatus(final String status) {
     if (DEBUG) Log.v(TAG, "Update: " + status);
+    Activity activity = getActivity();
+    if (activity == null) {
+      return;
+    }
     getActivity().runOnUiThread(new Runnable() {
       @Override
       public void run() {
@@ -87,7 +96,11 @@ public class SplashFragment extends Fragment {
   }
 
   public void showError(final String errorText) {
-    getActivity().runOnUiThread(new Runnable() {
+    Activity activity = getActivity();
+    if (activity == null) {
+      return;
+    }
+    activity.runOnUiThread(new Runnable() {
       @Override
       public void run() {
         mProgressBar.setVisibility(View.INVISIBLE);

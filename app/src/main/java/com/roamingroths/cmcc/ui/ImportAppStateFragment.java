@@ -8,7 +8,7 @@ import android.os.Bundle;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -36,12 +36,12 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    mCycleProvider = CycleProvider.forDb(FirebaseDatabase.getInstance());
+    mCycleProvider = MyApplication.getProviders().forCycle();
   }
 
   @Override
   public void onUserInitialized(final FirebaseUser user) {
-    mCycleProvider.getCurrentCycle(user.getUid())
+    mCycleProvider.getCurrentCycle(user)
         .isEmpty()
         .flatMap(new Function<Boolean, SingleSource<Boolean>>() {
           @Override

@@ -4,10 +4,8 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.v7.util.SortedList;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -23,7 +21,6 @@ import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.print.PageRenderer;
 import com.roamingroths.cmcc.utils.DateUtil;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,7 +97,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
       public ObservableSource<CycleAdapter.ViewModel> apply(Cycle cycle) throws Exception {
         return Single.zip(
             Single.just(cycle),
-            chartEntryProvider.numEntriesForCycle(cycle),
+            chartEntryProvider.getEntries(cycle).count(),
             new BiFunction<Cycle, Long, ViewModel>() {
               @Override
               public CycleAdapter.ViewModel apply(Cycle cycle, Long numEntries) throws Exception {

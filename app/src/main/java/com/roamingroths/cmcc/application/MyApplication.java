@@ -11,6 +11,7 @@ import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.CycleEntryProvider;
+import com.roamingroths.cmcc.data.CycleKeyProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -77,18 +78,21 @@ public class MyApplication extends Application {
 
   public static class Providers {
     private final CycleProvider mCycleProvider;
+    private final CycleKeyProvider mCycleKeyProvider;
     private final CycleEntryProvider mCycleEntryProvider;
     private final ChartEntryProvider mChartEntryProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-      mCycleProvider = CycleProvider.forDb(db, cryptoUtil);
+      mCycleKeyProvider = CycleKeyProvider.forDb(db, cryptoUtil);
       mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
+      mCycleProvider = new CycleProvider(db, mCycleKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mCycleProvider, mChartEntryProvider);
     }
 
     public Completable initialize(FirebaseUser user) {
       if (DEBUG) Log.v(TAG, "Initializing providers");
-      return mCycleProvider.initCache(user).andThen(mChartEntryProvider.initCache(mCycleProvider, 2));
+      return mCycleProvider.initCache(user)
+          .andThen(mChartEntryProvider.initCache(mCycleProvider.getAllCycles(user), 2));
     }
 
     public CycleEntryProvider forCycleEntry() {
