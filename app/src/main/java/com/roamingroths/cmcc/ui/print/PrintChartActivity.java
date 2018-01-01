@@ -3,9 +3,9 @@ package com.roamingroths.cmcc.ui.print;
 import android.os.Bundle;
 import android.print.PrintJob;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.app.NavUtils;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -41,8 +41,8 @@ public class PrintChartActivity extends BaseActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_print_chart);
-    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-    //setSupportActionBar(toolbar);
+
+    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
     setTitle("Select cycles to print");
 
@@ -166,8 +166,11 @@ public class PrintChartActivity extends BaseActivity {
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
-    int id = item.getItemId();
-
+    switch (item.getItemId()) {
+      case android.R.id.home:
+        NavUtils.navigateUpFromSameTask(this);
+        return true;
+    }
     return super.onOptionsItemSelected(item);
   }
 }
