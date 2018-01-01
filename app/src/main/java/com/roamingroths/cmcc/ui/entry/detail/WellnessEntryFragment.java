@@ -39,7 +39,7 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_wellness_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
         getContext(),
-        R.layout.wellness_list_item,
+        R.layout.list_item_wellness_entry,
         R.id.tv_wellness_item,
         R.id.switch_wellness_item, values, keys, savedInstanceState);
 

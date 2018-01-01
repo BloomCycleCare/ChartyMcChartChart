@@ -31,9 +31,9 @@ import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.ui.CycleListActivity;
-import com.roamingroths.cmcc.ui.UserInitActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
+import com.roamingroths.cmcc.ui.init.UserInitActivity;
+import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.FileUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -78,7 +78,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_foo);
+    setContentView(R.layout.activity_entry_list);
 
     mNavView = (NavigationView) findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
@@ -157,7 +157,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.
-    getMenuInflater().inflate(R.menu.menu_main, menu);
+    getMenuInflater().inflate(R.menu.menu_entry_list, menu);
     return true;
   }
 
@@ -197,7 +197,7 @@ public class ChartEntryListActivity extends AppCompatActivity
           if (DEBUG) Log.v(TAG, "Printing done");
         }
       });*/
-      startActivity(new Intent(this, CycleListActivity.class));
+      startActivity(new Intent(this, PrintChartActivity.class));
       return true;
     }
 
@@ -235,7 +235,7 @@ public class ChartEntryListActivity extends AppCompatActivity
       return true;
     }
     if (id == R.id.action_export) {
-      Log.v("CycleListActivity", "Begin export");
+      Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
       AppState.create(mCycleProvider)
           .subscribe(new Consumer<AppState>() {
@@ -268,7 +268,7 @@ public class ChartEntryListActivity extends AppCompatActivity
           }, new Consumer<Throwable>() {
             @Override
             public void accept(Throwable throwable) throws Exception {
-              Log.w("CycleListActivity", "Could not create AppState", throwable);
+              Log.w("PrintChartActivity", "Could not create AppState", throwable);
             }
           });
     }

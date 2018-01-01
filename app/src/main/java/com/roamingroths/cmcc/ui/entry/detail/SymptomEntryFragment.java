@@ -41,7 +41,7 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_symptom_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
         getContext(),
-        R.layout.symptom_list_item,
+        R.layout.list_item_symptom_entry,
         R.id.tv_symptom_item,
         R.id.switch_symptom_item, values, keys, savedInstanceState);
 

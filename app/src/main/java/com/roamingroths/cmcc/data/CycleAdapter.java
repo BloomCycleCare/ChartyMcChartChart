@@ -149,7 +149,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
    */
   @Override
   public CycleAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-    int layoutIdForListItem = R.layout.cycle_list_item;
+    int layoutIdForListItem = R.layout.list_item_cycle_select;
     LayoutInflater inflater = LayoutInflater.from(mActivity);
     boolean shouldAttachToParentImmediately = false;
 

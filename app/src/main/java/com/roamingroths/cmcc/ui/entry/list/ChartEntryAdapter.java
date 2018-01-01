@@ -133,7 +133,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   @Override
   public ChartEntryViewHolder.Impl onCreateViewHolder(ViewGroup parent, int viewType) {
-    int layoutIdForListItem = R.layout.observation_list_item;
+    int layoutIdForListItem = R.layout.list_item_observation_entry;
     LayoutInflater inflater = LayoutInflater.from(mContext);
     boolean shouldAttachToParentImmediately = false;
 

@@ -23,11 +23,11 @@ public abstract class BaseActivity extends AppCompatActivity {
     mUser = FirebaseAuth.getInstance().getCurrentUser();
   }
 
-  MyApplication.Providers getProvider() {
+  protected MyApplication.Providers getProvider() {
     return MyApplication.getProviders();
   }
 
-  FirebaseUser getUser() {
+  protected FirebaseUser getUser() {
     return mUser;
   }
 

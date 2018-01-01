@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui;
+package com.roamingroths.cmcc.ui.init;
 
 import com.google.firebase.auth.FirebaseUser;
 

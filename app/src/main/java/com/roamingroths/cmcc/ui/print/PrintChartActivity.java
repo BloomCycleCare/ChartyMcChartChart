@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui;
+package com.roamingroths.cmcc.ui.print;
 
 import android.os.Bundle;
 import android.print.PrintJob;
@@ -17,6 +17,7 @@ import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.CycleAdapter;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.print.ChartPrinter;
+import com.roamingroths.cmcc.ui.BaseActivity;
 
 import java.util.Comparator;
 import java.util.List;
@@ -28,10 +29,10 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 
-public class CycleListActivity extends BaseActivity {
+public class PrintChartActivity extends BaseActivity {
 
   private static final boolean DEBUG = true;
-  private static final String TAG = CycleListActivity.class.getSimpleName();
+  private static final String TAG = PrintChartActivity.class.getSimpleName();
 
   private RecyclerView mRecyclerView;
   private CycleAdapter mCycleAdapter;
@@ -39,7 +40,7 @@ public class CycleListActivity extends BaseActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_cycle_list);
+    setContentView(R.layout.activity_print_chart);
     Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
     //setSupportActionBar(toolbar);
 
@@ -70,7 +71,7 @@ public class CycleListActivity extends BaseActivity {
             @Override
             public void accept(List<CycleAdapter.ViewModel> viewModels) throws Exception {
               mRecyclerView.setAdapter(
-                  CycleAdapter.fromViewModels(CycleListActivity.this, viewModels));
+                  CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels));
             }
           });
     }
@@ -86,8 +87,8 @@ public class CycleListActivity extends BaseActivity {
           return;
         }
         Observable<ChartEntryList> entryLists = getProvider().forCycleEntry().getChartEntryLists(
-            getAdapter().getSelectedCycles(), Preferences.fromShared(CycleListActivity.this));
-        ChartPrinter.create(CycleListActivity.this, entryLists)
+            getAdapter().getSelectedCycles(), Preferences.fromShared(PrintChartActivity.this));
+        ChartPrinter.create(PrintChartActivity.this, entryLists)
             .print()
             .flatMapObservable(emitPrintJob())
             .filter(new Predicate<PrintJob>() {

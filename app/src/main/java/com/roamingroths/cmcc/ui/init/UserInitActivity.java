@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui;
+package com.roamingroths.cmcc.ui.init;
 
 import android.content.DialogInterface;
 import android.content.Intent;
