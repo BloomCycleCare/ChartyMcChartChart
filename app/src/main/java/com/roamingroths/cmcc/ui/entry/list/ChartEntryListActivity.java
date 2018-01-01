@@ -2,14 +2,20 @@ package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
 import android.support.v4.content.FileProvider;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -20,6 +26,7 @@ import android.widget.TextView;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.AppState;
@@ -40,13 +47,18 @@ import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
-public class ChartEntryListActivity extends AppCompatActivity implements EntryListView {
+public class ChartEntryListActivity extends AppCompatActivity
+    implements EntryListView, NavigationView.OnNavigationItemSelectedListener {
 
   private static final boolean DEBUG = true;
   private static final String TAG = ChartEntryListActivity.class.getSimpleName();
 
   public static final int RC_SIGN_IN = 1;
 
+  private NavigationView mNavView;
+  private Toolbar mToolbar;
+  private DrawerLayout mDrawerLayout;
+  private ActionBarDrawerToggle mDrawerToggle;
   private TextView mErrorView;
   private ProgressBar mProgressBar;
   private ViewPager mViewPager;
@@ -66,11 +78,29 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_main);
+    setContentView(R.layout.activity_foo);
 
-    log("onCreate");
+    mNavView = (NavigationView) findViewById(R.id.nav_view);
+    // Set the "My Chart" item as selected
+    mNavView.getMenu().getItem(0).setChecked(true);
+    mNavView.setNavigationItemSelectedListener(this);
 
+    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    View navHeaderView = mNavView.getHeaderView(0);
+    TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
+    drawerTitleView.setText(user.getDisplayName());
+    TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
+    drawerSubtitleView.setText(user.getEmail());
+
+    mToolbar = (Toolbar) findViewById(R.id.app_bar);
     setTitle("Current Cycle");
+    setSupportActionBar(mToolbar);
+
+    mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+    mDrawerToggle = new ActionBarDrawerToggle(
+        this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+    mDrawerLayout.addDrawerListener(mDrawerToggle);
+    mDrawerToggle.syncState();
 
     mErrorView = (TextView) findViewById(R.id.refresh_error);
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
@@ -99,12 +129,28 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   }
 
   @Override
+  public void onConfigurationChanged(Configuration newConfig) {
+    super.onConfigurationChanged(newConfig);
+    mDrawerToggle.onConfigurationChanged(newConfig);
+  }
+
+  @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
       EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
       if (DEBUG) Log.v(TAG, "Received cycle:" + result.cycle + " in result");
       mViewPager.setCurrentItem(mPageAdapter.onResult(result));
+    }
+  }
+
+  @Override
+  public void onBackPressed() {
+    DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+    if (drawer.isDrawerOpen(GravityCompat.START)) {
+      drawer.closeDrawer(GravityCompat.START);
+    } else {
+      super.onBackPressed();
     }
   }
 
@@ -230,32 +276,6 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
     return super.onOptionsItemSelected(item);
   }
 
-  /*private void swapCycles(Cycle newCycle) {
-    log("Switching to cycle: " + newCycle.id);
-    showProgress();
-
-    getSupportActionBar().setTitle("Cycle starting " + newCycle.startDateStr);
-
-    mChartEntryAdapter = new ChartEntryAdapter(
-        getApplicationContext(), newCycle, this, mDb, mCycleProvider);
-    mRecyclerView.setAdapter(mChartEntryAdapter);
-
-    mChartEntryAdapter.initialize(mCycleProvider)
-        .subscribeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Action() {
-          @Override
-          public void run() throws Exception {
-            log("Adapter initialized");
-            showList();
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable t) throws Exception {
-            Log.e(ChartEntryListActivity.class.getSimpleName(), "Error initializing", t);
-          }
-        });
-  }*/
-
   @Override
   public void showList() {
     mViewPager.setVisibility(View.VISIBLE);
@@ -296,8 +316,20 @@ public class ChartEntryListActivity extends AppCompatActivity implements EntryLi
   }
 
   @Override
-  public void setTitle(String message) {
-    getSupportActionBar().setTitle(message);
+  public void setTitle(String title) {
+    mToolbar.setTitle(title);
+  }
+
+  @Override
+  public boolean onNavigationItemSelected(MenuItem item) {
+    // Handle navigation view item clicks here.
+    int id = item.getItemId();
+
+    // TODO: check items
+
+    DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+    drawer.closeDrawer(GravityCompat.START);
+    return true;
   }
 
   private void log(String message) {

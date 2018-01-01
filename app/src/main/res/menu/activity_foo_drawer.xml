@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group
+        android:id="@+id/nav_group_primary"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_my_chart"
+            android:icon="@drawable/ic_list_black_24dp"
+            android:title="My Chart" />
+        <item
+            android:id="@+id/nav_followups"
+            android:icon="@drawable/ic_event_black_24dp"
+            android:title="Followups" />
+        <item
+            android:id="@+id/nav_share"
+            android:icon="@drawable/ic_menu_share"
+            android:title="Sharing" />
+    </group>
+
+    <group
+        android:id="@+id/nav_group_last"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_settings"
+            android:icon="@drawable/ic_settings_black_24dp"
+            android:title="Settings" />
+        <item
+            android:id="@+id/nav_help_and_feedback"
+            android:icon="@drawable/ic_help_black_24dp"
+            android:title="Help &amp; feedback" />
+    </group>
+
+</menu>

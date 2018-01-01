@@ -11,7 +11,8 @@
     <item
         android:id="@+id/action_print"
         android:orderInCategory="1"
-        app:showAsAction="never"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_print_white_24dp"
         android:title="Print Chart"/>
     <item
         android:id="@+id/action_export"
@@ -23,9 +24,4 @@
         android:orderInCategory="3"
         app:showAsAction="never"
         android:title="Drop Cycles"/>
-    <item
-        android:id="@+id/action_settings"
-        android:orderInCategory="100"
-        android:title="@string/action_settings"
-        app:showAsAction="never" />
 </menu>

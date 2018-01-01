@@ -13,11 +13,11 @@
         <activity
             android:name=".ui.entry.list.ChartEntryListActivity"
             android:label="@string/app_name"
-            android:launchMode="singleTop"></activity>
+            android:launchMode="singleTop" />
         <activity
             android:name=".ui.CycleListActivity"
             android:label="@string/title_activity_cycle_list"
-            android:launchMode="singleTop"></activity>
+            android:launchMode="singleTop" />
         <activity android:name=".ui.settings.SettingsActivity" />
         <activity
             android:name=".ui.UserInitActivity"
