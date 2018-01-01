@@ -22,6 +22,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -83,7 +84,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
   private Cycle mCycle;
   private CycleProvider mCycleProvider;
   private ChartEntryProvider mChartEntryProvider;
-  private String mUserId;
+  private FirebaseUser mUser;
   private LocalDate mDate;
 
   private Map<Class<? extends Entry>, Entry> mExistingEntries = new HashMap<>();
@@ -116,7 +117,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     ChartEntry container = getEntryContainer(getIntent());
     mDate = container.entryDate;
 
-    mUserId = FirebaseAuth.getInstance().getCurrentUser().getUid();
+    mUser = FirebaseAuth.getInstance().getCurrentUser();
     mCycle = getCycle(getIntent());
     mCycleProvider = MyApplication.getProviders().forCycle();
     mChartEntryProvider = MyApplication.getProviders().forChartEntry();
@@ -350,8 +351,14 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     if (observationEntryFragment.shouldSplitCycle()) {
       if (DEBUG) Log.v(TAG, "Splitting cycle");
+      Single<LocalDate> firstEntryDate = observationEntryFragment.getEntryFromUiRx().map(new Function<ObservationEntry, LocalDate>() {
+        @Override
+        public LocalDate apply(ObservationEntry observationEntry) throws Exception {
+          return observationEntry.getDate();
+        }
+      });
       return putDone
-          .andThen(mCycleProvider.splitCycleRx(mUserId, mCycle, observationEntryFragment.getEntryFromUiRx()))
+          .andThen(mCycleProvider.splitCycleRx(mUser, mCycle, firstEntryDate))
           .toMaybe();
     } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycle with previous");
@@ -361,7 +368,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           if (!canJoin) {
             return Maybe.empty();
           }
-          return mCycleProvider.combineCycleRx(mUserId, mCycle).toMaybe();
+          return mCycleProvider.combineCycleRx(mUser, mCycle).toMaybe();
         }
       });
     }

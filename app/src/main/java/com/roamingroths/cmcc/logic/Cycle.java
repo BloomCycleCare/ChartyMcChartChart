@@ -11,6 +11,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
 
 import javax.crypto.SecretKey;
@@ -31,6 +32,38 @@ public class Cycle implements Parcelable {
   public LocalDate endDate;
   public final String startDateStr;
   public transient Keys keys;
+
+  public static class Builder {
+    public final String id;
+    public final LocalDate startDate;
+    public Cycle previousCycle;
+    public Cycle nextCycle;
+    public LocalDate endDate;
+
+    private Builder(String id, LocalDate startDate) {
+      this.id = id;
+      this.startDate = startDate;
+      previousCycle = null;
+      nextCycle = null;
+      endDate = null;
+    }
+
+    public Cycle build() throws NoSuchAlgorithmException {
+      Cycle.Keys keys = new Cycle.Keys(
+          AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
+      return new Cycle(
+          id,
+          (previousCycle == null) ? null : previousCycle.id,
+          (nextCycle == null) ? null : nextCycle.id,
+          startDate,
+          endDate,
+          keys);
+    }
+  }
+
+  public static Builder builder(String id, LocalDate startDate) {
+    return new Builder(id, startDate);
+  }
 
   public static Cycle fromSnapshot(DataSnapshot snapshot, Keys keys) {
     String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);
@@ -73,6 +106,16 @@ public class Cycle implements Parcelable {
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
     this.keys = keys;
+  }
+
+  public Cycle(Cycle other) {
+    this.id = other.id;
+    this.previousCycleId = other.previousCycleId;
+    this.nextCycleId = other.nextCycleId;
+    this.startDate = other.startDate;
+    this.startDateStr = other.startDateStr;
+    this.endDate = other.endDate;
+    this.keys = other.keys;
   }
 
   protected Cycle(Parcel in) {

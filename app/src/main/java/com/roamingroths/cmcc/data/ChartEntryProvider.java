@@ -20,10 +20,12 @@ import io.reactivex.CompletableSource;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
+import io.reactivex.Notification;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
@@ -125,7 +127,12 @@ public class ChartEntryProvider {
       final Cycle toCycle,
       final Predicate<LocalDate> datePredicate) {
     if (DEBUG) Log.v(TAG, "Move entries from " + fromCycle.id + " to " + toCycle.id);
-    Observable<ChartEntry> entriesToMove = getEntries(fromCycle).filter(new io.reactivex.functions.Predicate<ChartEntry>() {
+    Observable<ChartEntry> entriesToMove = getEntries(fromCycle).doOnEach(new Consumer<Notification<ChartEntry>>() {
+      @Override
+      public void accept(Notification<ChartEntry> chartEntryNotification) throws Exception {
+        return;
+      }
+    }).filter(new io.reactivex.functions.Predicate<ChartEntry>() {
       @Override
       public boolean test(ChartEntry chartEntry) throws Exception {
         return datePredicate.apply(chartEntry.entryDate);

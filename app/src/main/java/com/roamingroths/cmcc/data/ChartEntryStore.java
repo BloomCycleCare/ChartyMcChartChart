@@ -106,6 +106,7 @@ public class ChartEntryStore {
           public Observable<ChartEntry> apply(final List<ChartEntry> chartEntries) throws Exception {
             Set<Completable> puts = new HashSet<>();
             for (ChartEntry entry : chartEntries) {
+              if (DEBUG) Log.v(TAG, "Moving " + entry.entryDate + " from " + fromCycle.id + " to " + toCycle.id);
               puts.add(putEntry(toCycle, entry).andThen(deleteEntry(fromCycle, entry)));
             }
             return Completable.merge(puts).andThen(Observable.fromIterable(chartEntries));
