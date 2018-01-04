@@ -139,7 +139,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
       EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
-      if (DEBUG) Log.v(TAG, "Received cycle:" + result.cycle + " in result");
+      if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
       mViewPager.setCurrentItem(mPageAdapter.onResult(result));
     }
   }

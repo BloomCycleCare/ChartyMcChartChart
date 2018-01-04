@@ -34,6 +34,7 @@ import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
@@ -67,7 +68,7 @@ public class CycleProvider {
     return getAllFromRemote(user).flatMapCompletable(new Function<Cycle, CompletableSource>() {
       @Override
       public CompletableSource apply(Cycle cycle) throws Exception {
-        if (DEBUG) Log.v(TAG, "Caching cycle " + cycle.id);
+        if (DEBUG) Log.v(TAG, "Caching cycleToShow " + cycle.id);
         mCycleCache.put(cycle.id, cycle);
         return Completable.complete();
       }
@@ -90,8 +91,8 @@ public class CycleProvider {
   @Deprecated
   public Completable putCycleRx(final String userId, final Cycle cycle) {
     Map<String, Object> updates = new HashMap<>();
-    updates.put("previous-cycle-id", cycle.previousCycleId);
-    updates.put("next-cycle-id", cycle.nextCycleId);
+    updates.put("previous-cycleToShow-id", cycle.previousCycleId);
+    updates.put("next-cycleToShow-id", cycle.nextCycleId);
     updates.put("start-date", cycle.startDateStr);
     updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
     return RxFirebaseDatabase.updateChildren(reference(userId, cycle.id), updates)
@@ -162,7 +163,7 @@ public class CycleProvider {
   }
 
   private Completable dropCycle(final String cycleId, String userId) {
-    if (DEBUG) Log.v(TAG, "Dropping cycle: " + cycleId);
+    if (DEBUG) Log.v(TAG, "Dropping cycleToShow: " + cycleId);
     Completable dropEntries = RxFirebaseDatabase.removeValue(db.getReference("entries").child(cycleId));
     Completable dropKeys = cycleKeyProvider.dropKeys(cycleId);
     Completable dropCycle = RxFirebaseDatabase.removeValue(reference(userId, cycleId));
@@ -210,7 +211,10 @@ public class CycleProvider {
         });
   }
 
-  public Single<EntrySaveResult> combineCycleRx(final FirebaseUser user, final Cycle currentCycle) {
+  public Maybe<EntrySaveResult> combineCycleRx(
+      final FirebaseUser user,
+      final Cycle currentCycle,
+      final Consumer<String> updateConsumer) {
     Single<Cycle> previousCycle = getCycle(user.getUid(), currentCycle.previousCycleId).toSingle().cache();
     Maybe<Cycle> nextCycle = currentCycle.nextCycleId == null
         ? Maybe.<Cycle>empty() : getCycle(user.getUid(), currentCycle.nextCycleId).cache();
@@ -223,6 +227,12 @@ public class CycleProvider {
             return chartEntryProvider.moveEntries(currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue());
           }
         }).andThen(cycleKeyProvider.dropKeys(currentCycle.id));
+    moveEntries.doOnSubscribe(new Consumer<Disposable>() {
+      @Override
+      public void accept(Disposable disposable) throws Exception {
+        updateConsumer.accept("Moving entries");
+      }
+    });
 
     Maybe<Cycle> updateNext = nextCycle
         .flatMap(new Function<Cycle, MaybeSource<Cycle>>() {
@@ -230,7 +240,7 @@ public class CycleProvider {
           public MaybeSource<Cycle> apply(Cycle nextCycle) throws Exception {
             nextCycle.previousCycleId = currentCycle.previousCycleId;
             return RxFirebaseDatabase.setValue(
-                reference(user.getUid(), nextCycle.id).child("previous-cycle-id"),
+                reference(user.getUid(), nextCycle.id).child("previous-cycleToShow-id"),
                 currentCycle.previousCycleId).andThen(Maybe.just(nextCycle));
           }
         });
@@ -239,9 +249,9 @@ public class CycleProvider {
         .flatMap(new Function<Cycle, Single<Cycle>>() {
           @Override
           public Single<Cycle> apply(Cycle previousCycle) throws Exception {
-            if (DEBUG) Log.v(TAG, "Updating previous cycle fields");
+            if (DEBUG) Log.v(TAG, "Updating previous cycleToShow fields");
             Map<String, Object> updates = new HashMap<>();
-            updates.put("next-cycle-id", currentCycle.nextCycleId);
+            updates.put("next-cycleToShow-id", currentCycle.nextCycleId);
             previousCycle.nextCycleId = currentCycle.nextCycleId;
             updates.put("end-date", DateUtil.toWireStr(currentCycle.endDate));
             previousCycle.endDate = currentCycle.endDate;
@@ -254,7 +264,7 @@ public class CycleProvider {
         Maybe.zip(updatePrevious.toMaybe(), updateNext, new BiFunction<Cycle, Cycle, EntrySaveResult>() {
           @Override
           public EntrySaveResult apply(Cycle previousCycle, Cycle nextCycle) throws Exception {
-            EntrySaveResult result = new EntrySaveResult(previousCycle);
+            EntrySaveResult result = EntrySaveResult.forCycle(previousCycle);
             result.droppedCycles.add(currentCycle);
             result.changedCycles.add(previousCycle);
             result.changedCycles.add(nextCycle);
@@ -264,7 +274,7 @@ public class CycleProvider {
         .switchIfEmpty(previousCycle.flatMapMaybe(new Function<Cycle, MaybeSource<EntrySaveResult>>() {
           @Override
           public MaybeSource<EntrySaveResult> apply(Cycle previousCycle) throws Exception {
-            EntrySaveResult result = new EntrySaveResult(previousCycle);
+            EntrySaveResult result = EntrySaveResult.forCycle(previousCycle);
             result.droppedCycles.add(currentCycle);
             result.changedCycles.add(previousCycle);
             return Maybe.just(result);
@@ -274,15 +284,20 @@ public class CycleProvider {
     return moveEntries
         .andThen(updatePrevious).toCompletable()
         .andThen(dropCycle(currentCycle.id, user.getUid()))
-        .andThen(result.toSingle());
+        .andThen(result.toSingle())
+        .toMaybe();
   }
 
-  public Single<EntrySaveResult> splitCycleRx(final FirebaseUser user, final Cycle currentCycle, Single<LocalDate> firstEntryDate) {
+  public Single<EntrySaveResult> splitCycleRx(
+      final FirebaseUser user,
+      final Cycle currentCycle,
+      Single<LocalDate> firstEntryDate,
+      final Consumer<String> updateConsumer) {
     Single<LocalDate> cachedFirstEntryDate = firstEntryDate.cache();
-    if (DEBUG) Log.v(TAG, "Splitting cycle: " + currentCycle.id);
+    if (DEBUG) Log.v(TAG, "Splitting cycleToShow: " + currentCycle.id);
 
     final String newId = getNewId(user);
-    if (DEBUG) Log.v(TAG, "Creating new cycle: " + newId);
+    if (DEBUG) Log.v(TAG, "Creating new cycleToShow: " + newId);
     Single<Cycle.Builder> cycleBuilder = cachedFirstEntryDate.zipWith(Single.just(user), new BiFunction<LocalDate, FirebaseUser, Cycle.Builder>() {
       @Override
       public Cycle.Builder apply(LocalDate entryDate, FirebaseUser user) throws Exception {
@@ -296,12 +311,12 @@ public class CycleProvider {
             Cycle updatedCurrentCycle = new Cycle(currentCycle);
             if (DEBUG) Log.v(TAG, "Updating " + currentCycle.id + "'s next to " + newId);
             Map<String, Object> updates = new HashMap<>();
-            updates.put("next-cycle-id", newId);
+            updates.put("next-cycleToShow-id", newId);
             updatedCurrentCycle.nextCycleId = newId;
             LocalDate endDate = entryDate.minusDays(1);
             updates.put("end-date", DateUtil.toWireStr(endDate));
             updatedCurrentCycle.endDate = endDate;
-            return RxFirebaseDatabase.updateChildren(reference(user, updatedCurrentCycle.id), updates)
+            return RxFirebaseDatabase.updateChildren(reference(user, currentCycle.id), updates)
                 .andThen(Single.just(updatedCurrentCycle));
           }
         });
@@ -311,7 +326,7 @@ public class CycleProvider {
           public MaybeSource<Cycle> apply(Cycle nextCycle) throws Exception {
             if (DEBUG) Log.v(TAG, "Updating " + nextCycle.id + "'s previous to " + newId);
             nextCycle.previousCycleId = newId;
-            return RxFirebaseDatabase.setValue(reference(user, nextCycle.id).child("previous-cycle-id"), newId)
+            return RxFirebaseDatabase.setValue(reference(user, nextCycle.id).child("previous-cycleToShow-id"), newId)
                 .andThen(Maybe.just(nextCycle));
           }
         });
@@ -327,6 +342,7 @@ public class CycleProvider {
         .zipWith(updatedCurrentCycle.toMaybe(), new BiFunction<Cycle.Builder, Cycle, Cycle.Builder>() {
           @Override
           public Cycle.Builder apply(Cycle.Builder builder, Cycle currentCycle) throws Exception {
+            updateConsumer.accept("Creating new cycle");
             builder.previousCycle = currentCycle;
             return builder;
           }
@@ -341,12 +357,25 @@ public class CycleProvider {
                 return entryDate.equals(newCycle.startDate) || entryDate.isAfter(newCycle.startDate);
               }
             });
-            EntrySaveResult result = new EntrySaveResult(newCycle);
+            moveEntries.doOnSubscribe(new Consumer<Disposable>() {
+              @Override
+              public void accept(Disposable disposable) throws Exception {
+                updateConsumer.accept("Moving entries");
+              }
+            });
+            moveEntries.doOnComplete(new Action() {
+              @Override
+              public void run() throws Exception {
+                updateConsumer.accept("New entry saved");
+              }
+            });
+            EntrySaveResult result = EntrySaveResult.forCycle(newCycle);
             result.newCycles.add(newCycle);
             result.changedCycles.add(builder.previousCycle);
             if (builder.nextCycle != null) {
               result.changedCycles.add(builder.nextCycle);
             }
+            updateConsumer.accept("Saving new cycle");
             return putCycleRx(user.getUid(), newCycle).andThen(moveEntries).andThen(Single.just(result));
           }
         });

@@ -104,7 +104,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mChartEntries = arguments.getParcelableArrayList(ChartEntry.class.getName());
     mCycle = arguments.getParcelable(Cycle.class.getName());
 
-    if (DEBUG) Log.v(TAG, "onCreate() cycle starting:" + mCycle.startDateStr);
+    if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
 
     mChartEntryAdapter = new ChartEntryAdapter(
         getActivity().getApplicationContext(),

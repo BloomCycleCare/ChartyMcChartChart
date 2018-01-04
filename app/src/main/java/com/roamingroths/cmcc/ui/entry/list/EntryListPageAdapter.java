@@ -73,10 +73,10 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
       }
     });
 
-    /*Cycle cycle = intent.getParcelableExtra(Cycle.class.getName());
-    if (DEBUG) Log.v(TAG, "Initial cycle: " + cycle.id);
+    /*Cycle cycleToShow = intent.getParcelableExtra(Cycle.class.getName());
+    if (DEBUG) Log.v(TAG, "Initial cycleToShow: " + cycleToShow.id);
     ArrayList<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
-    mCycles.add(cycle);
+    mCycles.add(cycleToShow);
     notifyDataSetChanged();*/
   }
 
@@ -110,19 +110,19 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   public int onResult(EntrySaveResult result) {
     for (Cycle cycle : result.droppedCycles) {
-      if (DEBUG) Log.v(TAG, "Dropping cycle: " + cycle);
+      if (DEBUG) Log.v(TAG, "Dropping cycleToShow: " + cycle);
       mCycles.remove(cycle);
     }
     for (Cycle cycle : result.newCycles) {
-      if (DEBUG) Log.v(TAG, "Adding cycle: " + cycle);
+      if (DEBUG) Log.v(TAG, "Adding cycleToShow: " + cycle);
       mCycles.add(cycle);
     }
     for (Cycle cycle : result.changedCycles) {
-      if (DEBUG) Log.v(TAG, "Updating cycle: " + cycle);
+      if (DEBUG) Log.v(TAG, "Updating cycleToShow: " + cycle);
       mCycles.updateItemAt(mCycles.indexOf(cycle), cycle);
     }
     notifyDataSetChanged();
-    int index = mCycles.indexOf(result.cycle);
+    int index = mCycles.indexOf(result.cycleToShow);
     Preconditions.checkState(index >= 0);
     return index;
   }
@@ -147,7 +147,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
       mChartEntryProvider.fillCache(mCycles.get(rightPosition)).subscribeOn(Schedulers.io()).subscribe();
     }
 
-    if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycle:" + cycle);
+    if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycleToShow:" + cycle);
 
     Bundle args = new Bundle();
     args.putParcelable(Cycle.class.getName(), cycle);

@@ -66,8 +66,8 @@ public class Cycle implements Parcelable {
   }
 
   public static Cycle fromSnapshot(DataSnapshot snapshot, Keys keys) {
-    String previousCycleId = snapshot.child("previous-cycle-id").getValue(String.class);
-    String nextCycleId = snapshot.child("next-cycle-id").getValue(String.class);
+    String previousCycleId = snapshot.child("previous-cycleToShow-id").getValue(String.class);
+    String nextCycleId = snapshot.child("next-cycleToShow-id").getValue(String.class);
     LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
     LocalDate endDate = null;
     if (snapshot.hasChild("end-date")) {

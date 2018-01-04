@@ -12,13 +12,20 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Predicates;
 import com.google.common.base.Strings;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseAuth;
@@ -50,13 +57,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
 
 import static com.roamingroths.cmcc.ui.entry.detail.ObservationEntryFragment.OK_RESPONSE;
 
@@ -150,6 +159,39 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     return true;
   }
 
+  private Function<EntryFragment.ValidationIssue, ObservableSource<Boolean>> addressIssue() {
+    return new Function<EntryFragment.ValidationIssue, ObservableSource<Boolean>>() {
+      @Override
+      public ObservableSource<Boolean> apply(final EntryFragment.ValidationIssue issue) throws Exception {
+        return Observable.create(new ObservableOnSubscribe<Boolean>() {
+          @Override
+          public void subscribe(final ObservableEmitter<Boolean> e) throws Exception {
+            AlertDialog.Builder builder = new AlertDialog.Builder(EntryDetailActivity.this);
+            builder.setTitle(issue.title);
+            builder.setMessage(issue.message);
+            builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+              @Override
+              public void onClick(DialogInterface dialog, int which) {
+                e.onNext(true);
+                dialog.dismiss();
+                e.onComplete();
+              }
+            });
+            builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+              @Override
+              public void onClick(DialogInterface dialog, int which) {
+                e.onNext(true);
+                dialog.dismiss();
+                e.onNext(false);
+              }
+            });
+            builder.create().show();
+          }
+        });
+      }
+    };
+  }
+
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle action bar item clicks here. The action bar will
@@ -166,27 +208,84 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     if (id == R.id.action_save) {
       ChartEntry container = updateEntryMapFromUIs();
 
-      new AlertDialog.Builder(this)
+      LayoutInflater inflater = getLayoutInflater();
+      View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);
+
+      final TextView summary = dialogView.findViewById(R.id.save_summary);
+      summary.setText(getSaveMessage(getChartEntry()));
+
+      final ProgressBar progressBar = dialogView.findViewById(R.id.save_progress_bar);
+      progressBar.setVisibility(View.GONE);
+      final TextView progressSummary = dialogView.findViewById(R.id.save_progress_summary);
+      progressSummary.setVisibility(View.GONE);
+
+      AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
           //set message, title, and icon
           .setTitle("Save Entry?")
-          .setMessage(getSaveMessage(getChartEntry()))
           .setIcon(R.drawable.ic_assignment_black_24dp)
-          .setPositiveButton("Save", new DialogInterface.OnClickListener() {
-            public void onClick(final DialogInterface dialog, int whichButton) {
-              Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
-              for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
-                EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
-                issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
-              }
-              addressValidationIssues(issues);
-            }
-          })
+          .setPositiveButton("Save", null)
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int which) {
               dialog.dismiss();
             }
-          })
-          .create().show();
+          });
+      dialogBuilder.setView(dialogView);
+
+      AlertDialog dialog = dialogBuilder.create();
+      dialog.show(); // Must be called before asking for the button (https://goo.gl/KhLsRy)
+      final Button positiveButton = dialog.getButton(DialogInterface.BUTTON_POSITIVE);
+      final Button negativeButton = dialog.getButton(DialogInterface.BUTTON_NEGATIVE);
+      positiveButton.setOnClickListener(new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+          positiveButton.setVisibility(View.GONE);
+          negativeButton.setVisibility(View.GONE);
+          summary.setVisibility(View.GONE);
+          progressBar.setVisibility(View.VISIBLE);
+          progressSummary.setVisibility(View.VISIBLE);
+          progressSummary.setText("Saving changes");
+          Queue<EntryFragment.ValidationIssue> issues = new ConcurrentLinkedQueue<>();
+          for (int i = 0; i < mSectionsPagerAdapter.getCount(); i++) {
+            EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
+            issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
+          }
+          Observable.fromIterable(issues)
+              .flatMap(addressIssue())
+              .toList()
+              .flatMapMaybe(new Function<List<Boolean>, MaybeSource<EntrySaveResult>>() {
+                @Override
+                public MaybeSource<EntrySaveResult> apply(List<Boolean> shouldProceedValues) throws Exception {
+                  if (!shouldProceedValues.isEmpty()
+                      && !Collections2.filter(shouldProceedValues, Predicates.equalTo(false)).isEmpty()) {
+                    return Maybe.empty();
+                  }
+                  return doSave(new Consumer<String>() {
+                    @Override
+                    public void accept(String s) throws Exception {
+                      progressSummary.setText(s);
+                    }
+                  });
+                }
+              })
+              .subscribe(new Consumer<EntrySaveResult>() {
+                @Override
+                public void accept(EntrySaveResult result) throws Exception {
+                  Intent returnIntent = new Intent();
+                  returnIntent.putExtra(EntrySaveResult.class.getName(), result);
+                  returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
+                  setResult(OK_RESPONSE, returnIntent);
+                  finish();
+                }
+              }, new Consumer<Throwable>() {
+                @Override
+                public void accept(Throwable throwable) throws Exception {
+                  // TODO: make this better
+                  Log.e(TAG, "Error saving entry.", throwable);
+                  finish();
+                }
+              });
+        }
+      });
       return true;
     }
     if (id == R.id.action_delete) {
@@ -301,47 +400,8 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         (SymptomEntry) mEntries.get(SymptomEntry.class));
   }
 
-  private void addressValidationIssues(final Queue<EntryFragment.ValidationIssue> issues) {
-    if (issues.isEmpty()) {
-      doSave().subscribeOn(Schedulers.computation()).observeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<EntrySaveResult>() {
-        @Override
-        public void accept(EntrySaveResult result) throws Exception {
-          Intent returnIntent = new Intent();
-          returnIntent.putExtra(EntrySaveResult.class.getName(), result);
-          returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
-          setResult(OK_RESPONSE, returnIntent);
-          finish();
-        }
-      }, new Consumer<Throwable>() {
-        @Override
-        public void accept(Throwable throwable) throws Exception {
-          Log.e(TAG, "Error saving entry.", throwable);
-        }
-      });
-      return;
-    }
-    EntryFragment.ValidationIssue issue = issues.remove();
-    AlertDialog.Builder builder = new AlertDialog.Builder(this);
-    builder.setTitle(issue.title);
-    builder.setMessage(issue.message);
-    builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-      @Override
-      public void onClick(DialogInterface dialog, int which) {
-        dialog.dismiss();
-        addressValidationIssues(issues);
-      }
-    });
-    builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-      @Override
-      public void onClick(DialogInterface dialog, int which) {
-        dialog.dismiss();
-      }
-    });
-    builder.create().show();
-  }
-
-  private Maybe<EntrySaveResult> doSave() {
-    if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycle: " + mCycle.id);
+  private Maybe<EntrySaveResult> doSave(final Consumer<String> updateConsumer) {
+    if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycleToShow: " + mCycle.id);
     ChartEntry entry = updateEntryMapFromUIs();
     Completable putDone = mChartEntryProvider.putEntry(mCycle, entry);
 
@@ -350,7 +410,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         (ObservationEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
 
     if (observationEntryFragment.shouldSplitCycle()) {
-      if (DEBUG) Log.v(TAG, "Splitting cycle");
+      if (DEBUG) Log.v(TAG, "Splitting cycleToShow");
       Single<LocalDate> firstEntryDate = observationEntryFragment.getEntryFromUiRx().map(new Function<ObservationEntry, LocalDate>() {
         @Override
         public LocalDate apply(ObservationEntry observationEntry) throws Exception {
@@ -358,21 +418,21 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         }
       });
       return putDone
-          .andThen(mCycleProvider.splitCycleRx(mUser, mCycle, firstEntryDate))
+          .andThen(mCycleProvider.splitCycleRx(mUser, mCycle, firstEntryDate, updateConsumer))
           .toMaybe();
     } else if (observationEntryFragment.shouldJoinCycle()) {
-      if (DEBUG) Log.v(TAG, "Joining cycle with previous");
+      if (DEBUG) Log.v(TAG, "Joining cycleToShow with previous");
       return putDone.andThen(canJoin()).flatMapMaybe(new Function<Boolean, MaybeSource<EntrySaveResult>>() {
         @Override
         public MaybeSource<EntrySaveResult> apply(Boolean canJoin) throws Exception {
           if (!canJoin) {
             return Maybe.empty();
           }
-          return mCycleProvider.combineCycleRx(mUser, mCycle).toMaybe();
+          return mCycleProvider.combineCycleRx(mUser, mCycle, updateConsumer);
         }
       });
     }
-    return putDone.andThen(Maybe.just(new EntrySaveResult(mCycle)));
+    return putDone.andThen(Maybe.just(EntrySaveResult.forCycle(mCycle)));
   }
 
   private Single<Boolean> canJoin() {
@@ -384,7 +444,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       public void subscribe(final SingleEmitter<Boolean> e) throws Exception {
         AlertDialog.Builder builder = new AlertDialog.Builder(EntryDetailActivity.this);
         builder.setTitle("No Previous Cycle");
-        builder.setMessage("Please add cycle before this entry to proceed.");
+        builder.setMessage("Please add cycleToShow before this entry to proceed.");
         builder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
           @Override
           public void onClick(DialogInterface dialog, int which) {

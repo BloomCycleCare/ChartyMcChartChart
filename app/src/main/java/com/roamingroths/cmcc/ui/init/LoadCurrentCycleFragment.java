@@ -53,7 +53,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
 
   @Override
   public void onUserInitialized(final FirebaseUser user) {
-    if (DEBUG) Log.v(TAG, "Getting current cycle");
+    if (DEBUG) Log.v(TAG, "Getting current cycleToShow");
     final CycleProvider cycleProvider = MyApplication.getProviders().forCycle();
     mDisposables.add(cycleProvider.getOrCreateCurrentCycle(user, promptForStart())
         .flatMap(new Function<Cycle, SingleSource<Cycle>>() {
@@ -71,7 +71,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         }, new Consumer<Throwable>() {
           @Override
           public void accept(@NonNull Throwable throwable) throws Exception {
-            showError("Could not decrypt cycle entries.");
+            showError("Could not decrypt cycleToShow entries.");
             new AlertDialog.Builder(getActivity())
                 //set message, title, and icon
                 .setTitle("Delete All Cycles?")
@@ -103,8 +103,8 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     return Single.create(new SingleOnSubscribe<LocalDate>() {
       @Override
       public void subscribe(final @NonNull SingleEmitter<LocalDate> e) throws Exception {
-        updateStatus("Prompting for start of first cycle.");
-        updateStatus("Creating first cycle");
+        updateStatus("Prompting for start of first cycleToShow.");
+        updateStatus("Creating first cycleToShow");
         DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
             new DatePickerDialog.OnDateSetListener() {
               @Override
@@ -113,7 +113,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth));
               }
             });
-        datePickerDialog.setTitle("First day of current cycle");
+        datePickerDialog.setTitle("First day of current cycleToShow");
         datePickerDialog.setMaxDate(Calendar.getInstance());
         datePickerDialog.show(getActivity().getFragmentManager(), "datepickerdialog");
       }

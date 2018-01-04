@@ -61,7 +61,7 @@ public class CycleKeyProvider {
   }
 
   public Maybe<Cycle.Keys> getChartKeys(String cycleId, String userId) {
-    if (DEBUG) Log.v(TAG, "Getting keys for cycle: " + cycleId + ", user: " + userId);
+    if (DEBUG) Log.v(TAG, "Getting keys for cycleToShow: " + cycleId + ", user: " + userId);
     Set<Maybe<KeyWithAlias>> keys = new HashSet<>();
     for (KeyAlias alias : KeyAlias.values()) {
       keys.add(getKey(cycleId, userId, alias));

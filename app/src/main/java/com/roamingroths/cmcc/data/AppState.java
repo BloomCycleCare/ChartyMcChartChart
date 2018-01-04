@@ -73,7 +73,7 @@ public class AppState {
           @Override
           public ObservableSource<Cycle> apply(CycleData cycleData) throws Exception {
             Cycle cycle = cycleData.cycle;
-            Log.v("AppState", "Creating new keys for cycle starting " + cycle.startDateStr);
+            Log.v("AppState", "Creating new keys for cycleToShow starting " + cycle.startDateStr);
             cycle.setKeys(new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey()));
             Set<Completable> putResults = new HashSet<>();
             putResults.add(cycleProvider.putCycleRx(user.getUid(), cycle));
@@ -94,7 +94,7 @@ public class AppState {
 
   private static Observable<CycleData> fetchCycleDatas(final CycleProvider cycleProvider) {
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    Log.v("AppState", "Fetching cycle datas for user " + user.getUid());
+    Log.v("AppState", "Fetching cycleToShow datas for user " + user.getUid());
     return cycleProvider.getAllCycles(user)
         .flatMap(new Function<Cycle, ObservableSource<CycleData>>() {
           @Override
