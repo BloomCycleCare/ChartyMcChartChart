@@ -91,6 +91,12 @@ public class CycleKeyProvider {
         });
   }
 
+  public UpdateHandle dropKeysForCycle(Cycle cycle) {
+    UpdateHandle handle = new UpdateHandle();
+    handle.updates.put("/keys/" + cycle.id, null);
+    return handle;
+  }
+
   public Completable dropKeys(String cycleId) {
     return RxFirebaseDatabase.removeValue(db.getReference("keys").child(cycleId));
   }

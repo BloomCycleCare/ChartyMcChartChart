@@ -189,6 +189,25 @@ public class CycleProvider {
         });
   }
 
+  public Single<UpdateHandle> dropCycle(final Cycle cycle, final FirebaseUser user) {
+    return chartEntryProvider.dropEntries(cycle).map(new Function<UpdateHandle, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(UpdateHandle dropEntriesHandle) throws Exception {
+        UpdateHandle handle = new UpdateHandle();
+        handle.merge(dropEntriesHandle);
+        handle.merge(cycleKeyProvider.dropKeysForCycle(cycle));
+        handle.updates.put(String.format("/cycles/%s/%s", user.getUid(), cycle.id), null);
+        handle.actions.add(new Action() {
+          @Override
+          public void run() throws Exception {
+            mCycleCache.remove(cycle.id);
+          }
+        });
+        return handle;
+      }
+    });
+  }
+
   private Maybe<Cycle> getPreviousCycle(FirebaseUser user, final Cycle cycle) {
     return getAllCycles(user)
         .filter(new io.reactivex.functions.Predicate<Cycle>() {
@@ -214,55 +233,45 @@ public class CycleProvider {
       final Cycle currentCycle,
       final Consumer<String> updateConsumer) {
     Single<Cycle> previousCycle = getPreviousCycle(user, currentCycle).toSingle().cache();
-
-    Completable moveEntries = previousCycle
-        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
-          @Override
-          public CompletableSource apply(Cycle previousCycle) throws Exception {
-            if (DEBUG) Log.v(TAG, "Moving entries");
-            return chartEntryProvider.moveEntries(currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue());
-          }
-        }).andThen(cycleKeyProvider.dropKeys(currentCycle.id))
-        .doOnSubscribe(new Consumer<Disposable>() {
-          @Override
-          public void accept(Disposable disposable) throws Exception {
-            updateConsumer.accept("Moving entries");
-          }
-        });
-
-    Single<Cycle> updatePrevious = previousCycle.flatMap(new Function<Cycle, Single<Cycle>>() {
+    Single<UpdateHandle> dropCurrentCycleHandle = dropCycle(currentCycle, user);
+    Single<UpdateHandle> copyEntriesHandle = previousCycle.flatMap(new Function<Cycle, SingleSource<? extends UpdateHandle>>() {
       @Override
-      public Single<Cycle> apply(final Cycle previousCycle) throws Exception {
-        if (DEBUG) Log.v(TAG, "Updating previous cycle end-date");
-        previousCycle.endDate = currentCycle.endDate;
-        return RxFirebaseDatabase.setValue(
-            reference(user, previousCycle.id).child("end-date"),
-            DateUtil.toWireStr(currentCycle.endDate))
-            .doOnComplete(new Action() {
-              @Override
-              public void run() throws Exception {
-                mCycleCache.put(previousCycle.id, previousCycle);
-              }
-            })
-            .andThen(Single.just(previousCycle));
+      public SingleSource<? extends UpdateHandle> apply(Cycle previousCycle) throws Exception {
+        return chartEntryProvider.copyEntries(currentCycle, previousCycle, Predicates.<LocalDate>alwaysTrue());
+      }
+    });
+    Single<Cycle> updatedPreviousCycle = previousCycle.map(new Function<Cycle, Cycle>() {
+      @Override
+      public Cycle apply(Cycle cycle) throws Exception {
+        cycle.endDate = currentCycle.endDate;
+        return cycle;
       }
     }).cache();
-
-    Single<EntrySaveResult> result = previousCycle
-        .map(new Function<Cycle, EntrySaveResult>() {
+    Single<UpdateHandle> updatePreviousCycleHandle = updatedPreviousCycle.map(new Function<Cycle, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(final Cycle cycle) throws Exception {
+        UpdateHandle handle = new UpdateHandle();
+        handle.updates.put(String.format("/cycles/%s/%s/end-date", user.getUid(), cycle.id), DateUtil.toWireStr(currentCycle.endDate));
+        handle.actions.add(new Action() {
           @Override
-          public EntrySaveResult apply(Cycle previousCycle) throws Exception {
-            EntrySaveResult result = EntrySaveResult.forCycle(previousCycle);
-            result.droppedCycles.add(currentCycle);
-            result.changedCycles.add(previousCycle);
-            return result;
+          public void run() throws Exception {
+            mCycleCache.put(cycle.id, cycle);
           }
         });
-
-    return moveEntries
-        .andThen(updatePrevious).toCompletable()
-        .andThen(dropCycle(currentCycle.id, user.getUid()))
-        .andThen(result);
+        return handle;
+      }
+    });
+    Single<UpdateHandle> updates = UpdateHandle.merge(copyEntriesHandle, dropCurrentCycleHandle, updatePreviousCycleHandle);
+    Single<EntrySaveResult> result = updatedPreviousCycle.map(new Function<Cycle, EntrySaveResult>() {
+      @Override
+      public EntrySaveResult apply(Cycle previousCycle) throws Exception {
+        EntrySaveResult result = EntrySaveResult.forCycle(previousCycle);
+        result.droppedCycles.add(currentCycle);
+        result.changedCycles.add(previousCycle);
+        return result;
+      }
+    });
+    return UpdateHandle.run(updates, db.getReference()).andThen(result);
   }
 
   public Single<EntrySaveResult> splitCycleRx(
@@ -347,6 +356,10 @@ public class CycleProvider {
 
   private DatabaseReference reference(FirebaseUser user, String cycleId) {
     return reference(user).child(cycleId);
+  }
+
+  private DatabaseReference reference(FirebaseUser user, Cycle cycle) {
+    return reference(user).child(cycle.id);
   }
 
   @Deprecated

@@ -2,6 +2,8 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -17,6 +19,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 import org.reactivestreams.Publisher;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,7 +63,7 @@ public class ChartEntryStore {
     mSymptomEntryProvider = new SymptomEntryProvider(cryptoUtil);
   }
 
-  public Observable<ChartEntry> getEntries(Cycle cycle) {
+  public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle))
         .observeOn(Schedulers.computation())
         .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
@@ -69,7 +72,7 @@ public class ChartEntryStore {
             return Observable.fromIterable(dataSnapshot.getChildren());
           }
         })
-        .flatMap(snapshotToEntry(cycle));
+        .flatMap(snapshotToEntry(cycle, datePredicate));
   }
 
   public Flowable<RxFirebaseChildEvent<ChartEntry>> entryStream(final Cycle cycle) {
@@ -87,6 +90,37 @@ public class ChartEntryStore {
                 }).toFlowable(BackpressureStrategy.BUFFER);
           }
         });
+  }
+
+  public List<String> getDbPaths(Cycle cycle, List<ChartEntry> entries) {
+    List<String> paths = new ArrayList<>();
+    for (ChartEntry entry : entries) {
+      paths.add(String.format("/entries/%s/%s", cycle.id, DateUtil.toWireStr(entry.entryDate)));
+    }
+    return paths;
+  }
+
+  public Function<ChartEntry, ChartEntry> swapKeys(final Cycle toCycle) {
+    return new Function<ChartEntry, ChartEntry>() {
+      @Override
+      public ChartEntry apply(ChartEntry chartEntry) throws Exception {
+        chartEntry.observationEntry.swapKey(mObservationEntryProvider.getKey(toCycle.keys));
+        chartEntry.wellnessEntry.swapKey(mWellnessEntryProvider.getKey(toCycle.keys));
+        chartEntry.symptomEntry.swapKey(mSymptomEntryProvider.getKey(toCycle.keys));
+        return chartEntry;
+      }
+    };
+  }
+
+
+
+  public Observable<UpdateHandle> putEntriesDeferred(final Cycle toCycle, Observable<ChartEntry> entries) {
+    return entries.flatMap(new Function<ChartEntry, ObservableSource<UpdateHandle>>() {
+      @Override
+      public ObservableSource<UpdateHandle> apply(ChartEntry chartEntry) throws Exception {
+        return putEntryDeferred(toCycle, chartEntry).toObservable();
+      }
+    });
   }
 
   public Observable<ChartEntry> moveEntries(final Cycle fromCycle, final Cycle toCycle, Observable<ChartEntry> entries) {
@@ -132,6 +166,24 @@ public class ChartEntryStore {
     return putEntry(cycle, entry).andThen(Single.just(entry));
   }
 
+  public Single<UpdateHandle> putEntryDeferred(final Cycle cycle, final ChartEntry chartEntry) {
+    List<Single<EncryptedEntry>> encryptedEntries = new ArrayList<>();
+    encryptedEntries.add(mObservationEntryProvider.encryptEntry(chartEntry.observationEntry));
+    encryptedEntries.add(mWellnessEntryProvider.encryptEntry(chartEntry.wellnessEntry));
+    encryptedEntries.add(mSymptomEntryProvider.encryptEntry(chartEntry.symptomEntry));
+    return Single.concat(encryptedEntries).toList().map(new Function<List<EncryptedEntry>, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(List<EncryptedEntry> encryptedEntries) throws Exception {
+        String basePath = String.format("/entries/%s/%s/", cycle.id, DateUtil.toWireStr(chartEntry.entryDate));
+        UpdateHandle handle = new UpdateHandle();
+        for (EncryptedEntry entry : encryptedEntries) {
+          handle.updates.put(basePath + entry.childId, entry.encryptedEntry);
+        }
+        return handle;
+      }
+    });
+  }
+
   public Completable putEntry(final Cycle cycle, final ChartEntry chartEntry) {
     Set<Single<EncryptedEntry>> encryptedEntries = new HashSet<>();
     encryptedEntries.add(mObservationEntryProvider.encryptEntry(chartEntry.observationEntry));
@@ -153,11 +205,18 @@ public class ChartEntryStore {
         });
   }
 
-  private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(final Cycle cycle) {
+  private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(Cycle cycle) {
+    return snapshotToEntry(cycle, Predicates.<LocalDate>alwaysTrue());
+  }
+
+  private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(final Cycle cycle, final Predicate<LocalDate> datePredicate) {
     return new Function<DataSnapshot, Observable<ChartEntry>>() {
       @Override
       public Observable<ChartEntry> apply(DataSnapshot snapshot) {
         LocalDate entryDate = DateUtil.fromWireStr(snapshot.getKey());
+        if (!datePredicate.apply(entryDate)) {
+          return Observable.empty();
+        }
         Single<ObservationEntry> observation =
             mObservationEntryProvider.decryptEntry(snapshot, cycle.keys);
         Single<WellnessEntry> wellness =

@@ -7,6 +7,7 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 
 import org.joda.time.LocalDate;
 
+import java.util.Collection;
 import java.util.List;
 
 import io.reactivex.Observer;
@@ -57,7 +58,18 @@ public class ChartEntryCache {
     };
   }
 
-  public List<ChartEntry> getEntries(List<LocalDate> entryDates) {
+  public Action dropEntries(final Collection<ChartEntry> entries) {
+    return new Action() {
+      @Override
+      public void run() throws Exception {
+        for (ChartEntry entry : entries) {
+          mEntryCache.invalidate(entry.entryDate);
+        }
+      }
+    };
+  }
+
+  public List<ChartEntry> getEntries(Collection<LocalDate> entryDates) {
     ImmutableList.Builder<ChartEntry> builder = ImmutableList.builder();
     for (LocalDate date : entryDates) {
       ChartEntry entry = mEntryCache.getIfPresent(date);

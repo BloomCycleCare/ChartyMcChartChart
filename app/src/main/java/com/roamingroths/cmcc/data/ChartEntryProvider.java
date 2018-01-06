@@ -3,6 +3,8 @@ package com.roamingroths.cmcc.data;
 import android.util.Log;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.ChartEntry;
@@ -11,6 +13,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,12 +23,13 @@ import io.reactivex.CompletableSource;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
-import io.reactivex.Notification;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
-import io.reactivex.functions.Consumer;
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
@@ -75,14 +79,19 @@ public class ChartEntryProvider {
   }
 
   public Observable<ChartEntry> getEntries(Cycle cycle) {
-    List<LocalDate> entryDates = DateUtil.daysBetween(cycle.startDate, cycle.endDate);
+    return getEntries(cycle, Predicates.<LocalDate>alwaysTrue());
+  }
+
+  public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
+    Collection<LocalDate> entryDates =
+        Collections2.filter(DateUtil.daysBetween(cycle.startDate, cycle.endDate), datePredicate);
     List<ChartEntry> cachedEntries = mCache.getEntries(entryDates);
     if (entryDates.size() == cachedEntries.size()) {
       if (DEBUG) Log.v(TAG, "Return cached values for: " + cycle);
       return Observable.fromIterable(cachedEntries);
     }
     if (DEBUG) Log.v(TAG, "Fetch values for: " + cycle);
-    return mStore.getEntries(cycle).doOnEach(mCache.fill());
+    return mStore.getEntries(cycle, datePredicate).doOnEach(mCache.fill());
   }
 
   @Deprecated
@@ -122,17 +131,47 @@ public class ChartEntryProvider {
         });
   }
 
+  public Single<UpdateHandle> dropEntries(final Cycle cycle) {
+    return dropEntries(cycle, Predicates.<LocalDate>alwaysTrue());
+  }
+
+  public Single<UpdateHandle> dropEntries(final Cycle cycle, Predicate<LocalDate> datePredicate) {
+    return getEntries(cycle, datePredicate).toList().flatMap(new Function<List<ChartEntry>, SingleSource<? extends UpdateHandle>>() {
+      @Override
+      public SingleSource<? extends UpdateHandle> apply(List<ChartEntry> chartEntries) throws Exception {
+        UpdateHandle handle = new UpdateHandle();
+        for (String entryPath : mStore.getDbPaths(cycle, chartEntries)) {
+          handle.updates.put(entryPath, null);
+        }
+        handle.actions.add(mCache.dropEntries(chartEntries));
+        return Single.just(handle);
+      }
+    });
+  }
+
+  public Single<UpdateHandle> copyEntries(
+      final Cycle fromCycle,
+      final Cycle toCycle,
+      final Predicate<LocalDate> datePredicate) {
+    if (DEBUG) Log.v(TAG, "Copy entries from " + fromCycle.id + " to " + toCycle.id);
+    Observable<ChartEntry> entriesToPut = getEntries(fromCycle, datePredicate).map(mStore.swapKeys(toCycle)).cache();
+    Observable<UpdateHandle> updates = mStore.putEntriesDeferred(toCycle, entriesToPut);
+    return Observable.zip(entriesToPut, updates, new BiFunction<ChartEntry, UpdateHandle, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(ChartEntry chartEntry, UpdateHandle updateHandle) throws Exception {
+        updateHandle.actions.add(mCache.putEntry(chartEntry));
+        return updateHandle;
+      }
+    }).toList().map(UpdateHandle.merge());
+  }
+
   public Completable moveEntries(
       final Cycle fromCycle,
       final Cycle toCycle,
       final Predicate<LocalDate> datePredicate) {
     if (DEBUG) Log.v(TAG, "Move entries from " + fromCycle.id + " to " + toCycle.id);
-    Observable<ChartEntry> entriesToMove = getEntries(fromCycle).doOnEach(new Consumer<Notification<ChartEntry>>() {
-      @Override
-      public void accept(Notification<ChartEntry> chartEntryNotification) throws Exception {
-        return;
-      }
-    }).filter(new io.reactivex.functions.Predicate<ChartEntry>() {
+    Observable<ChartEntry> entriesToMove = getEntries(fromCycle)
+    .filter(new io.reactivex.functions.Predicate<ChartEntry>() {
       @Override
       public boolean test(ChartEntry chartEntry) throws Exception {
         return datePredicate.apply(chartEntry.entryDate);
