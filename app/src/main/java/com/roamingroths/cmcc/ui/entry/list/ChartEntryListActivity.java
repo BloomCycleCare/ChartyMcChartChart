@@ -82,7 +82,6 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     mNavView = (NavigationView) findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
-    mNavView.getMenu().getItem(0).setChecked(true);
     mNavView.setNavigationItemSelectedListener(this);
 
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
@@ -126,6 +125,12 @@ public class ChartEntryListActivity extends AppCompatActivity
     });
 
     showList();
+  }
+
+  @Override
+  protected void onResume() {
+    mNavView.setCheckedItem(R.id.nav_my_chart);
+    super.onResume();
   }
 
   @Override
@@ -325,6 +330,12 @@ public class ChartEntryListActivity extends AppCompatActivity
     // Handle navigation view item clicks here.
     int id = item.getItemId();
 
+    switch (item.getItemId()) {
+      case R.id.nav_settings:
+        Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
+        startActivity(startSettingsActivity);
+        return true;
+    }
     // TODO: check items
 
     DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);

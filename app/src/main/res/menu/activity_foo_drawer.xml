@@ -7,17 +7,30 @@
         android:id="@+id/nav_group_primary"
         android:checkableBehavior="single">
         <item
+            android:id="@+id/nav_profile"
+            android:icon="@drawable/ic_account_circle_black_24dp"
+            android:title="Profile" />
+        <item
             android:id="@+id/nav_my_chart"
             android:icon="@drawable/ic_list_black_24dp"
-            android:title="My Chart" />
+            android:title="Chart" />
         <item
             android:id="@+id/nav_followups"
             android:icon="@drawable/ic_event_black_24dp"
-            android:title="Followups" />
+            android:title="Consultations" />
         <item
             android:id="@+id/nav_share"
             android:icon="@drawable/ic_menu_share"
             android:title="Sharing" />
+    </group>
+
+    <group
+        android:id="@+id/nav_group_reference"
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_reference"
+            android:icon="@drawable/ic_library_books_black_24dp"
+            android:title="Reference" />
     </group>
 
     <group
