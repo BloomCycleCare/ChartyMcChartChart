@@ -11,6 +11,7 @@ import java.util.Set;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
+import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
@@ -65,8 +66,16 @@ public class UpdateHandle {
     return handle;
   }
 
+  public static Single<UpdateHandle> merge(Single<UpdateHandle> h1, Single<UpdateHandle> h2) {
+    return merge(Single.concatArray(h1, h2));
+  }
+
   public static Single<UpdateHandle> merge(Single<UpdateHandle> h1, Single<UpdateHandle> h2, Single<UpdateHandle> h3) {
-    return Single.concatArray(h1, h2, h3).toList().map(new Function<List<UpdateHandle>, UpdateHandle>() {
+    return merge(Single.concatArray(h1, h2, h3));
+  }
+
+  private static Single<UpdateHandle> merge(Flowable<UpdateHandle> handles) {
+    return handles.toList().map(new Function<List<UpdateHandle>, UpdateHandle>() {
       @Override
       public UpdateHandle apply(List<UpdateHandle> updateHandles) throws Exception {
         UpdateHandle handle = new UpdateHandle();
@@ -76,5 +85,9 @@ public class UpdateHandle {
         return handle;
       }
     });
+  }
+
+  public static Single<UpdateHandle> mergeSingles(Iterable<Single<UpdateHandle>> handles) {
+    return merge(Single.concat(handles));
   }
 }

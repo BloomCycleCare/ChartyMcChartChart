@@ -2,12 +2,15 @@ package com.roamingroths.cmcc.data;
 
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.Cycle;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,6 +22,7 @@ import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
+import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
 
@@ -89,6 +93,25 @@ public class CycleKeyProvider {
                 encryptedKey);
           }
         });
+  }
+
+  private Single<UpdateHandle> putKey(SecretKey key, final KeyAlias alias, final Cycle cycle, final FirebaseUser user) {
+    return cryptoUtil.encryptKey(key).map(new Function<String, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(String s) throws Exception {
+        UpdateHandle handle = new UpdateHandle();
+        handle.updates.put(String.format("/keys/%s/%s/%s", cycle.id, user.getUid(), alias.name().toLowerCase()), s);
+        return handle;
+      }
+    }).toSingle();
+  }
+
+  public Single<UpdateHandle> putKeys(Cycle cycle, FirebaseUser user) {
+    List<Single<UpdateHandle>> handles = new ArrayList<>();
+    handles.add(putKey(cycle.keys.chartKey, KeyAlias.CHART, cycle, user));
+    handles.add(putKey(cycle.keys.wellnessKey, KeyAlias.WELLNESS, cycle, user));
+    handles.add(putKey(cycle.keys.symptomKey, KeyAlias.SYMPTOM, cycle, user));
+    return UpdateHandle.mergeSingles(handles);
   }
 
   public UpdateHandle dropKeysForCycle(Cycle cycle) {

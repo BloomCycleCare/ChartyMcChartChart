@@ -33,7 +33,6 @@ import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
@@ -85,6 +84,30 @@ public class CycleProvider {
   @Deprecated
   public Completable maybeCreateNewEntries(Cycle cycle) {
     return chartEntryProvider.maybeAddNewEntries(cycle);
+  }
+
+  public Observable<UpdateHandle> putCycleDeferred(final FirebaseUser user, final Cycle cycle) {
+    return cycleKeyProvider.putKeys(cycle, user).flatMapObservable(new Function<UpdateHandle, ObservableSource<? extends UpdateHandle>>() {
+      @Override
+      public ObservableSource<? extends UpdateHandle> apply(UpdateHandle putKeysHandle) throws Exception {
+        List<UpdateHandle> handles = new ArrayList<>();
+
+        UpdateHandle handle = new UpdateHandle();
+        String basePath = String.format("/cycles/%s/%s/", user.getUid(), cycle.id);
+        handle.updates.put(basePath + "start-date", DateUtil.toWireStr(cycle.startDate));
+        handle.updates.put(basePath + "end-date", DateUtil.toWireStr(cycle.endDate));
+        handle.actions.add(new Action() {
+          @Override
+          public void run() throws Exception {
+            mCycleCache.put(cycle.id, cycle);
+          }
+        });
+        handles.add(handle);
+
+        handles.add(putKeysHandle);
+        return Observable.fromIterable(handles);
+      }
+    });
   }
 
   @Deprecated
@@ -281,72 +304,72 @@ public class CycleProvider {
       final Consumer<String> updateConsumer) {
     if (DEBUG) Log.v(TAG, "Splitting cycleToShow: " + currentCycle.id);
     Single<LocalDate> cachedFirstEntryDate = firstEntryDate.cache();
-
-    final String newId = getNewId(user);
-    if (DEBUG) Log.v(TAG, "Creating new cycleToShow: " + newId);
-    Single<Cycle> updatedCurrentCycle = cachedFirstEntryDate
-        .flatMap(new Function<LocalDate, SingleSource<? extends Cycle>>() {
+    Single<Cycle> newCycle = cachedFirstEntryDate.map(new Function<LocalDate, Cycle>() {
+      @Override
+      public Cycle apply(LocalDate startDate) throws Exception {
+        return Cycle.builder(getNewId(user), startDate).build();
+      }
+    }).cache();
+    Single<Cycle> updatedCurrentCycle = Single.zip(Single.just(currentCycle), cachedFirstEntryDate, new BiFunction<Cycle, LocalDate, Cycle>() {
+      @Override
+      public Cycle apply(Cycle currentCycle, LocalDate newCycleStartDate) throws Exception {
+        final Cycle updatedCurrentCycle = new Cycle(currentCycle);
+        LocalDate endDate = newCycleStartDate.minusDays(1);
+        updatedCurrentCycle.endDate = endDate;
+        return updatedCurrentCycle;
+      }
+    }).cache();
+    Observable<UpdateHandle> newCycleHandles = newCycle.flatMapObservable(new Function<Cycle, ObservableSource<? extends UpdateHandle>>() {
+      @Override
+      public ObservableSource<? extends UpdateHandle> apply(Cycle newCycle) throws Exception {
+        return putCycleDeferred(user, newCycle);
+      }
+    }).cache();
+    Single<UpdateHandle> newCyclePutHandle = newCycleHandles.firstOrError();
+    Single<UpdateHandle> newCyclePutKeysHandle = newCycleHandles.skip(1).firstOrError();
+    Single<UpdateHandle> updateCurrentCycleHandle = updatedCurrentCycle.map(new Function<Cycle, UpdateHandle>() {
+      @Override
+      public UpdateHandle apply(final Cycle updatedCurrentCycle) throws Exception {
+        UpdateHandle handle = new UpdateHandle();
+        handle.updates.put(
+            String.format("/cycles/%s/%s/end-date", user.getUid(), updatedCurrentCycle.id),
+            DateUtil.toWireStr(updatedCurrentCycle.endDate));
+        handle.actions.add(new Action() {
           @Override
-          public SingleSource<? extends Cycle> apply(LocalDate entryDate) throws Exception {
-            final Cycle updatedCurrentCycle = new Cycle(currentCycle);
-            if (DEBUG) Log.v(TAG, "Updating " + currentCycle.id + "'s next to " + newId);
-            LocalDate endDate = entryDate.minusDays(1);
-            updatedCurrentCycle.endDate = endDate;
-            return RxFirebaseDatabase.setValue(
-                reference(user, currentCycle.id).child("end-date"), DateUtil.toWireStr(endDate))
-                .doOnComplete(new Action() {
-                  @Override
-                  public void run() throws Exception {
-                    mCycleCache.put(updatedCurrentCycle.id, updatedCurrentCycle);
-                  }
-                })
-                .andThen(Single.just(updatedCurrentCycle));
+          public void run() throws Exception {
+            mCycleCache.put(updatedCurrentCycle.id, updatedCurrentCycle);
           }
         });
-    return cachedFirstEntryDate
-        .zipWith(Single.just(user), new BiFunction<LocalDate, FirebaseUser, Cycle.Builder>() {
+        return handle;
+      }
+    });
+    Single<UpdateHandle> moveEntriesHandle = newCycle.flatMap(new Function<Cycle, SingleSource<? extends UpdateHandle>>() {
+      @Override
+      public SingleSource<? extends UpdateHandle> apply(final Cycle newCycle) throws Exception {
+        Predicate<LocalDate> datePredicate = new Predicate<LocalDate>() {
           @Override
-          public Cycle.Builder apply(LocalDate entryDate, FirebaseUser firebaseUser) throws Exception {
-            return Cycle.builder(newId, entryDate);
+          public boolean apply(@Nullable LocalDate entryDate) {
+            return entryDate.equals(newCycle.startDate) || entryDate.isAfter(newCycle.startDate);
           }
-        })
-        .zipWith(updatedCurrentCycle, new BiFunction<Cycle.Builder, Cycle, Cycle.Builder>() {
-          @Override
-          public Cycle.Builder apply(Cycle.Builder builder, Cycle currentCycle) throws Exception {
-            updateConsumer.accept("Creating new cycle");
-            builder.previousCycle = currentCycle;
-            return builder;
-          }
-        })
-        .flatMap(new Function<Cycle.Builder, SingleSource<EntrySaveResult>>() {
-          @Override
-          public SingleSource<EntrySaveResult> apply(Cycle.Builder builder) throws Exception {
-            final Cycle newCycle = builder.build();
-            Completable moveEntries = chartEntryProvider.moveEntries(currentCycle, newCycle, new Predicate<LocalDate>() {
-              @Override
-              public boolean apply(@Nullable LocalDate entryDate) {
-                return entryDate.equals(newCycle.startDate) || entryDate.isAfter(newCycle.startDate);
-              }
-            });
-            moveEntries.doOnSubscribe(new Consumer<Disposable>() {
-              @Override
-              public void accept(Disposable disposable) throws Exception {
-                updateConsumer.accept("Moving entries");
-              }
-            });
-            moveEntries.doOnComplete(new Action() {
-              @Override
-              public void run() throws Exception {
-                updateConsumer.accept("New entry saved");
-              }
-            });
-            EntrySaveResult result = EntrySaveResult.forCycle(newCycle);
-            result.newCycles.add(newCycle);
-            result.changedCycles.add(builder.previousCycle);
-            updateConsumer.accept("Saving new cycle");
-            return putCycleRx(user.getUid(), newCycle).andThen(moveEntries).andThen(Single.just(result));
-          }
-        });
+        };
+        Single<UpdateHandle> copyHandle = chartEntryProvider.copyEntries(currentCycle, newCycle, datePredicate);
+        Single<UpdateHandle> dropHandle = chartEntryProvider.dropEntries(currentCycle, datePredicate);
+        return UpdateHandle.merge(copyHandle, dropHandle);
+      }
+    });
+    Single<UpdateHandle> updates = UpdateHandle.merge(newCyclePutKeysHandle, updateCurrentCycleHandle, moveEntriesHandle);
+    Single<EntrySaveResult> result = Single.zip(newCycle, updatedCurrentCycle, new BiFunction<Cycle, Cycle, EntrySaveResult>() {
+      @Override
+      public EntrySaveResult apply(Cycle newCycle, Cycle updatedCurrentCycle) throws Exception {
+        EntrySaveResult result = EntrySaveResult.forCycle(newCycle);
+        result.newCycles.add(newCycle);
+        result.changedCycles.add(currentCycle);
+        return result;
+      }
+    });
+    return UpdateHandle.run(newCyclePutHandle, db.getReference())
+        .andThen(UpdateHandle.run(updates, db.getReference()))
+        .andThen(result);
   }
 
   @Deprecated
