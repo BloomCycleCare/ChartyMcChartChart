@@ -26,8 +26,6 @@ import io.reactivex.functions.Function;
 public class Cycle implements Parcelable {
 
   public final String id;
-  public String previousCycleId;
-  public String nextCycleId;
   public final LocalDate startDate;
   public LocalDate endDate;
   public final String startDateStr;
@@ -36,15 +34,13 @@ public class Cycle implements Parcelable {
   public static class Builder {
     public final String id;
     public final LocalDate startDate;
+    public LocalDate endDate;
     public Cycle previousCycle;
     public Cycle nextCycle;
-    public LocalDate endDate;
 
     private Builder(String id, LocalDate startDate) {
       this.id = id;
       this.startDate = startDate;
-      previousCycle = null;
-      nextCycle = null;
       endDate = null;
     }
 
@@ -53,8 +49,6 @@ public class Cycle implements Parcelable {
           AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
       return new Cycle(
           id,
-          (previousCycle == null) ? null : previousCycle.id,
-          (nextCycle == null) ? null : nextCycle.id,
           startDate,
           endDate,
           keys);
@@ -66,14 +60,12 @@ public class Cycle implements Parcelable {
   }
 
   public static Cycle fromSnapshot(DataSnapshot snapshot, Keys keys) {
-    String previousCycleId = snapshot.child("previous-cycleToShow-id").getValue(String.class);
-    String nextCycleId = snapshot.child("next-cycleToShow-id").getValue(String.class);
     LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
     LocalDate endDate = null;
     if (snapshot.hasChild("end-date")) {
       endDate = DateUtil.fromWireStr(snapshot.child("end-date").getValue(String.class));
     }
-    return new Cycle(snapshot.getKey(), previousCycleId, nextCycleId, startDate, endDate, keys);
+    return new Cycle(snapshot.getKey(), startDate, endDate, keys);
   }
 
   public static Function<Keys, Cycle> fromSnapshot(final DataSnapshot snapshot) {
@@ -97,11 +89,9 @@ public class Cycle implements Parcelable {
     };
   }
 
-  public Cycle(String id, String previousCycleId, String nextCycleId, LocalDate startDate, LocalDate endDate, Keys keys) {
+  public Cycle(String id, LocalDate startDate, LocalDate endDate, Keys keys) {
     Preconditions.checkNotNull(startDate);
     this.id = id;
-    this.previousCycleId = previousCycleId;
-    this.nextCycleId = nextCycleId;
     this.startDate = startDate;
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
@@ -110,8 +100,6 @@ public class Cycle implements Parcelable {
 
   public Cycle(Cycle other) {
     this.id = other.id;
-    this.previousCycleId = other.previousCycleId;
-    this.nextCycleId = other.nextCycleId;
     this.startDate = other.startDate;
     this.startDateStr = other.startDateStr;
     this.endDate = other.endDate;
@@ -120,8 +108,6 @@ public class Cycle implements Parcelable {
 
   protected Cycle(Parcel in) {
     this(
-        in.readString(),
-        in.readString(),
         in.readString(),
         Preconditions.checkNotNull(DateUtil.fromWireStr(in.readString())),
         DateUtil.fromWireStr(in.readString()),
@@ -151,8 +137,6 @@ public class Cycle implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(id);
-    dest.writeString(previousCycleId);
-    dest.writeString(nextCycleId);
     dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
     dest.writeString(AesCryptoUtil.serializeKey(keys.chartKey));

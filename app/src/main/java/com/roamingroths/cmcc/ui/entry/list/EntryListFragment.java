@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -12,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.collect.Maps;
-import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
@@ -46,7 +46,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private RecyclerView mRecyclerView;
   private ChartEntryAdapter mChartEntryAdapter;
   private EntryListView mView;
-  private FirebaseDatabase mDb;
   private ArrayList<ChartEntry> mChartEntries;
   private Cycle mCycle;
   private Map<Neighbor, WeakReference<EntryListFragment>> mNeighbors;
@@ -98,8 +97,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mDb = FirebaseDatabase.getInstance();
-
     Bundle arguments = getArguments();
     mChartEntries = arguments.getParcelableArrayList(ChartEntry.class.getName());
     mCycle = arguments.getParcelable(Cycle.class.getName());
@@ -110,7 +107,8 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
         getActivity().getApplicationContext(),
         mCycle,
         this,
-        new ChartEntryProvider(mDb, MyApplication.getCryptoUtil()),
+        MyApplication.getProviders().forChartEntry(),
+        MyApplication.getProviders().forCycle(),
         "");
     if (mChartEntries != null) {
       mChartEntryAdapter.initialize(mChartEntries);
@@ -212,7 +210,13 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   @Override
   public void onClick(ChartEntry container, int index) {
-    startActivityForResult(mChartEntryAdapter.getIntentForModification(container, index), 0);
+    mChartEntryAdapter.getIntentForModification(container, index)
+        .subscribe(new Consumer<Intent>() {
+          @Override
+          public void accept(Intent intent) throws Exception {
+            startActivityForResult(intent, 0);
+          }
+        });
   }
 
   public void shutdown() {

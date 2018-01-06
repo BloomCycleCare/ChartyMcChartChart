@@ -11,12 +11,10 @@ import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.DischargeSummary;
 import com.roamingroths.cmcc.logic.ObservationEntry;
-import com.roamingroths.cmcc.logic.Occurrences;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
-import org.joda.time.DateTimeConstants;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
@@ -35,20 +33,20 @@ public class ChartEntryList {
   private final String TAG = ChartEntryList.class.getSimpleName();
 
   // Chart state members
-  public final Cycle mCycle;
+  public final Cycle mCurrentCycle;
   private final SortedList<ChartEntry> mEntries;
   private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
   private final Preferences mPreferences;
   private LocalDate mPointOfChange;
 
-  public static Builder builder(Cycle cycle, Preferences preferences) {
-    return new Builder(cycle, preferences);
+  public static Builder builder(Cycle currentCycle, Preferences preferences) {
+    return new Builder(currentCycle, preferences);
   }
 
-  private ChartEntryList(Cycle cycle, Preferences preferences, SortedList<ChartEntry> entries) {
+  private ChartEntryList(Cycle currentCycle, Preferences preferences, SortedList<ChartEntry> entries) {
     mEntries = entries;
-    mCycle = cycle;
+    mCurrentCycle = currentCycle;
     mPreferences = preferences;
   }
 
@@ -332,12 +330,12 @@ public class ChartEntryList {
 
   public static class Builder {
 
-    private final Cycle cycle;
+    private final Cycle currentCycle;
     private final Preferences preferences;
     private ChartEntryAdapter adapter;
 
-    private Builder(Cycle cycle, Preferences preferences) {
-      this.cycle = Preconditions.checkNotNull(cycle);
+    private Builder(Cycle currentCycle, Preferences preferences) {
+      this.currentCycle = Preconditions.checkNotNull(currentCycle);
       this.preferences = Preconditions.checkNotNull(preferences);
     }
 
@@ -391,7 +389,7 @@ public class ChartEntryList {
           return item1 == item2;
         }
       });
-      return new ChartEntryList(cycle, preferences, entries);
+      return new ChartEntryList(currentCycle, preferences, entries);
     }
   }
 

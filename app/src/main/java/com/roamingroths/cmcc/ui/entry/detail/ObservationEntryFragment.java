@@ -12,7 +12,6 @@ import android.view.View;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.Observation;
 import com.roamingroths.cmcc.logic.ObservationEntry;
@@ -26,12 +25,17 @@ import java.util.Set;
 
 public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
+  public enum Extras {
+    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY;
+  }
+
   public static final int OK_RESPONSE = 0;
 
   private TextInputEditText mObservationEditText;
   private TextView mObservationDescriptionTextView;
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
+  private View mFirstDayLayout;
   private Switch mFirstDaySwitch;
   private Switch mPointOfChangeSwitch;
   private View mUnusualBleedingLayout;
@@ -52,7 +56,7 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
   @Override
   void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
-    expectUnusualBleeding = args.getBoolean(Extras.EXPECT_UNUSUAL_BLEEDING);
+    expectUnusualBleeding = args.getBoolean(Extras.EXPECT_UNUSUAL_BLEEDING.name());
 
     mPointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
 
@@ -104,8 +108,15 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
     mPeakDaySwitch = (Switch) view.findViewById(R.id.switch_peak_day);
     mIntercourseSwitch = (Switch) view.findViewById(R.id.switch_intercourse);
+    mFirstDayLayout = view.findViewById(R.id.layout_new_cycle);
     mFirstDaySwitch = (Switch) view.findViewById(R.id.switch_new_cycle);
     mPointOfChangeSwitch = (Switch) view.findViewById(R.id.switch_point_of_change);
+
+    boolean hasPreviousCycle = args.getBoolean(Extras.HAS_PREVIOUS_CYCLE.name());
+    boolean isFirstEntry = args.getBoolean(Extras.IS_FIRST_ENTRY.name());
+    if (isFirstEntry && !hasPreviousCycle) {
+      mFirstDayLayout.setVisibility(View.GONE);
+    }
   }
 
   @Override

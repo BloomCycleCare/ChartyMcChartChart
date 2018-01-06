@@ -1,6 +1,5 @@
 package com.roamingroths.cmcc.data;
 
-import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
@@ -11,10 +10,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 
-import io.reactivex.Notification;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 /**
@@ -26,11 +23,9 @@ public class CycleEntryProvider {
   private static boolean DEBUG = true;
   private static String TAG = CycleEntryProvider.class.getSimpleName();
 
-  private final CycleProvider mCycleProvider;
   private final ChartEntryProvider mChartEntryProvider;
 
-  public CycleEntryProvider(CycleProvider mCycleProvider, ChartEntryProvider mChartEntryProvider) {
-    this.mCycleProvider = mCycleProvider;
+  public CycleEntryProvider(ChartEntryProvider mChartEntryProvider) {
     this.mChartEntryProvider = mChartEntryProvider;
   }
 
@@ -50,8 +45,8 @@ public class CycleEntryProvider {
         .sorted(new Comparator<ChartEntryList>() {
           @Override
           public int compare(ChartEntryList l, ChartEntryList r) {
-            LocalDate lDate = l.mCycle.startDate;
-            LocalDate rDate = r.mCycle.startDate;
+            LocalDate lDate = l.mCurrentCycle.startDate;
+            LocalDate rDate = r.mCurrentCycle.startDate;
             return lDate.compareTo(rDate);
           }
         });

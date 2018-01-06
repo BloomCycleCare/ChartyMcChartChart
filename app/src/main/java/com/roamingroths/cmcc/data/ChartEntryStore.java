@@ -126,6 +126,9 @@ public class ChartEntryStore {
 
   public Single<ChartEntry> putEmptyEntry(Cycle cycle, LocalDate date) {
     ChartEntry entry = createEmpty(date, cycle.keys);
+    if (cycle.startDate.isEqual(date)) {
+      entry.observationEntry.firstDay = true;
+    }
     return putEntry(cycle, entry).andThen(Single.just(entry));
   }
 

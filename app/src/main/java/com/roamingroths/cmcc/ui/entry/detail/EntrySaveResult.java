@@ -15,17 +15,10 @@ public class EntrySaveResult implements Parcelable {
   public ArrayList<Cycle> changedCycles = new ArrayList<>();
   public ArrayList<Cycle> newCycles = new ArrayList<>();
   public Cycle cycleToShow;
-  public String statusMessage;
 
   public static EntrySaveResult forCycle(Cycle cycleToShow) {
     EntrySaveResult result = new EntrySaveResult();
     result.cycleToShow = cycleToShow;
-    return result;
-  }
-
-  public static EntrySaveResult forStatus(String statusMessage) {
-    EntrySaveResult result = new EntrySaveResult();
-    result.statusMessage = statusMessage;
     return result;
   }
 
@@ -36,7 +29,6 @@ public class EntrySaveResult implements Parcelable {
     changedCycles = in.createTypedArrayList(Cycle.CREATOR);
     newCycles = in.createTypedArrayList(Cycle.CREATOR);
     cycleToShow = in.readParcelable(Cycle.class.getClassLoader());
-    statusMessage = in.readString();
   }
 
   @Override
@@ -45,7 +37,6 @@ public class EntrySaveResult implements Parcelable {
     dest.writeTypedList(changedCycles);
     dest.writeTypedList(newCycles);
     dest.writeParcelable(cycleToShow, flags);
-    dest.writeString(statusMessage);
   }
 
   @Override

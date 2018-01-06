@@ -10,22 +10,24 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.roamingroths.cmcc.Extras;
+import com.google.firebase.auth.FirebaseAuth;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryList;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
+import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.ChartEntry;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
-import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.List;
 
 import durdinapps.rxfirebase2.RxFirebaseChildEvent;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -39,27 +41,28 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final Cycle mCycle;
   private final Preferences mPreferences;
   private final ChartEntryProvider mChartEntryProvider;
+  private final CycleProvider mCycleProvider;
   private final CompositeDisposable mDisposables;
   private ChartEntryList mContainerList;
   private String mLayerKey;
 
   public ChartEntryAdapter(
       Context context,
-      Cycle cycle,
+      Cycle currentCycle,
       OnClickHandler clickHandler,
       ChartEntryProvider chartEntryProvider,
+      CycleProvider cycleProvider,
       String layerKey) {
     mContext = context;
-    mCycle = cycle;
     mClickHandler = clickHandler;
     mLayerKey = layerKey;
     mChartEntryProvider = chartEntryProvider;
+    mCycleProvider = cycleProvider;
     mDisposables = new CompositeDisposable();
     mPreferences = Preferences.fromShared(mContext);
-    mContainerList = ChartEntryList.builder(mCycle, mPreferences).withAdapter(this).build();
+    mContainerList = ChartEntryList.builder(currentCycle, mPreferences).withAdapter(this).build();
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         new SharedPreferences.OnSharedPreferenceChangeListener() {
@@ -78,7 +81,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public void start() {
-    mDisposables.add(mChartEntryProvider.entryStream(mCycle)
+    mDisposables.add(mChartEntryProvider.entryStream(mContainerList.mCurrentCycle)
         .subscribeOn(Schedulers.io())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Consumer<RxFirebaseChildEvent<ChartEntry>>() {
@@ -87,19 +90,19 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
             switch (childEvent.getEventType()) {
               case ADDED:
                 if (DEBUG)
-                  Log.v(TAG, "Add " + childEvent.getValue().entryDate + " to " + mContainerList.mCycle.id);
+                  Log.v(TAG, "Add " + childEvent.getValue().entryDate + " to " + mContainerList.mCurrentCycle.id);
                 mContainerList.addEntry(childEvent.getValue());
                 break;
               case CHANGED:
                 if (DEBUG)
-                  Log.v(TAG, "Change " + childEvent.getValue().entryDate + " for " + mContainerList.mCycle.id);
+                  Log.v(TAG, "Change " + childEvent.getValue().entryDate + " for " + mContainerList.mCurrentCycle.id);
                 mContainerList.changeEntry(childEvent.getValue());
                 break;
               case MOVED:
                 throw new UnsupportedOperationException();
               case REMOVED:
                 if (DEBUG)
-                  Log.v(TAG, "Remove " + childEvent.getValue().entryDate + " from " + mContainerList.mCycle.id);
+                  Log.v(TAG, "Remove " + childEvent.getValue().entryDate + " from " + mContainerList.mCurrentCycle.id);
                 mContainerList.removeEntry(childEvent.getValue());
                 break;
             }
@@ -128,7 +131,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   public Cycle getCycle() {
-    return mContainerList.mCycle;
+    return mContainerList.mCurrentCycle;
   }
 
   @Override
@@ -165,12 +168,25 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     void onClick(ChartEntry container, int index);
   }
 
-  public Intent getIntentForModification(ChartEntry container, int index) {
-    Intent intent = new Intent(mContext, EntryDetailActivity.class);
-    intent.putExtra(Extras.ENTRY_DATE_STR, DateUtil.toWireStr(container.entryDate));
-    intent.putExtra(Extras.EXPECT_UNUSUAL_BLEEDING, mContainerList.expectUnusualBleeding(index));
-    intent.putExtra(Cycle.class.getName(), mContainerList.mCycle);
-    intent.putExtra(ChartEntry.class.getName(), container);
-    return intent;
+  public Single<Intent> getIntentForModification(final ChartEntry chartEntry, final int index) {
+    return mCycleProvider.hasPreviousCycle(FirebaseAuth.getInstance().getCurrentUser(), mContainerList.mCurrentCycle)
+        .map(new Function<Boolean, Intent>() {
+          @Override
+          public Intent apply(Boolean hasPreviousCycle) throws Exception {
+            Intent intent = new Intent(mContext, EntryDetailActivity.class);
+            intent.putExtra(
+                EntryDetailActivity.Extras.CHART_ENTRY.name(), chartEntry);
+            intent.putExtra(
+                EntryDetailActivity.Extras.EXPECT_UNUSUAL_BLEEDING.name(),
+                mContainerList.expectUnusualBleeding(index));
+            intent.putExtra(
+                EntryDetailActivity.Extras.CURRENT_CYCLE.name(), mContainerList.mCurrentCycle);
+            intent.putExtra(
+                EntryDetailActivity.Extras.HAS_PREVIOUS_CYCLE.name(), hasPreviousCycle);
+            intent.putExtra(
+                EntryDetailActivity.Extras.IS_FIRST_ENTRY.name(), index == getItemCount() - 1);
+            return intent;
+          }
+        });
   }
 }

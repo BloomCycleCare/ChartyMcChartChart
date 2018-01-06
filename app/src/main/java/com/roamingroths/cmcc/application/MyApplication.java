@@ -68,10 +68,6 @@ public class MyApplication extends Application {
     });
   }
 
-  public static CryptoUtil getCryptoUtil() {
-    return mCryptoUtil;
-  }
-
   public static Providers getProviders() {
     return mProviders;
   }
@@ -86,7 +82,7 @@ public class MyApplication extends Application {
       mCycleKeyProvider = CycleKeyProvider.forDb(db, cryptoUtil);
       mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
       mCycleProvider = new CycleProvider(db, mCycleKeyProvider, mChartEntryProvider);
-      mCycleEntryProvider = new CycleEntryProvider(mCycleProvider, mChartEntryProvider);
+      mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
     }
 
     public Completable initialize(FirebaseUser user) {

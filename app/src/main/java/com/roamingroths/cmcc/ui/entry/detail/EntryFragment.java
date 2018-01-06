@@ -10,7 +10,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.Extras;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.logic.Entry;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -28,6 +27,10 @@ import io.reactivex.SingleOnSubscribe;
  */
 
 public abstract class EntryFragment<E extends Entry> extends Fragment {
+
+  public enum Extras {
+    CURRENT_CYCLE, EXISTING_ENTRY;
+  }
 
   public interface EntryListener {
     void onEntryUpdated(Entry entry, Class<? extends Entry> clazz);
@@ -66,10 +69,9 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     super.onCreate(savedInstanceState);
     Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Start");
 
-    String entryDateStr = getArguments().getString(Extras.ENTRY_DATE_STR);
-    mEntryDate = DateUtil.fromWireStr(entryDateStr);
-    mCycle = getArguments().getParcelable(Cycle.class.getName());
-    mExistingEntry = getArguments().getParcelable(Entry.class.getSimpleName());
+    mCycle = getArguments().getParcelable(Extras.CURRENT_CYCLE.name());
+    mExistingEntry = getArguments().getParcelable(Extras.EXISTING_ENTRY.name());
+    mEntryDate = mExistingEntry.getDate();
 
     Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Finish");
   }
