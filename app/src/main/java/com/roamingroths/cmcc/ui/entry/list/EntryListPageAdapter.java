@@ -18,6 +18,7 @@ import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 import java.util.Comparator;
 import java.util.List;
 
+import io.reactivex.annotations.Nullable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
@@ -153,20 +154,42 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     args.putParcelable(Cycle.class.getName(), cycle);
 
     EntryListFragment fragment = new EntryListFragment();
-
-    EntryListFragment leftNeighbor = getRegisteredFragment(position - 1);
-    if (leftNeighbor != null) {
-      fragment.setNeighbor(leftNeighbor, EntryListFragment.Neighbor.LEFT);
-      leftNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.RIGHT);
-    }
-    EntryListFragment rightNeighbor = getRegisteredFragment(position + 1);
-    if (rightNeighbor != null) {
-      fragment.setNeighbor(rightNeighbor, EntryListFragment.Neighbor.RIGHT);
-      rightNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.LEFT);
-    }
-
     fragment.setArguments(args);
+
+    maybeUpdateFragments(fragment, position);
+
     return fragment;
+  }
+
+  public void onPageActive(int position) {
+    EntryListFragment f = getRegisteredFragment(position);
+    f.onScrollStateUpdate(f.getScrollState());
+  }
+
+  private void maybeUpdateFragments(@Nullable EntryListFragment fragment, int position) {
+    if (fragment != null) {
+      EntryListFragment leftNeighbor = getRegisteredFragment(position - 1);
+      if (leftNeighbor != null) {
+        fragment.setNeighbor(leftNeighbor, EntryListFragment.Neighbor.LEFT);
+        leftNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.RIGHT);
+      }
+      EntryListFragment rightNeighbor = getRegisteredFragment(position + 1);
+      if (rightNeighbor != null) {
+        fragment.setNeighbor(rightNeighbor, EntryListFragment.Neighbor.RIGHT);
+        rightNeighbor.setNeighbor(fragment, EntryListFragment.Neighbor.LEFT);
+      }
+    }
+  }
+
+  private void maybeUpdateFragments(int position) {
+    maybeUpdateFragments(getRegisteredFragment(position), position);
+  }
+
+  @Override
+  public Object instantiateItem(ViewGroup container, int position) {
+    EntryListFragment f = (EntryListFragment) super.instantiateItem(container, position);
+    maybeUpdateFragments(f, position);
+    return f;
   }
 
   // Returns the page title for the top indicator

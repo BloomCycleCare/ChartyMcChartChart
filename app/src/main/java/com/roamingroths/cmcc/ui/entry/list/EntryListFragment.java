@@ -37,7 +37,7 @@ import io.reactivex.subjects.Subject;
 
 public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnClickHandler {
 
-  private static boolean DEBUG = false;
+  private static boolean DEBUG = true;
   private static String TAG = EntryListFragment.class.getSimpleName();
   private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 200;
 
@@ -56,6 +56,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public EntryListFragment() {
+    if (DEBUG) Log.v(TAG, "Construct");
     mChartEntryProvider = MyApplication.getProviders().forChartEntry();
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
@@ -71,13 +72,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
               if (DEBUG) Log.v(TAG, "Not scrolling from " + mCycle.startDateStr);
               return;
             }
-            for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
-              EntryListFragment neighbor = entry.getValue().get();
-              if (neighbor != null) {
-                if (DEBUG) Log.v(TAG, "Scrolling " + entry.getKey().name() + " for " + mCycle.startDateStr);
-                neighbor.setScrollState(scrollState);
-              }
-            }
+            onScrollStateUpdate(scrollState);
           }
         });
   }
@@ -130,9 +125,19 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
     int numDays = mRecyclerView.getAdapter().getItemCount();
     int firstVisibleDay =
-        (scrollState.firstVisibleDay < numDays) ? scrollState.firstVisibleDay : numDays - 1;
+        (scrollState.firstVisibleDay <= numDays) ? scrollState.firstVisibleDay : numDays - 1;
     int topIndex = numDays - firstVisibleDay;
     manager.scrollToPositionWithOffset(topIndex, scrollState.offsetPixels);
+  }
+
+  public void onScrollStateUpdate(ScrollState state) {
+    for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
+      EntryListFragment neighbor = entry.getValue().get();
+      if (neighbor != null) {
+        if (DEBUG) Log.v(TAG, "Scrolling " + entry.getKey().name() + " for " + mCycle.startDateStr);
+        neighbor.setScrollState(state);
+      }
+    }
   }
 
   public ScrollState getScrollState() {

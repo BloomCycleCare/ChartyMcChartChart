@@ -22,6 +22,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
@@ -120,6 +121,7 @@ public class ChartEntryListActivity extends AppCompatActivity
       @Override
       public void onPageSelected(int position) {
         setTitle(position == 0 ? "Current Cycle" : position + " Cycles Ago");
+        mPageAdapter.onPageActive(position);
       }
     });
 
@@ -128,8 +130,12 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   @Override
   protected void onResume() {
-    mNavView.setCheckedItem(R.id.nav_my_chart);
+    setNavItem();
     super.onResume();
+  }
+
+  private void setNavItem() {
+    mNavView.setCheckedItem(R.id.nav_my_chart);
   }
 
   @Override
@@ -165,10 +171,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     return true;
   }
 
-  private void updateOverlay(String key, String val) {
-    Log.i(TAG, "Overlay key:" + key + " val:" + val);
-  }
-
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle action bar item clicks here. The action bar will
@@ -184,17 +186,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_print) {
-      /*EntryListFragment fragment = (EntryListFragment) mPageAdapter.getRegisteredFragment(mViewPager.getCurrentItem());
-      CycleEntryProvider provider =
-          new CycleEntryProvider(mCycleProvider, new ChartEntryProvider(FirebaseDatabase.getInstance(), MyApplication.getCryptoUtil()));
-
-      Observable<ChartEntryList> lists = provider.getChartEntryLists(FirebaseAuth.getInstance().getCurrentUser(), Preferences.fromShared(this));
-      ChartPrinter.create(this, lists).print().subscribeOn(AndroidSchedulers.mainThread()).subscribe(new Consumer<PrintJob>() {
-        @Override
-        public void accept(PrintJob printJob) throws Exception {
-          if (DEBUG) Log.v(TAG, "Printing done");
-        }
-      });*/
       startActivity(new Intent(this, PrintChartActivity.class));
       return true;
     }
@@ -318,15 +309,23 @@ public class ChartEntryListActivity extends AppCompatActivity
     int id = item.getItemId();
 
     switch (item.getItemId()) {
+      case R.id.nav_profile:
+      case R.id.nav_followups:
+      case R.id.nav_share:
+      case R.id.nav_reference:
+      case R.id.nav_help_and_feedback:
+        Toast.makeText(this, "Work in progress.", Toast.LENGTH_SHORT).show();
+        break;
       case R.id.nav_settings:
         Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
         startActivity(startSettingsActivity);
-        return true;
+        break;
     }
     // TODO: check items
 
     DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
     drawer.closeDrawer(GravityCompat.START);
+    setNavItem();
     return true;
   }
 
