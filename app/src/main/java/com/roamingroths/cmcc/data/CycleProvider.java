@@ -81,11 +81,6 @@ public class CycleProvider {
     return chartEntryProvider.getEntries(cycle);
   }
 
-  @Deprecated
-  public Completable maybeCreateNewEntries(Cycle cycle) {
-    return chartEntryProvider.maybeAddNewEntries(cycle);
-  }
-
   public Observable<UpdateHandle> putCycleDeferred(final FirebaseUser user, final Cycle cycle) {
     return cycleKeyProvider.putKeys(cycle, user).flatMapObservable(new Function<UpdateHandle, ObservableSource<? extends UpdateHandle>>() {
       @Override

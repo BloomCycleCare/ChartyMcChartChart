@@ -166,6 +166,14 @@ public class ChartEntryStore {
     return putEntry(cycle, entry).andThen(Single.just(entry));
   }
 
+  public ChartEntry createEmptyEntry(Cycle cycle, LocalDate date) {
+    ChartEntry entry = createEmpty(date, cycle.keys);
+    if (cycle.startDate.isEqual(date)) {
+      entry.observationEntry.firstDay = true;
+    }
+    return entry;
+  }
+
   public Single<UpdateHandle> putEntryDeferred(final Cycle cycle, final ChartEntry chartEntry) {
     List<Single<EncryptedEntry>> encryptedEntries = new ArrayList<>();
     encryptedEntries.add(mObservationEntryProvider.encryptEntry(chartEntry.observationEntry));

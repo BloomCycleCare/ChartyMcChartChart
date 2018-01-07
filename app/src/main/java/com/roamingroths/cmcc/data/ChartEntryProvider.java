@@ -13,6 +13,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -24,8 +25,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
@@ -99,7 +98,7 @@ public class ChartEntryProvider {
     return mStore.putEntry(cycle, chartEntry).doOnComplete(mCache.putEntry(chartEntry));
   }
 
-  public Completable maybeAddNewEntries(final Cycle cycle) {
+  public Single<UpdateHandle> maybeAddNewEntriesDeferred(final Cycle cycle) {
     return getEntries(cycle)
         .toList()
         .flatMapMaybe(findMostRecent())
@@ -108,25 +107,31 @@ public class ChartEntryProvider {
         // emit days between now and most recent entry
         .flatMapObservable(new Function<LocalDate, ObservableSource<LocalDate>>() {
           @Override
-          public ObservableSource<LocalDate> apply(final LocalDate endDate) throws Exception {
-            return Observable.create(new ObservableOnSubscribe<LocalDate>() {
-              @Override
-              public void subscribe(ObservableEmitter<LocalDate> e) throws Exception {
-                LocalDate today = DateUtil.now();
-                for (LocalDate date = today; date.isAfter(endDate); date = date.minusDays(1)) {
-                  e.onNext(date);
-                }
-                e.onComplete();
-              }
-            });
+          public ObservableSource<LocalDate> apply(LocalDate lastEntryDate) throws Exception {
+            return Observable.fromIterable(DateUtil.daysBetween(lastEntryDate.plusDays(1), LocalDate.now()));
           }
         })
-        // store the entries
-        .flatMapCompletable(new Function<LocalDate, CompletableSource>() {
+        .map(new Function<LocalDate, ChartEntry>() {
           @Override
-          public CompletableSource apply(LocalDate localDate) throws Exception {
-            return mStore.putEmptyEntry(cycle, localDate)
-                .toObservable().doOnEach(mCache.fill()).ignoreElements();
+          public ChartEntry apply(LocalDate localDate) throws Exception {
+            return mStore.createEmptyEntry(cycle, localDate);
+          }
+        })
+        .toList()
+        .flatMap(new Function<List<ChartEntry>, SingleSource<? extends UpdateHandle>>() {
+          @Override
+          public SingleSource<UpdateHandle> apply(List<ChartEntry> chartEntries) throws Exception {
+            List<Single<UpdateHandle>> handles = new ArrayList<>();
+            for (final ChartEntry entry : chartEntries) {
+              handles.add(mStore.putEntryDeferred(cycle, entry).map(new Function<UpdateHandle, UpdateHandle>() {
+                @Override
+                public UpdateHandle apply(UpdateHandle updateHandle) throws Exception {
+                  updateHandle.actions.add(mCache.putEntry(entry));
+                  return updateHandle;
+                }
+              }));
+            }
+            return UpdateHandle.mergeSingles(handles);
           }
         });
   }

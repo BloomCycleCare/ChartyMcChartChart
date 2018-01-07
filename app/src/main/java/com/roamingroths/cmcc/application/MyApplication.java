@@ -5,6 +5,7 @@ import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
@@ -13,6 +14,7 @@ import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.CycleEntryProvider;
 import com.roamingroths.cmcc.data.CycleKeyProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.UpdateHandle;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -34,6 +36,7 @@ public class MyApplication extends Application {
   private static final boolean DEBUG = true;
   private static final String TAG = MyApplication.class.getSimpleName();
 
+  private static DatabaseReference mRootRefernce;
   private static CryptoUtil mCryptoUtil;
   private static Providers mProviders;
 
@@ -45,8 +48,13 @@ public class MyApplication extends Application {
     if (DEBUG) Log.v(TAG, "onCreate()");
 
     FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+    mRootRefernce = FirebaseDatabase.getInstance().getReference();
 
     PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
+  }
+
+  public static Completable runUpdate(Single<UpdateHandle> handle) {
+    return UpdateHandle.run(handle, mRootRefernce);
   }
 
   public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber) {

@@ -8,6 +8,7 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
@@ -59,7 +60,8 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .flatMap(new Function<Cycle, SingleSource<Cycle>>() {
           @Override
           public SingleSource<Cycle> apply(Cycle cycle) throws Exception {
-            return cycleProvider.maybeCreateNewEntries(cycle).andThen(Single.just(cycle));
+            ChartEntryProvider provider = MyApplication.getProviders().forChartEntry();
+            return MyApplication.runUpdate(provider.maybeAddNewEntriesDeferred(cycle)).andThen(Single.just(cycle));
           }
         })
         .subscribe(new Consumer<Cycle>() {
