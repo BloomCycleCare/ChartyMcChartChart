@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.ChartEntryList;
@@ -57,7 +58,7 @@ public class PrintChartActivity extends BaseActivity {
       mRecyclerView.setAdapter(adapter);
     } else {
       getProvider().forCycle()
-          .getCachedCycles()
+          .getAllCycles(FirebaseAuth.getInstance().getCurrentUser())
           .sorted(new Comparator<Cycle>() {
             @Override
             public int compare(Cycle o1, Cycle o2) {

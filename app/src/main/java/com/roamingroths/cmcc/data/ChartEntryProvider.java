@@ -170,21 +170,6 @@ public class ChartEntryProvider {
     }).toList().map(UpdateHandle.merge());
   }
 
-  public Completable moveEntries(
-      final Cycle fromCycle,
-      final Cycle toCycle,
-      final Predicate<LocalDate> datePredicate) {
-    if (DEBUG) Log.v(TAG, "Move entries from " + fromCycle.id + " to " + toCycle.id);
-    Observable<ChartEntry> entriesToMove = getEntries(fromCycle)
-    .filter(new io.reactivex.functions.Predicate<ChartEntry>() {
-      @Override
-      public boolean test(ChartEntry chartEntry) throws Exception {
-        return datePredicate.apply(chartEntry.entryDate);
-      }
-    }).cache();
-    return mStore.moveEntries(fromCycle, toCycle, entriesToMove).doOnEach(mCache.fill()).ignoreElements();
-  }
-
   private Function<List<ChartEntry>, MaybeSource<LocalDate>> findMostRecent() {
     return new Function<List<ChartEntry>, MaybeSource<LocalDate>>() {
       @Override

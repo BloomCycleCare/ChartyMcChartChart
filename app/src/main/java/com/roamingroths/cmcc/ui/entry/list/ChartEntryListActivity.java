@@ -41,7 +41,6 @@ import com.roamingroths.cmcc.utils.GsonUtil;
 import java.io.File;
 
 import io.reactivex.Observable;
-import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
@@ -177,12 +176,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     // as you specify a parent activity in AndroidManifest.xml.
     int id = item.getItemId();
 
-    if (id == R.id.action_settings) {
-      Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
-      startActivity(startSettingsActivity);
-      return true;
-    }
-
     if (id == R.id.action_layer) {
       FragmentManager fm = getSupportFragmentManager();
       LayerDialogFragment fragment = new LayerDialogFragment();
@@ -215,20 +208,14 @@ public class ChartEntryListActivity extends AppCompatActivity
             public void onClick(final DialogInterface dialog, int whichButton) {
               showProgress();
               mPageAdapter.shutdown(mViewPager);
-              mCycleProvider.dropCycles()
-                  .subscribe(new Action() {
-                    @Override
-                    public void run() throws Exception {
-                      Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
-                      startActivity(intent);
-                      dialog.dismiss();
-                    }
-                  }, new Consumer<Throwable>() {
-                    @Override
-                    public void accept(@NonNull Throwable throwable) throws Exception {
-                      Log.e(ChartEntryListActivity.class.getSimpleName(), "Could not drop cycles!", throwable);
-                    }
-                  });
+              MyApplication.runUpdate(mCycleProvider.dropCycles(FirebaseAuth.getInstance().getCurrentUser())).subscribe(new Action() {
+                @Override
+                public void run() throws Exception {
+                  Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
+                  startActivity(intent);
+                  dialog.dismiss();
+                }
+              });
             }
           })
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

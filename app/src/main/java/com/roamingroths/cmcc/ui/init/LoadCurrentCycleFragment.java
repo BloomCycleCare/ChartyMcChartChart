@@ -80,14 +80,13 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 .setMessage("This is permanent and cannot be undone!")
                 .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
                   public void onClick(final DialogInterface dialog, int whichButton) {
-                    cycleProvider.dropCycles()
-                        .subscribe(new Action() {
-                          @Override
-                          public void run() throws Exception {
-                            dialog.dismiss();
-                            onUserInitialized(user);
-                          }
-                        });
+                    MyApplication.runUpdate(cycleProvider.dropCycles(user)).subscribe(new Action() {
+                      @Override
+                      public void run() throws Exception {
+                        dialog.dismiss();
+                        onUserInitialized(user);
+                      }
+                    });
                   }
                 })
                 .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {

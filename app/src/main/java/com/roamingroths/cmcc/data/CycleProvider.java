@@ -6,7 +6,6 @@ import android.util.Log;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Maps;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
@@ -152,10 +151,6 @@ public class CycleProvider {
         .toSingle();
   }
 
-  public Observable<Cycle> getCachedCycles() {
-    return Observable.fromIterable(mCycleCache.values());
-  }
-
   public Observable<Cycle> getAllCycles(final FirebaseUser user) {
     return Observable.fromIterable(mCycleCache.values());
   }
@@ -178,33 +173,16 @@ public class CycleProvider {
         });
   }
 
-  private Completable dropCycle(final String cycleId, String userId) {
-    if (DEBUG) Log.v(TAG, "Dropping cycleToShow: " + cycleId);
-    Completable dropEntries = RxFirebaseDatabase.removeValue(db.getReference("entries").child(cycleId));
-    Completable dropKeys = cycleKeyProvider.dropKeys(cycleId);
-    Completable dropCycle = RxFirebaseDatabase.removeValue(reference(userId, cycleId));
-    return Completable.mergeArray(dropEntries, dropKeys, dropCycle).doOnComplete(new Action() {
-      @Override
-      public void run() throws Exception {
-        mCycleCache.remove(cycleId);
-      }
-    });
-  }
-
-  public Completable dropCycles() {
-    final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    DatabaseReference referenceToCycles = reference(user);
-    return RxFirebaseDatabase.observeSingleValueEvent(referenceToCycles)
-        .flatMapCompletable(new Function<DataSnapshot, CompletableSource>() {
+  public Single<UpdateHandle> dropCycles(final FirebaseUser user) {
+    return getAllCycles(user)
+        .flatMapSingle(new Function<Cycle, SingleSource<UpdateHandle>>() {
           @Override
-          public CompletableSource apply(@NonNull DataSnapshot snapshot) throws Exception {
-            List<Completable> completables = new ArrayList<>();
-            for (DataSnapshot cycleSnapshot : snapshot.getChildren()) {
-              completables.add(dropCycle(cycleSnapshot.getKey(), user.getUid()));
-            }
-            return Completable.merge(completables);
+          public SingleSource<UpdateHandle> apply(Cycle cycle) throws Exception {
+            return dropCycle(cycle, user);
           }
-        });
+        })
+        .toList()
+        .map(UpdateHandle.merge());
   }
 
   public Single<UpdateHandle> dropCycle(final Cycle cycle, final FirebaseUser user) {
