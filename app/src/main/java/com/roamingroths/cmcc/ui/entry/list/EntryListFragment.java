@@ -118,6 +118,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public void setScrollState(ScrollState scrollState) {
+    if (DEBUG) Log.v(TAG, "Scroll to: "+ scrollState);
     if (mRecyclerView == null) {
       Log.w(EntryListFragment.class.getSimpleName(), "RecyclerView null!");
       return;
@@ -125,7 +126,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
     int numDays = mRecyclerView.getAdapter().getItemCount();
     int firstVisibleDay =
-        (scrollState.firstVisibleDay <= numDays) ? scrollState.firstVisibleDay : numDays - 1;
+        (scrollState.firstVisibleDay <= numDays) ? scrollState.firstVisibleDay : numDays;
     int topIndex = numDays - firstVisibleDay;
     manager.scrollToPositionWithOffset(topIndex, scrollState.offsetPixels);
   }
@@ -188,6 +189,9 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
                   setScrollState(scrollState);
                 }
               }
+            }
+            if (getUserVisibleHint()) {
+              setScrollState(new ScrollState(chartEntries.size(), 0));
             }
           }
         });
