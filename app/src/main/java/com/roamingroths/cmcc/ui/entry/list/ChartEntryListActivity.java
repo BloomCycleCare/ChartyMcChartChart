@@ -32,6 +32,7 @@ import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.AppState;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.UpdateHandle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
@@ -199,7 +200,7 @@ public class ChartEntryListActivity extends AppCompatActivity
             public void onClick(final DialogInterface dialog, int whichButton) {
               showProgress();
               mPageAdapter.shutdown(mViewPager);
-              MyApplication.runUpdate(mCycleProvider.dropCycles(FirebaseAuth.getInstance().getCurrentUser())).subscribe(new Action() {
+              mCycleProvider.dropCycles(FirebaseAuth.getInstance().getCurrentUser()).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
                 @Override
                 public void run() throws Exception {
                   Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);

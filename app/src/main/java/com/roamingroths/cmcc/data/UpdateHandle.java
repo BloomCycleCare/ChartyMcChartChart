@@ -1,19 +1,18 @@
 package com.roamingroths.cmcc.data;
 
+import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
-import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
-import io.reactivex.Flowable;
-import io.reactivex.Single;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Function;
 
 /**
@@ -21,10 +20,32 @@ import io.reactivex.functions.Function;
  */
 
 public class UpdateHandle {
-  public Set<Action> actions = new HashSet<>();
-  public Map<String, Object> updates = new HashMap<>();
+
+  public final DatabaseReference rootRef;
+  public final Set<Action> actions = new HashSet<>();
+  public final Map<String, Object> updates = new HashMap<>();
+
+  private UpdateHandle(DatabaseReference rootRef) {
+    this.rootRef = rootRef;
+  }
+
+  public static UpdateHandle forDb(FirebaseDatabase db) {
+    return forRef(db.getReference());
+  }
+
+  public static UpdateHandle forRef(DatabaseReference ref) {
+    return new UpdateHandle(ref);
+  }
+
+  public static UpdateHandle copy(UpdateHandle handle) {
+    UpdateHandle copy = forRef(handle.rootRef);
+    copy.actions.addAll(handle.actions);
+    copy.updates.putAll(handle.updates);
+    return copy;
+  }
 
   public void merge(UpdateHandle other) {
+    Preconditions.checkArgument(other.rootRef.equals(rootRef));
     this.actions.addAll(other.actions);
     this.updates.putAll(other.updates);
   }
@@ -40,54 +61,21 @@ public class UpdateHandle {
     };
   }
 
-  public static Completable run(Single<UpdateHandle> handle, final DatabaseReference ref) {
-    return handle.flatMapCompletable(new Function<UpdateHandle, CompletableSource>() {
+  public static Function<UpdateHandle, CompletableSource> run() {
+    return new Function<UpdateHandle, CompletableSource>() {
       @Override
-      public CompletableSource apply(UpdateHandle updateHandle) throws Exception {
-        return RxFirebaseDatabase.updateChildren(ref, updateHandle.updates).doOnComplete(updateHandle.allActions());
-      }
-    });
-  }
-
-  public static Function<List<UpdateHandle>, UpdateHandle> merge() {
-    return new Function<List<UpdateHandle>, UpdateHandle>() {
-      @Override
-      public UpdateHandle apply(List<UpdateHandle> updateHandles) throws Exception {
-        return merge(updateHandles);
+      public CompletableSource apply(UpdateHandle handle) throws Exception {
+        return RxFirebaseDatabase.updateChildren(handle.rootRef, handle.updates).doOnComplete(handle.allActions());
       }
     };
   }
 
-  public static UpdateHandle merge(Iterable<UpdateHandle> handles) {
-    UpdateHandle handle = new UpdateHandle();
-    for (UpdateHandle h : handles) {
-      handle.merge(h);
-    }
-    return handle;
-  }
-
-  public static Single<UpdateHandle> merge(Single<UpdateHandle> h1, Single<UpdateHandle> h2) {
-    return merge(Single.concatArray(h1, h2));
-  }
-
-  public static Single<UpdateHandle> merge(Single<UpdateHandle> h1, Single<UpdateHandle> h2, Single<UpdateHandle> h3) {
-    return merge(Single.concatArray(h1, h2, h3));
-  }
-
-  private static Single<UpdateHandle> merge(Flowable<UpdateHandle> handles) {
-    return handles.toList().map(new Function<List<UpdateHandle>, UpdateHandle>() {
+  public static BiConsumer<UpdateHandle, UpdateHandle> collector() {
+    return new BiConsumer<UpdateHandle, UpdateHandle>() {
       @Override
-      public UpdateHandle apply(List<UpdateHandle> updateHandles) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
-        for (UpdateHandle h : updateHandles) {
-          handle.merge(h);
-        }
-        return handle;
+      public void accept(UpdateHandle collection, UpdateHandle item) throws Exception {
+        collection.merge(item);
       }
-    });
-  }
-
-  public static Single<UpdateHandle> mergeSingles(Iterable<Single<UpdateHandle>> handles) {
-    return merge(Single.concat(handles));
+    };
   }
 }

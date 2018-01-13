@@ -5,6 +5,7 @@ import android.util.Log;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -86,7 +87,7 @@ public class CycleProvider {
       public ObservableSource<? extends UpdateHandle> apply(UpdateHandle putKeysHandle) throws Exception {
         List<UpdateHandle> handles = new ArrayList<>();
 
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = UpdateHandle.forDb(db);
         String basePath = String.format("/cycles/%s/%s/", user.getUid(), cycle.id);
         handle.updates.put(basePath + "start-date", DateUtil.toWireStr(cycle.startDate));
         handle.updates.put(basePath + "end-date", DateUtil.toWireStr(cycle.endDate));
@@ -181,15 +182,14 @@ public class CycleProvider {
             return dropCycle(cycle, user);
           }
         })
-        .toList()
-        .map(UpdateHandle.merge());
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector());
   }
 
-  public Single<UpdateHandle> dropCycle(final Cycle cycle, final FirebaseUser user) {
+  private Single<UpdateHandle> dropCycle(final Cycle cycle, final FirebaseUser user) {
     return chartEntryProvider.dropEntries(cycle).map(new Function<UpdateHandle, UpdateHandle>() {
       @Override
       public UpdateHandle apply(UpdateHandle dropEntriesHandle) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = UpdateHandle.forDb(db);
         handle.merge(dropEntriesHandle);
         handle.merge(cycleKeyProvider.dropKeysForCycle(cycle));
         handle.updates.put(String.format("/cycles/%s/%s", user.getUid(), cycle.id), null);
@@ -246,7 +246,7 @@ public class CycleProvider {
     Single<UpdateHandle> updatePreviousCycleHandle = updatedPreviousCycle.map(new Function<Cycle, UpdateHandle>() {
       @Override
       public UpdateHandle apply(final Cycle cycle) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = UpdateHandle.forDb(db);
         handle.updates.put(String.format("/cycles/%s/%s/end-date", user.getUid(), cycle.id), DateUtil.toWireStr(currentCycle.endDate));
         handle.actions.add(new Action() {
           @Override
@@ -257,7 +257,9 @@ public class CycleProvider {
         return handle;
       }
     });
-    Single<UpdateHandle> updates = UpdateHandle.merge(copyEntriesHandle, dropCurrentCycleHandle, updatePreviousCycleHandle);
+    Single<UpdateHandle> updates = Single
+        .concat(Lists.newArrayList(copyEntriesHandle, dropCurrentCycleHandle, updatePreviousCycleHandle))
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector());
     Single<EntrySaveResult> result = updatedPreviousCycle.map(new Function<Cycle, EntrySaveResult>() {
       @Override
       public EntrySaveResult apply(Cycle previousCycle) throws Exception {
@@ -267,7 +269,7 @@ public class CycleProvider {
         return result;
       }
     });
-    return UpdateHandle.run(updates, db.getReference()).andThen(result);
+    return updates.flatMapCompletable(UpdateHandle.run()).andThen(result);
   }
 
   public Single<EntrySaveResult> splitCycleRx(
@@ -298,12 +300,12 @@ public class CycleProvider {
         return putCycleDeferred(user, newCycle);
       }
     }).cache();
-    Single<UpdateHandle> newCyclePutHandle = newCycleHandles.firstOrError();
+    Completable putNewCycle = newCycleHandles.firstOrError().flatMapCompletable(UpdateHandle.run());
     Single<UpdateHandle> newCyclePutKeysHandle = newCycleHandles.skip(1).firstOrError();
     Single<UpdateHandle> updateCurrentCycleHandle = updatedCurrentCycle.map(new Function<Cycle, UpdateHandle>() {
       @Override
       public UpdateHandle apply(final Cycle updatedCurrentCycle) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = UpdateHandle.forDb(db);
         handle.updates.put(
             String.format("/cycles/%s/%s/end-date", user.getUid(), updatedCurrentCycle.id),
             DateUtil.toWireStr(updatedCurrentCycle.endDate));
@@ -327,10 +329,13 @@ public class CycleProvider {
         };
         Single<UpdateHandle> copyHandle = chartEntryProvider.copyEntries(currentCycle, newCycle, datePredicate);
         Single<UpdateHandle> dropHandle = chartEntryProvider.dropEntries(currentCycle, datePredicate);
-        return UpdateHandle.merge(copyHandle, dropHandle);
+        return Single.concatArray(copyHandle, dropHandle).collectInto(UpdateHandle.forDb(db), UpdateHandle.collector());
       }
     });
-    Single<UpdateHandle> updates = UpdateHandle.merge(newCyclePutKeysHandle, updateCurrentCycleHandle, moveEntriesHandle);
+    Completable doUpdates = Single
+        .concat(Lists.newArrayList(newCyclePutKeysHandle, updateCurrentCycleHandle, moveEntriesHandle))
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector())
+        .flatMapCompletable(UpdateHandle.run());
     Single<EntrySaveResult> result = Single.zip(newCycle, updatedCurrentCycle, new BiFunction<Cycle, Cycle, EntrySaveResult>() {
       @Override
       public EntrySaveResult apply(Cycle newCycle, Cycle updatedCurrentCycle) throws Exception {
@@ -340,9 +345,7 @@ public class CycleProvider {
         return result;
       }
     });
-    return UpdateHandle.run(newCyclePutHandle, db.getReference())
-        .andThen(UpdateHandle.run(updates, db.getReference()))
-        .andThen(result);
+    return putNewCycle.andThen(doUpdates).andThen(result);
   }
 
   @Deprecated

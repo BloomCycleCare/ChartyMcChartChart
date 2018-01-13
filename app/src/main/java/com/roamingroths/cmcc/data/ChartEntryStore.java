@@ -63,6 +63,10 @@ public class ChartEntryStore {
     mSymptomEntryProvider = new SymptomEntryProvider(cryptoUtil);
   }
 
+  public UpdateHandle newHandle() {
+    return UpdateHandle.forDb(mDB);
+  }
+
   public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle))
         .observeOn(Schedulers.computation())
@@ -183,7 +187,7 @@ public class ChartEntryStore {
       @Override
       public UpdateHandle apply(List<EncryptedEntry> encryptedEntries) throws Exception {
         String basePath = String.format("/entries/%s/%s/", cycle.id, DateUtil.toWireStr(chartEntry.entryDate));
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = newHandle();
         for (EncryptedEntry entry : encryptedEntries) {
           handle.updates.put(basePath + entry.childId, entry.encryptedEntry);
         }

@@ -99,7 +99,7 @@ public class CycleKeyProvider {
     return cryptoUtil.encryptKey(key).map(new Function<String, UpdateHandle>() {
       @Override
       public UpdateHandle apply(String s) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = UpdateHandle.forDb(db);
         handle.updates.put(String.format("/keys/%s/%s/%s", cycle.id, user.getUid(), alias.name().toLowerCase()), s);
         return handle;
       }
@@ -111,11 +111,11 @@ public class CycleKeyProvider {
     handles.add(putKey(cycle.keys.chartKey, KeyAlias.CHART, cycle, user));
     handles.add(putKey(cycle.keys.wellnessKey, KeyAlias.WELLNESS, cycle, user));
     handles.add(putKey(cycle.keys.symptomKey, KeyAlias.SYMPTOM, cycle, user));
-    return UpdateHandle.mergeSingles(handles);
+    return Single.concat(handles).collectInto(UpdateHandle.forDb(db), UpdateHandle.collector());
   }
 
   public UpdateHandle dropKeysForCycle(Cycle cycle) {
-    UpdateHandle handle = new UpdateHandle();
+    UpdateHandle handle = UpdateHandle.forDb(db);
     handle.updates.put("/keys/" + cycle.id, null);
     return handle;
   }

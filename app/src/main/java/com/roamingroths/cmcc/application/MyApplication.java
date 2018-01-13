@@ -14,7 +14,6 @@ import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.CycleEntryProvider;
 import com.roamingroths.cmcc.data.CycleKeyProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.UpdateHandle;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -51,10 +50,6 @@ public class MyApplication extends Application {
     mRootRefernce = FirebaseDatabase.getInstance().getReference();
 
     PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
-  }
-
-  public static Completable runUpdate(Single<UpdateHandle> handle) {
-    return UpdateHandle.run(handle, mRootRefernce);
   }
 
   public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber) {

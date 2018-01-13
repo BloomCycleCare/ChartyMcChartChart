@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.UpdateHandle;
 import com.roamingroths.cmcc.logic.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -61,7 +62,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
           @Override
           public SingleSource<Cycle> apply(Cycle cycle) throws Exception {
             ChartEntryProvider provider = MyApplication.getProviders().forChartEntry();
-            return MyApplication.runUpdate(provider.maybeAddNewEntriesDeferred(cycle)).andThen(Single.just(cycle));
+            return provider.maybeAddNewEntriesDeferred(cycle).flatMapCompletable(UpdateHandle.run()).andThen(Single.just(cycle));
           }
         })
         .subscribe(new Consumer<Cycle>() {
@@ -80,7 +81,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 .setMessage("This is permanent and cannot be undone!")
                 .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
                   public void onClick(final DialogInterface dialog, int whichButton) {
-                    MyApplication.runUpdate(cycleProvider.dropCycles(user)).subscribe(new Action() {
+                    cycleProvider.dropCycles(user).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
                       @Override
                       public void run() throws Exception {
                         dialog.dismiss();

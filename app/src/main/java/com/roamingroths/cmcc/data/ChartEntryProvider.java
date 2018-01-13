@@ -131,7 +131,7 @@ public class ChartEntryProvider {
                 }
               }));
             }
-            return UpdateHandle.mergeSingles(handles);
+            return Single.concat(handles).collectInto(mStore.newHandle(), UpdateHandle.collector());
           }
         });
   }
@@ -144,7 +144,7 @@ public class ChartEntryProvider {
     return getEntries(cycle, datePredicate).toList().flatMap(new Function<List<ChartEntry>, SingleSource<? extends UpdateHandle>>() {
       @Override
       public SingleSource<? extends UpdateHandle> apply(List<ChartEntry> chartEntries) throws Exception {
-        UpdateHandle handle = new UpdateHandle();
+        UpdateHandle handle = mStore.newHandle();
         for (String entryPath : mStore.getDbPaths(cycle, chartEntries)) {
           handle.updates.put(entryPath, null);
         }
@@ -167,7 +167,7 @@ public class ChartEntryProvider {
         updateHandle.actions.add(mCache.putEntry(chartEntry));
         return updateHandle;
       }
-    }).toList().map(UpdateHandle.merge());
+    }).collectInto(mStore.newHandle(), UpdateHandle.collector());
   }
 
   private Function<List<ChartEntry>, MaybeSource<LocalDate>> findMostRecent() {
