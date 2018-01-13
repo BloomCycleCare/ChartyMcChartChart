@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import android.util.Log;
 

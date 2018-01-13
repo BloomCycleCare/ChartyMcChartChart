@@ -2,7 +2,7 @@ package com.roamingroths.cmcc.utils;
 
 import android.content.Context;
 
-import com.roamingroths.cmcc.data.AppState;
+import com.roamingroths.cmcc.logic.AppState;
 
 /**
  * Created by parkeroth on 9/9/17.

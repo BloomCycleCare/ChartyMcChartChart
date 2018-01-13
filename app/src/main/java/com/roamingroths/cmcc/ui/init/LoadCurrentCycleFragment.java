@@ -8,10 +8,10 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
-import com.roamingroths.cmcc.data.CycleProvider;
-import com.roamingroths.cmcc.data.UpdateHandle;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
+import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 

@@ -1,8 +1,8 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 
 import java.util.HashSet;
 import java.util.Set;

@@ -15,9 +15,9 @@ import android.view.ViewGroup;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.ChartEntryProvider;
-import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;

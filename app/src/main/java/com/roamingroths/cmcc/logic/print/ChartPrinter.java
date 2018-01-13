@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.print;
+package com.roamingroths.cmcc.logic.print;
 
 import android.app.Activity;
 import android.content.Context;
@@ -16,7 +16,7 @@ import android.print.pdf.PrintedPdfDocument;
 import android.util.Log;
 import android.webkit.WebView;
 
-import com.roamingroths.cmcc.data.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

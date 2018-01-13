@@ -3,11 +3,11 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.Observation;
-import com.roamingroths.cmcc.logic.ObservationEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.logic.chart.Observation;
+import com.roamingroths.cmcc.logic.chart.ObservationEntry;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 
 import org.joda.time.LocalDate;

@@ -1,11 +1,12 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 
 import java.util.ArrayList;
 import java.util.List;

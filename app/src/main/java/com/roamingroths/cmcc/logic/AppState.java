@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.logic;
 
 import android.util.Log;
 
@@ -6,8 +6,9 @@ import com.google.common.collect.ImmutableSet;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
 import java.io.BufferedReader;

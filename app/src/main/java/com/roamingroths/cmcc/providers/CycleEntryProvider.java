@@ -1,8 +1,9 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import com.roamingroths.cmcc.Preferences;
-import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 
 import org.joda.time.LocalDate;
 

@@ -3,7 +3,7 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.roamingroths.cmcc.logic.Cycle;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 
 import java.util.ArrayList;
 

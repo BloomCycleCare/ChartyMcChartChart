@@ -1,12 +1,12 @@
-package com.roamingroths.cmcc.print;
+package com.roamingroths.cmcc.logic.print;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;

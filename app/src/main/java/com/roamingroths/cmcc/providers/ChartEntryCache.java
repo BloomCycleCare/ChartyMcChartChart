@@ -1,9 +1,9 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableList;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
 
 import org.joda.time.LocalDate;
 

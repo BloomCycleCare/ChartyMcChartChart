@@ -13,10 +13,9 @@ import android.widget.Toast;
 import com.google.firebase.auth.FirebaseAuth;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.data.CycleAdapter;
-import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.print.ChartPrinter;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.logic.print.ChartPrinter;
 import com.roamingroths.cmcc.ui.BaseActivity;
 
 import java.util.Comparator;

@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.ui.print;
 
 import android.app.Activity;
 import android.os.Bundle;
@@ -17,8 +17,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.print.PageRenderer;
+import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.logic.print.PageRenderer;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.HashSet;

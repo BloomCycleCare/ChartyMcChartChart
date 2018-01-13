@@ -7,8 +7,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.ChartEntryList;
-import com.roamingroths.cmcc.logic.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
 
 /**
  * Created by parkeroth on 7/1/17.

@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.providers;
 
 import android.util.Log;
 
@@ -8,12 +8,13 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.logic.ChartEntry;
-import com.roamingroths.cmcc.logic.Cycle;
-import com.roamingroths.cmcc.logic.Entry;
-import com.roamingroths.cmcc.logic.ObservationEntry;
-import com.roamingroths.cmcc.logic.SymptomEntry;
-import com.roamingroths.cmcc.logic.WellnessEntry;
+import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.logic.chart.Entry;
+import com.roamingroths.cmcc.logic.chart.ObservationEntry;
+import com.roamingroths.cmcc.logic.chart.SymptomEntry;
+import com.roamingroths.cmcc.logic.chart.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

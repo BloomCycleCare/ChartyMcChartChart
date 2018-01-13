@@ -17,7 +17,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.CryptoProvider;
+import com.roamingroths.cmcc.providers.CryptoProvider;
 
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;

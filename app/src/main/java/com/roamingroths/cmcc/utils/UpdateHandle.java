@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.data;
+package com.roamingroths.cmcc.utils;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DatabaseReference;
