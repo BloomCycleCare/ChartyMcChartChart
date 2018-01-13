@@ -31,14 +31,17 @@ import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.AppState;
+import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
-import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.providers.ProfileProvider;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
+import com.roamingroths.cmcc.ui.profile.ProfileActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.FileUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import java.io.File;
 
@@ -67,6 +70,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   private final Subject<String> mLayerSubject;
   private EntryListPageAdapter mPageAdapter;
   private CycleProvider mCycleProvider;
+  private ProfileProvider mProfileProvider;
 
   public ChartEntryListActivity() {
     mLayerSubject = BehaviorSubject.create();
@@ -87,9 +91,8 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     View navHeaderView = mNavView.getHeaderView(0);
-    TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
-    drawerTitleView.setText(user.getDisplayName());
-    TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
+    final TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
+    final TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
     drawerSubtitleView.setText(user.getEmail());
 
     mToolbar = (Toolbar) findViewById(R.id.app_bar);
@@ -106,6 +109,13 @@ public class ChartEntryListActivity extends AppCompatActivity
     mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
     mViewPager = (ViewPager) findViewById(R.id.view_pager);
 
+    mProfileProvider = MyApplication.getProviders().forProfile();
+    mProfileProvider.getProfile(this).subscribe(new Consumer<Profile>() {
+      @Override
+      public void accept(Profile profile) throws Exception {
+        drawerTitleView.setText(profile.mPreferredName);
+      }
+    });
     mCycleProvider = MyApplication.getProviders().forCycle();
     mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), MyApplication.getProviders().forChartEntry());
     mPageAdapter.initialize(FirebaseAuth.getInstance().getCurrentUser(), mCycleProvider);
@@ -310,16 +320,18 @@ public class ChartEntryListActivity extends AppCompatActivity
     int id = item.getItemId();
 
     switch (item.getItemId()) {
-      case R.id.nav_profile:
       case R.id.nav_followups:
       case R.id.nav_share:
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:
         Toast.makeText(this, "Work in progress.", Toast.LENGTH_SHORT).show();
         break;
+      case R.id.nav_profile:
+        // TODO: get updated profile
+        startActivity(new Intent(this, ProfileActivity.class));
+        break;
       case R.id.nav_settings:
-        Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
-        startActivity(startSettingsActivity);
+        startActivity(new Intent(this, SettingsActivity.class));
         break;
     }
     // TODO: check items

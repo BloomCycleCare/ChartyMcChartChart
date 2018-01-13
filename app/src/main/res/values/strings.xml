@@ -100,6 +100,14 @@
     <string name="section_format">Hello World from section: %1$d</string>
     <string name="title_activity_cycle_list">CycleListActivity</string>
     <string name="title_activity_entry_detail">EntryDetailActivity</string>
+    <string-array name="pref_system_goal_keys">
+        <item>achieve</item>
+        <item>avoid</item>
+    </string-array>
+    <string-array name="pref_system_goal_values">
+        <item>Achieve pregnancy</item>
+        <item>Avoid pregnancy</item>
+    </string-array>
     <string-array name="pref_wellness_option_values">
         <item>Supplements</item>
         <item>Pain Medication</item>

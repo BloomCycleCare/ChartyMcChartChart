@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.settings;
+package com.roamingroths.cmcc.ui.profile;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -12,11 +12,12 @@ import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.Log;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.MyApplication;
 
 /**
  * A placeholder fragment containing a simple view.
  */
-public class SettingsFragment extends PreferenceFragmentCompat implements
+public class ProfileFragment extends PreferenceFragmentCompat implements
     SharedPreferences.OnSharedPreferenceChangeListener {
 
   private void setPreferenceSummary(Preference preference, Object value) {
@@ -40,7 +41,7 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
 
   @Override
   public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
-    addPreferencesFromResource(R.xml.pref_settings);
+    addPreferencesFromResource(R.xml.pref_profile);
 
     SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
     PreferenceScreen prefScreen = getPreferenceScreen();
@@ -70,6 +71,8 @@ public class SettingsFragment extends PreferenceFragmentCompat implements
       } else if (!(preference instanceof CheckBoxPreference)) {
         setPreferenceSummary(preference, sharedPreferences.getString(key, ""));
       }
+
+      MyApplication.getProviders().forProfile().maybeUpdateProfile(sharedPreferences, key).subscribe();
     }
   }
 

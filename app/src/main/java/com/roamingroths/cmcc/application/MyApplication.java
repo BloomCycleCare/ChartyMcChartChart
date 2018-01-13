@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.application;
 
 import android.app.Application;
+import android.content.Context;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
@@ -8,11 +9,13 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CryptoProvider;
 import com.roamingroths.cmcc.providers.CycleEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.KeyProvider;
+import com.roamingroths.cmcc.providers.ProfileProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -46,10 +49,10 @@ public class MyApplication extends Application {
 
     FirebaseDatabase.getInstance().setPersistenceEnabled(true);
 
-    PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
+    PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
   }
 
-  public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber) {
+  public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {
     Single<CryptoUtil> cryptoUtil =
         CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil(user, phoneNumber);
     return cryptoUtil.flatMapCompletable(new Function<CryptoUtil, CompletableSource>() {
@@ -58,7 +61,7 @@ public class MyApplication extends Application {
         Log.i(TAG, "Crypto initialization complete");
         mCryptoUtil = cryptoUtil;
         mProviders = new Providers(FirebaseDatabase.getInstance(), mCryptoUtil, user);
-        return mProviders.initialize(user).doOnComplete(new Action() {
+        return mProviders.initialize(user, context).doOnComplete(new Action() {
           @Override
           public void run() throws Exception {
             Log.i(TAG, "Provider initialization complete");
@@ -77,18 +80,27 @@ public class MyApplication extends Application {
     private final KeyProvider mKeyProvider;
     private final CycleEntryProvider mCycleEntryProvider;
     private final ChartEntryProvider mChartEntryProvider;
+    private final ProfileProvider mProfileProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
       mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
+      mProfileProvider = new ProfileProvider(db, currentUser, cryptoUtil, mKeyProvider);
       mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
       mCycleProvider = new CycleProvider(db, mKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
     }
 
-    public Completable initialize(FirebaseUser user) {
+    public Completable initialize(FirebaseUser user, Context context) {
       if (DEBUG) Log.v(TAG, "Initializing providers");
-      return mCycleProvider.initCache(user)
+      return Completable
+          .mergeArray(
+              mCycleProvider.initCache(user),
+              mProfileProvider.init(context, Profile.SystemGoal.AVOID))
           .andThen(mChartEntryProvider.initCache(mCycleProvider.getAllCycles(user), 2));
+    }
+
+    public ProfileProvider forProfile() {
+      return mProfileProvider;
     }
 
     public CycleEntryProvider forCycleEntry() {

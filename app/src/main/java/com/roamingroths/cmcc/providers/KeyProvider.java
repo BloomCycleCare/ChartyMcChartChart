@@ -3,11 +3,14 @@ package com.roamingroths.cmcc.providers;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.utils.UpdateHandle;
 import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +18,7 @@ import javax.crypto.SecretKey;
 
 import durdinapps.rxfirebase2.DataSnapshotMapper;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
+import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Single;
@@ -98,4 +102,33 @@ public class KeyProvider {
     return handle;
   }
 
+  public Single<SecretKey> createAndStoreProfileKey() {
+    try {
+      SecretKey key = AesCryptoUtil.createKey();
+      return mCryptoUtil.encryptKey(key).flatMapCompletable(new Function<String, CompletableSource>() {
+        @Override
+        public CompletableSource apply(String encryptedKey) throws Exception {
+          return RxFirebaseDatabase.setValue(profileKeyReference(), encryptedKey);
+        }
+      }).andThen(Single.just(key));
+    } catch (NoSuchAlgorithmException e) {
+      return Single.error(e);
+    }
+  }
+
+  private DatabaseReference profileKeyReference() {
+    return mDb.getReference().child(
+        String.format("keys/%s/%s/profile", mCurrentUser.getUid(), mCurrentUser.getUid()));
+  }
+
+  public Maybe<SecretKey> getProfileKey() {
+    return RxFirebaseDatabase
+        .observeSingleValueEvent(profileKeyReference(), String.class)
+        .flatMap(new Function<String, MaybeSource<? extends SecretKey>>() {
+          @Override
+          public MaybeSource<? extends SecretKey> apply(String encryptedKey) throws Exception {
+            return mCryptoUtil.decryptKey(encryptedKey);
+          }
+        });
+  }
 }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent">
+
+    <EditTextPreference
+        android:defaultValue="FirebaseUser Info"
+        android:inputType="text"
+        android:key="preferred_name"
+        android:singleLine="true"
+        android:title="Preferred name"/>
+
+    <ListPreference
+        android:key="achieve_avoid_key"
+        android:title="Goal for using system"
+        android:entries="@array/pref_system_goal_values"
+        android:entryValues="@array/pref_system_goal_keys"/>
+
+</PreferenceScreen>

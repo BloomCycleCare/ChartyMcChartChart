@@ -45,7 +45,7 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
         R.id.tv_symptom_item,
         R.id.switch_symptom_item, values, keys, savedInstanceState);
 
-    PreferenceManager.setDefaultValues(getActivity(), R.xml.pref_general, false);
+    PreferenceManager.setDefaultValues(getActivity(), R.xml.pref_settings, false);
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
     mAdapter.updateActiveItems(
         preferences.getStringSet("pref_key_symptom_options", ImmutableSet.<String>of()));

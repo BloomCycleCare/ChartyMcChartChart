@@ -109,7 +109,7 @@ public class UserInitActivity extends FragmentActivity {
 
   private void initUserState(final FirebaseUser user) {
     mFragment.updateStatus("Initializing user");
-    MyApplication.initProviders(user, promptForPhoneNumber())
+    MyApplication.initProviders(user, promptForPhoneNumber(), this)
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Action() {
