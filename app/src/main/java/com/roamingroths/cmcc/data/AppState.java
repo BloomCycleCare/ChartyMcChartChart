@@ -76,7 +76,7 @@ public class AppState {
             Log.v("AppState", "Creating new keys for cycleToShow starting " + cycle.startDateStr);
             cycle.setKeys(new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey()));
             Set<Completable> putResults = new HashSet<>();
-            putResults.add(cycleProvider.putCycleRx(user.getUid(), cycle));
+            putResults.add(cycleProvider.putCycleRx(user, cycle));
             for (ChartEntry entry : cycleData.entries) {
               putResults.add(cycleProvider.getEntryProvider().putEntry(cycle, entry));
             }

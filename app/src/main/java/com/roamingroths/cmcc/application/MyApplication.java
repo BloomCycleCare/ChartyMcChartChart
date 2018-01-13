@@ -5,15 +5,14 @@ import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.data.ChartEntryProvider;
 import com.roamingroths.cmcc.data.CryptoProvider;
 import com.roamingroths.cmcc.data.CycleEntryProvider;
-import com.roamingroths.cmcc.data.CycleKeyProvider;
 import com.roamingroths.cmcc.data.CycleProvider;
+import com.roamingroths.cmcc.data.KeyProvider;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -35,7 +34,6 @@ public class MyApplication extends Application {
   private static final boolean DEBUG = true;
   private static final String TAG = MyApplication.class.getSimpleName();
 
-  private static DatabaseReference mRootRefernce;
   private static CryptoUtil mCryptoUtil;
   private static Providers mProviders;
 
@@ -47,7 +45,6 @@ public class MyApplication extends Application {
     if (DEBUG) Log.v(TAG, "onCreate()");
 
     FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-    mRootRefernce = FirebaseDatabase.getInstance().getReference();
 
     PreferenceManager.setDefaultValues(this, R.xml.pref_general, false);
   }
@@ -60,7 +57,7 @@ public class MyApplication extends Application {
       public CompletableSource apply(CryptoUtil cryptoUtil) throws Exception {
         Log.i(TAG, "Crypto initialization complete");
         mCryptoUtil = cryptoUtil;
-        mProviders = new Providers(FirebaseDatabase.getInstance(), mCryptoUtil);
+        mProviders = new Providers(FirebaseDatabase.getInstance(), mCryptoUtil, user);
         return mProviders.initialize(user).doOnComplete(new Action() {
           @Override
           public void run() throws Exception {
@@ -77,14 +74,14 @@ public class MyApplication extends Application {
 
   public static class Providers {
     private final CycleProvider mCycleProvider;
-    private final CycleKeyProvider mCycleKeyProvider;
+    private final KeyProvider mKeyProvider;
     private final CycleEntryProvider mCycleEntryProvider;
     private final ChartEntryProvider mChartEntryProvider;
 
-    Providers(FirebaseDatabase db, CryptoUtil cryptoUtil) {
-      mCycleKeyProvider = CycleKeyProvider.forDb(db, cryptoUtil);
+    Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
+      mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
       mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
-      mCycleProvider = new CycleProvider(db, mCycleKeyProvider, mChartEntryProvider);
+      mCycleProvider = new CycleProvider(db, mKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
     }
 

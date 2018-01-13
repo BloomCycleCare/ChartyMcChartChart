@@ -19,7 +19,6 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -50,14 +49,14 @@ public class CycleProvider {
   private static final String TAG = CycleProvider.class.getSimpleName();
 
   private final FirebaseDatabase db;
-  private final CycleKeyProvider cycleKeyProvider;
+  private final KeyProvider keyProvider;
   private final ChartEntryProvider chartEntryProvider;
   private final Map<String, Cycle> mCycleCache;
 
   public CycleProvider(
-      FirebaseDatabase db, CycleKeyProvider cycleKeyProvider, ChartEntryProvider chartEntryProvider) {
+      FirebaseDatabase db, KeyProvider keyProvider, ChartEntryProvider chartEntryProvider) {
     this.db = db;
-    this.cycleKeyProvider = cycleKeyProvider;
+    this.keyProvider = keyProvider;
     this.chartEntryProvider = chartEntryProvider;
     this.mCycleCache = Maps.newConcurrentMap();
   }
@@ -81,8 +80,8 @@ public class CycleProvider {
     return chartEntryProvider.getEntries(cycle);
   }
 
-  public Observable<UpdateHandle> putCycleDeferred(final FirebaseUser user, final Cycle cycle) {
-    return cycleKeyProvider.putKeys(cycle, user).flatMapObservable(new Function<UpdateHandle, ObservableSource<? extends UpdateHandle>>() {
+  private Observable<UpdateHandle> putCycle(final FirebaseUser user, final Cycle cycle) {
+    return keyProvider.putCycleKeys(cycle).flatMapObservable(new Function<UpdateHandle, ObservableSource<? extends UpdateHandle>>() {
       @Override
       public ObservableSource<? extends UpdateHandle> apply(UpdateHandle putKeysHandle) throws Exception {
         List<UpdateHandle> handles = new ArrayList<>();
@@ -106,18 +105,8 @@ public class CycleProvider {
   }
 
   @Deprecated
-  public Completable putCycleRx(final String userId, final Cycle cycle) {
-    Map<String, Object> updates = new HashMap<>();
-    updates.put("start-date", cycle.startDateStr);
-    updates.put("end-date", DateUtil.toWireStr(cycle.endDate));
-    return RxFirebaseDatabase.updateChildren(reference(userId, cycle.id), updates)
-        .andThen(cycleKeyProvider.putChartKeysRx(cycle.keys, cycle.id, userId))
-        .doOnComplete(new Action() {
-          @Override
-          public void run() throws Exception {
-            mCycleCache.put(cycle.id, cycle);
-          }
-        });
+  public Completable putCycleRx(final FirebaseUser user, final Cycle cycle) {
+    return putCycle(user, cycle).flatMapCompletable(UpdateHandle.run());
   }
 
   private String getNewId(FirebaseUser user) {
@@ -141,7 +130,7 @@ public class CycleProvider {
           @Override
           public MaybeSource<? extends Cycle> apply(@NonNull LocalDate startDate) throws Exception {
             Cycle cycle = Cycle.builder(getNewId(user), startDate).build();
-            return putCycleRx(user.getUid(), cycle).andThen(Maybe.just(cycle)).doOnSuccess(new Consumer<Cycle>() {
+            return putCycleRx(user, cycle).andThen(Maybe.just(cycle)).doOnSuccess(new Consumer<Cycle>() {
               @Override
               public void accept(Cycle cycle) throws Exception {
                 mCycleCache.put(cycle.id, cycle);
@@ -169,7 +158,7 @@ public class CycleProvider {
           @Override
           public ObservableSource<Cycle> apply(DataSnapshot snapshot) throws Exception {
             if (DEBUG) Log.v(TAG, "Found data for cycle: " + snapshot.getKey());
-            return cycleKeyProvider.getChartKeys(snapshot.getKey(), user.getUid()).map(Cycle.fromSnapshot(snapshot)).toObservable();
+            return keyProvider.getCycleKeys(snapshot.getKey()).map(Cycle.fromSnapshot(snapshot)).toObservable();
           }
         });
   }
@@ -191,7 +180,7 @@ public class CycleProvider {
       public UpdateHandle apply(UpdateHandle dropEntriesHandle) throws Exception {
         UpdateHandle handle = UpdateHandle.forDb(db);
         handle.merge(dropEntriesHandle);
-        handle.merge(cycleKeyProvider.dropKeysForCycle(cycle));
+        handle.merge(keyProvider.dropCycleKeys(cycle));
         handle.updates.put(String.format("/cycles/%s/%s", user.getUid(), cycle.id), null);
         handle.actions.add(new Action() {
           @Override
@@ -297,7 +286,7 @@ public class CycleProvider {
     Observable<UpdateHandle> newCycleHandles = newCycle.flatMapObservable(new Function<Cycle, ObservableSource<? extends UpdateHandle>>() {
       @Override
       public ObservableSource<? extends UpdateHandle> apply(Cycle newCycle) throws Exception {
-        return putCycleDeferred(user, newCycle);
+        return putCycle(user, newCycle);
       }
     }).cache();
     Completable putNewCycle = newCycleHandles.firstOrError().flatMapCompletable(UpdateHandle.run());
@@ -346,19 +335,6 @@ public class CycleProvider {
       }
     });
     return putNewCycle.andThen(doUpdates).andThen(result);
-  }
-
-  @Deprecated
-  private DatabaseReference reference(String userId, String cycleId) {
-    return reference(userId).child(cycleId);
-  }
-
-  private DatabaseReference reference(FirebaseUser user, String cycleId) {
-    return reference(user).child(cycleId);
-  }
-
-  private DatabaseReference reference(FirebaseUser user, Cycle cycle) {
-    return reference(user).child(cycle.id);
   }
 
   @Deprecated

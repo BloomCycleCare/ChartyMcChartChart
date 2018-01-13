@@ -85,7 +85,7 @@ public class CryptoProvider {
           updates.put("pub-key", KeyUtil.serializePublicKey(keyPair.getPublic()));
           updates.put("private-key", KeyUtil.wrapKey(keyPair.getPrivate(), phoneNumber));
           return RxFirebaseDatabase.updateChildren(
-              mDb.getReference("users").child(user.getUid()), updates);
+              mDb.getReference("keys").child(user.getUid()), updates);
         }
       }).andThen(Maybe.just(keyPair));
     } catch (Exception e) {
@@ -125,7 +125,7 @@ public class CryptoProvider {
 
   private Maybe<KeyPair> getKeyPairFromDb(FirebaseUser user, Maybe<String> phoneNumber) {
     Maybe<DataSnapshot> databaseResult =
-        RxFirebaseDatabase.observeSingleValueEvent(mDb.getReference("users").child(user.getUid()));
+        RxFirebaseDatabase.observeSingleValueEvent(mDb.getReference("keys").child(user.getUid()));
     return Maybe.zip(databaseResult, phoneNumber, new BiFunction<DataSnapshot, String, KeyPair>() {
       @Override
       public KeyPair apply(@NonNull DataSnapshot snapshot, @NonNull String phoneNumber) throws Exception {
