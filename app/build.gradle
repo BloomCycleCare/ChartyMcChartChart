@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
+    compileSdkVersion 27
     defaultConfig {
         applicationId "com.roamingroths.cmcc"
         minSdkVersion 21
@@ -18,33 +18,39 @@ android {
         }
     }
     buildToolsVersion '26.0.2'
+
+    configurations.all {
+        resolutionStrategy.force 'com.google.code.findbugs:jsr305:1.3.9'
+    }
 }
 
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
+    androidTestCompile 'com.google.code.findbugs:jsr305:3.0.0'
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
-    compile 'org.bouncycastle:bcprov-jdk16:1.45'
-    compile 'commons-codec:commons-codec:1.5'
-    compile 'com.google.guava:guava:20.0'
+    compile 'org.bouncycastle:bcprov-jdk16:1.46'
+    compile 'commons-codec:commons-codec:1.6'
+    compile 'com.google.guava:guava:22.0'
     compile 'org.apache.commons:commons-collections4:4.0'
-    compile 'com.android.support:recyclerview-v7:25.0.1'
-    compile 'com.android.support:preference-v14:25.0.1'
-    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile 'com.android.support:appcompat-v7:27.0.2'
+    compile 'com.android.support:design:27.0.2'
+    compile 'com.android.support:preference-v14:27.0.2'
+    compile 'com.android.support:recyclerview-v7:27.0.2'
+    compile 'com.android.support:support-v4:27.0.2'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
-    compile 'com.android.support:design:25.3.1'
-    compile 'com.google.code.gson:gson:2.6.2'
-    compile 'com.google.firebase:firebase-core:10.2.4'
-    compile 'com.google.firebase:firebase-database:10.2.4'
-    compile 'com.google.firebase:firebase-auth:10.2.4'
+    compile 'com.google.code.gson:gson:2.8.0'
+    compile 'com.google.firebase:firebase-core:11.8.0'
+    compile 'com.google.firebase:firebase-database:11.8.0'
+    compile 'com.google.firebase:firebase-auth:11.8.0'
     compile 'com.github.parkeroth:rx2firebase:master-SNAPSHOT'
+    compile 'com.github.parkeroth:AndroidMaterialPreferences:master-SNAPSHOT'
     compile 'com.firebaseui:firebase-ui:1.2.0'
     compile 'com.wdullaer:materialdatetimepicker:3.2.1'
     compile 'joda-time:joda-time:2.9.4'
-    compile 'com.android.support:support-v4:25.3.1'
     testCompile 'junit:junit:4.12'
-    testCompile 'org.mockito:mockito-core:1.10.19'
+    testCompile 'org.mockito:mockito-core:2.7.21'
 }
 
 
