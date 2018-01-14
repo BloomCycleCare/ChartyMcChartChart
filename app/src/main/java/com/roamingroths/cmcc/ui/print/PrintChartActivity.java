@@ -45,7 +45,7 @@ public class PrintChartActivity extends BaseActivity {
 
     setTitle("Select cycles to print");
 
-    mRecyclerView = (RecyclerView) findViewById(R.id.recyclerview_cycle_entry);
+    mRecyclerView = findViewById(R.id.recyclerview_cycle_entry);
     boolean shouldReverseLayout = false;
     LinearLayoutManager layoutManager
         = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
@@ -75,7 +75,7 @@ public class PrintChartActivity extends BaseActivity {
           });
     }
 
-    FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+    FloatingActionButton fab = findViewById(R.id.fab);
     final Toast invalidSelectionToast =
         Toast.makeText(this, "Continuous selection required", Toast.LENGTH_LONG);
     fab.setOnClickListener(new View.OnClickListener() {

@@ -29,7 +29,7 @@ import io.reactivex.SingleOnSubscribe;
 public abstract class EntryFragment<E extends Entry> extends Fragment {
 
   public enum Extras {
-    CURRENT_CYCLE, EXISTING_ENTRY;
+    CURRENT_CYCLE, EXISTING_ENTRY
   }
 
   public interface EntryListener {

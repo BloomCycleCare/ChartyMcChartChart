@@ -7,8 +7,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 
 /**
  * Created by parkeroth on 7/1/17.
@@ -52,12 +52,12 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       itemView.setOnClickListener(this);
       mContainerList = containerList;
       mClickHandler = clickHandler;
-      mEntryNumTextView = (TextView) itemView.findViewById(R.id.tv_entry_num);
-      mEntryDateTextView = (TextView) itemView.findViewById(R.id.tv_entry_date);
-      mEntryDataTextView = (TextView) itemView.findViewById(R.id.tv_entry_data);
-      mEntryPeakTextView = (TextView) itemView.findViewById(R.id.tv_peak_day);
-      mBabyImageView = (ImageView) itemView.findViewById(R.id.baby_image_view);
-      mStarImageView = (ImageView) itemView.findViewById(R.id.star_image_view);
+      mEntryNumTextView = itemView.findViewById(R.id.tv_entry_num);
+      mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
+      mEntryDataTextView = itemView.findViewById(R.id.tv_entry_data);
+      mEntryPeakTextView = itemView.findViewById(R.id.tv_peak_day);
+      mBabyImageView = itemView.findViewById(R.id.baby_image_view);
+      mStarImageView = itemView.findViewById(R.id.star_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
       mSeparator = itemView.findViewById(R.id.observation_list_separator);
       mWeekSeparator = itemView.findViewById(R.id.week_separator);

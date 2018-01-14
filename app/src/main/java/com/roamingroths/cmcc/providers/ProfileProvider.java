@@ -32,7 +32,7 @@ public class ProfileProvider {
   private static String TAG = ProfileProvider.class.getSimpleName();
 
   private enum PrefKey {
-    preferred_name, achieve_avoid_key;
+    preferred_name, achieve_avoid_key
   }
 
   private final FirebaseDatabase mDb;

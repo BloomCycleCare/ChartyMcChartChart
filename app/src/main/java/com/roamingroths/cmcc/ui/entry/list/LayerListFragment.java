@@ -143,7 +143,7 @@ public class LayerListFragment extends Fragment {
       super(itemView);
       itemView.setOnClickListener(this);
       mPublisher = publisher;
-      mOptionTitle = (TextView) itemView.findViewById(R.id.tv_layer_item);
+      mOptionTitle = itemView.findViewById(R.id.tv_layer_item);
     }
 
     public void bind(String key, String value) {

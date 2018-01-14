@@ -85,7 +85,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_list);
 
-    mNavView = (NavigationView) findViewById(R.id.nav_view);
+    mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
     mNavView.setNavigationItemSelectedListener(this);
 
@@ -95,19 +95,19 @@ public class ChartEntryListActivity extends AppCompatActivity
     final TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
     drawerSubtitleView.setText(user.getEmail());
 
-    mToolbar = (Toolbar) findViewById(R.id.app_bar);
+    mToolbar = findViewById(R.id.app_bar);
     setTitle("Current Cycle");
     setSupportActionBar(mToolbar);
 
-    mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+    mDrawerLayout = findViewById(R.id.drawer_layout);
     mDrawerToggle = new ActionBarDrawerToggle(
         this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
     mDrawerLayout.addDrawerListener(mDrawerToggle);
     mDrawerToggle.syncState();
 
-    mErrorView = (TextView) findViewById(R.id.refresh_error);
-    mProgressBar = (ProgressBar) findViewById(R.id.progress_bar);
-    mViewPager = (ViewPager) findViewById(R.id.view_pager);
+    mErrorView = findViewById(R.id.refresh_error);
+    mProgressBar = findViewById(R.id.progress_bar);
+    mViewPager = findViewById(R.id.view_pager);
 
     mProfileProvider = MyApplication.getProviders().forProfile();
     mProfileProvider.getProfile(this).subscribe(new Consumer<Profile>() {
@@ -167,7 +167,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   @Override
   public void onBackPressed() {
-    DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+    DrawerLayout drawer = findViewById(R.id.drawer_layout);
     if (drawer.isDrawerOpen(GravityCompat.START)) {
       drawer.closeDrawer(GravityCompat.START);
     } else {
@@ -336,7 +336,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
     // TODO: check items
 
-    DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+    DrawerLayout drawer = findViewById(R.id.drawer_layout);
     drawer.closeDrawer(GravityCompat.START);
     setNavItem();
     return true;

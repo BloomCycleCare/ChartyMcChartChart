@@ -59,7 +59,7 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
     };
     preferences.registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
 
-    mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_wellness_entry);
+    mRecyclerView = view.findViewById(R.id.recyclerview_wellness_entry);
     mRecyclerView.setLayoutManager(
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);

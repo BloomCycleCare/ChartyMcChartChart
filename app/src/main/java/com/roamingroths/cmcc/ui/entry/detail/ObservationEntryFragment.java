@@ -26,7 +26,7 @@ import java.util.Set;
 public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
   public enum Extras {
-    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY;
+    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY
   }
 
   public static final int OK_RESPONSE = 0;
@@ -61,12 +61,12 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
     mPointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
 
     mUnusualBleedingLayout = view.findViewById(R.id.unusual_bleeding_layout);
-    mUnusualBleedingSwitch = (Switch) view.findViewById(R.id.switch_unusual_bleeding);
+    mUnusualBleedingSwitch = view.findViewById(R.id.switch_unusual_bleeding);
 
     mObservationDescriptionTextView =
-        (TextView) view.findViewById(R.id.tv_modify_observation_description);
+        view.findViewById(R.id.tv_modify_observation_description);
 
-    mObservationEditText = (TextInputEditText) view.findViewById(R.id.et_modify_observation_value);
+    mObservationEditText = view.findViewById(R.id.et_modify_observation_value);
     mObservationEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
       @Override
       public void onFocusChange(View v, boolean hasFocus) {
@@ -106,11 +106,11 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
       }
     });
 
-    mPeakDaySwitch = (Switch) view.findViewById(R.id.switch_peak_day);
-    mIntercourseSwitch = (Switch) view.findViewById(R.id.switch_intercourse);
+    mPeakDaySwitch = view.findViewById(R.id.switch_peak_day);
+    mIntercourseSwitch = view.findViewById(R.id.switch_intercourse);
     mFirstDayLayout = view.findViewById(R.id.layout_new_cycle);
-    mFirstDaySwitch = (Switch) view.findViewById(R.id.switch_new_cycle);
-    mPointOfChangeSwitch = (Switch) view.findViewById(R.id.switch_point_of_change);
+    mFirstDaySwitch = view.findViewById(R.id.switch_new_cycle);
+    mPointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
 
     boolean hasPreviousCycle = args.getBoolean(Extras.HAS_PREVIOUS_CYCLE.name());
     boolean isFirstEntry = args.getBoolean(Extras.IS_FIRST_ENTRY.name());

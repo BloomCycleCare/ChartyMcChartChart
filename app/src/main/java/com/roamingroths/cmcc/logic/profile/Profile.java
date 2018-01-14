@@ -30,6 +30,6 @@ public class Profile implements Cipherable {
   }
 
   public enum SystemGoal {
-    ACHIEVE, AVOID;
+    ACHIEVE, AVOID
   }
 }

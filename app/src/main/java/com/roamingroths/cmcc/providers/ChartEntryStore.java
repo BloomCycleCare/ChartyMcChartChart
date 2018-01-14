@@ -8,7 +8,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.utils.UpdateHandle;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.logic.chart.Entry;
@@ -16,6 +15,7 @@ import com.roamingroths.cmcc.logic.chart.ObservationEntry;
 import com.roamingroths.cmcc.logic.chart.SymptomEntry;
 import com.roamingroths.cmcc.logic.chart.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import org.joda.time.LocalDate;
 import org.reactivestreams.Publisher;
@@ -38,7 +38,6 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
-import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Function4;
 import io.reactivex.schedulers.Schedulers;
@@ -117,8 +116,6 @@ public class ChartEntryStore {
     };
   }
 
-
-
   public Observable<UpdateHandle> putEntriesDeferred(final Cycle toCycle, Observable<ChartEntry> entries) {
     return entries.flatMap(new Function<ChartEntry, ObservableSource<UpdateHandle>>() {
       @Override
@@ -126,49 +123,6 @@ public class ChartEntryStore {
         return putEntryDeferred(toCycle, chartEntry).toObservable();
       }
     });
-  }
-
-  public Observable<ChartEntry> moveEntries(final Cycle fromCycle, final Cycle toCycle, Observable<ChartEntry> entries) {
-    return entries
-        .map(new Function<ChartEntry, ChartEntry>() {
-          @Override
-          public ChartEntry apply(ChartEntry chartEntry) throws Exception {
-            chartEntry.observationEntry.swapKey(mObservationEntryProvider.getKey(toCycle.keys));
-            chartEntry.wellnessEntry.swapKey(mWellnessEntryProvider.getKey(toCycle.keys));
-            chartEntry.symptomEntry.swapKey(mSymptomEntryProvider.getKey(toCycle.keys));
-            return chartEntry;
-          }
-        })
-        .toList()
-        .flatMapObservable(new Function<List<ChartEntry>, Observable<ChartEntry>>() {
-          @Override
-          public Observable<ChartEntry> apply(final List<ChartEntry> chartEntries) throws Exception {
-            Set<Completable> puts = new HashSet<>();
-            for (ChartEntry entry : chartEntries) {
-              if (DEBUG) Log.v(TAG, "Moving " + entry.entryDate + " from " + fromCycle.id + " to " + toCycle.id);
-              puts.add(putEntry(toCycle, entry).andThen(deleteEntry(fromCycle, entry)));
-            }
-            return Completable.merge(puts).andThen(Observable.fromIterable(chartEntries));
-          }
-        });
-  }
-
-  public Completable deleteEntry(Cycle cycle, ChartEntry entry) {
-    if (DEBUG) Log.v(TAG, "Delete " + entry.entryDate + " from " + cycle.id);
-    return RxFirebaseDatabase.removeValue(reference(cycle, entry.entryDate)).observeOn(Schedulers.io()).doOnComplete(new Action() {
-      @Override
-      public void run() throws Exception {
-        Log.i(TAG, "Delete done");
-      }
-    });
-  }
-
-  public Single<ChartEntry> putEmptyEntry(Cycle cycle, LocalDate date) {
-    ChartEntry entry = createEmpty(date, cycle.keys);
-    if (cycle.startDate.isEqual(date)) {
-      entry.observationEntry.firstDay = true;
-    }
-    return putEntry(cycle, entry).andThen(Single.just(entry));
   }
 
   public ChartEntry createEmptyEntry(Cycle cycle, LocalDate date) {

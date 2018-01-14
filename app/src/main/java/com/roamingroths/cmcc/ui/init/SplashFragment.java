@@ -45,9 +45,9 @@ public class SplashFragment extends Fragment {
                            Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_splash, container, false);
 
-    mProgressBar = (ProgressBar) view.findViewById(R.id.splash_progress);
-    mErrorView = (TextView) view.findViewById(R.id.splash_error_tv);
-    mStatusView = (TextView) view.findViewById(R.id.splash_status_tv);
+    mProgressBar = view.findViewById(R.id.splash_progress);
+    mErrorView = view.findViewById(R.id.splash_error_tv);
+    mStatusView = view.findViewById(R.id.splash_status_tv);
 
     return view;
   }

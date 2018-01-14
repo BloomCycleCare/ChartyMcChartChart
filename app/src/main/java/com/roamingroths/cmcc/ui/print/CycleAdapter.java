@@ -49,7 +49,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   private ImmutableSet<Integer> mBreakAfterIndexs;
 
   private enum BundleKey {
-    SELECTED_INDEXES, VIEW_MODELS;
+    SELECTED_INDEXES, VIEW_MODELS
   }
 
   @Nullable
