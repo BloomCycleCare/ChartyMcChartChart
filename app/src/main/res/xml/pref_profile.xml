@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-                  android:layout_width="match_parent"
-                  android:layout_height="match_parent">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
 
     <EditTextPreference
         android:defaultValue="FirebaseUser Info"
@@ -15,5 +16,25 @@
         android:title="Goal for using system"
         android:entries="@array/pref_system_goal_values"
         android:entryValues="@array/pref_system_goal_keys"/>
+
+    <NumberPickerPreference
+        android:defaultValue="100"
+        android:key="height_key"
+        android:title="Height"
+        app:maxValue="200"
+        app:minValue="1"
+        app:subtitleText="cm"
+        app:wrapSelectorWheel="false"
+        app:valueAsSummary="true" />
+
+    <NumberPickerPreference
+        android:defaultValue="50"
+        android:key="weight_key"
+        android:title="Weight"
+        app:maxValue="200"
+        app:minValue="1"
+        app:subtitleText="kg"
+        app:wrapSelectorWheel="false"
+        app:valueAsSummary="true" />
 
 </PreferenceScreen>

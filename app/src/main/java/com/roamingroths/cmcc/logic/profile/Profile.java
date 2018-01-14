@@ -14,6 +14,8 @@ public class Profile implements Cipherable {
 
   public String mPreferredName;
   public SystemGoal mGoal;
+  public int heightCm;
+  public int weightKg;
 
   public Profile(SecretKey key) {
     mKey = key;

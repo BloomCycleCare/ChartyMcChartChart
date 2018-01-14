@@ -2,17 +2,18 @@ package com.roamingroths.cmcc.ui.profile;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v14.preference.MultiSelectListPreference;
-import android.support.v7.preference.CheckBoxPreference;
+import android.support.v14.preference.SwitchPreference;
 import android.support.v7.preference.ListPreference;
+import android.support.v7.preference.NumberPickerPreference;
 import android.support.v7.preference.Preference;
-import android.support.v7.preference.PreferenceFragmentCompat;
 import android.support.v7.preference.PreferenceScreen;
 import android.support.v7.preference.SwitchPreferenceCompat;
 import android.util.Log;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
+
+import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -39,24 +40,43 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
     }
   }
 
+  private void setNumPickerSummary(SharedPreferences prefs, NumberPickerPreference pref) {
+    int val = prefs.getInt(pref.getKey(), 0);
+    String unit = pref.getSubtitleText();
+    pref.setSummary(String.format("%d %s", val, unit));
+  }
+
+  private void setListSummary(SharedPreferences prefs, ListPreference pref) {
+    pref.setSummary(pref.getEntry());
+  }
+
+  private void setSwitchSummary(SharedPreferences prefs, SwitchPreference pref) {
+    pref.setSummary(String.valueOf(prefs.getBoolean(pref.getKey(), false)));
+  }
+
   @Override
   public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
     addPreferencesFromResource(R.xml.pref_profile);
 
     SharedPreferences sharedPreferences = getPreferenceScreen().getSharedPreferences();
+
     PreferenceScreen prefScreen = getPreferenceScreen();
     int count = prefScreen.getPreferenceCount();
     Log.v("ProfileFragment", "Loading " + count + " preferences");
     for (int i = 0; i < count; i++) {
-      Preference p = prefScreen.getPreference(i);
-      if (p instanceof SwitchPreferenceCompat) {
-        setPreferenceSummary(p, sharedPreferences.getBoolean(p.getKey(), false));
-        continue;
-      }
-      if (!(p instanceof CheckBoxPreference)) {
-        setPreferenceSummary(p, sharedPreferences.getString(p.getKey(), ""));
-        continue;
-      }
+      updateSummary(prefScreen.getPreference(i), sharedPreferences);
+    }
+  }
+
+  private void updateSummary(Preference pref, SharedPreferences prefs) {
+    if (pref instanceof SwitchPreferenceCompat) {
+      setSwitchSummary(prefs, (SwitchPreference) pref);
+    } else if (pref instanceof NumberPickerPreference) {
+      setNumPickerSummary(prefs, (NumberPickerPreference) pref);
+    } else if (pref instanceof ListPreference) {
+      setListSummary(prefs, (ListPreference) pref);
+    } else {
+      pref.setSummary(prefs.getString(pref.getKey(), ""));
     }
   }
 
@@ -64,14 +84,7 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
   public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
     Preference preference = findPreference(key);
     if (null != preference) {
-      if (preference instanceof SwitchPreferenceCompat) {
-        setPreferenceSummary(preference, sharedPreferences.getBoolean(key, false));
-      } else if (preference instanceof MultiSelectListPreference) {
-        return;
-      } else if (!(preference instanceof CheckBoxPreference)) {
-        setPreferenceSummary(preference, sharedPreferences.getString(key, ""));
-      }
-
+      updateSummary(preference, sharedPreferences);
       MyApplication.getProviders().forProfile().maybeUpdateProfile(sharedPreferences, key).subscribe();
     }
   }

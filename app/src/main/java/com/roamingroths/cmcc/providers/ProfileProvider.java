@@ -32,7 +32,7 @@ public class ProfileProvider {
   private static String TAG = ProfileProvider.class.getSimpleName();
 
   private enum PrefKey {
-    preferred_name, achieve_avoid_key;
+    preferred_name, achieve_avoid_key, height_key, weight_key
   }
 
   private final FirebaseDatabase mDb;
@@ -61,6 +61,8 @@ public class ProfileProvider {
         SharedPreferences.Editor editor = prefs.edit();
         editor.putString(PrefKey.preferred_name.name(), mUser.getDisplayName());
         editor.putString(PrefKey.achieve_avoid_key.name(), goal.name());
+        editor.putInt(PrefKey.height_key.name(), 100);
+        editor.putInt(PrefKey.weight_key.name(), 50);
         editor.commit();
       }
     };
@@ -128,8 +130,10 @@ public class ProfileProvider {
 
   private static Profile profileFromPrefs(SharedPreferences prefs, SecretKey key) {
     Profile profile = new Profile(key);
-    profile.mPreferredName = prefs.getString("preferred_name", "Not Specified");
-    profile.mGoal = Profile.SystemGoal.valueOf(prefs.getString("achieve_avoid_key", "not_set").toUpperCase());
+    profile.mPreferredName = prefs.getString(PrefKey.preferred_name.name(), "Not Specified");
+    profile.mGoal = Profile.SystemGoal.valueOf(prefs.getString(PrefKey.achieve_avoid_key.name(), "not_set").toUpperCase());
+    profile.heightCm = prefs.getInt(PrefKey.height_key.name(), -1);
+    profile.weightKg = prefs.getInt(PrefKey.weight_key.name(), -1);
     return profile;
   }
 }
