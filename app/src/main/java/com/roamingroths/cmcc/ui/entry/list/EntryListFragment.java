@@ -15,9 +15,9 @@ import android.view.ViewGroup;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -52,7 +52,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private ChartEntryProvider mChartEntryProvider;
 
   public enum Neighbor {
-    LEFT, RIGHT;
+    LEFT, RIGHT
   }
 
   public EntryListFragment() {
@@ -158,7 +158,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_chart_list, container, false);
 
-    mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_chart_list);
+    mRecyclerView = view.findViewById(R.id.recyclerview_chart_list);
     mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
 
     mRecyclerView.setAdapter(mChartEntryAdapter);

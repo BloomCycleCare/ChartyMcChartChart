@@ -31,14 +31,14 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
-import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.logic.chart.Entry;
 import com.roamingroths.cmcc.logic.chart.ObservationEntry;
 import com.roamingroths.cmcc.logic.chart.SymptomEntry;
 import com.roamingroths.cmcc.logic.chart.WellnessEntry;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
+import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 
 import org.joda.time.Days;
@@ -67,7 +67,7 @@ import static com.roamingroths.cmcc.ui.entry.detail.ObservationEntryFragment.OK_
 public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
 
   public enum Extras {
-    CURRENT_CYCLE, CHART_ENTRY, EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY;
+    CURRENT_CYCLE, CHART_ENTRY, EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY
   }
 
   private static final boolean DEBUG = true;
@@ -136,7 +136,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     updateMaps(chartEntry);
 
-    Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+    Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     getSupportActionBar().setTitle(getTitle(mCycle, mDate));
@@ -146,10 +146,10 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         new SectionsPagerAdapter(getSupportFragmentManager(), expectUnusualBleeding, hasPreviousCycle, isFirstEntry);
 
     // Set up the ViewPager with the sections adapter.
-    mViewPager = (ViewPager) findViewById(R.id.container);
+    mViewPager = findViewById(R.id.container);
     mViewPager.setAdapter(mSectionsPagerAdapter);
 
-    TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+    TabLayout tabLayout = findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
 
     if (DEBUG) Log.v(TAG, "onCreate: Finish");

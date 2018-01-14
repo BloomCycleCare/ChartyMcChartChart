@@ -64,7 +64,7 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
 
   @Override
   void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
-    mRecyclerView = (RecyclerView) view.findViewById(R.id.recyclerview_symptom_entry);
+    mRecyclerView = view.findViewById(R.id.recyclerview_symptom_entry);
     mRecyclerView.setLayoutManager(
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
