@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.ui.profile;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.v14.preference.SwitchPreference;
+import android.support.v7.preference.DatePickerPreference;
 import android.support.v7.preference.ListPreference;
 import android.support.v7.preference.NumberPickerPreference;
 import android.support.v7.preference.Preference;
@@ -21,25 +22,6 @@ import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 public class ProfileFragment extends PreferenceFragmentCompat implements
     SharedPreferences.OnSharedPreferenceChangeListener {
 
-  private void setPreferenceSummary(Preference preference, Object value) {
-    String stringValue = value.toString();
-    if (preference instanceof SwitchPreferenceCompat) {
-      return;
-    }
-    if (preference instanceof ListPreference) {
-      // For list preferences, look up the correct display value in
-      // the preference's 'entries' list (since they have separate labels/values).
-      ListPreference listPreference = (ListPreference) preference;
-      int prefIndex = listPreference.findIndexOfValue(stringValue);
-      if (prefIndex >= 0) {
-        preference.setSummary(listPreference.getEntries()[prefIndex]);
-      }
-    } else {
-      // For other preferences, set the summary to the value's simple string representation.
-      preference.setSummary(stringValue);
-    }
-  }
-
   private void setNumPickerSummary(SharedPreferences prefs, NumberPickerPreference pref) {
     int val = prefs.getInt(pref.getKey(), 0);
     String unit = pref.getSubtitleText();
@@ -53,6 +35,8 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
   private void setSwitchSummary(SharedPreferences prefs, SwitchPreference pref) {
     pref.setSummary(String.valueOf(prefs.getBoolean(pref.getKey(), false)));
   }
+
+  private void setDatePickerSummary(SharedPreferences prefs, DatePickerPreference pref) {}
 
   @Override
   public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -75,6 +59,8 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
       setNumPickerSummary(prefs, (NumberPickerPreference) pref);
     } else if (pref instanceof ListPreference) {
       setListSummary(prefs, (ListPreference) pref);
+    } else if (pref instanceof DatePickerPreference) {
+      setDatePickerSummary(prefs, (DatePickerPreference) pref);
     } else {
       pref.setSummary(prefs.getString(pref.getKey(), ""));
     }

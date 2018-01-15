@@ -11,6 +11,12 @@
         android:singleLine="true"
         android:title="Preferred name"/>
 
+    <DatePickerPreference
+        android:key="date_of_birth_key"
+        android:title="Date of birth"
+        app:defaultYearsAgo="25"
+        app:dateAsSummary="true" />
+
     <ListPreference
         android:key="achieve_avoid_key"
         android:title="Goal for using system"

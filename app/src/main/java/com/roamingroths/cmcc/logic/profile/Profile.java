@@ -2,6 +2,8 @@ package com.roamingroths.cmcc.logic.profile;
 
 import com.roamingroths.cmcc.crypto.Cipherable;
 
+import org.joda.time.LocalDate;
+
 import javax.crypto.SecretKey;
 
 /**
@@ -14,6 +16,7 @@ public class Profile implements Cipherable {
 
   public String mPreferredName;
   public SystemGoal mGoal;
+  public LocalDate mDateOfBirth;
   public int heightCm;
   public int weightKg;
 

@@ -11,6 +11,8 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.profile.Profile;
 
+import org.joda.time.LocalDate;
+
 import javax.crypto.SecretKey;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
@@ -29,10 +31,11 @@ import io.reactivex.functions.Function;
 
 public class ProfileProvider {
 
-  private static String TAG = ProfileProvider.class.getSimpleName();
+  private static final String TAG = ProfileProvider.class.getSimpleName();
+  private static final LocalDate EPOCH = new LocalDate(1970, 1, 1);
 
   private enum PrefKey {
-    preferred_name, achieve_avoid_key, height_key, weight_key
+    preferred_name, achieve_avoid_key, date_of_birth_key, height_key, weight_key
   }
 
   private final FirebaseDatabase mDb;
@@ -134,6 +137,7 @@ public class ProfileProvider {
     profile.mGoal = Profile.SystemGoal.valueOf(prefs.getString(PrefKey.achieve_avoid_key.name(), "not_set").toUpperCase());
     profile.heightCm = prefs.getInt(PrefKey.height_key.name(), -1);
     profile.weightKg = prefs.getInt(PrefKey.weight_key.name(), -1);
+    profile.mDateOfBirth = EPOCH.plusDays(prefs.getInt(PrefKey.date_of_birth_key.name(), -1));
     return profile;
   }
 }

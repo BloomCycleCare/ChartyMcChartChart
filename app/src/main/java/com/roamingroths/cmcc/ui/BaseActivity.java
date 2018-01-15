@@ -9,7 +9,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
 
 /**
- * Created by parkeroth on 11/12/17.
+ * Created by parkeroth on 11/12/17 .
  */
 
 public abstract class BaseActivity extends AppCompatActivity {
