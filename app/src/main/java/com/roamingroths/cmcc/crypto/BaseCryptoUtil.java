@@ -14,6 +14,7 @@ import javax.crypto.SecretKey;
 
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
 
 /**
@@ -53,6 +54,16 @@ public class BaseCryptoUtil implements CryptoUtil {
   @Override
   public Single<String> encrypt(Cipherable cipherable) {
     return AesCryptoUtil.encryptRx(cipherable.getKey(), GsonUtil.getGsonInstance().toJson(cipherable));
+  }
+
+  @Override
+  public Function<Cipherable, SingleSource<String>> encrypt() {
+    return new Function<Cipherable, SingleSource<String>>() {
+      @Override
+      public SingleSource<String> apply(Cipherable cipherable) throws Exception {
+        return encrypt(cipherable);
+      }
+    };
   }
 
   @Override

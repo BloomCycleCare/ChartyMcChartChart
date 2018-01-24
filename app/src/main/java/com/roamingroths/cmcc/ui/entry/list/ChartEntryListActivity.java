@@ -30,7 +30,6 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
@@ -39,8 +38,6 @@ import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.profile.ProfileActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
-import com.roamingroths.cmcc.utils.FileUtil;
-import com.roamingroths.cmcc.utils.GsonUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import java.io.File;
@@ -231,40 +228,31 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (id == R.id.action_export) {
       Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
-      AppState.create(mCycleProvider)
-          .subscribe(new Consumer<AppState>() {
-            @Override
-            public void accept(AppState appState) throws Exception {
-              String json = GsonUtil.getGsonInstance().toJson(appState);
+      MyApplication.getProviders().forAppState().fetchAsJson(this).subscribe(new Consumer<String>() {
+        @Override
+        public void accept(String json) throws Exception {
+          File path = new File(activity.getFilesDir(), "tmp/");
+          if (!path.exists()) {
+            path.mkdir();
+          }
+          File file = new File(path, "cmcc_export.chart");
 
-              FileUtil.shareAppState(appState, activity);
-              File path = new File(activity.getFilesDir(), "tmp/");
-              if (!path.exists()) {
-                path.mkdir();
-              }
-              File file = new File(path, "cmcc_export.chart");
+          Files.write(json, file, Charsets.UTF_8);
 
-              Files.write(json, file, Charsets.UTF_8);
+          Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
 
-              Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+          Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
+              .setSubject("CMCC Export")
+              .setEmailTo(null)
+              .setType("application/json")
+              .setStream(uri)
+              .getIntent();
+          shareIntent.setData(uri);
+          shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-              Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
-                  .setSubject("CMCC Export")
-                  .setEmailTo(null)
-                  .setType("application/json")
-                  .setStream(uri)
-                  .getIntent();
-              shareIntent.setData(uri);
-              shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-
-              startActivity(shareIntent);
-            }
-          }, new Consumer<Throwable>() {
-            @Override
-            public void accept(Throwable throwable) throws Exception {
-              Log.w("PrintChartActivity", "Could not create AppState", throwable);
-            }
-          });
+          startActivity(shareIntent);
+        }
+      });
     }
 
     return super.onOptionsItemSelected(item);

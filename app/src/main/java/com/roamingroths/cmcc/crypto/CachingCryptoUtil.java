@@ -11,7 +11,9 @@ import javax.crypto.SecretKey;
 
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 11/11/17.
@@ -58,6 +60,11 @@ public class CachingCryptoUtil implements CryptoUtil {
         OBJECT_CACHE.put(s.hashCode(), cipherable);
       }
     });
+  }
+
+  @Override
+  public Function<Cipherable, SingleSource<String>> encrypt() {
+    return mDelegate.encrypt();
   }
 
   @Override

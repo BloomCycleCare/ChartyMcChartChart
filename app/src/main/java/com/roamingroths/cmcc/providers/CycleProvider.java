@@ -11,15 +11,16 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.roamingroths.cmcc.utils.UpdateHandle;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -77,16 +78,33 @@ public class CycleProvider {
     return chartEntryProvider;
   }
 
-  public Observable<ChartEntry> getEntries(Cycle cycle) {
-    return chartEntryProvider.getEntries(cycle);
+  public Completable putCycleDatas(FirebaseUser currentUser, final Collection<AppState.CycleData> cycleDatas) {
+    // This should be done better...
+    List<Single<UpdateHandle>> cyclePuts = new ArrayList<>();
+    List<Single<UpdateHandle>> keyPuts = new ArrayList<>();
+    List<Single<UpdateHandle>> entryPuts = new ArrayList<>();
+    for (AppState.CycleData cycleData : cycleDatas) {
+      Observable<UpdateHandle> handles = putCycle(currentUser, cycleData.cycle).cache();
+      cyclePuts.add(handles.firstOrError());
+      keyPuts.add(handles.skip(1).firstOrError());
+      entryPuts.add(chartEntryProvider.putCycleData(cycleData));
+    }
+    Completable putCycles = Single.merge(cyclePuts)
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector())
+        .flatMapCompletable(UpdateHandle.run());
+    Completable putKeys = Single.merge(keyPuts)
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector())
+        .flatMapCompletable(UpdateHandle.run());
+    Completable putEntries = Single.merge(entryPuts)
+        .collectInto(UpdateHandle.forDb(db), UpdateHandle.collector())
+        .flatMapCompletable(UpdateHandle.run());
+    return putCycles.andThen(putKeys).andThen(putEntries);
   }
 
   private Observable<UpdateHandle> putCycle(final FirebaseUser user, final Cycle cycle) {
     return keyProvider.putCycleKeys(cycle).flatMapObservable(new Function<UpdateHandle, ObservableSource<? extends UpdateHandle>>() {
       @Override
       public ObservableSource<? extends UpdateHandle> apply(UpdateHandle putKeysHandle) throws Exception {
-        List<UpdateHandle> handles = new ArrayList<>();
-
         UpdateHandle handle = UpdateHandle.forDb(db);
         String basePath = String.format("/cycles/%s/%s/", user.getUid(), cycle.id);
         handle.updates.put(basePath + "start-date", DateUtil.toWireStr(cycle.startDate));
@@ -97,8 +115,9 @@ public class CycleProvider {
             mCycleCache.put(cycle.id, cycle);
           }
         });
-        handles.add(handle);
 
+        List<UpdateHandle> handles = new ArrayList<>();
+        handles.add(handle);
         handles.add(putKeysHandle);
         return Observable.fromIterable(handles);
       }

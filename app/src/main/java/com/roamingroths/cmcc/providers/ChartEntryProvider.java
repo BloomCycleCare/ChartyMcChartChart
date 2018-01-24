@@ -7,10 +7,11 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import org.joda.time.LocalDate;
 
@@ -29,6 +30,7 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
+import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -60,17 +62,27 @@ public class ChartEntryProvider {
           }
         })
         .take(numCycles)
-        .flatMapCompletable(new Function<Cycle, CompletableSource>() {
+        .toList()
+        .flatMapCompletable(new Function<List<Cycle>, CompletableSource>() {
           @Override
-          public CompletableSource apply(Cycle cycle) throws Exception {
-            return fillCache(cycle);
+          public CompletableSource apply(List<Cycle> cycles) throws Exception {
+            List<Completable> completables = new ArrayList<>(cycles.size());
+            for (Cycle cycle : cycles) {
+              completables.add(fillCache(cycle));
+            }
+            return Completable.merge(completables);
           }
         });
   }
 
   public Completable fillCache(final Cycle cycle) {
     if (DEBUG) Log.v(TAG, "Fill entry cache: " + cycle);
-    return getEntries(cycle).ignoreElements();
+    return getEntries(cycle).ignoreElements().doOnComplete(new Action() {
+      @Override
+      public void run() throws Exception {
+        if (DEBUG) Log.v(TAG, "Done filling entry cache: " + cycle);
+      }
+    });
   }
 
   public Flowable<RxFirebaseChildEvent<ChartEntry>> entryStream(Cycle cycle) {
@@ -80,6 +92,10 @@ public class ChartEntryProvider {
 
   public Observable<ChartEntry> getEntries(Cycle cycle) {
     return getEntries(cycle, Predicates.<LocalDate>alwaysTrue());
+  }
+
+  public Single<UpdateHandle> putCycleData(AppState.CycleData cycleData) {
+    return mStore.putEntriesDeferred(cycleData.cycle, Observable.fromIterable(cycleData.entries));
   }
 
   public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
@@ -158,11 +174,11 @@ public class ChartEntryProvider {
   public Single<UpdateHandle> copyEntries(
       final Cycle fromCycle,
       final Cycle toCycle,
-      final Predicate<LocalDate> datePredicate) {
+      Predicate<LocalDate> datePredicate) {
     if (DEBUG) Log.v(TAG, "Copy entries from " + fromCycle.id + " to " + toCycle.id);
     Observable<ChartEntry> entriesToPut = getEntries(fromCycle, datePredicate).map(mStore.swapKeys(toCycle)).cache();
-    Observable<UpdateHandle> updates = mStore.putEntriesDeferred(toCycle, entriesToPut);
-    return Observable.zip(entriesToPut, updates, new BiFunction<ChartEntry, UpdateHandle, UpdateHandle>() {
+    Single<UpdateHandle> updates = mStore.putEntriesDeferred(toCycle, entriesToPut);
+    return Observable.zip(entriesToPut, updates.toObservable(), new BiFunction<ChartEntry, UpdateHandle, UpdateHandle>() {
       @Override
       public UpdateHandle apply(ChartEntry chartEntry, UpdateHandle updateHandle) throws Exception {
         updateHandle.actions.add(mCache.putEntry(chartEntry));

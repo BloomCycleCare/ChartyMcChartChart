@@ -5,11 +5,13 @@ import android.content.Context;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.profile.Profile;
+import com.roamingroths.cmcc.providers.AppStateProvider;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CryptoProvider;
 import com.roamingroths.cmcc.providers.CycleEntryProvider;
@@ -43,16 +45,15 @@ public class MyApplication extends Application {
   @Override
   public void onCreate() {
     super.onCreate();
-    Security.addProvider(new BouncyCastleProvider());
-
     if (DEBUG) Log.v(TAG, "onCreate()");
-
-    FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-
+    FirebaseApp.initializeApp(this);
+    //FirebaseDatabase.getInstance().setPersistenceEnabled(true);
+    Security.addProvider(new BouncyCastleProvider());
     PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
   }
 
   public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {
+    Log.i(TAG, "Creating crypto util for user: " + user.getUid());
     Single<CryptoUtil> cryptoUtil =
         CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil(user, phoneNumber);
     return cryptoUtil.flatMapCompletable(new Function<CryptoUtil, CompletableSource>() {
@@ -81,6 +82,7 @@ public class MyApplication extends Application {
     private final CycleEntryProvider mCycleEntryProvider;
     private final ChartEntryProvider mChartEntryProvider;
     private final ProfileProvider mProfileProvider;
+    private final AppStateProvider mAppStateProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
       mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
@@ -88,6 +90,7 @@ public class MyApplication extends Application {
       mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
       mCycleProvider = new CycleProvider(db, mKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
+      mAppStateProvider = new AppStateProvider(mProfileProvider, mCycleProvider, mChartEntryProvider, currentUser);
     }
 
     public Completable initialize(FirebaseUser user, Context context) {
@@ -113,6 +116,10 @@ public class MyApplication extends Application {
 
     public ChartEntryProvider forChartEntry() {
       return mChartEntryProvider;
+    }
+
+    public AppStateProvider forAppState() {
+      return mAppStateProvider;
     }
   }
 }

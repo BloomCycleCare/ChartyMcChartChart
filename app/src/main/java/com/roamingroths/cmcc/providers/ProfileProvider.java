@@ -94,8 +94,16 @@ public class ProfileProvider {
     return Completable.complete();
   }
 
-  public Completable putProfile(Profile profile) {
-    return mCryptoUtil.encrypt(profile).flatMapCompletable(new Function<String, CompletableSource>() {
+  public Completable putProfile(final Profile profile) {
+    Single<Profile> profileWithKey = profile.hasKey() ? Single.just(profile) :
+        mKeyProvider.createAndStoreProfileKey().map(new Function<SecretKey, Profile>() {
+          @Override
+          public Profile apply(SecretKey secretKey) throws Exception {
+            profile.swapKey(secretKey);
+            return profile;
+          }
+        });
+    return profileWithKey.flatMap(mCryptoUtil.encrypt()).flatMapCompletable(new Function<String, CompletableSource>() {
       @Override
       public CompletableSource apply(String encryptedProfile) throws Exception {
         return RxFirebaseDatabase.setValue(getProfileReference(), encryptedProfile);
@@ -134,7 +142,8 @@ public class ProfileProvider {
   private static Profile profileFromPrefs(SharedPreferences prefs, SecretKey key) {
     Profile profile = new Profile(key);
     profile.mPreferredName = prefs.getString(PrefKey.preferred_name.name(), "Not Specified");
-    profile.mGoal = Profile.SystemGoal.valueOf(prefs.getString(PrefKey.achieve_avoid_key.name(), "not_set").toUpperCase());
+    profile.mGoal = Profile.SystemGoal.valueOf(
+        prefs.getString(PrefKey.achieve_avoid_key.name(), Profile.SystemGoal.UNSPECIFIED.name()).toUpperCase());
     profile.heightCm = prefs.getInt(PrefKey.height_key.name(), -1);
     profile.weightKg = prefs.getInt(PrefKey.weight_key.name(), -1);
     profile.mDateOfBirth = EPOCH.plusDays(prefs.getInt(PrefKey.date_of_birth_key.name(), -1));

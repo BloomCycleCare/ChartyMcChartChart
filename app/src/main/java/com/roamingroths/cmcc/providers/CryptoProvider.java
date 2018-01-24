@@ -19,12 +19,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
-import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
+import io.reactivex.MaybeSource;
 import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -66,7 +67,12 @@ public class CryptoProvider {
   }
 
   private Single<KeyPair> getUserKeyPair(FirebaseUser user, Maybe<String> phoneNumber, KeyStore ks) {
-    Maybe<String> cachedPhoneNumber = phoneNumber.cache();
+    Maybe<String> cachedPhoneNumber = phoneNumber.cache().doOnSubscribe(new Consumer<Disposable>() {
+      @Override
+      public void accept(Disposable disposable) throws Exception {
+        Log.v(TAG, "Prompting for phone number");
+      }
+    });
     return getKeyPairFromKeyStore(ks)
         .switchIfEmpty(getKeyPairFromDb(user, cachedPhoneNumber).doOnSuccess(storeKeyInKeystore(ks)))
         .switchIfEmpty(createAndStoreKeyPair(user, cachedPhoneNumber).doOnSuccess(storeKeyInKeystore(ks)))
@@ -74,23 +80,19 @@ public class CryptoProvider {
   }
 
   private Maybe<KeyPair> createAndStoreKeyPair(final FirebaseUser user, Maybe<String> phoneNumber) {
-    try {
-      Log.v(TAG, "Creating KeyPair");
-      final KeyPair keyPair = KeyUtil.createKeyPair();
-      return phoneNumber.flatMapCompletable(new Function<String, CompletableSource>() {
-        @Override
-        public CompletableSource apply(@NonNull String phoneNumber) throws Exception {
-          Log.v(TAG, "Storing KeyPair in DB");
-          Map<String, Object> updates = new HashMap<>();
-          updates.put("pub-key", KeyUtil.serializePublicKey(keyPair.getPublic()));
-          updates.put("private-key", KeyUtil.wrapKey(keyPair.getPrivate(), phoneNumber));
-          return RxFirebaseDatabase.updateChildren(
-              mDb.getReference("keys").child(user.getUid()), updates);
-        }
-      }).andThen(Maybe.just(keyPair));
-    } catch (Exception e) {
-      return Maybe.error(e);
-    }
+    return phoneNumber.flatMap(new Function<String, MaybeSource<? extends KeyPair>>() {
+      @Override
+      public MaybeSource<KeyPair> apply(@NonNull String phoneNumber) throws Exception {
+        Log.v(TAG, "Creating new KeyPair");
+        KeyPair keyPair = KeyUtil.createKeyPair();
+        Log.v(TAG, "Storing KeyPair in DB");
+        Map<String, Object> updates = new HashMap<>();
+        updates.put("pub-key", KeyUtil.serializePublicKey(keyPair.getPublic()));
+        updates.put("private-key", KeyUtil.wrapKey(keyPair.getPrivate(), phoneNumber));
+        return RxFirebaseDatabase.updateChildren(
+            mDb.getReference("keys").child(user.getUid()), updates).andThen(Maybe.just(keyPair));
+      }
+    });
   }
 
   private Consumer<KeyPair> storeKeyInKeystore(final KeyStore ks) {
@@ -117,6 +119,8 @@ public class CryptoProvider {
               (KeyStore.PrivateKeyEntry) keyStore.getEntry(PRIVATE_KEY_ALIAS, null);
           emitter.onSuccess(
               new KeyPair(entry.getCertificate().getPublicKey(), entry.getPrivateKey()));
+        } else {
+          Log.v(TAG, "No KeyPair in KeyStore");
         }
         emitter.onComplete();
       }
@@ -124,18 +128,30 @@ public class CryptoProvider {
   }
 
   private Maybe<KeyPair> getKeyPairFromDb(FirebaseUser user, Maybe<String> phoneNumber) {
-    Maybe<DataSnapshot> databaseResult =
-        RxFirebaseDatabase.observeSingleValueEvent(mDb.getReference("keys").child(user.getUid()));
-    return Maybe.zip(databaseResult, phoneNumber, new BiFunction<DataSnapshot, String, KeyPair>() {
-      @Override
-      public KeyPair apply(@NonNull DataSnapshot snapshot, @NonNull String phoneNumber) throws Exception {
-        Log.v(TAG, "Loading KeyPair from DB");
-        String publicKeyStr = snapshot.child("pub-key").getValue(String.class);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(publicKeyStr));
-        String privateKeyStr = snapshot.child("private-key").getValue(String.class);
-        Preconditions.checkArgument(!Strings.isNullOrEmpty(privateKeyStr));
-        return KeyUtil.parseKeyPair(publicKeyStr, privateKeyStr, phoneNumber);
-      }
-    });
+    return RxFirebaseDatabase.observeSingleValueEvent(mDb.getReference("keys").child(user.getUid()))
+        .zipWith(phoneNumber, new BiFunction<DataSnapshot, String, KeyPair>() {
+          @Override
+          public KeyPair apply(DataSnapshot snapshot, String phoneNumber) throws Exception {
+            Log.v(TAG, "Found KeyPair in DB");
+            String publicKeyStr = snapshot.child("pub-key").getValue(String.class);
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(publicKeyStr));
+            String privateKeyStr = snapshot.child("private-key").getValue(String.class);
+            Preconditions.checkArgument(!Strings.isNullOrEmpty(privateKeyStr));
+            return KeyUtil.parseKeyPair(publicKeyStr, privateKeyStr, phoneNumber);
+          }
+        })
+        .switchIfEmpty(Maybe.create(new MaybeOnSubscribe<KeyPair>() {
+          @Override
+          public void subscribe(MaybeEmitter<KeyPair> e) throws Exception {
+            Log.v(TAG, "FOO");
+            e.onComplete();
+          }
+        }))
+        .doOnSubscribe(new Consumer<Disposable>() {
+          @Override
+          public void accept(Disposable disposable) throws Exception {
+            Log.v(TAG, "Loading KeyPair from DB");
+          }
+        });
   }
 }

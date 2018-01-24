@@ -34,7 +34,12 @@ public class Profile implements Cipherable {
     mKey = key;
   }
 
+  @Override
+  public boolean hasKey() {
+    return mKey != null;
+  }
+
   public enum SystemGoal {
-    ACHIEVE, AVOID
+    ACHIEVE, AVOID, UNSPECIFIED
   }
 }

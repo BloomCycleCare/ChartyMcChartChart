@@ -3,11 +3,11 @@ package com.roamingroths.cmcc.logic;
 import android.util.Log;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
@@ -24,7 +24,6 @@ import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 
@@ -34,17 +33,7 @@ import io.reactivex.functions.Predicate;
 
 public class AppState {
   public final List<CycleData> cycles;
-
-  public static Single<AppState> create(final CycleProvider cycleProvider) {
-    return fetchCycleDatas(cycleProvider)
-        .toList()
-        .flatMap(new Function<List<CycleData>, SingleSource<? extends AppState>>() {
-          @Override
-          public SingleSource<? extends AppState> apply(List<CycleData> cycleData) throws Exception {
-            return Single.just(new AppState(cycleData));
-          }
-        });
-  }
+  public final Profile profile;
 
   private static Callable<AppState> parseFromFile(final InputStream in) {
     return new Callable<AppState>() {
@@ -93,25 +82,9 @@ public class AppState {
         .firstOrError();
   }
 
-  private static Observable<CycleData> fetchCycleDatas(final CycleProvider cycleProvider) {
-    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    Log.v("AppState", "Fetching cycleToShow datas for user " + user.getUid());
-    return cycleProvider.getAllCycles(user)
-        .flatMap(new Function<Cycle, ObservableSource<CycleData>>() {
-          @Override
-          public ObservableSource<CycleData> apply(final Cycle cycle) throws Exception {
-            return cycleProvider.getEntries(cycle).toList().map(new Function<List<ChartEntry>, CycleData>() {
-              @Override
-              public CycleData apply(List<ChartEntry> chartEntries) throws Exception {
-                return new CycleData(cycle, chartEntries);
-              }
-            }).toObservable();
-          }
-        });
-  }
-
-  public AppState(List<CycleData> cycles) {
+  public AppState(List<CycleData> cycles, Profile profile) {
     this.cycles = cycles;
+    this.profile = profile;
   }
 
   public static class CycleData {

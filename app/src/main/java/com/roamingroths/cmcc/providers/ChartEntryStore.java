@@ -116,13 +116,13 @@ public class ChartEntryStore {
     };
   }
 
-  public Observable<UpdateHandle> putEntriesDeferred(final Cycle toCycle, Observable<ChartEntry> entries) {
+  public Single<UpdateHandle> putEntriesDeferred(final Cycle toCycle, Observable<ChartEntry> entries) {
     return entries.flatMap(new Function<ChartEntry, ObservableSource<UpdateHandle>>() {
       @Override
       public ObservableSource<UpdateHandle> apply(ChartEntry chartEntry) throws Exception {
         return putEntryDeferred(toCycle, chartEntry).toObservable();
       }
-    });
+    }).collectInto(UpdateHandle.forDb(mDB), UpdateHandle.collector());
   }
 
   public ChartEntry createEmptyEntry(Cycle cycle, LocalDate date) {

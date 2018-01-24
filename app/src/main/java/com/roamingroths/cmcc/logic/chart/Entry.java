@@ -38,6 +38,11 @@ public abstract class Entry implements Cipherable, Parcelable {
   }
 
   @Override
+  public boolean hasKey() {
+    return mKey != null;
+  }
+
+  @Override
   public final void swapKey(SecretKey key) {
     mKey = key;
   }

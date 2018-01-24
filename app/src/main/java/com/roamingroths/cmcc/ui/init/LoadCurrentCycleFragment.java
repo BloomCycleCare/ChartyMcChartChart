@@ -8,11 +8,11 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
-import com.roamingroths.cmcc.utils.UpdateHandle;
-import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.roamingroths.cmcc.utils.UpdateHandle;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
@@ -28,8 +28,6 @@ import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
-
-import static com.facebook.FacebookSdk.getApplicationContext;
 
 /**
  * Created by parkeroth on 10/8/17.
@@ -68,7 +66,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .subscribe(new Consumer<Cycle>() {
           @Override
           public void accept(@NonNull Cycle cycle) throws Exception {
-            Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
+            Intent intent = new Intent(getContext(), ChartEntryListActivity.class);
             startActivity(intent);
           }
         }, new Consumer<Throwable>() {

@@ -10,4 +10,6 @@ public interface Cipherable {
   SecretKey getKey();
 
   void swapKey(SecretKey key);
+
+  boolean hasKey();
 }

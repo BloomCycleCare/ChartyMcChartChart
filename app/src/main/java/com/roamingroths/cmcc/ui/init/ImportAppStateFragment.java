@@ -9,9 +9,8 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.AppState;
-import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 
 import java.io.InputStream;
@@ -69,13 +68,9 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
         return getActivity().getContentResolver().openInputStream(uri);
       }
     };
-    Single.fromCallable(openFile)
-        .flatMap(new Function<InputStream, SingleSource<Cycle>>() {
-          @Override
-          public SingleSource<Cycle> apply(InputStream is) throws Exception {
-            return AppState.parseAndPushToDB(is, user, mCycleProvider);
-          }
-        })
+    MyApplication.getProviders().forAppState()
+        .parseAndPushToRemote(openFile)
+        .andThen(mCycleProvider.getCurrentCycle(user))
         .subscribe(new Consumer<Cycle>() {
           @Override
           public void accept(Cycle cycle) throws Exception {
@@ -83,12 +78,6 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
             intent.putExtra(Cycle.class.getName(), cycle);
             getActivity().finish();
             startActivity(intent);
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(Throwable t) throws Exception {
-            showError("Error importing data");
-            Log.e(ImportAppStateFragment.class.getSimpleName(), "Error importing data", t);
           }
         });
   }

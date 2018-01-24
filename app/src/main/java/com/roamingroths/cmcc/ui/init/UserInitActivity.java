@@ -19,12 +19,16 @@ import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.providers.CryptoProvider;
 
+import java.util.Arrays;
+
 import io.reactivex.Maybe;
 import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
@@ -76,7 +80,9 @@ public class UserInitActivity extends FragmentActivity {
       mFragment.updateStatus("Launching login");
       startActivityForResult(
           AuthUI.getInstance().createSignInIntentBuilder()
-              .setProviders(AuthUI.GOOGLE_PROVIDER)
+              .setAvailableProviders(Arrays.asList(
+                  new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()
+              ))
               .setIsSmartLockEnabled(false)
               .build(),
           RC_SIGN_IN);
@@ -102,10 +108,10 @@ public class UserInitActivity extends FragmentActivity {
     }
   }
 
-  @Override
+  /*@Override
   protected void onSaveInstanceState(Bundle outState) {
     //No call for super(). Bug on API Level > 11.
-  }
+  }*/
 
   private void initUserState(final FirebaseUser user) {
     mFragment.updateStatus("Initializing user");
@@ -117,6 +123,11 @@ public class UserInitActivity extends FragmentActivity {
           public void run() throws Exception {
             mFragment.updateStatus("User initialization complete");
             mUserListener.onUserInitialized(user);
+          }
+        }, new Consumer<Throwable>() {
+          @Override
+          public void accept(Throwable throwable) throws Exception {
+            Log.w(TAG, throwable.getMessage(), throwable);
           }
         });
   }
@@ -143,9 +154,20 @@ public class UserInitActivity extends FragmentActivity {
             e.onSuccess(phoneNumberStr);
           }
         });
-        Log.v("UserInitActivity", "Prompting for phone number");
         builder.create().show();
       }
-    }).subscribeOn(AndroidSchedulers.mainThread());
+    }).subscribeOn(AndroidSchedulers.mainThread())
+        .doOnSubscribe(new Consumer<Disposable>() {
+          @Override
+          public void accept(Disposable disposable) throws Exception {
+            Log.v("UserInitActivity", "Prompting for phone number");
+          }
+        })
+        .doOnSuccess(new Consumer<String>() {
+          @Override
+          public void accept(String s) throws Exception {
+            Log.v("UserInitActivity", "Phone number: " + s);
+          }
+        });
   }
 }
