@@ -309,7 +309,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     int id = item.getItemId();
 
     switch (item.getItemId()) {
-      case R.id.nav_followups:
+      case R.id.nav_appointments:
         startActivity(new Intent(this, AppointmentListActivity.class));
         break;
       case R.id.nav_profile:
