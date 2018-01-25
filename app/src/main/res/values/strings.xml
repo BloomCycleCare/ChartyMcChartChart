@@ -129,37 +129,21 @@
         <item>food_guide</item>
     </string-array>
     <string-array name="pref_symptom_option_keys">
-        ________
         <item>light_cramps</item>
-        ________
         <item>medium_cramps</item>
-        ________
         <item>heavy_cramps</item>
-        ________
         <item>diarrhea</item>
-        ________
         <item>constipation</item>
-        ________
         <item>bloating</item>
-        ________
         <item>nausea</item>
-        ________
         <item>cravings</item>
-        ________
         <item>blemishes</item>
-        ________
         <item>insomnia</item>
-        ________
         <item>fatigue</item>
-        ________
         <item>anxiety</item>
-        ________
         <item>headache</item>
-        ________
         <item>breast_tenderness</item>
-        ________
         <item>swelling_of_extremities</item>
-        ____
     </string-array>
     <string-array name="pref_symptom_option_values">
         <item>Light Cramps</item>

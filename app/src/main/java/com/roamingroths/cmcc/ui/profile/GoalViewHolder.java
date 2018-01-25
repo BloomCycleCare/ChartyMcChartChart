@@ -1,0 +1,27 @@
+package com.roamingroths.cmcc.ui.profile;
+
+import android.support.v7.widget.RecyclerView;
+import android.view.View;
+import android.widget.TextView;
+
+import com.roamingroths.cmcc.R;
+
+/**
+ * Created by parkeroth on 1/24/18.
+ */
+
+public interface GoalViewHolder {
+
+  class Impl extends RecyclerView.ViewHolder implements GoalViewHolder {
+
+    private TextView mTitle;
+
+    public Impl(View itemView) {
+      super(itemView);
+
+      mTitle = itemView.findViewById(R.id.tv_title);
+
+      mTitle.setText("A goal");
+    }
+  }
+}
