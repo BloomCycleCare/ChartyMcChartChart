@@ -33,6 +33,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
+import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
@@ -309,10 +310,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     switch (item.getItemId()) {
       case R.id.nav_followups:
-      case R.id.nav_share:
-      case R.id.nav_reference:
-      case R.id.nav_help_and_feedback:
-        Toast.makeText(this, "Work in progress.", Toast.LENGTH_SHORT).show();
+        startActivity(new Intent(this, AppointmentListActivity.class));
         break;
       case R.id.nav_profile:
         // TODO: get updated profile
@@ -320,6 +318,11 @@ public class ChartEntryListActivity extends AppCompatActivity
         break;
       case R.id.nav_settings:
         startActivity(new Intent(this, SettingsActivity.class));
+        break;
+      case R.id.nav_share:
+      case R.id.nav_reference:
+      case R.id.nav_help_and_feedback:
+        Toast.makeText(this, "Work in progress.", Toast.LENGTH_SHORT).show();
         break;
     }
     // TODO: check items

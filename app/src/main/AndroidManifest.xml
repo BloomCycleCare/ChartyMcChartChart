@@ -69,8 +69,12 @@
         <activity android:name=".ui.settings.SettingsActivity" />
         <activity
             android:name=".ui.profile.ProfileActivity"
-            android:theme="@style/AppTheme.NoActionBar" />
-
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
+        <activity
+            android:name=".ui.appointments.AppointmentListActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="com.roamingroths.cmcc.fileprovider"
