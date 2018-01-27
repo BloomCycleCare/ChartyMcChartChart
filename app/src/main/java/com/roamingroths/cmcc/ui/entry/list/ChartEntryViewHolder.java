@@ -33,6 +33,8 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   void setWeekTransition(boolean val);
 
+  void setSymptomGoalSummary(int symptoms);
+
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
     private final ChartEntryList mContainerList;
@@ -40,6 +42,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final TextView mEntryDateTextView;
     private final TextView mEntryDataTextView;
     private final TextView mEntryPeakTextView;
+    private final TextView mSymptomGoalSummaryView;
     private final ImageView mBabyImageView;
     private final ImageView mStarImageView;
     private final View mEntryBackgroundView;
@@ -56,6 +59,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
       mEntryDataTextView = itemView.findViewById(R.id.tv_entry_data);
       mEntryPeakTextView = itemView.findViewById(R.id.tv_peak_day);
+      mSymptomGoalSummaryView = itemView.findViewById(R.id.tv_goal_symptom_summary);
       mBabyImageView = itemView.findViewById(R.id.baby_image_view);
       mStarImageView = itemView.findViewById(R.id.star_image_view);
       mEntryBackgroundView = itemView.findViewById(R.id.entry_item_layout);
@@ -110,8 +114,10 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     public void setOverlay(boolean val) {
       if (val) {
         mStarImageView.setVisibility(View.VISIBLE);
+        mSymptomGoalSummaryView.setVisibility(View.INVISIBLE);
       } else {
         mStarImageView.setVisibility(View.INVISIBLE);
+        mSymptomGoalSummaryView.setVisibility(View.VISIBLE);
       }
     }
 
@@ -126,6 +132,11 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     public void setWeekTransition(boolean val) {
       mWeekSeparator.setVisibility(val ? View.VISIBLE : View.GONE);
       mSeparator.setVisibility(val ? View.GONE : View.VISIBLE);
+    }
+
+    @Override
+    public void setSymptomGoalSummary(int symptoms) {
+      mSymptomGoalSummaryView.setText(String.format("S: %d", symptoms));
     }
   }
 }

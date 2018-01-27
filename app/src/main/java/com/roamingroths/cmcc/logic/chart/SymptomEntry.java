@@ -4,6 +4,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.Cipherable;
@@ -44,6 +46,10 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
       symptoms.put(in.readString(), in.readByte() != 0);
     }
     swapKey(AesCryptoUtil.parseKey(in.readString()));
+  }
+
+  public int getNumSymptoms() {
+    return Collections2.filter(symptoms.values(), Predicates.equalTo(true)).size();
   }
 
   public boolean hasItem(String key) {

@@ -57,6 +57,7 @@ public class ChartEntryList {
     holder.setPeakDayText(getPeakDayViewText(observationEntry));
     holder.setIntercourse(observationEntry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, observationEntry));
+    holder.setSymptomGoalSummary(entry.symptomEntry.getNumSymptoms());
     holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
     String foo = observationEntry.getDate().dayOfWeek().getAsString();
     holder.setWeekTransition(foo.equals("1"));
