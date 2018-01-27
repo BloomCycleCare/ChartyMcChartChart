@@ -52,35 +52,39 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/fab_margin"
         fab:fab_addButtonColorNormal="@color/colorAccent"
+        fab:fab_addButtonColorPressed="@color/colorAccent"
         fab:fab_labelStyle="@style/menu_labels_style"
         fab:fab_labelsPosition="left"
         app:layout_anchor="@id/container"
         app:layout_anchorGravity="bottom|right|end" >
 
         <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/action_a"
+            android:id="@+id/add_general"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_icon="@drawable/ic_flag_white_24dp"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccent"
             fab:fab_size="mini"
             fab:fab_title="General" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/action_c"
+            android:id="@+id/add_diet"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_icon="@drawable/ic_local_dining_white_24dp"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccent"
             fab:fab_size="mini"
             fab:fab_title="Diet" />
 
         <com.getbase.floatingactionbutton.FloatingActionButton
-            android:id="@+id/action_b"
+            android:id="@+id/add_medication"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             fab:fab_icon="@drawable/ic_healing_white_24dp"
             fab:fab_colorNormal="@color/colorAccent"
+            fab:fab_colorPressed="@color/colorAccent"
             fab:fab_size="mini"
             fab:fab_title="Supplement/Medication" />
 
