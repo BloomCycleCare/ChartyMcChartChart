@@ -9,4 +9,8 @@
     <color name="entryGreen">#93C47D</color>
     <color name="entryWhite">#FFFFFF</color>
     <color name="entryGrey">#EEEEEE</color>
+
+    <color name="black_semi_transparent">#B2000000</color>
+    <color name="white">#fafafa</color>
+    <color name="white_pressed">#f1f1f1</color>
 </resources>
