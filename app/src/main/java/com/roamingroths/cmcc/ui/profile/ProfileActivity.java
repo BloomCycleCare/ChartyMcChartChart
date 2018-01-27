@@ -1,7 +1,6 @@
 package com.roamingroths.cmcc.ui.profile;
 
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -10,20 +9,23 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
+import android.view.View;
 
+import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.roamingroths.cmcc.R;
 
 public class ProfileActivity extends AppCompatActivity {
 
+  private View mBackgroundDimmer;
   private SectionsPagerAdapter mPagerAdapter;
   private ViewPager mViewPager;
-  private FloatingActionButton mFab;
+  private FloatingActionsMenu mFam;
 
   private void showOrHideFab(int position) {
     if (position == 1) {
-      mFab.show();
+      mFam.setVisibility(View.VISIBLE);
     } else {
-      mFab.hide();
+      mFam.setVisibility(View.GONE);
     }
   }
 
@@ -37,7 +39,20 @@ public class ProfileActivity extends AppCompatActivity {
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     getSupportActionBar().setTitle("Your Profile");
 
-    mFab = findViewById(R.id.floatingActionButton);
+    mBackgroundDimmer = findViewById(R.id.background_dimmer);
+
+    mFam = findViewById(R.id.floatingActionButton);
+    mFam.setOnFloatingActionsMenuUpdateListener(new FloatingActionsMenu.OnFloatingActionsMenuUpdateListener() {
+      @Override
+      public void onMenuExpanded() {
+        mBackgroundDimmer.setVisibility(View.VISIBLE);
+      }
+
+      @Override
+      public void onMenuCollapsed() {
+        mBackgroundDimmer.setVisibility(View.GONE);
+      }
+    });
 
     mPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
     mViewPager = findViewById(R.id.container);
