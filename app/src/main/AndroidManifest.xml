@@ -85,7 +85,10 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
-        <activity android:name=".ui.profile.GoalDetailActivity"></activity>
+        <activity
+            android:name=".ui.profile.GoalDetailActivity"
+            android:theme="@style/AppTheme.NoActionBar">
+        </activity>
     </application>
 
 </manifest>
