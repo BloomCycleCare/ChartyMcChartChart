@@ -52,6 +52,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
@@ -59,6 +60,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
@@ -90,8 +92,6 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
    */
   private ViewPager mViewPager;
   private Cycle mCycle;
-  private CycleProvider mCycleProvider;
-  private ChartEntryProvider mChartEntryProvider;
   private FirebaseUser mUser;
   private LocalDate mDate;
 
@@ -131,8 +131,6 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     boolean isFirstEntry = intent.getBooleanExtra(Extras.IS_FIRST_ENTRY.name(), false);
 
     mUser = FirebaseAuth.getInstance().getCurrentUser();
-    mCycleProvider = MyApplication.getProviders().forCycle();
-    mChartEntryProvider = MyApplication.getProviders().forChartEntry();
 
     updateMaps(chartEntry);
 
@@ -383,8 +381,14 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private Single<EntrySaveResult> doSave(final Consumer<String> updateConsumer) {
     if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycleToShow: " + mCycle.id);
-    ChartEntry entry = updateEntryMapFromUIs();
-    Completable putDone = mChartEntryProvider.putEntry(mCycle, entry);
+    final ChartEntry entry = updateEntryMapFromUIs();
+
+    Completable putDone = MyApplication.chartEntryProvider().flatMapCompletable(new Function<ChartEntryProvider, CompletableSource>() {
+      @Override
+      public CompletableSource apply(ChartEntryProvider chartEntryProvider) throws Exception {
+        return chartEntryProvider.putEntry(mCycle, entry);
+      }
+    });
 
     if (DEBUG) Log.v(TAG, "Done putting entries");
     ObservationEntryFragment observationEntryFragment =
@@ -392,16 +396,28 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
     if (observationEntryFragment.shouldSplitCycle()) {
       if (DEBUG) Log.v(TAG, "Splitting cycleToShow");
-      Single<LocalDate> firstEntryDate = observationEntryFragment.getEntryFromUiRx().map(new Function<ObservationEntry, LocalDate>() {
+      final Single<LocalDate> firstEntryDate = observationEntryFragment.getEntryFromUiRx().map(new Function<ObservationEntry, LocalDate>() {
         @Override
         public LocalDate apply(ObservationEntry observationEntry) throws Exception {
           return observationEntry.getDate();
         }
       });
-      return putDone.andThen(mCycleProvider.splitCycleRx(mUser, mCycle, firstEntryDate, updateConsumer));
+      Single<EntrySaveResult> splitCycle = MyApplication.cycleProvider().flatMap(new Function<CycleProvider, SingleSource<EntrySaveResult>>() {
+        @Override
+        public Single<EntrySaveResult> apply(CycleProvider cycleProvider) throws Exception {
+          return cycleProvider.splitCycleRx(mUser, mCycle, firstEntryDate, updateConsumer);
+        }
+      });
+      return putDone.andThen(splitCycle);
     } else if (observationEntryFragment.shouldJoinCycle()) {
       if (DEBUG) Log.v(TAG, "Joining cycleToShow with previous");
-      return putDone.andThen(mCycleProvider.combineCycleRx(mUser, mCycle, updateConsumer));
+      Single<EntrySaveResult> combineCyles = MyApplication.cycleProvider().flatMap(new Function<CycleProvider, SingleSource<EntrySaveResult>>() {
+        @Override
+        public Single<EntrySaveResult> apply(CycleProvider cycleProvider) throws Exception {
+          return cycleProvider.combineCycleRx(mUser, mCycle, updateConsumer);
+        }
+      });
+      return putDone.andThen(combineCyles);
     }
     return putDone.andThen(Single.just(EntrySaveResult.forCycle(mCycle)));
   }

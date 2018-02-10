@@ -67,8 +67,6 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   private final Subject<String> mLayerSubject;
   private EntryListPageAdapter mPageAdapter;
-  private CycleProvider mCycleProvider;
-  private ProfileProvider mProfileProvider;
 
   public ChartEntryListActivity() {
     mLayerSubject = BehaviorSubject.create();

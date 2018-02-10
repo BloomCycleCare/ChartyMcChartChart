@@ -6,6 +6,7 @@ import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
@@ -27,6 +28,7 @@ import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.Function;
 
@@ -39,8 +41,8 @@ public class MyApplication extends Application {
   private static final boolean DEBUG = true;
   private static final String TAG = MyApplication.class.getSimpleName();
 
-  private static CryptoUtil mCryptoUtil;
-  private static Providers mProviders;
+  private static Maybe<CryptoUtil> mCryptoUtilFromKeyStore;
+  private static Single<Providers> mProviders;
 
   @Override
   public void onCreate() {
@@ -50,6 +52,16 @@ public class MyApplication extends Application {
     //FirebaseDatabase.getInstance().setPersistenceEnabled(true);
     Security.addProvider(new BouncyCastleProvider());
     PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
+
+    mCryptoUtilFromKeyStore = CryptoProvider.forDb(FirebaseDatabase.getInstance()).tryCreateFromKeyStore().cache();
+    mProviders = mCryptoUtilFromKeyStore.flatMapSingle(new Function<CryptoUtil, SingleSource<? extends Providers>>() {
+      @Override
+      public SingleSource<? extends Providers> apply(CryptoUtil cryptoUtil) throws Exception {
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        Providers providers = new Providers(FirebaseDatabase.getInstance(), cryptoUtil, user);
+        return providers.initialize(user, getApplicationContext()).andThen(Single.just(providers));
+      }
+    }).cache();
   }
 
   public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {
@@ -60,29 +72,79 @@ public class MyApplication extends Application {
       @Override
       public CompletableSource apply(CryptoUtil cryptoUtil) throws Exception {
         Log.i(TAG, "Crypto initialization complete");
-        mCryptoUtil = cryptoUtil;
-        mProviders = new Providers(FirebaseDatabase.getInstance(), mCryptoUtil, user);
-        return mProviders.initialize(user, context).doOnComplete(new Action() {
+        final Providers providers = new Providers(FirebaseDatabase.getInstance(), cryptoUtil, user);
+        return providers.initialize(user, context).doOnComplete(new Action() {
           @Override
           public void run() throws Exception {
             Log.i(TAG, "Provider initialization complete");
+            mProviders = Single.just(providers).cache();
           }
         });
       }
     });
   }
 
-  public static Providers getProviders() {
-    return mProviders;
+  public static Single<CycleProvider> cycleProvider() {
+    return mProviders.map(new Function<Providers, CycleProvider>() {
+      @Override
+      public CycleProvider apply(Providers providers) throws Exception {
+        return providers.mCycleProvider;
+      }
+    });
+  }
+
+  public static Single<KeyProvider> keyProvider() {
+    return mProviders.map(new Function<Providers, KeyProvider>() {
+      @Override
+      public KeyProvider apply(Providers providers) throws Exception {
+        return providers.mKeyProvider;
+      }
+    });
+  }
+
+  public static Single<CycleEntryProvider> cycleEntryProvider() {
+    return mProviders.map(new Function<Providers, CycleEntryProvider>() {
+      @Override
+      public CycleEntryProvider apply(Providers providers) throws Exception {
+        return providers.mCycleEntryProvider;
+      }
+    });
+  }
+
+  public static Single<ChartEntryProvider> chartEntryProvider() {
+    return mProviders.map(new Function<Providers, ChartEntryProvider>() {
+      @Override
+      public ChartEntryProvider apply(Providers providers) throws Exception {
+        return providers.mChartEntryProvider;
+      }
+    });
+  }
+
+  public static Single<ProfileProvider> profileProvider() {
+    return mProviders.map(new Function<Providers, ProfileProvider>() {
+      @Override
+      public ProfileProvider apply(Providers providers) throws Exception {
+        return providers.mProfileProvider;
+      }
+    });
+  }
+
+  public static Single<AppStateProvider> appStateProvider() {
+    return mProviders.map(new Function<Providers, AppStateProvider>() {
+      @Override
+      public AppStateProvider apply(Providers providers) throws Exception {
+        return providers.mAppStateProvider;
+      }
+    });
   }
 
   public static class Providers {
-    private final CycleProvider mCycleProvider;
-    private final KeyProvider mKeyProvider;
-    private final CycleEntryProvider mCycleEntryProvider;
-    private final ChartEntryProvider mChartEntryProvider;
-    private final ProfileProvider mProfileProvider;
-    private final AppStateProvider mAppStateProvider;
+    final CycleProvider mCycleProvider;
+    final KeyProvider mKeyProvider;
+    final CycleEntryProvider mCycleEntryProvider;
+    final ChartEntryProvider mChartEntryProvider;
+    final ProfileProvider mProfileProvider;
+    final AppStateProvider mAppStateProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
       mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
@@ -100,26 +162,6 @@ public class MyApplication extends Application {
               mCycleProvider.initCache(user),
               mProfileProvider.init(context, Profile.SystemGoal.AVOID))
           .andThen(mChartEntryProvider.initCache(mCycleProvider.getAllCycles(user), 2));
-    }
-
-    public ProfileProvider forProfile() {
-      return mProfileProvider;
-    }
-
-    public CycleEntryProvider forCycleEntry() {
-      return mCycleEntryProvider;
-    }
-
-    public CycleProvider forCycle() {
-      return mCycleProvider;
-    }
-
-    public ChartEntryProvider forChartEntry() {
-      return mChartEntryProvider;
-    }
-
-    public AppStateProvider forAppState() {
-      return mAppStateProvider;
     }
   }
 }

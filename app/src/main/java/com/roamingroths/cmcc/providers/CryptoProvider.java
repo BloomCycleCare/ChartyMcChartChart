@@ -17,6 +17,7 @@ import java.security.KeyStoreException;
 import java.security.cert.Certificate;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Maybe;
@@ -24,6 +25,9 @@ import io.reactivex.MaybeEmitter;
 import io.reactivex.MaybeOnSubscribe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.BiFunction;
@@ -52,37 +56,32 @@ public class CryptoProvider {
   }
 
   public Single<CryptoUtil> createCryptoUtil(FirebaseUser user, Maybe<String> phoneNumber) {
-    try {
-      KeyStore ks = KeyStore.getInstance(KEY_STORE_ALIAS);
-      return getUserKeyPair(user, phoneNumber, ks)
-          .map(new Function<KeyPair, CryptoUtil>() {
-            @Override
-            public CryptoUtil apply(@NonNull KeyPair keyPair) throws Exception {
-              return new CachingCryptoUtil(keyPair);
-            }
-          });
-    } catch (KeyStoreException kse) {
-      return Single.error(kse);
-    }
-  }
-
-  private Single<KeyPair> getUserKeyPair(FirebaseUser user, Maybe<String> phoneNumber, KeyStore ks) {
-    Maybe<String> cachedPhoneNumber = phoneNumber.cache().doOnSubscribe(new Consumer<Disposable>() {
-      @Override
-      public void accept(Disposable disposable) throws Exception {
-        Log.v(TAG, "Prompting for phone number");
-      }
-    });
-    return getKeyPairFromKeyStore(ks)
-        .switchIfEmpty(getKeyPairFromDb(user, cachedPhoneNumber).doOnSuccess(storeKeyInKeystore(ks)))
-        .switchIfEmpty(createAndStoreKeyPair(user, cachedPhoneNumber).doOnSuccess(storeKeyInKeystore(ks)))
+    Maybe<String> cachedPhoneNumber = phoneNumber.cache();
+    return tryCreateFromKeyStore()
+        .switchIfEmpty(tryCreateFromDb(user, cachedPhoneNumber))
+        .switchIfEmpty(createNewAndStore(user, cachedPhoneNumber).toMaybe())
         .toSingle();
   }
 
-  private Maybe<KeyPair> createAndStoreKeyPair(final FirebaseUser user, Maybe<String> phoneNumber) {
-    return phoneNumber.flatMap(new Function<String, MaybeSource<? extends KeyPair>>() {
+  public Maybe<CryptoUtil> tryCreateFromKeyStore() {
+    return Single.fromCallable(getKeyStore()).flatMapMaybe(new Function<KeyStore, MaybeSource<? extends KeyPair>>() {
       @Override
-      public MaybeSource<KeyPair> apply(@NonNull String phoneNumber) throws Exception {
+      public MaybeSource<? extends KeyPair> apply(KeyStore keyStore) throws Exception {
+        return getKeyPairFromKeyStore(keyStore);
+      }
+    }).map(createUtil());
+  }
+
+  private Maybe<CryptoUtil> tryCreateFromDb(FirebaseUser user, Maybe<String> phoneNumber) {
+    return getKeyPairFromDb(user, phoneNumber)
+        .doOnSuccess(storeKeyInKeystore())
+        .map(createUtil());
+  }
+
+  private Single<CryptoUtil> createNewAndStore(final FirebaseUser user, Maybe<String> phoneNumber) {
+    return phoneNumber.flatMapSingle(new Function<String, SingleSource<? extends KeyPair>>() {
+      @Override
+      public SingleSource<KeyPair> apply(@NonNull String phoneNumber) throws Exception {
         Log.v(TAG, "Creating new KeyPair");
         KeyPair keyPair = KeyUtil.createKeyPair();
         Log.v(TAG, "Storing KeyPair in DB");
@@ -90,15 +89,33 @@ public class CryptoProvider {
         updates.put("pub-key", KeyUtil.serializePublicKey(keyPair.getPublic()));
         updates.put("private-key", KeyUtil.wrapKey(keyPair.getPrivate(), phoneNumber));
         return RxFirebaseDatabase.updateChildren(
-            mDb.getReference("keys").child(user.getUid()), updates).andThen(Maybe.just(keyPair));
+            mDb.getReference("keys").child(user.getUid()), updates).andThen(Single.just(keyPair));
       }
-    });
+    }).doOnSuccess(storeKeyInKeystore()).map(createUtil());
   }
 
-  private Consumer<KeyPair> storeKeyInKeystore(final KeyStore ks) {
-    return new Consumer<KeyPair>() {
+  private Callable<KeyStore> getKeyStore() {
+    return new Callable<KeyStore>() {
       @Override
+      public KeyStore call() throws Exception {
+        return KeyStore.getInstance(KEY_STORE_ALIAS);
+      }
+    };
+  }
+
+  private static Function<KeyPair, CryptoUtil> createUtil() {
+    return new Function<KeyPair, CryptoUtil>() {
+      @Override
+      public CryptoUtil apply(KeyPair keyPair) throws Exception {
+        return new CachingCryptoUtil(keyPair);
+      }
+    };
+  }
+
+  private Consumer<KeyPair> storeKeyInKeystore() {
+    return new Consumer<KeyPair>() {
       public void accept(@NonNull KeyPair keyPair) throws Exception {
+        KeyStore ks = getKeyStore().call();
         Log.v(TAG, "Storing KeyPair in KeyStore");
         ks.load(null);
         Certificate cert = KeyUtil.createCertificate(keyPair);
