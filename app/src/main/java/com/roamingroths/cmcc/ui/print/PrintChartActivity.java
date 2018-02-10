@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.print.PrintJob;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NavUtils;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.MenuItem;
@@ -11,12 +12,15 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.logic.print.ChartPrinter;
-import com.roamingroths.cmcc.ui.BaseActivity;
+import com.roamingroths.cmcc.providers.CycleEntryProvider;
+import com.roamingroths.cmcc.providers.CycleProvider;
 
 import java.util.Comparator;
 import java.util.List;
@@ -24,11 +28,15 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.Single;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 
-public class PrintChartActivity extends BaseActivity {
+import static org.joda.time.DateTimeZone.getProvider;
+
+public class PrintChartActivity extends AppCompatActivity {
 
   private static final boolean DEBUG = true;
   private static final String TAG = PrintChartActivity.class.getSimpleName();
@@ -56,15 +64,22 @@ public class PrintChartActivity extends BaseActivity {
     if (adapter != null) {
       mRecyclerView.setAdapter(adapter);
     } else {
-      getProvider().forCycle()
-          .getAllCycles(FirebaseAuth.getInstance().getCurrentUser())
+      Observable.merge(Single.zip(
+          MyApplication.cycleProvider(),
+          MyApplication.getCurrentUser().toSingle(),
+          new BiFunction<CycleProvider, FirebaseUser, Observable<Cycle>>() {
+            @Override
+            public Observable<Cycle> apply(CycleProvider cycleProvider, FirebaseUser firebaseUser) throws Exception {
+              return cycleProvider.getAllCycles(firebaseUser);
+            }
+          }).toObservable())
           .sorted(new Comparator<Cycle>() {
             @Override
             public int compare(Cycle o1, Cycle o2) {
               return o2.startDate.compareTo(o1.startDate);
             }
           })
-          .flatMap(CycleAdapter.cycleToViewModel(getProvider().forChartEntry()))
+          .flatMap(CycleAdapter.cycleToViewModel(MyApplication.chartEntryProvider()))
           .toList()
           .subscribe(new Consumer<List<CycleAdapter.ViewModel>>() {
             @Override
@@ -85,8 +100,12 @@ public class PrintChartActivity extends BaseActivity {
           invalidSelectionToast.show();
           return;
         }
-        Observable<ChartEntryList> entryLists = getProvider().forCycleEntry().getChartEntryLists(
-            getAdapter().getSelectedCycles(), Preferences.fromShared(PrintChartActivity.this));
+        Observable<ChartEntryList> entryLists = MyApplication.cycleEntryProvider().flatMapObservable(new Function<CycleEntryProvider, ObservableSource<? extends ChartEntryList>>() {
+          @Override
+          public ObservableSource<? extends ChartEntryList> apply(CycleEntryProvider cycleEntryProvider) throws Exception {
+            return cycleEntryProvider.getChartEntryLists(getAdapter().getSelectedCycles(), Preferences.fromShared(PrintChartActivity.this));
+          }
+        });
         ChartPrinter.create(PrintChartActivity.this, entryLists)
             .print()
             .flatMapObservable(emitPrintJob())

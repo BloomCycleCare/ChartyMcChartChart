@@ -30,7 +30,10 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.profile.Profile;
+import com.roamingroths.cmcc.providers.AppStateProvider;
+import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
 import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
@@ -43,10 +46,16 @@ import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import java.io.File;
 
+import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.reactivex.SingleSource;
 import io.reactivex.functions.Action;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
 
 public class ChartEntryListActivity extends AppCompatActivity
@@ -65,12 +74,10 @@ public class ChartEntryListActivity extends AppCompatActivity
   private ProgressBar mProgressBar;
   private ViewPager mViewPager;
 
-  private final Subject<String> mLayerSubject;
-  private EntryListPageAdapter mPageAdapter;
+  private Single<CycleProvider> mCycleProvider;
 
-  public ChartEntryListActivity() {
-    mLayerSubject = BehaviorSubject.create();
-  }
+  private final Subject<String> mLayerSubject = BehaviorSubject.create();
+  private SingleSubject<EntryListPageAdapter> mPageAdapter = SingleSubject.create();
 
   public Observable<String> layerStream() {
     return mLayerSubject;
@@ -80,6 +87,8 @@ public class ChartEntryListActivity extends AppCompatActivity
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_list);
+
+    mCycleProvider = MyApplication.cycleProvider().cache();
 
     mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
@@ -105,34 +114,41 @@ public class ChartEntryListActivity extends AppCompatActivity
     mProgressBar = findViewById(R.id.progress_bar);
     mViewPager = findViewById(R.id.view_pager);
 
-    mProfileProvider = MyApplication.getProviders().forProfile();
-    mProfileProvider.getProfile(this).subscribe(new Consumer<Profile>() {
-      @Override
-      public void accept(Profile profile) throws Exception {
-        drawerTitleView.setText(profile.mPreferredName);
-      }
-    });
-    mCycleProvider = MyApplication.getProviders().forCycle();
-    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), MyApplication.getProviders().forChartEntry());
-    mPageAdapter.initialize(FirebaseAuth.getInstance().getCurrentUser(), mCycleProvider);
-    mViewPager.setAdapter(mPageAdapter);
-    mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-      @Override
-      public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-      }
+    MyApplication.profileProvider()
+        .flatMap(ProfileProvider.getProfileFn(ChartEntryListActivity.this))
+        .subscribe(new Consumer<Profile>() {
+          @Override
+          public void accept(Profile profile) throws Exception {
+            drawerTitleView.setText(profile.mPreferredName);
+          }
+        });
 
-      @Override
-      public void onPageScrollStateChanged(int state) {
-      }
+    MyApplication.chartEntryProvider()
+        .map(EntryListPageAdapter.create(getSupportFragmentManager()))
+        .flatMap(EntryListPageAdapter.initializeFn(MyApplication.getCurrentUser().toSingle(), mCycleProvider))
+        .subscribe(new Consumer<EntryListPageAdapter>() {
+          @Override
+          public void accept(final EntryListPageAdapter entryListPageAdapter) throws Exception {
+            mPageAdapter.onSuccess(entryListPageAdapter);
+            mViewPager.setAdapter(entryListPageAdapter);
+            mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+              @Override
+              public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+              }
 
-      @Override
-      public void onPageSelected(int position) {
-        setTitle(position == 0 ? "Current Cycle" : position + " Cycles Ago");
-        mPageAdapter.onPageActive(position);
-      }
-    });
+              @Override
+              public void onPageScrollStateChanged(int state) {
+              }
 
-    showList();
+              @Override
+              public void onPageSelected(int position) {
+                setTitle(position == 0 ? "Current Cycle" : position + " Cycles Ago");
+                entryListPageAdapter.onPageActive(position);
+              }
+            });
+            showList();
+          }
+        });
   }
 
   @Override
@@ -155,9 +171,14 @@ public class ChartEntryListActivity extends AppCompatActivity
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
-      EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
+      final EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
       if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
-      mViewPager.setCurrentItem(mPageAdapter.onResult(result));
+      mPageAdapter.subscribe(new Consumer<EntryListPageAdapter>() {
+        @Override
+        public void accept(EntryListPageAdapter adapter) throws Exception {
+          mViewPager.setCurrentItem(adapter.onResult(result));
+        }
+      });
     }
   }
 
@@ -205,8 +226,18 @@ public class ChartEntryListActivity extends AppCompatActivity
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
               showProgress();
-              mPageAdapter.shutdown(mViewPager);
-              mCycleProvider.dropCycles(FirebaseAuth.getInstance().getCurrentUser()).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
+              mPageAdapter.subscribe(new Consumer<EntryListPageAdapter>() {
+                @Override
+                public void accept(EntryListPageAdapter adapter) throws Exception {
+                  adapter.shutdown(mViewPager);
+                }
+              });
+              Single.merge(Single.zip(mCycleProvider, MyApplication.getCurrentUser().toSingle(), new BiFunction<CycleProvider, FirebaseUser, Single<UpdateHandle>>() {
+                @Override
+                public Single<UpdateHandle> apply(CycleProvider cycleProvider, FirebaseUser firebaseUser) throws Exception {
+                  return cycleProvider.dropCycles(firebaseUser);
+                }
+              })).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
                 @Override
                 public void run() throws Exception {
                   Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
@@ -227,7 +258,12 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (id == R.id.action_export) {
       Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
-      MyApplication.getProviders().forAppState().fetchAsJson(this).subscribe(new Consumer<String>() {
+      MyApplication.appStateProvider().flatMap(new Function<AppStateProvider, SingleSource<String>>() {
+        @Override
+        public SingleSource<String> apply(AppStateProvider provider) throws Exception {
+          return provider.fetchAsJson(ChartEntryListActivity.this);
+        }
+      }).subscribe(new Consumer<String>() {
         @Override
         public void accept(String json) throws Exception {
           File path = new File(activity.getFilesDir(), "tmp/");

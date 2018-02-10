@@ -18,8 +18,14 @@ import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 import java.util.Comparator;
 import java.util.List;
 
+import io.reactivex.Completable;
+import io.reactivex.CompletableSource;
+import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -33,6 +39,15 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   private final ChartEntryProvider mChartEntryProvider;
   private final SortedList<Cycle> mCycles;
+
+  public static Function<ChartEntryProvider, EntryListPageAdapter> create(final FragmentManager fragmentManager) {
+    return new Function<ChartEntryProvider, EntryListPageAdapter>() {
+      @Override
+      public EntryListPageAdapter apply(ChartEntryProvider chartEntryProvider) throws Exception {
+        return new EntryListPageAdapter(fragmentManager, chartEntryProvider);
+      }
+    };
+  }
 
   public EntryListPageAdapter(FragmentManager fragmentManager, ChartEntryProvider chartEntryProvider) {
     super(fragmentManager);
@@ -81,23 +96,39 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     notifyDataSetChanged();*/
   }
 
-  public void initialize(FirebaseUser user, CycleProvider cycleProvider) {
-    cycleProvider.getAllCycles(user)
-        .sorted(new Comparator<Cycle>() {
-          @Override
-          public int compare(Cycle o1, Cycle o2) {
-            return o2.startDate.compareTo(o1.startDate);
-          }
-        })
-        .toList()
-        .subscribe(new Consumer<List<Cycle>>() {
-          @Override
-          public void accept(List<Cycle> cycles) throws Exception {
-            mCycles.beginBatchedUpdates();
-            mCycles.addAll(cycles);
-            mCycles.endBatchedUpdates();
-          }
-        });
+  public static Function<EntryListPageAdapter, Single<EntryListPageAdapter>> initializeFn(
+      final Single<FirebaseUser> user, final Single<CycleProvider> cycleProvider) {
+    return new Function<EntryListPageAdapter, Single<EntryListPageAdapter>>() {
+      @Override
+      public Single<EntryListPageAdapter> apply(EntryListPageAdapter adapter) throws Exception {
+        return adapter.initialize(user, cycleProvider).andThen(Single.just(adapter));
+      }
+    };
+  }
+
+  public Completable initialize(Single<FirebaseUser> user, Single<CycleProvider> cycleProvider) {
+    Single<List<Cycle>> cycles = Single.merge(Single.zip(user, cycleProvider, new BiFunction<FirebaseUser, CycleProvider, Single<List<Cycle>>>() {
+      @Override
+      public Single<List<Cycle>> apply(FirebaseUser firebaseUser, CycleProvider cycleProvider) throws Exception {
+        return cycleProvider
+            .getAllCycles(firebaseUser)
+            .sorted(new Comparator<Cycle>() {
+              @Override
+              public int compare(Cycle o1, Cycle o2) {
+                return o2.startDate.compareTo(o1.startDate);
+              }
+            })
+            .toList();
+      }
+    }));
+    return Completable.fromSingle(cycles.doOnSuccess(new Consumer<List<Cycle>>() {
+      @Override
+      public void accept(List<Cycle> cycles) throws Exception {
+        mCycles.beginBatchedUpdates();
+        mCycles.addAll(cycles);
+        mCycles.endBatchedUpdates();
+      }
+    }));
   }
 
   public void shutdown(ViewGroup viewGroup) {

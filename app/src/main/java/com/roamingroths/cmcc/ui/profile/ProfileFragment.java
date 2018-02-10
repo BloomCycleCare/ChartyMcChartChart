@@ -13,7 +13,11 @@ import android.util.Log;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.providers.ProfileProvider;
 
+import io.reactivex.SingleSource;
+import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 
 /**
@@ -67,11 +71,16 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
   }
 
   @Override
-  public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+  public void onSharedPreferenceChanged(final SharedPreferences sharedPreferences, final String key) {
     Preference preference = findPreference(key);
     if (null != preference) {
       updateSummary(preference, sharedPreferences);
-      MyApplication.getProviders().forProfile().maybeUpdateProfile(sharedPreferences, key).subscribe();
+      MyApplication.profileProvider().subscribe(new Consumer<ProfileProvider>() {
+        @Override
+        public void accept(ProfileProvider profileProvider) throws Exception {
+          profileProvider.maybeUpdateProfile(sharedPreferences, key);
+        }
+      });
     }
   }
 

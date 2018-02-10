@@ -19,6 +19,7 @@ import org.joda.time.LocalDate;
 
 import java.util.Calendar;
 
+import io.reactivex.CompletableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
@@ -54,13 +55,23 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   @Override
   public void onUserInitialized(final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Getting current cycleToShow");
-    final CycleProvider cycleProvider = MyApplication.getProviders().forCycle();
-    mDisposables.add(cycleProvider.getOrCreateCurrentCycle(user, promptForStart())
-        .flatMap(new Function<Cycle, SingleSource<Cycle>>() {
+    mDisposables.add(
+        MyApplication.cycleProvider().flatMap(new Function<CycleProvider, SingleSource<Cycle>>() {
           @Override
-          public SingleSource<Cycle> apply(Cycle cycle) throws Exception {
-            ChartEntryProvider provider = MyApplication.getProviders().forChartEntry();
-            return provider.maybeAddNewEntriesDeferred(cycle).flatMapCompletable(UpdateHandle.run()).andThen(Single.just(cycle));
+          public SingleSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
+            return cycleProvider.getOrCreateCurrentCycle(user, promptForStart());
+          }
+        }).flatMap(new Function<Cycle, SingleSource<Cycle>>() {
+          @Override
+          public SingleSource<Cycle> apply(final Cycle cycle) throws Exception {
+            return MyApplication.chartEntryProvider().flatMap(new Function<ChartEntryProvider, SingleSource<? extends Cycle>>() {
+              @Override
+              public SingleSource<? extends Cycle> apply(ChartEntryProvider chartEntryProvider) throws Exception {
+                return chartEntryProvider.maybeAddNewEntriesDeferred(cycle)
+                    .flatMapCompletable(UpdateHandle.run())
+                    .andThen(Single.just(cycle));
+              }
+            });
           }
         })
         .subscribe(new Consumer<Cycle>() {
@@ -79,7 +90,12 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 .setMessage("This is permanent and cannot be undone!")
                 .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
                   public void onClick(final DialogInterface dialog, int whichButton) {
-                    cycleProvider.dropCycles(user).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
+                    MyApplication.cycleProvider().flatMapCompletable(new Function<CycleProvider, CompletableSource>() {
+                      @Override
+                      public CompletableSource apply(CycleProvider cycleProvider) throws Exception {
+                        return cycleProvider.dropCycles(user).flatMapCompletable(UpdateHandle.run());
+                      }
+                    }).subscribe(new Action() {
                       @Override
                       public void run() throws Exception {
                         dialog.dismiss();

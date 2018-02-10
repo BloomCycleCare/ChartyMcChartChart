@@ -10,12 +10,15 @@ import android.util.Log;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.providers.AppStateProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 
 import java.io.InputStream;
 import java.util.concurrent.Callable;
 
+import io.reactivex.CompletableSource;
+import io.reactivex.MaybeSource;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
@@ -30,17 +33,20 @@ import io.reactivex.functions.Function;
 
 public class ImportAppStateFragment extends SplashFragment implements UserInitializationListener {
 
-  private CycleProvider mCycleProvider;
-
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    mCycleProvider = MyApplication.getProviders().forCycle();
   }
 
   @Override
   public void onUserInitialized(final FirebaseUser user) {
-    mCycleProvider.getCurrentCycle(user)
+    MyApplication.cycleProvider()
+        .flatMapMaybe(new Function<CycleProvider, MaybeSource<Cycle>>() {
+          @Override
+          public MaybeSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
+            return cycleProvider.getCurrentCycle(user);
+          }
+        })
         .isEmpty()
         .flatMap(new Function<Boolean, SingleSource<Boolean>>() {
           @Override
@@ -62,15 +68,25 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
   private void importDataFromIntent(Intent intent, final FirebaseUser user) {
     final Uri uri = intent.getData();
     Log.v("UserInitActivity", "Reading data from " + uri.getPath());
-    Callable<InputStream> openFile = new Callable<InputStream>() {
+    final Callable<InputStream> openFile = new Callable<InputStream>() {
       @Override
       public InputStream call() throws Exception {
         return getActivity().getContentResolver().openInputStream(uri);
       }
     };
-    MyApplication.getProviders().forAppState()
-        .parseAndPushToRemote(openFile)
-        .andThen(mCycleProvider.getCurrentCycle(user))
+    MyApplication.appStateProvider()
+        .flatMapCompletable(new Function<AppStateProvider, CompletableSource>() {
+          @Override
+          public CompletableSource apply(AppStateProvider appStateProvider) throws Exception {
+            return appStateProvider.parseAndPushToRemote(openFile);
+          }
+        })
+        .andThen(MyApplication.cycleProvider().flatMapMaybe(new Function<CycleProvider, MaybeSource<Cycle>>() {
+          @Override
+          public MaybeSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
+            return cycleProvider.getCurrentCycle(user);
+          }
+        }))
         .subscribe(new Consumer<Cycle>() {
           @Override
           public void accept(Cycle cycle) throws Exception {

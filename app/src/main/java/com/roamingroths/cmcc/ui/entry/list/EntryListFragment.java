@@ -18,6 +18,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
+import com.roamingroths.cmcc.providers.CycleProvider;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -25,10 +26,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.ObservableSource;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
+import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
 
 /**
@@ -44,12 +50,11 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private final Subject<ScrollState> mScrollState;
 
   private RecyclerView mRecyclerView;
-  private ChartEntryAdapter mChartEntryAdapter;
+  private SingleSubject<ChartEntryAdapter> mChartEntryAdapter = SingleSubject.create();
   private EntryListView mView;
   private ArrayList<ChartEntry> mChartEntries;
   private Cycle mCycle;
   private Map<Neighbor, WeakReference<EntryListFragment>> mNeighbors;
-  private ChartEntryProvider mChartEntryProvider;
 
   public enum Neighbor {
     LEFT, RIGHT
@@ -57,7 +62,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   public EntryListFragment() {
     if (DEBUG) Log.v(TAG, "Construct");
-    mChartEntryProvider = MyApplication.getProviders().forChartEntry();
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
@@ -98,23 +102,37 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
 
-    mChartEntryAdapter = new ChartEntryAdapter(
-        getActivity().getApplicationContext(),
-        mCycle,
-        this,
-        MyApplication.getProviders().forChartEntry(),
-        MyApplication.getProviders().forCycle(),
-        "");
-    if (mChartEntries != null) {
-      mChartEntryAdapter.initialize(mChartEntries);
-    }
-
-    ((ChartEntryListActivity) getActivity()).layerStream().subscribe(new Consumer<String>() {
-      @Override
-      public void accept(String s) throws Exception {
-        mChartEntryAdapter.updateLayerKey(s);
-      }
-    });
+    Single.zip(
+        MyApplication.cycleProvider(),
+        MyApplication.chartEntryProvider(),
+        new BiFunction<CycleProvider, ChartEntryProvider, ChartEntryAdapter>() {
+          @Override
+          public ChartEntryAdapter apply(CycleProvider cycleProvider, ChartEntryProvider chartEntryProvider) throws Exception {
+            final ChartEntryAdapter adapter = new ChartEntryAdapter(
+                getActivity().getApplicationContext(),
+                mCycle,
+                EntryListFragment.this,
+                chartEntryProvider,
+                cycleProvider,
+                "");
+            if (mChartEntries != null) {
+              adapter.initialize(mChartEntries);
+            }
+            ((ChartEntryListActivity) getActivity()).layerStream().subscribe(new Consumer<String>() {
+              @Override
+              public void accept(String s) throws Exception {
+                adapter.updateLayerKey(s);
+              }
+            });
+            return adapter;
+          }
+        })
+        .subscribe(new Consumer<ChartEntryAdapter>() {
+          @Override
+          public void accept(ChartEntryAdapter chartEntryAdapter) throws Exception {
+            mChartEntryAdapter.onSuccess(chartEntryAdapter);
+          }
+        });
   }
 
   public void setScrollState(ScrollState scrollState) {
@@ -160,25 +178,40 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     mRecyclerView = view.findViewById(R.id.recyclerview_chart_list);
     mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
-
-    mRecyclerView.setAdapter(mChartEntryAdapter);
     mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
         mScrollState.onNext(getScrollState());
       }
     });
-    mChartEntryAdapter.notifyDataSetChanged();
 
-    mChartEntryProvider
-        .getEntries(mCycle)
+    mChartEntryAdapter.subscribe(new Consumer<ChartEntryAdapter>() {
+      @Override
+      public void accept(ChartEntryAdapter adapter) throws Exception {
+        mRecyclerView.setAdapter(adapter);
+        adapter.notifyDataSetChanged();
+      }
+    });
+
+    MyApplication.chartEntryProvider()
+        .flatMapObservable(new Function<ChartEntryProvider, ObservableSource<ChartEntry>>() {
+          @Override
+          public ObservableSource<ChartEntry> apply(ChartEntryProvider chartEntryProvider) throws Exception {
+            return chartEntryProvider.getEntries(mCycle);
+          }
+        })
         .subscribeOn(Schedulers.io())
         .toList()
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Consumer<List<ChartEntry>>() {
           @Override
-          public void accept(List<ChartEntry> chartEntries) throws Exception {
-            mChartEntryAdapter.initialize(chartEntries);
+          public void accept(final List<ChartEntry> chartEntries) throws Exception {
+            mChartEntryAdapter.subscribe(new Consumer<ChartEntryAdapter>() {
+              @Override
+              public void accept(ChartEntryAdapter chartEntryAdapter) throws Exception {
+                chartEntryAdapter.initialize(chartEntries);
+              }
+            });
             for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
               EntryListFragment neighbor = ref.get();
               if (neighbor != null) {
@@ -208,36 +241,43 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onResume() {
     super.onResume();
-    mChartEntryAdapter.start();
+    // mChartEntryAdapter.start();
   }
 
   @Override
   public void onPause() {
     super.onPause();
-    mChartEntryAdapter.shutdown();
+    // mChartEntryAdapter.shutdown();
   }
 
   @Override
   public void onClick(ChartEntry container, int index) {
-    mChartEntryAdapter.getIntentForModification(container, index)
-        .subscribe(new Consumer<Intent>() {
-          @Override
-          public void accept(Intent intent) throws Exception {
-            startActivityForResult(intent, 0);
-          }
-        });
+    if (mChartEntryAdapter.hasValue()) {
+      mChartEntryAdapter.blockingGet().getIntentForModification(container, index)
+          .subscribe(new Consumer<Intent>() {
+            @Override
+            public void accept(Intent intent) throws Exception {
+              startActivityForResult(intent, 0);
+            }
+          });
+    }
   }
 
   public void shutdown() {
     if (mChartEntryAdapter != null) {
-      mChartEntryAdapter.shutdown();
+      // mChartEntryAdapter.shutdown();
     }
   }
 
   @Override
   public void onDestroy() {
     super.onDestroy();
-    mChartEntryAdapter.shutdown();
+    mChartEntryAdapter.subscribe(new Consumer<ChartEntryAdapter>() {
+      @Override
+      public void accept(ChartEntryAdapter chartEntryAdapter) throws Exception {
+        chartEntryAdapter.shutdown();
+      }
+    });
   }
 
   public Cycle getCycle() {

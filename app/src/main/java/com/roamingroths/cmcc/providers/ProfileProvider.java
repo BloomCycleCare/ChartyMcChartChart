@@ -115,6 +115,15 @@ public class ProfileProvider {
     return mDb.getReference(String.format("profiles/%s", mUser.getUid()));
   }
 
+  public static Function<ProfileProvider, Single<Profile>> getProfileFn(final Context context) {
+    return new Function<ProfileProvider, Single<Profile>>() {
+      @Override
+      public Single<Profile> apply(ProfileProvider profileProvider) throws Exception {
+        return profileProvider.getProfile(context);
+      }
+    };
+  }
+
   public Single<Profile> getProfile(final Context context) {
     return mKeyProvider.getProfileKey().toSingle().map(new Function<SecretKey, Profile>() {
       @Override

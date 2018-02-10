@@ -84,6 +84,15 @@ public class MyApplication extends Application {
     });
   }
 
+  public static Maybe<FirebaseUser> getCurrentUser() {
+    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    if (user == null) {
+      return Maybe.empty();
+    } else {
+      return Maybe.just(user);
+    }
+  }
+
   public static Single<CycleProvider> cycleProvider() {
     return mProviders.map(new Function<Providers, CycleProvider>() {
       @Override

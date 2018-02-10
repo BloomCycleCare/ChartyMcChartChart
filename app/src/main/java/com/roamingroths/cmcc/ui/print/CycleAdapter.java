@@ -92,19 +92,21 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     bundle.putIntegerArrayList(BundleKey.SELECTED_INDEXES.name(), Lists.newArrayList(mSelectedIndexes));
   }
 
-  public static Function<Cycle, ObservableSource<ViewModel>> cycleToViewModel(final ChartEntryProvider chartEntryProvider) {
+  public static Function<Cycle, ObservableSource<ViewModel>> cycleToViewModel(final Single<ChartEntryProvider> chartEntryProvider) {
     return new Function<Cycle, ObservableSource<CycleAdapter.ViewModel>>() {
       @Override
-      public ObservableSource<CycleAdapter.ViewModel> apply(Cycle cycle) throws Exception {
-        return Single.zip(
-            Single.just(cycle),
-            chartEntryProvider.getEntries(cycle).count(),
-            new BiFunction<Cycle, Long, ViewModel>() {
+      public ObservableSource<CycleAdapter.ViewModel> apply(final Cycle cycle) throws Exception {
+        return chartEntryProvider.flatMapObservable(new Function<ChartEntryProvider, ObservableSource<? extends ViewModel>>() {
+          @Override
+          public ObservableSource<? extends ViewModel> apply(ChartEntryProvider provider) throws Exception {
+            return Single.zip(Single.just(cycle), provider.getEntries(cycle).count(), new BiFunction<Cycle, Long, ViewModel>() {
               @Override
-              public CycleAdapter.ViewModel apply(Cycle cycle, Long numEntries) throws Exception {
-                return new CycleAdapter.ViewModel(cycle, numEntries.intValue());
+              public ViewModel apply(Cycle cycle, Long numEntries) throws Exception {
+                return new ViewModel(cycle, numEntries.intValue());
               }
             }).toObservable();
+          }
+        });
       }
     };
   }
