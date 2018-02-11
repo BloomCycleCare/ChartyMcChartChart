@@ -64,10 +64,11 @@ public class CycleProvider {
   }
 
   public Completable initCache(final FirebaseUser user) {
+    if (DEBUG) Log.v(TAG, "Initializing cycle cache.");
     return getAllFromRemote(user).flatMapCompletable(new Function<Cycle, CompletableSource>() {
       @Override
       public CompletableSource apply(Cycle cycle) throws Exception {
-        if (DEBUG) Log.v(TAG, "Caching cycleToShow " + cycle.id);
+        if (DEBUG) Log.v(TAG, "Caching cycle " + cycle.id);
         mCycleCache.put(cycle.id, cycle);
         return Completable.complete();
       }

@@ -31,6 +31,7 @@ import io.reactivex.functions.Function;
 
 public class ProfileProvider {
 
+  private static final boolean DEBUG = true;
   private static final String TAG = ProfileProvider.class.getSimpleName();
   private static final LocalDate EPOCH = new LocalDate(1970, 1, 1);
 
@@ -139,6 +140,7 @@ public class ProfileProvider {
     return Maybe.merge(Maybe.zip(key, encryptedProfile, new BiFunction<SecretKey, String, MaybeSource<Profile>>() {
       @Override
       public MaybeSource<Profile> apply(SecretKey secretKey, String s) throws Exception {
+        if (DEBUG) Log.v(TAG, "Decrypting profile");
         return mCryptoUtil.decrypt(s, secretKey, Profile.class).toMaybe();
       }
     }));

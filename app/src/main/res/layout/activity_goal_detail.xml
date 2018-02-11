@@ -28,7 +28,7 @@
             android:layout_height="wrap_content"
             android:layout_width="match_parent"
             android:layout_marginStart="16dp"
-            android:text="I want to..." />
+            android:hint="I want to..." />
 
     </android.support.design.widget.AppBarLayout>
 
