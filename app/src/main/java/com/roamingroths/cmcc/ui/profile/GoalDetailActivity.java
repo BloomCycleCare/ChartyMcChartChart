@@ -78,16 +78,11 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalSuggest
 
   @Override
   public void onClick(int index) {
-    /*GoalSuggestion.Option option = mAdapter.getSuggestion(index);
-    switch (option.intent) {
-      case MORE:
-        Toast.makeText(getApplicationContext(), "How much more?", Toast.LENGTH_SHORT).show();
-        break;
-      case LESS:
-        Toast.makeText(getApplicationContext(), "How much less?", Toast.LENGTH_SHORT).show();
-        break;
-      default:
-        break;
-    }*/
+    GoalSuggestion suggestion = mAdapter.getSuggestion(index);
+    String newText = suggestion.toString().replaceAll("\\.\\.\\.", "");
+    if (!newText.equals(mEditText.getText())) {
+      mEditText.setText(newText);
+      mEditText.setSelection(newText.length());
+    }
   }
 }
