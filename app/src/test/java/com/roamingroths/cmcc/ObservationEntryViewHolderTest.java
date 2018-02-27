@@ -28,7 +28,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class ObservationEntryViewHolderTest {
 
-  private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
+  /*private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
   private static final String CYCLE_ID = "fake-cycleToShow-id";
   private static final Cycle CYCLE = new Cycle(CYCLE_ID, null, null, CYCLE_START_DATE, null, null);
   private static final boolean PREPEAK_YELLOW_ENABLED = true;
@@ -484,5 +484,5 @@ public class ObservationEntryViewHolderTest {
       shouldHaveIntercourse = true;
       return this;
     }
-  }
+  }*/
 }

@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.ui.profile;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -12,25 +13,19 @@ import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 
-import com.getbase.floatingactionbutton.FloatingActionButton;
-import com.getbase.floatingactionbutton.FloatingActionsMenu;
 import com.roamingroths.cmcc.R;
 
 public class ProfileActivity extends AppCompatActivity {
 
-  private View mBackgroundDimmer;
   private SectionsPagerAdapter mPagerAdapter;
   private ViewPager mViewPager;
-  private FloatingActionsMenu mFam;
-  private FloatingActionButton mFabGeneral;
-  private FloatingActionButton mFabDiet;
-  private FloatingActionButton mFabMedication;
+  private FloatingActionButton mFabNewGoal;
 
   private void showOrHideFab(int position) {
     if (position == 1) {
-      mFam.setVisibility(View.VISIBLE);
+      mFabNewGoal.setVisibility(View.VISIBLE);
     } else {
-      mFam.setVisibility(View.GONE);
+      mFabNewGoal.setVisibility(View.GONE);
     }
   }
 
@@ -44,40 +39,11 @@ public class ProfileActivity extends AppCompatActivity {
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
     getSupportActionBar().setTitle("Your Profile");
 
-    mBackgroundDimmer = findViewById(R.id.background_dimmer);
-    mFam = findViewById(R.id.floatingActionButton);
-    mFam.setOnFloatingActionsMenuUpdateListener(new FloatingActionsMenu.OnFloatingActionsMenuUpdateListener() {
-      @Override
-      public void onMenuExpanded() {
-        mBackgroundDimmer.setVisibility(View.VISIBLE);
-      }
-
-      @Override
-      public void onMenuCollapsed() {
-        mBackgroundDimmer.setVisibility(View.GONE);
-      }
-    });
-
-    mFabGeneral = findViewById(R.id.add_general);
-    mFabGeneral.setOnClickListener(new View.OnClickListener() {
+    mFabNewGoal = findViewById(R.id.fab_new_goal);
+    mFabNewGoal.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View v) {
         startActivity(new Intent(ProfileActivity.this, GoalDetailActivity.class));
-        mFam.collapse();
-      }
-    });
-    mFabDiet = findViewById(R.id.add_diet);
-    mFabDiet.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        mFam.collapse();
-      }
-    });
-    mFabMedication = findViewById(R.id.add_medication);
-    mFabMedication.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        mFam.collapse();
       }
     });
 

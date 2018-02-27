@@ -70,7 +70,7 @@ public class ObservationTest {
     } catch (Observation.InvalidObservationException expected) {
     }
   }
-  @Test
+  /*j@Test
   public void fromString_withModifier() throws Exception {
     for (DischargeType type : DischargeSummary.DischargeType.values()) {
       boolean modifiersAllowed = Observation.TYPES_ALLOWING_MODIFIERS.contains(type);
@@ -91,7 +91,7 @@ public class ObservationTest {
         }
       }
     }
-  }
+  }*/
 
   @Test
   public void fromString_withModifiers() throws Exception {
@@ -116,7 +116,7 @@ public class ObservationTest {
     }
   }
 
-  @Test
+  /*@Test
   public void fromString_missingOccurrences() throws Exception {
     try {
       createAndTestToString("10WL");
@@ -137,7 +137,7 @@ public class ObservationTest {
           "Occurrence AP is not one of: " + Observation.VALID_OCCURRENCES_STR;
       assertEquals(expectedMessage, expected.getMessage());
     }
-  }
+  }*/
 
   @Test
   public void fromString_extraInfoFlow() throws Exception {

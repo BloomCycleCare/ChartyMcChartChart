@@ -10,15 +10,15 @@ import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.logic.goals.GoalTemplate;
 
-public class GoalDetailActivity extends AppCompatActivity implements GoalSuggestionAdapter.OnClickHandler {
+public class GoalDetailActivity extends AppCompatActivity implements GoalTemplateAdapter.OnClickHandler {
 
   private EditText mEditText;
   private RecyclerView mGoalOptions;
-  private GoalSuggestionAdapter mAdapter;
+  private GoalTemplateAdapter mAdapter;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -31,7 +31,7 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalSuggest
     getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-    mAdapter = new GoalSuggestionAdapter(this, this);
+    mAdapter = new GoalTemplateAdapter(this, this);
     mGoalOptions = findViewById(R.id.goal_types);
     LinearLayoutManager layoutManager
         = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
@@ -78,8 +78,8 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalSuggest
 
   @Override
   public void onClick(int index) {
-    GoalSuggestion suggestion = mAdapter.getSuggestion(index);
-    String newText = suggestion.toString().replaceAll("\\.\\.\\.", "");
+    GoalTemplate template = mAdapter.getTemplate(index);
+    String newText = template.toString().replaceAll("\\.\\.\\.", "");
     if (!newText.equals(mEditText.getText())) {
       mEditText.setText(newText);
       mEditText.setSelection(newText.length());

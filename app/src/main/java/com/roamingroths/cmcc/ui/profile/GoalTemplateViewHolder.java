@@ -6,20 +6,21 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.logic.goals.GoalTemplate;
 
 /**
  * Created by parkeroth on 1/24/18.
  */
 
-public interface GoalSuggestionViewHolder extends View.OnClickListener {
+public interface GoalTemplateViewHolder extends View.OnClickListener {
 
-  class Impl extends RecyclerView.ViewHolder implements GoalSuggestionViewHolder {
+  class Impl extends RecyclerView.ViewHolder implements GoalTemplateViewHolder {
 
     private ImageView mIcon;
     private TextView mTitle;
-    private GoalSuggestionAdapter.OnClickHandler mClickHandler;
+    private GoalTemplateAdapter.OnClickHandler mClickHandler;
 
-    public Impl(View itemView, GoalSuggestionAdapter.OnClickHandler clickHandler) {
+    public Impl(View itemView, GoalTemplateAdapter.OnClickHandler clickHandler) {
       super(itemView);
       itemView.setOnClickListener(this);
 
@@ -33,13 +34,13 @@ public interface GoalSuggestionViewHolder extends View.OnClickListener {
       mClickHandler.onClick(getAdapterPosition());
     }
 
-    public void bind(GoalSuggestion suggestion) {
-      setIcon(suggestion.action);
-      mTitle.setText(suggestion.toString());
+    public void bind(GoalTemplate template) {
+      setIcon(template.type);
+      mTitle.setText(template.toString());
     }
 
-    private void setIcon(GoalSuggestion.Action action) {
-      switch(action) {
+    private void setIcon(GoalTemplate.Type type) {
+      switch(type) {
         case EAT:
           mIcon.setBackgroundResource(R.drawable.ic_local_dining_black_24dp);
           break;
