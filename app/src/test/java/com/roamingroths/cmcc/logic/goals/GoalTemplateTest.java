@@ -39,7 +39,7 @@ public class GoalTemplateTest {
   public void testToString_someInput() throws Exception {
     List<String> out = toStringList(FACTORY.fromInput("t", 3));
     assertThat(out, IsIterableContainingInOrder.contains(
-        "t ...", "t once per ...", "t twice per ...", "t three times per ..."));
+        "t once per ...", "t twice per ...", "t three times per ..."));
   }
 
   @Test
@@ -88,7 +88,7 @@ public class GoalTemplateTest {
   @Test
   public void testToString_unknownAction() throws Exception {
     List<String> out = toStringList(FACTORY.fromInput("foo bar", 3));
-    assertThat(out, IsIterableContainingInOrder.contains("foo bar", "foo bar once per ...", "foo bar twice per ...", "foo bar three times per ..."));
+    assertThat(out, IsIterableContainingInOrder.contains("foo bar once per ...", "foo bar twice per ...", "foo bar three times per ..."));
   }
 
   @Test

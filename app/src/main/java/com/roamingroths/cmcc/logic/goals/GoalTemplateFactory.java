@@ -232,7 +232,7 @@ public class GoalTemplateFactory {
 
   private List<GoalTemplate> withSuggestedInstances(GoalTemplate.Builder builder) {
     List<GoalTemplate> templates = new ArrayList<>();
-    templates.add(builder.build());
+    //templates.add(builder.build());
     templates.add(builder.copyOf().withSpecialInstances(SpecialInstances.once).build());
     templates.add(builder.copyOf().withSpecialInstances(SpecialInstances.twice).build());
     templates.add(builder.copyOf().withInstances(Instances.three, false).build());
