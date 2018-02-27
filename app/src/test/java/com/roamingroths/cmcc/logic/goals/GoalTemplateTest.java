@@ -36,6 +36,13 @@ public class GoalTemplateTest {
   private static final GoalTemplateFactory FACTORY = new GoalTemplateFactory(TEMPLATES);
 
   @Test
+  public void testToString_someInput() throws Exception {
+    List<String> out = toStringList(FACTORY.fromInput("t", 3));
+    assertThat(out, IsIterableContainingInOrder.contains(
+        "t ...", "t once per ...", "t twice per ...", "t three times per ..."));
+  }
+
+  @Test
   public void testToString_emptyInput() throws Exception {
     List<String> out = toStringList(FACTORY.fromInput("", 3));
     assertThat(out, IsIterableContainingInOrder.contains(
@@ -58,6 +65,12 @@ public class GoalTemplateTest {
   public void testToString_relativePartial() throws Exception {
     List<String> out = toStringList(FACTORY.fromInput("drink l", 3));
     assertThat(out, IsIterableContainingInOrder.contains("drink less ...", "drink less alcohol", "drink less caffeine"));
+  }
+
+  @Test
+  public void testToString_duplicateRelative() throws Exception {
+    List<String> out = toStringList(FACTORY.fromInput("drink less alcohol", 3));
+    assertThat(out, IsIterableContainingInOrder.contains("drink less alcohol"));
   }
 
   @Test
@@ -111,30 +124,6 @@ public class GoalTemplateTest {
     List<String> out = toStringList(FACTORY.fromInput("foo bar four times per d", 3));
     assertThat(out, IsIterableContainingInOrder.contains("foo bar four times per day"));
   }
-
-  /*@Test
-  public void testToString_relativeDecrease() throws Exception {
-    GoalTemplate goalTemplate = new GoalTemplate("eat", GoalTemplate.RelativeChange.LESS, "apples", GoalTemplate.Type.EAT);
-    assertEquals("eat less apples", goalTemplate.toString());
-  }
-
-  @Test
-  public void testToString_relativeNoObject() throws Exception {
-    GoalTemplate goalTemplate = new GoalTemplate("eat", GoalTemplate.RelativeChange.LESS, "", GoalTemplate.Type.EAT);
-    assertEquals("eat less ...", goalTemplate.toString());
-  }
-
-  @Test
-  public void testToString_general() throws Exception {
-    GoalTemplate goalTemplate = new GoalTemplate("journal", "");
-    assertEquals("journal", goalTemplate.toString());
-  }
-
-  @Test
-  public void testToString_generalWithObject() throws Exception {
-    GoalTemplate goalTemplate = new GoalTemplate("ride", "bike");
-    assertEquals("ride bike", goalTemplate.toString());
-  }*/
 
   private static List<String> toStringList(Iterable<GoalTemplate> templates) {
     List<GoalTemplate> templateList = Lists.newArrayList(templates);

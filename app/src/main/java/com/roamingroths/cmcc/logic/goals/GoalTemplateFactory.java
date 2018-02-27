@@ -158,10 +158,11 @@ public class GoalTemplateFactory {
     }
     if (relativeChange != null) {
       String object = toString(parts, 2, parts.length);
-      out.add(builder.copyOf().withRelativeChange(relativeChange).withObject(object).build());
+      GoalTemplate fromInput = builder.copyOf().withRelativeChange(relativeChange).withObject(object).build();
+      out.add(fromInput);
       for (GoalTemplate template : templates) {
         if (relativeChange.equals(template.relativeChange)) {
-          if (object.isEmpty() || template.object.startsWith(object)) {
+          if (!template.equals(fromInput) && (object.isEmpty() || template.object.startsWith(object))) {
             out.add(template);
           }
         }
@@ -176,6 +177,9 @@ public class GoalTemplateFactory {
   //  - journal four times per week
   //  - meditate once per {day, week month}
   private List<GoalTemplate> forUnknownAction(GoalTemplate.Builder builder, String[] parts, int numInstanceSuggestions) {
+    if (parts.length == 1) {
+      return withSuggestedInstances(builder);
+    }
     int startOfInstanceIndex = startOfInstanceIndex(parts, builder);
     if (startOfInstanceIndex > -1) {
       // Text between action and start of instance (either once, one, 1 [time(s)])
@@ -194,7 +198,7 @@ public class GoalTemplateFactory {
     int index = parts.length - 1;
     String lastPart = parts[index];
     // Skip over "times" or "time" if it's the last part
-    if ("time".startsWith(lastPart)) {
+    if (lastPart.startsWith("time")) {
       index--;
       lastPart = parts[index];
     }
