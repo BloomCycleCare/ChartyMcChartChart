@@ -7,8 +7,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.goals.GoalTemplate;
-import com.roamingroths.cmcc.logic.goals.GoalTemplateFactory;
+import com.roamingroths.cmcc.logic.goals.Goal;
+import com.roamingroths.cmcc.logic.goals.GoalFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ public class GoalTemplateAdapter extends RecyclerView.Adapter<GoalTemplateViewHo
 
   private final OnClickHandler mClickHandler;
   private final Context mContext;
-  private List<GoalTemplate> mActiveTemplates = new ArrayList<>();
-  private GoalTemplateFactory mFactory = GoalTemplateFactory.withDefaultTemplates();
+  private List<Goal> mActiveTemplates = new ArrayList<>();
+  private GoalFactory mFactory = GoalFactory.withDefaultTemplates();
 
   public GoalTemplateAdapter(Context context, OnClickHandler clickHandler) {
     mContext = context;
@@ -35,7 +35,7 @@ public class GoalTemplateAdapter extends RecyclerView.Adapter<GoalTemplateViewHo
     notifyDataSetChanged();
   }
 
-  public GoalTemplate getTemplate(int position) {
+  public Goal getTemplate(int position) {
     return mActiveTemplates.get(position);
   }
 
@@ -50,7 +50,7 @@ public class GoalTemplateAdapter extends RecyclerView.Adapter<GoalTemplateViewHo
 
   @Override
   public void onBindViewHolder(GoalTemplateViewHolder.Impl holder, int position) {
-    GoalTemplate template = mActiveTemplates.get(position);
+    Goal template = mActiveTemplates.get(position);
     holder.bind(template);
   }
 

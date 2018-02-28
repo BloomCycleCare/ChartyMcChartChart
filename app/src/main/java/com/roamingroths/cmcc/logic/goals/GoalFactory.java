@@ -15,49 +15,49 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import static com.roamingroths.cmcc.logic.goals.GoalTemplate.Instances;
-import static com.roamingroths.cmcc.logic.goals.GoalTemplate.Period;
-import static com.roamingroths.cmcc.logic.goals.GoalTemplate.RelativeChange;
-import static com.roamingroths.cmcc.logic.goals.GoalTemplate.SpecialInstances;
-import static com.roamingroths.cmcc.logic.goals.GoalTemplate.Type;
+import static com.roamingroths.cmcc.logic.goals.Goal.Instances;
+import static com.roamingroths.cmcc.logic.goals.Goal.Period;
+import static com.roamingroths.cmcc.logic.goals.Goal.RelativeChange;
+import static com.roamingroths.cmcc.logic.goals.Goal.SpecialInstances;
+import static com.roamingroths.cmcc.logic.goals.Goal.Type;
 
 /**
  * Created by parkeroth on 2/20/18.
  */
 
-public class GoalTemplateFactory {
+public class GoalFactory {
 
-  private static final ImmutableSet<GoalTemplate> REGISTERED_GOAL_TEMPLATE = ImmutableSet.<GoalTemplate>builder()
-      .add(GoalTemplate.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.MORE).withObject("water").build())
-      .add(GoalTemplate.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("alcohol").build())
-      .add(GoalTemplate.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("caffeine").build())
-      .add(GoalTemplate.builder("eat", Type.EAT).withRelativeChange(RelativeChange.MORE).withObject("fiber").build())
-      .add(GoalTemplate.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("gluten").build())
-      .add(GoalTemplate.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("dairy").build())
-      .add(GoalTemplate.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("sugar").build())
-      .add(GoalTemplate.builder("journal", Type.GENERAL).build())
-      .add(GoalTemplate.builder("meditate", Type.GENERAL).build())
+  private static final ImmutableSet<Goal> REGISTERED_GOAL_TEMPLATE = ImmutableSet.<Goal>builder()
+      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.MORE).withObject("water").build())
+      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("alcohol").build())
+      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("caffeine").build())
+      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.MORE).withObject("fiber").build())
+      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("gluten").build())
+      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("dairy").build())
+      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("sugar").build())
+      .add(Goal.builder("journal", Type.GENERAL).build())
+      .add(Goal.builder("meditate", Type.GENERAL).build())
       .build();
 
-  private final ImmutableSet<GoalTemplate> mRegisteredGoalTemplates;
-  private final Map<String, Set<GoalTemplate>> mActionIndex;
+  private final ImmutableSet<Goal> mRegisteredGoals;
+  private final Map<String, Set<Goal>> mActionIndex;
 
-  public static GoalTemplateFactory withDefaultTemplates() {
-    return new GoalTemplateFactory(REGISTERED_GOAL_TEMPLATE);
+  public static GoalFactory withDefaultTemplates() {
+    return new GoalFactory(REGISTERED_GOAL_TEMPLATE);
   }
 
-  public GoalTemplateFactory(ImmutableSet<GoalTemplate> registeredTemplates) {
-    mRegisteredGoalTemplates = registeredTemplates;
+  public GoalFactory(ImmutableSet<Goal> registeredTemplates) {
+    mRegisteredGoals = registeredTemplates;
     mActionIndex = new HashMap<>();
-    for (GoalTemplate template : registeredTemplates) {
+    for (Goal template : registeredTemplates) {
       if (!mActionIndex.containsKey(template.action)) {
-        mActionIndex.put(template.action, new HashSet<GoalTemplate>());
+        mActionIndex.put(template.action, new HashSet<Goal>());
       }
       mActionIndex.get(template.action).add(template);
     }
   }
 
-  public List<GoalTemplate> fromInput(String input, int numInstanceSuggestions) {
+  public List<Goal> fromInput(String input, int numInstanceSuggestions) {
     // Check if there's actually input
     if (input.isEmpty()) {
       return forEmptyInput();
@@ -82,12 +82,12 @@ public class GoalTemplateFactory {
     return forSingleAction(action, parts, numInstanceSuggestions);
   }
 
-  private List<GoalTemplate> forEmptyInput() {
+  private List<Goal> forEmptyInput() {
     Set<String> actionsSeen = new HashSet<>();
     Set<String> moreActionsSeen = new HashSet<>();
     Set<String> lessActionsSeen = new HashSet<>();
-    Set<GoalTemplate> out = new TreeSet<>();
-    for (GoalTemplate template : mRegisteredGoalTemplates) {
+    Set<Goal> out = new TreeSet<>();
+    for (Goal template : mRegisteredGoals) {
       Set<String> correctSet = null;
       switch (template.relativeChange) {
         case NA:
@@ -107,41 +107,41 @@ public class GoalTemplateFactory {
     return Lists.newArrayList(out);
   }
 
-  private List<GoalTemplate> forSeveralActions(Set<String> actions) {
-    List<GoalTemplate> out = new ArrayList<>();
+  private List<Goal> forSeveralActions(Set<String> actions) {
+    List<Goal> out = new ArrayList<>();
     for (String action : actions) {
       if (mActionIndex.containsKey(action)) {
         out.add(Iterables.getLast(mActionIndex.get(action)).withoutObject());
       } else {
-        out.add(GoalTemplate.builder(action, Type.GENERAL).build());
+        out.add(Goal.builder(action, Type.GENERAL).build());
       }
     }
     return out;
   }
 
-  private List<GoalTemplate> forSingleAction(String action, String[] parts, int numInstanceSuggestions) {
+  private List<Goal> forSingleAction(String action, String[] parts, int numInstanceSuggestions) {
     if (mActionIndex.containsKey(action)) {
       return forRegisteredAction(action, parts, mActionIndex.get(action));
     }
-    return forUnknownAction(GoalTemplate.builder(action, Type.GENERAL), parts, numInstanceSuggestions);
+    return forUnknownAction(Goal.builder(action, Type.GENERAL), parts, numInstanceSuggestions);
   }
 
-  private List<GoalTemplate> forRegisteredAction(String action, String[] parts, Set<GoalTemplate> templates) {
-    GoalTemplate sample = Iterables.getLast(templates);
-    GoalTemplate.Builder builder = GoalTemplate.builder(action, sample.type);
+  private List<Goal> forRegisteredAction(String action, String[] parts, Set<Goal> templates) {
+    Goal sample = Iterables.getLast(templates);
+    Goal.Builder builder = Goal.builder(action, sample.type);
     if (sample.relativeChange == RelativeChange.NA) {
       return forNonRelativeAction(action, parts, templates);
     }
     return forRelativeAction(builder, parts, templates);
   }
 
-  private List<GoalTemplate> forNonRelativeAction(String action, String[] parts, Set<GoalTemplate> templates) {
-    GoalTemplate.Builder builder = GoalTemplate.builder(action, Iterables.getLast(templates).type);
+  private List<Goal> forNonRelativeAction(String action, String[] parts, Set<Goal> templates) {
+    Goal.Builder builder = Goal.builder(action, Iterables.getLast(templates).type);
     return forUnknownAction(builder, parts, 3);
   }
 
-  private List<GoalTemplate> forRelativeAction(GoalTemplate.Builder builder, String[] parts, Set<GoalTemplate> templates) {
-    List<GoalTemplate> out = new ArrayList<>();
+  private List<Goal> forRelativeAction(Goal.Builder builder, String[] parts, Set<Goal> templates) {
+    List<Goal> out = new ArrayList<>();
     if (parts.length < 2) {
       out.addAll(templates);
       return out;
@@ -158,9 +158,9 @@ public class GoalTemplateFactory {
     }
     if (relativeChange != null) {
       String object = toString(parts, 2, parts.length);
-      GoalTemplate fromInput = builder.copyOf().withRelativeChange(relativeChange).withObject(object).build();
+      Goal fromInput = builder.copyOf().withRelativeChange(relativeChange).withObject(object).build();
       out.add(fromInput);
-      for (GoalTemplate template : templates) {
+      for (Goal template : templates) {
         if (relativeChange.equals(template.relativeChange)) {
           if (!template.equals(fromInput) && (object.isEmpty() || template.object.startsWith(object))) {
             out.add(template);
@@ -176,7 +176,7 @@ public class GoalTemplateFactory {
   // Examples
   //  - journal four times per week
   //  - meditate once per {day, week month}
-  private List<GoalTemplate> forUnknownAction(GoalTemplate.Builder builder, String[] parts, int numInstanceSuggestions) {
+  private List<Goal> forUnknownAction(Goal.Builder builder, String[] parts, int numInstanceSuggestions) {
     if (parts.length == 1) {
       return withSuggestedInstances(builder);
     }
@@ -185,7 +185,7 @@ public class GoalTemplateFactory {
       // Text between action and start of instance (either once, one, 1 [time(s)])
       String object = toString(parts, 1, startOfInstanceIndex);
       builder.withObject(object);
-      List<GoalTemplate> out = new ArrayList<>();
+      List<Goal> out = new ArrayList<>();
       Set<Period> periods = Period.matches(parts[parts.length - 1]);
       if (periods.isEmpty()) {
         periods = Sets.newHashSet(Period.values());
@@ -204,7 +204,7 @@ public class GoalTemplateFactory {
     }
     // Assume text between the last piece and the action is the object
     builder.withObject(toString(parts, 1, index));
-    List<GoalTemplate> out = new ArrayList<>();
+    List<Goal> out = new ArrayList<>();
     // See if the last part matches any instances
     try {
       Instances instances = Instances.valueOf(Integer.valueOf(lastPart));
@@ -230,8 +230,8 @@ public class GoalTemplateFactory {
     return withSuggestedInstances(builder);
   }
 
-  private List<GoalTemplate> withSuggestedInstances(GoalTemplate.Builder builder) {
-    List<GoalTemplate> templates = new ArrayList<>();
+  private List<Goal> withSuggestedInstances(Goal.Builder builder) {
+    List<Goal> templates = new ArrayList<>();
     //templates.add(builder.build());
     templates.add(builder.copyOf().withSpecialInstances(SpecialInstances.once).build());
     templates.add(builder.copyOf().withSpecialInstances(SpecialInstances.twice).build());
@@ -239,7 +239,7 @@ public class GoalTemplateFactory {
     return templates;
   }
 
-  private int startOfInstanceIndex(String[] parts, GoalTemplate.Builder builder) {
+  private int startOfInstanceIndex(String[] parts, Goal.Builder builder) {
     int timeIndex = -1;
     for (int i=1; i<parts.length; i++) {
       if (parts[i].startsWith("time")) {
@@ -279,7 +279,7 @@ public class GoalTemplateFactory {
   private Set<String> getActions(String[] parts) {
     Preconditions.checkArgument(parts.length > 0);
     Set<String> actions = new HashSet<>();
-    for (GoalTemplate template : mRegisteredGoalTemplates) {
+    for (Goal template : mRegisteredGoals) {
       if (template.action.startsWith(parts[0])) {
         actions.add(template.action);
       }

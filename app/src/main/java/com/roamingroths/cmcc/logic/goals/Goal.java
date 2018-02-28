@@ -2,128 +2,32 @@ package com.roamingroths.cmcc.logic.goals;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableSet;
+import com.roamingroths.cmcc.crypto.Cipherable;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import io.reactivex.ObservableSource;
+import javax.crypto.SecretKey;
 
 /**
  * Created by parkeroth on 2/20/18.
  */
 
-public class GoalTemplate implements Comparable<GoalTemplate> {
-
-  @Override
-  public int compareTo(GoalTemplate that) {
-    int actionVal = this.action.compareTo(that.action);
-    if (actionVal != 0) {
-      return actionVal;
-    }
-    int relChangeVal = this.relativeChange.name().compareTo(that.relativeChange.name());
-    if (relChangeVal != 0) {
-      return relChangeVal;
-    }
-    int objVal = this.object.compareTo(that.object);
-    if (objVal != 0) {
-      return objVal;
-    }
-    Integer thisInstancesVal = this.getInstanceVal();
-    Integer thatInstancesVal = that.getInstanceVal();
-    if (thisInstancesVal != null && thatInstancesVal != null) {
-      int instanceVal = thisInstancesVal.compareTo(thatInstancesVal);
-      if (instanceVal != 0) {
-        return instanceVal;
-      }
-    }
-    if (this.period != null && that.period != null) {
-      Integer thisPeriodRank = this.period.rank;
-      Integer thatPeriodRank = that.period.rank;
-      int periodVal = thisPeriodRank.compareTo(thatPeriodRank);
-      if (periodVal != 0) {
-        return periodVal;
-      }
-    }
-    return this.toString().compareTo(that.toString());
-  }
-
-  public static class Builder {
-    final String action;
-    final Type type;
-    String object = "";
-    RelativeChange relativeChange = RelativeChange.NA;
-    Instances instances = null;
-    boolean numericInstances = false;
-    SpecialInstances specialInstances = null;
-    Period period = null;
-
-    private Builder(GoalTemplate template) {
-      this(template.action, template.type);
-      this.object = template.object;
-      this.relativeChange = template.relativeChange;
-      this.instances = template.instances;
-      this.numericInstances = template.numericInstances;
-      this.specialInstances = template.specialInstances;
-      this.period = template.period;
-    }
-
-    private Builder(String action, Type type) {
-      this.action = action;
-      this.type = type;
-    }
-
-    public Builder withRelativeChange(RelativeChange relativeChange) {
-      this.relativeChange = relativeChange;
-      return this;
-    }
-
-    public Builder withObject(String object) {
-      this.object = object;
-      return this;
-    }
-
-    public Builder withoutObject() {
-      this.object = "";
-      return this;
-    }
-
-    public Builder withSpecialInstances(SpecialInstances specialInstances) {
-      this.specialInstances = specialInstances;
-      return this;
-    }
-
-    public Builder withInstances(Instances instances, boolean numericInstances) {
-      this.instances = instances;
-      this.numericInstances = numericInstances;
-      return this;
-    }
-
-    public Builder withPeriod(Period period) {
-      this.period = period;
-      return this;
-    }
-
-    public Builder copyOf() {
-      return new Builder(build());
-    }
-
-    public GoalTemplate build() {
-      return new GoalTemplate(this);
-    }
-  }
+public class Goal implements Comparable<Goal>, Cipherable {
 
   public static Builder builder(String action, Type type) {
     return new Builder(action, type);
   }
 
-  private static Builder builder(GoalTemplate goalTemplate) {
-    return new Builder(goalTemplate);
+  private static Builder builder(Goal goal) {
+    return new Builder(goal);
   }
 
   private static final Joiner ON_SPACE = Joiner.on(" ");
+
+  private transient SecretKey key;
 
   public final String action;
   public final String object;
@@ -134,7 +38,7 @@ public class GoalTemplate implements Comparable<GoalTemplate> {
   public final SpecialInstances specialInstances;
   public final Period period;
 
-  private GoalTemplate(Builder builder) {
+  private Goal(Builder builder) {
     this.action = builder.action;
     this.object = builder.object;
     this.relativeChange = builder.relativeChange;
@@ -145,7 +49,7 @@ public class GoalTemplate implements Comparable<GoalTemplate> {
     this.period = builder.period;
   }
 
-  public GoalTemplate withoutObject() {
+  public Goal withoutObject() {
     return builder(this).withoutObject().build();
   }
 
@@ -204,8 +108,8 @@ public class GoalTemplate implements Comparable<GoalTemplate> {
 
   @Override
   public boolean equals(Object o) {
-    if (o instanceof GoalTemplate) {
-      GoalTemplate that = (GoalTemplate) o;
+    if (o instanceof Goal) {
+      Goal that = (Goal) o;
       return Objects.equal(this.action, that.action) &&
           Objects.equal(this.object, that.object) &&
           Objects.equal(this.relativeChange, that.relativeChange) &&
@@ -217,6 +121,54 @@ public class GoalTemplate implements Comparable<GoalTemplate> {
   @Override
   public int hashCode() {
     return Objects.hashCode(action, object, relativeChange, type);
+  }
+
+  @Override
+  public int compareTo(Goal that) {
+    int actionVal = this.action.compareTo(that.action);
+    if (actionVal != 0) {
+      return actionVal;
+    }
+    int relChangeVal = this.relativeChange.name().compareTo(that.relativeChange.name());
+    if (relChangeVal != 0) {
+      return relChangeVal;
+    }
+    int objVal = this.object.compareTo(that.object);
+    if (objVal != 0) {
+      return objVal;
+    }
+    Integer thisInstancesVal = this.getInstanceVal();
+    Integer thatInstancesVal = that.getInstanceVal();
+    if (thisInstancesVal != null && thatInstancesVal != null) {
+      int instanceVal = thisInstancesVal.compareTo(thatInstancesVal);
+      if (instanceVal != 0) {
+        return instanceVal;
+      }
+    }
+    if (this.period != null && that.period != null) {
+      Integer thisPeriodRank = this.period.rank;
+      Integer thatPeriodRank = that.period.rank;
+      int periodVal = thisPeriodRank.compareTo(thatPeriodRank);
+      if (periodVal != 0) {
+        return periodVal;
+      }
+    }
+    return this.toString().compareTo(that.toString());
+  }
+
+  @Override
+  public SecretKey getKey() {
+    return key;
+  }
+
+  @Override
+  public void swapKey(SecretKey key) {
+    this.key = key;
+  }
+
+  @Override
+  public boolean hasKey() {
+    return key != null;
   }
 
   public enum Type {
@@ -333,6 +285,71 @@ public class GoalTemplate implements Comparable<GoalTemplate> {
         default:
           return null;
       }
+    }
+  }
+
+  public static class Builder {
+    final String action;
+    final Type type;
+    String object = "";
+    RelativeChange relativeChange = RelativeChange.NA;
+    Instances instances = null;
+    boolean numericInstances = false;
+    SpecialInstances specialInstances = null;
+    Period period = null;
+
+    private Builder(Goal template) {
+      this(template.action, template.type);
+      this.object = template.object;
+      this.relativeChange = template.relativeChange;
+      this.instances = template.instances;
+      this.numericInstances = template.numericInstances;
+      this.specialInstances = template.specialInstances;
+      this.period = template.period;
+    }
+
+    private Builder(String action, Type type) {
+      this.action = action;
+      this.type = type;
+    }
+
+    public Builder withRelativeChange(RelativeChange relativeChange) {
+      this.relativeChange = relativeChange;
+      return this;
+    }
+
+    public Builder withObject(String object) {
+      this.object = object;
+      return this;
+    }
+
+    public Builder withoutObject() {
+      this.object = "";
+      return this;
+    }
+
+    public Builder withSpecialInstances(SpecialInstances specialInstances) {
+      this.specialInstances = specialInstances;
+      return this;
+    }
+
+    public Builder withInstances(Instances instances, boolean numericInstances) {
+      this.instances = instances;
+      this.numericInstances = numericInstances;
+      return this;
+    }
+
+    public Builder withPeriod(Period period) {
+      this.period = period;
+      return this;
+    }
+
+    public Builder copyOf() {
+      return new Builder(build());
+    }
+
+    public Goal build() {
+      return new Goal(this);
     }
   }
 }

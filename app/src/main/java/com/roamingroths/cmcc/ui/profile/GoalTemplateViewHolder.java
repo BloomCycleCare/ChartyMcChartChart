@@ -6,7 +6,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.goals.GoalTemplate;
+import com.roamingroths.cmcc.logic.goals.Goal;
 
 /**
  * Created by parkeroth on 1/24/18.
@@ -34,12 +34,12 @@ public interface GoalTemplateViewHolder extends View.OnClickListener {
       mClickHandler.onClick(getAdapterPosition());
     }
 
-    public void bind(GoalTemplate template) {
+    public void bind(Goal template) {
       setIcon(template.type);
       mTitle.setText(template.toString());
     }
 
-    private void setIcon(GoalTemplate.Type type) {
+    private void setIcon(Goal.Type type) {
       switch(type) {
         case EAT:
           mIcon.setBackgroundResource(R.drawable.ic_local_dining_black_24dp);
