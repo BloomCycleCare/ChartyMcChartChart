@@ -33,7 +33,7 @@
 
         "Motion respects and reinforces the user as the prime mover. Primary user actions are "
         "inflection points that initiate motion, transforming the whole design.\n"
-        "All goal takes place in a single environment. Objects are presented to the user without "
+        "All goalModel takes place in a single environment. Objects are presented to the user without "
         "breaking the continuity of experience even as they transform and reorganize.\n"
         "Motion is meaningful and appropriate, serving to focus attention and maintain continuity. "
         "Feedback is subtle yet clear. Transitions are efﬁcient yet coherent.\n\n"
@@ -74,7 +74,7 @@
         "Some component types have responsive elevation, meaning they change elevation in response "
         "to user input (e.g., normal, focused, and pressed) or system events. These elevation "
         "changes are consistently implemented using dynamic elevation offsets.\n"
-        "Dynamic elevation offsets are the goal elevation that a component moves towards, relative "
+        "Dynamic elevation offsets are the goalModel elevation that a component moves towards, relative "
         "to the component’s resting state. They ensure that elevation changes are consistent "
         "across actions and component types. For example, all components that lift on press have "
         "the same elevation change relative to their resting elevation.\n"
@@ -88,7 +88,7 @@
         "through other material, components avoid interfering with one another any number of ways, "
         "whether on a per component basis or using the entire app layout.\n"
         "On a component level, components can move or be removed before they cause interference. "
-        "For example, a floating goal button (FAB) can disappear or move off screen before a "
+        "For example, a floating goalModel button (FAB) can disappear or move off screen before a "
         "user picks up a card, or it can move if a snackbar appears.\n"
         "On the layout level, design your app layout to minimize opportunities for interference. "
         "For example, position the FAB to one side of stream of a cards so the FAB won’t interfere "
@@ -115,7 +115,7 @@
         <item>Gluten</item>
         <item>Caffeine</item>
         <item>Alcohol</item>
-        <item>Met hydration goal</item>
+        <item>Met hydration goalModel</item>
         <item>Followed food guide</item>
     </string-array>
     <string-array name="pref_wellness_option_keys">

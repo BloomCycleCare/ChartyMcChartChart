@@ -21,6 +21,7 @@ import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CryptoProvider;
 import com.roamingroths.cmcc.providers.CycleEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.providers.GoalProvider;
 import com.roamingroths.cmcc.providers.KeyProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
 
@@ -160,6 +161,7 @@ public class MyApplication extends Application {
     final ChartEntryProvider mChartEntryProvider;
     final ProfileProvider mProfileProvider;
     final AppStateProvider mAppStateProvider;
+    final GoalProvider mGoalProvider;
 
     Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
       mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
@@ -168,6 +170,7 @@ public class MyApplication extends Application {
       mCycleProvider = new CycleProvider(db, mKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
       mAppStateProvider = new AppStateProvider(mProfileProvider, mCycleProvider, mChartEntryProvider, currentUser);
+      mGoalProvider = new GoalProvider(db, currentUser, cryptoUtil, mKeyProvider);
     }
 
     public Completable initialize(FirebaseUser user, Context context) {

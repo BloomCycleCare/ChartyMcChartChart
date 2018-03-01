@@ -103,17 +103,34 @@ public class KeyProvider {
   }
 
   public Single<SecretKey> createAndStoreProfileKey() {
+    return createAndStoreKeyInternal(profileKeyReference());
+  }
+
+  public Single<SecretKey> createAndStoreGoalKey() {
+    return createAndStoreKeyInternal(goalKeyReference());
+  }
+
+  public Single<SecretKey> createAndStoreKeyInternal(final DatabaseReference ref) {
     try {
       SecretKey key = AesCryptoUtil.createKey();
       return mCryptoUtil.encryptKey(key).flatMapCompletable(new Function<String, CompletableSource>() {
         @Override
         public CompletableSource apply(String encryptedKey) throws Exception {
-          return RxFirebaseDatabase.setValue(profileKeyReference(), encryptedKey);
+          return RxFirebaseDatabase.setValue(ref, encryptedKey);
         }
       }).andThen(Single.just(key));
     } catch (NoSuchAlgorithmException e) {
       return Single.error(e);
     }
+  }
+
+  private DatabaseReference goalKeyReference() {
+    return mDb.getReference().child(
+        String.format("keys/%s/%s/goals", mCurrentUser.getUid(), mCurrentUser.getUid()));
+  }
+
+  public Maybe<SecretKey> getGoalKey() {
+    return getKeyInternal(goalKeyReference());
   }
 
   private DatabaseReference profileKeyReference() {
@@ -122,8 +139,12 @@ public class KeyProvider {
   }
 
   public Maybe<SecretKey> getProfileKey() {
+    return getKeyInternal(profileKeyReference());
+  }
+
+  public Maybe<SecretKey> getKeyInternal(DatabaseReference ref) {
     return RxFirebaseDatabase
-        .observeSingleValueEvent(profileKeyReference(), String.class)
+        .observeSingleValueEvent(ref, String.class)
         .flatMap(new Function<String, MaybeSource<? extends SecretKey>>() {
           @Override
           public MaybeSource<? extends SecretKey> apply(String encryptedKey) throws Exception {

@@ -12,7 +12,7 @@ import android.view.MenuItem;
 import android.widget.EditText;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.goals.Goal;
+import com.roamingroths.cmcc.logic.goals.GoalModel;
 
 public class GoalDetailActivity extends AppCompatActivity implements GoalTemplateAdapter.OnClickHandler {
 
@@ -78,7 +78,7 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
 
   @Override
   public void onClick(int index) {
-    Goal template = mAdapter.getTemplate(index);
+    GoalModel template = mAdapter.getTemplate(index);
     String newText = template.toString().replaceAll("\\.\\.\\.", "");
     if (!newText.equals(mEditText.getText())) {
       mEditText.setText(newText);

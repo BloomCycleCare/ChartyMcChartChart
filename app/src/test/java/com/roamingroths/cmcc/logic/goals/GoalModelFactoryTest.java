@@ -11,8 +11,8 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.List;
 
-import static com.roamingroths.cmcc.logic.goals.Goal.RelativeChange;
-import static com.roamingroths.cmcc.logic.goals.Goal.Type;
+import static com.roamingroths.cmcc.logic.goals.GoalModel.RelativeChange;
+import static com.roamingroths.cmcc.logic.goals.GoalModel.Type;
 import static org.junit.Assert.assertThat;
 
 /**
@@ -20,20 +20,20 @@ import static org.junit.Assert.assertThat;
  *
  * @see <a href="http://d.android.com/tools/testing">Testing documentation</a>
  */
-public class GoalFactoryTest {
+public class GoalModelFactoryTest {
 
-  private static final ImmutableSet<Goal> TEMPLATES = ImmutableSet.<Goal>builder()
-      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.MORE).withObject("water").build())
-      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("alcohol").build())
-      .add(Goal.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("caffeine").build())
-      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.MORE).withObject("fiber").build())
-      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("gluten").build())
-      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("dairy").build())
-      .add(Goal.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("sugar").build())
-      .add(Goal.builder("journal", Type.GENERAL).build())
-      .add(Goal.builder("meditate", Type.GENERAL).build())
+  private static final ImmutableSet<GoalModel> TEMPLATES = ImmutableSet.<GoalModel>builder()
+      .add(GoalModel.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.MORE).withObject("water").build())
+      .add(GoalModel.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("alcohol").build())
+      .add(GoalModel.builder("drink", Type.DRINK).withRelativeChange(RelativeChange.LESS).withObject("caffeine").build())
+      .add(GoalModel.builder("eat", Type.EAT).withRelativeChange(RelativeChange.MORE).withObject("fiber").build())
+      .add(GoalModel.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("gluten").build())
+      .add(GoalModel.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("dairy").build())
+      .add(GoalModel.builder("eat", Type.EAT).withRelativeChange(RelativeChange.LESS).withObject("sugar").build())
+      .add(GoalModel.builder("journal", Type.GENERAL).build())
+      .add(GoalModel.builder("meditate", Type.GENERAL).build())
       .build();
-  private static final GoalFactory FACTORY = new GoalFactory(TEMPLATES);
+  private static final GoalModelFactory FACTORY = new GoalModelFactory(TEMPLATES);
 
   @Test
   public void testToString_someInput() throws Exception {
@@ -125,8 +125,8 @@ public class GoalFactoryTest {
     assertThat(out, IsIterableContainingInOrder.contains("foo bar four times per day"));
   }
 
-  private static List<String> toStringList(Iterable<Goal> templates) {
-    List<Goal> templateList = Lists.newArrayList(templates);
+  private static List<String> toStringList(Iterable<GoalModel> templates) {
+    List<GoalModel> templateList = Lists.newArrayList(templates);
     Collections.sort(templateList);
     return Lists.newArrayList(Iterables.transform(templateList, Functions.toStringFunction()));
   }
