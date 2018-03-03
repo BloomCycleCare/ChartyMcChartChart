@@ -11,11 +11,18 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.EditText;
 
+import com.jakewharton.rxbinding2.widget.RxAdapterView;
+import com.jakewharton.rxbinding2.widget.RxTextView;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.goals.GoalModel;
+
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
 
 public class GoalDetailActivity extends AppCompatActivity implements GoalTemplateAdapter.OnClickHandler {
 
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
   private EditText mEditText;
   private RecyclerView mGoalOptions;
   private GoalTemplateAdapter mAdapter;
@@ -40,18 +47,9 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
     mGoalOptions.setAdapter(mAdapter);
 
     mEditText = findViewById(R.id.goal_edit_text);
-    mEditText.addTextChangedListener(new TextWatcher() {
-      @Override
-      public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
-
-      @Override
-      public void onTextChanged(CharSequence s, int start, int before, int count) {
-        mAdapter.updateItems(s.toString());
-      }
-
-      @Override
-      public void afterTextChanged(Editable s) {}
-    });
+    mDisposables.add(RxTextView.textChanges(mEditText).subscribe(charSequence -> {
+      mAdapter.updateItems(charSequence.toString());
+    }));
   }
 
   @Override
@@ -71,6 +69,9 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
     if (id == android.R.id.home) {
       onBackPressed();
       return true;
+    }
+
+    if (id == R.id.action_save) {
     }
 
     return true;

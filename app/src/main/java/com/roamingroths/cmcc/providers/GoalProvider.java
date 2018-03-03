@@ -40,51 +40,28 @@ public class GoalProvider {
 
   public Completable putGoal(final Goal goal) {
     return mCryptoUtil.encrypt(goal)
-        .flatMapCompletable(new Function<String, CompletableSource>() {
-          @Override
-          public CompletableSource apply(String encryptedGoal) throws Exception {
-            DatabaseReference rootRef = mDb.getReference(String.format("goals/%s/active", mUser.getUid()));
-            boolean existingEntry = goal.id != null;
-            DatabaseReference entryRef = existingEntry ? rootRef.child(goal.id) : rootRef.push();
-            return RxFirebaseDatabase.setValue(entryRef, encryptedGoal);
-          }
+        .flatMapCompletable(encryptedGoal -> {
+          DatabaseReference rootRef = mDb.getReference(String.format("goals/%s/active", mUser.getUid()));
+          boolean existingEntry = goal.id != null;
+          DatabaseReference entryRef = existingEntry ? rootRef.child(goal.id) : rootRef.push();
+          return RxFirebaseDatabase.setValue(entryRef, encryptedGoal);
         });
   }
 
   public Observable<Goal> getGoals() {
     return mKeyProvider.getGoalKey()
-        .flatMapObservable(new Function<SecretKey, ObservableSource<? extends Goal>>() {
-          @Override
-          public ObservableSource<? extends Goal> apply(final SecretKey secretKey) throws Exception {
-            return RxFirebaseDatabase
-                .observeSingleValueEvent(mDb.getReference(String.format("goals/%s/active", mUser.getUid())))
-                .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
-                  @Override
-                  public ObservableSource<DataSnapshot> apply(DataSnapshot rootSnapshot) throws Exception {
-                    return Observable.fromIterable(rootSnapshot.getChildren());
-                  }
-                })
-                .flatMapSingle(goalFromDbEntry(secretKey, Goal.Status.ACTIVE));
-          }
-        });
-  }
-
-  private Function<DataSnapshot, SingleSource<Goal>> goalFromDbEntry(final SecretKey key, final Goal.Status status) {
-    return new Function<DataSnapshot, SingleSource<Goal>>() {
-      @Override
-      public SingleSource<Goal> apply(DataSnapshot aSnapshot) throws Exception {
-        final String id = aSnapshot.getKey();
-        String encryptedGoalModel = aSnapshot.getValue(String.class);
-        return mCryptoUtil.decrypt(encryptedGoalModel, key, Goal.class)
-            .map(new Function<Goal, Goal>() {
-              @Override
-              public Goal apply(Goal goal) throws Exception {
-                goal.id = id;
-                goal.status = status;
-                return goal;
-              }
-            });
-      }
-    };
+        .flatMapObservable(secretKey -> RxFirebaseDatabase
+            .observeSingleValueEvent(mDb.getReference(String.format("goals/%s/active", mUser.getUid())))
+            .flatMapObservable(rootSnapshot -> Observable.fromIterable(rootSnapshot.getChildren()))
+            .flatMapSingle(snapshot -> {
+              final String id = snapshot.getKey();
+              String encryptedGoalModel = snapshot.getValue(String.class);
+              return mCryptoUtil.decrypt(encryptedGoalModel, secretKey, Goal.class)
+                  .map(goal -> {
+                    goal.id = id;
+                    goal.status = Goal.Status.ACTIVE;
+                    return goal;
+                  });
+            }));
   }
 }
