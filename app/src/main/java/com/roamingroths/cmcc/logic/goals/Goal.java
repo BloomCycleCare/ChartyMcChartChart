@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.logic.goals;
 
+import android.support.annotation.NonNull;
+
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.Cipherable;
 
@@ -9,7 +11,7 @@ import javax.crypto.SecretKey;
  * Created by parkeroth on 2/28/18.
  */
 
-public class Goal implements Cipherable {
+public class Goal implements Cipherable, Comparable<Goal> {
 
   public transient String id;
   public transient Status status = Status.UNKNOWN;
@@ -43,6 +45,11 @@ public class Goal implements Cipherable {
 
   public boolean isActive() {
     return status.equals(Status.ACTIVE);
+  }
+
+  @Override
+  public int compareTo(@NonNull Goal o) {
+    return mModel.compareTo(o.model());
   }
 
   public enum Status {

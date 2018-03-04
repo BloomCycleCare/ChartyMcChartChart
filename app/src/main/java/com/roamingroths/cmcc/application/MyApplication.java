@@ -185,6 +185,7 @@ public class MyApplication extends Application {
       return Completable
           .mergeArray(
               mCycleProvider.initCache(user),
+              mGoalProvider.init(),
               mProfileProvider.init(context, Profile.SystemGoal.AVOID))
           .andThen(mChartEntryProvider.initCache(mCycleProvider.getAllCycles(user), 2));
     }
