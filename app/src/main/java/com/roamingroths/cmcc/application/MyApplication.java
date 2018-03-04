@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.application;
 
 import android.app.Application;
+import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.preference.PreferenceManager;
@@ -50,6 +51,7 @@ public class MyApplication extends Application {
 
   private static Maybe<CryptoUtil> mCryptoUtilFromKeyStore;
   private static Single<Providers> mProviders;
+  private static ViewModelFactory mViewModelFactory;
 
   @Override
   public void onCreate() {
@@ -84,11 +86,16 @@ public class MyApplication extends Application {
           @Override
           public void run() throws Exception {
             Log.i(TAG, "Provider initialization complete");
+            mViewModelFactory = new ViewModelFactory(providers);
             mProviders = Single.just(providers).cache();
           }
         });
       }
     });
+  }
+
+  public static ViewModelFactory viewModelFactory() {
+    return mViewModelFactory;
   }
 
   public static Maybe<FirebaseUser> getCurrentUser() {

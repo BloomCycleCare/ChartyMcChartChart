@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.profile;
+package com.roamingroths.cmcc.ui.goals.create;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.goals.GoalModel;
-import com.roamingroths.cmcc.logic.goals.GoalModelFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,21 +16,19 @@ import java.util.List;
  * Created by parkeroth on 1/24/18.
  */
 
-public class GoalTemplateAdapter extends RecyclerView.Adapter<GoalTemplateViewHolder.Impl> {
+public class GoalModelAdapter extends RecyclerView.Adapter<GoalModelViewHolder.Impl> {
 
   private final OnClickHandler mClickHandler;
   private final Context mContext;
   private List<GoalModel> mActiveTemplates = new ArrayList<>();
-  private GoalModelFactory mFactory = GoalModelFactory.withDefaultTemplates();
 
-  public GoalTemplateAdapter(Context context, OnClickHandler clickHandler) {
+  public GoalModelAdapter(Context context, OnClickHandler clickHandler) {
     mContext = context;
     mClickHandler = clickHandler;
-    updateItems("");
   }
 
-  public void updateItems(String input) {
-    mActiveTemplates = mFactory.fromInput(input, 3);
+  public void updateItems(List<GoalModel> models) {
+    mActiveTemplates = models;
     notifyDataSetChanged();
   }
 
@@ -40,16 +37,16 @@ public class GoalTemplateAdapter extends RecyclerView.Adapter<GoalTemplateViewHo
   }
 
   @Override
-  public GoalTemplateViewHolder.Impl onCreateViewHolder(ViewGroup parent, int viewType) {
+  public GoalModelViewHolder.Impl onCreateViewHolder(ViewGroup parent, int viewType) {
     int layoutIdForListItem = R.layout.list_item_goal_suggestion;
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new GoalTemplateViewHolder.Impl(view, mClickHandler);
+    return new GoalModelViewHolder.Impl(view, mClickHandler);
   }
 
   @Override
-  public void onBindViewHolder(GoalTemplateViewHolder.Impl holder, int position) {
+  public void onBindViewHolder(GoalModelViewHolder.Impl holder, int position) {
     GoalModel template = mActiveTemplates.get(position);
     holder.bind(template);
   }

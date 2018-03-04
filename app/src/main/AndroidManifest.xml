@@ -86,7 +86,7 @@
         </provider>
 
         <activity
-            android:name=".ui.profile.GoalDetailActivity"
+            android:name=".ui.goals.create.CreateGoalActivity"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
     </application>

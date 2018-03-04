@@ -129,8 +129,8 @@ public class KeyProvider {
         String.format("keys/%s/%s/goals", mCurrentUser.getUid(), mCurrentUser.getUid()));
   }
 
-  public Maybe<SecretKey> getGoalKey() {
-    return getKeyInternal(goalKeyReference());
+  public Single<SecretKey> getGoalKey() {
+    return getKeyInternal(goalKeyReference()).switchIfEmpty(createAndStoreGoalKey());
   }
 
   private DatabaseReference profileKeyReference() {

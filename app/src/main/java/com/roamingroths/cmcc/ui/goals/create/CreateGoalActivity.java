@@ -1,36 +1,46 @@
-package com.roamingroths.cmcc.ui.profile;
+package com.roamingroths.cmcc.ui.goals.create;
 
+import android.app.Activity;
+import android.arch.lifecycle.ViewModelProviders;
 import android.os.Bundle;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.EditText;
 
-import com.jakewharton.rxbinding2.widget.RxAdapterView;
+import com.jakewharton.rxbinding2.view.RxMenuItem;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.logic.goals.GoalModel;
+import com.roamingroths.cmcc.mvi.MviView;
+import com.roamingroths.cmcc.ui.goals.list.GoalListFragment;
 
+import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Consumer;
+import io.reactivex.subjects.PublishSubject;
 
-public class GoalDetailActivity extends AppCompatActivity implements GoalTemplateAdapter.OnClickHandler {
+public class CreateGoalActivity extends AppCompatActivity implements GoalModelAdapter.OnClickHandler, MviView<CreateGoalIntent, CreateGoalViewState> {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private EditText mEditText;
   private RecyclerView mGoalOptions;
-  private GoalTemplateAdapter mAdapter;
+  private GoalModelAdapter mAdapter;
+  private CreateGoalViewModel mViewModel;
+  private PublishSubject<CreateGoalIntent.SaveGoal> mSaveEvents;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_goal_detail);
+
+    mSaveEvents = PublishSubject.create();
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -38,7 +48,7 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
     getSupportActionBar().setHomeAsUpIndicator(R.drawable.ic_close_white_24dp);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
 
-    mAdapter = new GoalTemplateAdapter(this, this);
+    mAdapter = new GoalModelAdapter(this, this);
     mGoalOptions = findViewById(R.id.goal_types);
     LinearLayoutManager layoutManager
         = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, false);
@@ -47,9 +57,18 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
     mGoalOptions.setAdapter(mAdapter);
 
     mEditText = findViewById(R.id.goal_edit_text);
-    mDisposables.add(RxTextView.textChanges(mEditText).subscribe(charSequence -> {
-      mAdapter.updateItems(charSequence.toString());
-    }));
+
+    mViewModel = ViewModelProviders.of(this, MyApplication.viewModelFactory()).get(CreateGoalViewModel.class);
+
+    mDisposables.add(mViewModel.states().subscribe(this::render));
+    mViewModel.processIntents(intents());
+  }
+
+  @Override
+  protected void onDestroy() {
+    mDisposables.dispose();
+
+    super.onDestroy();
   }
 
   @Override
@@ -72,6 +91,7 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
     }
 
     if (id == R.id.action_save) {
+      mSaveEvents.onNext(CreateGoalIntent.SaveGoal.create(mEditText.getText().toString()));
     }
 
     return true;
@@ -85,5 +105,44 @@ public class GoalDetailActivity extends AppCompatActivity implements GoalTemplat
       mEditText.setText(newText);
       mEditText.setSelection(newText.length());
     }
+  }
+
+  @Override
+  public Observable<CreateGoalIntent> intents() {
+    return Observable.merge(initialIntent(), getSuggestionsIntent(), saveGoalIntent());
+  }
+
+  private Observable<CreateGoalIntent.InitialIntent> initialIntent() {
+    return Observable.just(CreateGoalIntent.InitialIntent.create());
+  }
+
+  private Observable<CreateGoalIntent.GetSuggestions> getSuggestionsIntent() {
+    return RxTextView.textChanges(mEditText)
+        .map(input -> CreateGoalIntent.GetSuggestions.create(input.toString()));
+  }
+
+  private Observable<CreateGoalIntent.SaveGoal> saveGoalIntent() {
+    return mSaveEvents;
+  }
+
+  @Override
+  public void render(CreateGoalViewState state) {
+    if (state.error() != null) {
+      Log.w(CreateGoalActivity.class.getSimpleName(), state.error());
+      showMessage("Error");
+    }
+    if (state.isSaved()) {
+      setResult(Activity.RESULT_OK);
+      finish();
+    }
+    if (state.goalModels() != null) {
+      mAdapter.updateItems(state.goalModels());
+    }
+  }
+
+  private void showMessage(String message) {
+    View view = findViewById(R.id.goal_detail_layout);
+    if (view == null) return;
+    Snackbar.make(view, message, Snackbar.LENGTH_LONG).show();
   }
 }

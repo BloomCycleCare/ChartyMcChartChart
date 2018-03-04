@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.logic.goals;
 
+import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.Cipherable;
 
 import javax.crypto.SecretKey;
@@ -40,7 +41,27 @@ public class Goal implements Cipherable {
     return mKey != null;
   }
 
+  public boolean isActive() {
+    return status.equals(Status.ACTIVE);
+  }
+
   public enum Status {
     UNKNOWN, ACTIVE, ARCHIVED
+  }
+
+  @Override
+  public String toString() {
+    return mModel.toString();
+  }
+
+  public int getIconResourceId() {
+    switch (mModel.type) {
+      case EAT:
+        return R.drawable.ic_local_dining_black_24dp;
+      case DRINK:
+        return R.drawable.ic_local_drink_black_24dp;
+      default:
+        return R.drawable.ic_flag_black_24dp;
+    }
   }
 }

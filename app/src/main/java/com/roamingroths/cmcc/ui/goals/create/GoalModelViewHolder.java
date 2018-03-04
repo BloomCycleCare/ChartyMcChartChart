@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.profile;
+package com.roamingroths.cmcc.ui.goals.create;
 
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
@@ -12,15 +12,15 @@ import com.roamingroths.cmcc.logic.goals.GoalModel;
  * Created by parkeroth on 1/24/18.
  */
 
-public interface GoalTemplateViewHolder extends View.OnClickListener {
+public interface GoalModelViewHolder extends View.OnClickListener {
 
-  class Impl extends RecyclerView.ViewHolder implements GoalTemplateViewHolder {
+  class Impl extends RecyclerView.ViewHolder implements GoalModelViewHolder {
 
     private ImageView mIcon;
     private TextView mTitle;
-    private GoalTemplateAdapter.OnClickHandler mClickHandler;
+    private GoalModelAdapter.OnClickHandler mClickHandler;
 
-    public Impl(View itemView, GoalTemplateAdapter.OnClickHandler clickHandler) {
+    public Impl(View itemView, GoalModelAdapter.OnClickHandler clickHandler) {
       super(itemView);
       itemView.setOnClickListener(this);
 

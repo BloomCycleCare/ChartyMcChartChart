@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CMCC.iml" filepath="$PROJECT_DIR$/CMCC.iml" />
+      <module fileurl="file://$PROJECT_DIR$/ChartyMcChartChart.iml" filepath="$PROJECT_DIR$/ChartyMcChartChart.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
     </modules>
   </component>

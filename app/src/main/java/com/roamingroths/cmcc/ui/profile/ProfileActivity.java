@@ -14,6 +14,7 @@ import android.view.MenuItem;
 import android.view.View;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.ui.goals.list.GoalListFragment;
 
 public class ProfileActivity extends AppCompatActivity {
 
@@ -40,12 +41,6 @@ public class ProfileActivity extends AppCompatActivity {
     getSupportActionBar().setTitle("Your Profile");
 
     mFabNewGoal = findViewById(R.id.fab_new_goal);
-    mFabNewGoal.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View v) {
-        startActivity(new Intent(ProfileActivity.this, GoalDetailActivity.class));
-      }
-    });
 
     mPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
     mViewPager = findViewById(R.id.container);

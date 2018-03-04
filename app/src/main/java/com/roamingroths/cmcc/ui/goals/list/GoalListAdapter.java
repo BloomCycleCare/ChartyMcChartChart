@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.profile;
+package com.roamingroths.cmcc.ui.goals.list;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -7,17 +7,28 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.logic.goals.Goal;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Created by parkeroth on 1/24/18.
  */
 
-public class GoalAdapter extends RecyclerView.Adapter<GoalViewHolder.Impl> {
+public class GoalListAdapter extends RecyclerView.Adapter<GoalViewHolder.Impl> {
 
   private final Context mContext;
+  private List<Goal> mGoals;
 
-  public GoalAdapter(Context context) {
+  public GoalListAdapter(Context context) {
     mContext = context;
+    mGoals = new ArrayList<>();
+  }
+
+  public void updateGoals(List<Goal> newGoals) {
+    mGoals = newGoals;
+    notifyDataSetChanged();
   }
 
   @Override
@@ -32,12 +43,12 @@ public class GoalAdapter extends RecyclerView.Adapter<GoalViewHolder.Impl> {
 
   @Override
   public void onBindViewHolder(GoalViewHolder.Impl holder, int position) {
-
+    holder.bind(mGoals.get(position));
   }
 
   @Override
   public int getItemCount() {
-    return 0;
+    return mGoals.size();
   }
 
   public interface OnClickHandler {
