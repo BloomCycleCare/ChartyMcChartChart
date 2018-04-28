@@ -11,7 +11,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
@@ -29,12 +28,11 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
-
-import static org.joda.time.DateTimeZone.getProvider;
 
 public class PrintChartActivity extends AppCompatActivity {
 
@@ -81,6 +79,8 @@ public class PrintChartActivity extends AppCompatActivity {
           })
           .flatMap(CycleAdapter.cycleToViewModel(MyApplication.chartEntryProvider()))
           .toList()
+          .observeOn(AndroidSchedulers.mainThread())
+          .subscribeOn(AndroidSchedulers.mainThread())
           .subscribe(new Consumer<List<CycleAdapter.ViewModel>>() {
             @Override
             public void accept(List<CycleAdapter.ViewModel> viewModels) throws Exception {

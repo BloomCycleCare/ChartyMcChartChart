@@ -56,6 +56,12 @@ public class GoalModelFactoryTest {
   }
 
   @Test
+  public void testToString_singleActionWithInterval() throws Exception {
+    List<String> out = toStringList(FACTORY.fromInput("journal once per ", 3));
+    assertThat(out, IsIterableContainingInOrder.contains("journal once per day", "journal once per week", "journal once per month"));
+  }
+
+  @Test
   public void testToString_partialSingleAction() throws Exception {
     List<String> out = toStringList(FACTORY.fromInput("j n", 3));
     assertThat(out, IsIterableContainingInOrder.contains("j nine times per ..."));

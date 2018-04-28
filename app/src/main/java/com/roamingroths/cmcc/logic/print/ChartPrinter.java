@@ -2,6 +2,8 @@ package com.roamingroths.cmcc.logic.print;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.CancellationSignal;
@@ -14,6 +16,8 @@ import android.print.PrintJob;
 import android.print.PrintManager;
 import android.print.pdf.PrintedPdfDocument;
 import android.util.Log;
+import android.view.Display;
+import android.view.WindowManager;
 import android.webkit.WebView;
 
 import com.roamingroths.cmcc.logic.chart.ChartEntryList;
@@ -25,7 +29,6 @@ import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 import io.reactivex.subjects.BehaviorSubject;
@@ -59,43 +62,34 @@ public class ChartPrinter {
     WebView.enableSlowWholeDocumentDraw();
     return mPageRenderer.createPages()
         .observeOn(AndroidSchedulers.mainThread())
-        .flatMap(createWebViews())
-        .scan(new PrintedPdfDocument(mContext, mPrintAttributes), addPageToDocument())
+        .flatMap(this::createWebView)
+        .scan(new PrintedPdfDocument(mContext, mPrintAttributes), this::addPageToDocument)
         .lastOrError()
-        .map(new Function<PrintedPdfDocument, PrintJob>() {
-          @Override
-          public PrintJob apply(PrintedPdfDocument pdfDocument) throws Exception {
-            PdfPrintAdapter adapter = new PdfPrintAdapter(pdfDocument);
-            return mPrintManager.print("TestDocument", adapter, mPrintAttributes);
-          }
+        .map(pdfDocument -> {
+          PdfPrintAdapter adapter = new PdfPrintAdapter(pdfDocument);
+          return mPrintManager.print("TestDocument", adapter, mPrintAttributes);
         });
   }
 
-  private Function<String, ObservableSource<WebView>> createWebViews() {
-    return new Function<String, ObservableSource<WebView>>() {
-      @Override
-      public ObservableSource<WebView> apply(final String html) throws Exception {
-        Log.v("TAG", html);
-        final MyWebView webView = new MyWebView(mContext);
-        webView.loadDataWithBaseURL("file:///android_asset/", html, "text/HTML", "UTF-8", null);
-        return webView.source().toObservable();
-      }
-    };
+  private ObservableSource<WebView> createWebView(String html) {
+    final MyWebView webView = new MyWebView(mContext);
+    webView.setPadding(0, 100,0, 0);
+    Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+    webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());
+    webView.loadDataWithBaseURL("file:///android_asset/", html, "text/HTML", "UTF-8", null);
+    return webView.source().toObservable();
   }
 
-  private BiFunction<PrintedPdfDocument, WebView, PrintedPdfDocument> addPageToDocument() {
-    return new BiFunction<PrintedPdfDocument, WebView, PrintedPdfDocument>() {
-      @Override
-      public PrintedPdfDocument apply(PrintedPdfDocument printedPdfDocument, WebView webView) throws Exception {
-        int pageNum = printedPdfDocument.getPages().size() + 1;
-        PdfDocument.PageInfo pageInfo =
-            new PdfDocument.PageInfo.Builder(WIDTH_IN_POINTS, HEIGHT_IN_POINTS, pageNum).create();
-        PdfDocument.Page page = printedPdfDocument.startPage(pageInfo);
-        (webView.capturePicture()).draw(page.getCanvas());
-        printedPdfDocument.finishPage(page);
-        return printedPdfDocument;
-      }
-    };
+  private PrintedPdfDocument addPageToDocument(PrintedPdfDocument document, WebView webView) {
+    int pageNum = document.getPages().size() + 1;
+    PdfDocument.PageInfo pageInfo =
+        new PdfDocument.PageInfo.Builder(WIDTH_IN_POINTS, HEIGHT_IN_POINTS, pageNum).create();
+    PdfDocument.Page page = document.startPage(pageInfo);
+    Canvas canvas = page.getCanvas();
+    canvas.setDensity(Bitmap.DENSITY_NONE);
+    (webView.capturePicture()).draw(canvas);
+    document.finishPage(page);
+    return document;
   }
 
   private static final int POINTS_PER_INCH = 72;
