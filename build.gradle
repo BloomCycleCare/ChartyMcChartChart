@@ -7,8 +7,8 @@ buildscript {
         maven { url "http://jcenter.bintray.com"}
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
-        classpath 'com.google.gms:google-services:3.1.1'
+        classpath 'com.android.tools.build:gradle:3.1.2'
+        classpath 'com.google.gms:google-services:3.3.0'
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
 
         // NOTE: Do not place your application dependencies here; they belong
@@ -36,4 +36,10 @@ allprojects {
 
 task clean(type: Delete) {
     delete rootProject.buildDir
+}
+
+ext {
+    guavaVersion = '23.6-android'
+    supportLibraryVersion = '27.1.1'
+    firebaseVersion = '11.8.0'
 }
