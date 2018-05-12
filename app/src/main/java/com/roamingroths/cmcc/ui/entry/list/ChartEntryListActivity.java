@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
@@ -30,10 +31,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.profile.Profile;
-import com.roamingroths.cmcc.providers.AppStateProvider;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
 import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
@@ -46,14 +44,12 @@ import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import java.io.File;
 
-import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
@@ -73,8 +69,10 @@ public class ChartEntryListActivity extends AppCompatActivity
   private TextView mErrorView;
   private ProgressBar mProgressBar;
   private ViewPager mViewPager;
+  private FloatingActionButton mNewCycleFab;
 
   private Single<CycleProvider> mCycleProvider;
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private final Subject<String> mLayerSubject = BehaviorSubject.create();
   private SingleSubject<EntryListPageAdapter> mPageAdapter = SingleSubject.create();
@@ -93,6 +91,9 @@ public class ChartEntryListActivity extends AppCompatActivity
     mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
     mNavView.setNavigationItemSelectedListener(this);
+
+    mNewCycleFab = findViewById(R.id.fab_new_cycle);
+    hideFab();
 
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     View navHeaderView = mNavView.getHeaderView(0);
@@ -114,16 +115,16 @@ public class ChartEntryListActivity extends AppCompatActivity
     mProgressBar = findViewById(R.id.progress_bar);
     mViewPager = findViewById(R.id.view_pager);
 
-    MyApplication.profileProvider()
+    mDisposables.add(MyApplication.profileProvider()
         .flatMap(ProfileProvider.getProfileFn(ChartEntryListActivity.this))
         .subscribe(new Consumer<Profile>() {
           @Override
           public void accept(Profile profile) throws Exception {
             drawerTitleView.setText(profile.mPreferredName);
           }
-        });
+        }));
 
-    MyApplication.chartEntryProvider()
+    mDisposables.add(MyApplication.chartEntryProvider()
         .map(EntryListPageAdapter.create(getSupportFragmentManager()))
         .flatMap(EntryListPageAdapter.initializeFn(MyApplication.getCurrentUser().toSingle(), mCycleProvider))
         .subscribe(new Consumer<EntryListPageAdapter>() {
@@ -142,13 +143,29 @@ public class ChartEntryListActivity extends AppCompatActivity
 
               @Override
               public void onPageSelected(int position) {
-                setTitle(position == 0 ? "Current Cycle" : position + " Cycles Ago");
+                boolean viewingFirstCycle = position == entryListPageAdapter.getCount() - 1;
+                if (viewingFirstCycle) {
+                  showFab();
+                } else {
+                  hideFab();
+                }
+
+                String title;
+                if (position == 0) {
+                  title = "Current Cycle";
+                } else if (viewingFirstCycle) {
+                  title = "First Cycle";
+                } else {
+                  title = position + " Cycles Ago";
+                }
+                setTitle(title);
+
                 entryListPageAdapter.onPageActive(position);
               }
             });
             showList();
           }
-        });
+        }));
   }
 
   @Override
@@ -258,36 +275,30 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (id == R.id.action_export) {
       Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
-      MyApplication.appStateProvider().flatMap(new Function<AppStateProvider, SingleSource<String>>() {
-        @Override
-        public SingleSource<String> apply(AppStateProvider provider) throws Exception {
-          return provider.fetchAsJson(ChartEntryListActivity.this);
-        }
-      }).subscribe(new Consumer<String>() {
-        @Override
-        public void accept(String json) throws Exception {
-          File path = new File(activity.getFilesDir(), "tmp/");
-          if (!path.exists()) {
-            path.mkdir();
-          }
-          File file = new File(path, "cmcc_export.chart");
+      mDisposables.add(MyApplication.appStateProvider()
+          .flatMap(provider -> provider.fetchAsJson(ChartEntryListActivity.this))
+          .subscribe(json -> {
+            File path = new File(activity.getFilesDir(), "tmp/");
+            if (!path.exists()) {
+              path.mkdir();
+            }
+            File file = new File(path, "cmcc_export.chart");
 
-          Files.write(json, file, Charsets.UTF_8);
+            Files.write(json, file, Charsets.UTF_8);
 
-          Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+            Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
 
-          Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
-              .setSubject("CMCC Export")
-              .setEmailTo(null)
-              .setType("application/json")
-              .setStream(uri)
-              .getIntent();
-          shareIntent.setData(uri);
-          shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
+                .setSubject("CMCC Export")
+                .setEmailTo(null)
+                .setType("application/json")
+                .setStream(uri)
+                .getIntent();
+            shareIntent.setData(uri);
+            shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-          startActivity(shareIntent);
-        }
-      });
+            startActivity(shareIntent);
+          }));
     }
 
     return super.onOptionsItemSelected(item);
@@ -328,8 +339,9 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   @Override
   protected void onDestroy() {
+    mDisposables.dispose();
+
     super.onDestroy();
-    log("onDestroy");
   }
 
   @Override
@@ -369,5 +381,13 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   private void log(String message) {
     Log.v(ChartEntryListActivity.class.getName(), message);
+  }
+
+  private void showFab() {
+    mNewCycleFab.setVisibility(View.VISIBLE);
+  }
+
+  private void hideFab() {
+    mNewCycleFab.setVisibility(View.INVISIBLE);
   }
 }

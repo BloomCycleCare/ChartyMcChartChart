@@ -9,9 +9,9 @@ import android.view.ViewGroup;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseUser;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
-import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
@@ -19,8 +19,6 @@ import java.util.Comparator;
 import java.util.List;
 
 import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
 import io.reactivex.functions.BiFunction;
@@ -194,7 +192,9 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   public void onPageActive(int position) {
     EntryListFragment f = getRegisteredFragment(position);
-    f.onScrollStateUpdate(f.getScrollState());
+    if (f != null) {
+      f.onScrollStateUpdate(f.getScrollState());
+    }
   }
 
   private void maybeUpdateFragments(@Nullable EntryListFragment fragment, int position) {
