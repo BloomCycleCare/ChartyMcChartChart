@@ -73,7 +73,7 @@ public class UserInitActivity extends FragmentActivity {
     getSupportFragmentManager().executePendingTransactions();
     mFragment = (SplashFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-    mFragment.updateStatus("Loading user");
+    mFragment.updateStatus("Initializing");
 
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
@@ -100,6 +100,7 @@ public class UserInitActivity extends FragmentActivity {
         if (user == null) {
           mFragment.showError("Could not create user.");
         } else {
+          mFragment.updateStatus("Login successful");
           initUserState(user);
         }
         break;
@@ -114,14 +115,12 @@ public class UserInitActivity extends FragmentActivity {
   }*/
 
   private void initUserState(final FirebaseUser user) {
-    mFragment.updateStatus("Initializing user");
     MyApplication.initProviders(user, promptForPhoneNumber(), this)
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(new Action() {
           @Override
           public void run() throws Exception {
-            mFragment.updateStatus("User initialization complete");
             mUserListener.onUserInitialized(user);
           }
         }, new Consumer<Throwable>() {

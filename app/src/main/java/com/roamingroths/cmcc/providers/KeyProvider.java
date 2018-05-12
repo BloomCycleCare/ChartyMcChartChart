@@ -24,7 +24,6 @@ import io.reactivex.MaybeSource;
 import io.reactivex.Single;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Function3;
 
 /**
  * Created by parkeroth on 1/13/18.
@@ -54,12 +53,7 @@ public class KeyProvider {
     Maybe<SecretKey> observationKey = getCycleKey(cycleId, KeyAlias.OBSERVATION);
     Maybe<SecretKey> wellnessKey = getCycleKey(cycleId, KeyAlias.WELLNESS);
     Maybe<SecretKey> symptomKey = getCycleKey(cycleId, KeyAlias.SYMPTOM);
-    return Maybe.zip(observationKey, wellnessKey, symptomKey, new Function3<SecretKey, SecretKey, SecretKey, Cycle.Keys>() {
-      @Override
-      public Cycle.Keys apply(SecretKey observationKey, SecretKey wellnessKey, SecretKey symptomKey) throws Exception {
-        return new Cycle.Keys(observationKey, wellnessKey, symptomKey);
-      }
-    });
+    return Maybe.zip(observationKey, wellnessKey, symptomKey, Cycle.Keys::new);
   }
 
   private Maybe<SecretKey> getCycleKey(String cycleId, final KeyAlias alias) {

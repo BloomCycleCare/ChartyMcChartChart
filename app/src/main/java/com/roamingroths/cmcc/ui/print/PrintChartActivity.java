@@ -96,6 +96,12 @@ public class PrintChartActivity extends AppCompatActivity {
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
+        CycleAdapter adapter = getAdapter();
+
+        if (adapter == null) {
+          return;
+        }
+
         if (!getAdapter().hasValidSelection()) {
           invalidSelectionToast.show();
           return;

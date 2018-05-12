@@ -8,7 +8,6 @@ import com.google.common.base.Predicates;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.logic.AppState;
@@ -26,19 +25,17 @@ import java.util.Map;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
-import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Action;
 import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.functions.Functions;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 9/2/17.
@@ -65,14 +62,13 @@ public class CycleProvider {
 
   public Completable initCache(final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Initializing cycle cache.");
-    return getAllFromRemote(user).flatMapCompletable(new Function<Cycle, CompletableSource>() {
-      @Override
-      public CompletableSource apply(Cycle cycle) throws Exception {
-        if (DEBUG) Log.v(TAG, "Caching cycle " + cycle.id);
-        mCycleCache.put(cycle.id, cycle);
-        return Completable.complete();
-      }
-    });
+    return getAllFromRemote(user)
+        .subscribeOn(Schedulers.io())
+        .flatMapCompletable(cycle -> {
+          if (DEBUG) Log.v(TAG, "Caching cycle " + cycle.id);
+          mCycleCache.put(cycle.id, cycle);
+          return Completable.complete();
+        });
   }
 
   public ChartEntryProvider getEntryProvider() {
@@ -136,28 +132,16 @@ public class CycleProvider {
 
   public Maybe<Cycle> getCurrentCycle(final FirebaseUser user) {
     return getAllCycles(user)
-        .filter(new io.reactivex.functions.Predicate<Cycle>() {
-          @Override
-          public boolean test(@NonNull Cycle cycle) throws Exception {
-            return cycle.endDate == null;
-          }
-        })
+        .filter(cycle -> cycle.endDate == null)
         .firstElement();
   }
 
   public Single<Cycle> getOrCreateCurrentCycle(final FirebaseUser user, Single<LocalDate> startOfFirstCycle) {
     return getCurrentCycle(user)
-        .switchIfEmpty(startOfFirstCycle.flatMapMaybe(new Function<LocalDate, MaybeSource<? extends Cycle>>() {
-          @Override
-          public MaybeSource<? extends Cycle> apply(@NonNull LocalDate startDate) throws Exception {
-            Cycle cycle = Cycle.builder(getNewId(user), startDate).build();
-            return putCycleRx(user, cycle).andThen(Maybe.just(cycle)).doOnSuccess(new Consumer<Cycle>() {
-              @Override
-              public void accept(Cycle cycle) throws Exception {
-                mCycleCache.put(cycle.id, cycle);
-              }
-            });
-          }
+        .switchIfEmpty(startOfFirstCycle.flatMapMaybe(startDate -> {
+          Cycle cycle = Cycle.builder(getNewId(user), startDate).build();
+          return putCycleRx(user, cycle).andThen(Maybe.just(cycle))
+              .doOnSuccess(cycle1 -> mCycleCache.put(cycle1.id, cycle1));
         }))
         .toSingle();
   }
@@ -168,19 +152,17 @@ public class CycleProvider {
 
   private Observable<Cycle> getAllFromRemote(final FirebaseUser user) {
     logV("Fetching cycles");
-    return RxFirebaseDatabase.observeSingleValueEvent(reference(user), Functions.<DataSnapshot>identity())
-        .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
-          @Override
-          public ObservableSource<DataSnapshot> apply(DataSnapshot snapshot) throws Exception {
-            return Observable.fromIterable(snapshot.getChildren());
-          }
-        })
-        .flatMap(new Function<DataSnapshot, ObservableSource<Cycle>>() {
-          @Override
-          public ObservableSource<Cycle> apply(DataSnapshot snapshot) throws Exception {
-            if (DEBUG) Log.v(TAG, "Found data for cycle: " + snapshot.getKey());
-            return keyProvider.getCycleKeys(snapshot.getKey()).map(Cycle.fromSnapshot(snapshot)).toObservable();
-          }
+    return RxFirebaseDatabase.observeSingleValueEvent(reference(user), Functions.identity())
+        .observeOn(Schedulers.computation())
+        .flatMapObservable(dataSnapshot -> {
+          if (DEBUG) Log.v(TAG, String.format("Found %d cycles", dataSnapshot.getChildrenCount()));
+          return Observable.fromIterable(dataSnapshot.getChildren())
+              .flatMap(dataSnapshot1 -> {
+                if (DEBUG) Log.v(TAG, String.format("Found ata for cycle %s", dataSnapshot1.getKey()));
+                return keyProvider.getCycleKeys(dataSnapshot1.getKey())
+                    .map(Cycle.fromSnapshot(dataSnapshot1))
+                    .toObservable();
+              });
         });
   }
 

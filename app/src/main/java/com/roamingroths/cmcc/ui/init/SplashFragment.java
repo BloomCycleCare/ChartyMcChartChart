@@ -15,7 +15,7 @@ import com.roamingroths.cmcc.R;
 
 public class SplashFragment extends Fragment {
 
-  private static boolean DEBUG = false;
+  private static boolean DEBUG = true;
   private static String TAG = SplashFragment.class.getSimpleName();
 
   private ProgressBar mProgressBar;

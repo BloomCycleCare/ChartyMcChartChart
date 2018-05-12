@@ -8,8 +8,6 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.Cycle;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.roamingroths.cmcc.utils.UpdateHandle;
@@ -23,11 +21,9 @@ import io.reactivex.CompletableSource;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
-import io.reactivex.SingleSource;
 import io.reactivex.annotations.NonNull;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 /**
@@ -54,64 +50,47 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
 
   @Override
   public void onUserInitialized(final FirebaseUser user) {
+    updateStatus("Loading your data");
     if (DEBUG) Log.v(TAG, "Getting current cycleToShow");
     mDisposables.add(
-        MyApplication.cycleProvider().flatMap(new Function<CycleProvider, SingleSource<Cycle>>() {
-          @Override
-          public SingleSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
-            return cycleProvider.getOrCreateCurrentCycle(user, promptForStart());
-          }
-        }).flatMap(new Function<Cycle, SingleSource<Cycle>>() {
-          @Override
-          public SingleSource<Cycle> apply(final Cycle cycle) throws Exception {
-            return MyApplication.chartEntryProvider().flatMap(new Function<ChartEntryProvider, SingleSource<? extends Cycle>>() {
-              @Override
-              public SingleSource<? extends Cycle> apply(ChartEntryProvider chartEntryProvider) throws Exception {
-                return chartEntryProvider.maybeAddNewEntriesDeferred(cycle)
+        MyApplication.cycleProvider()
+            .flatMap(cycleProvider -> cycleProvider.getOrCreateCurrentCycle(user, promptForStart()))
+            .flatMap(cycle -> MyApplication.chartEntryProvider().flatMap(
+                chartEntryProvider -> chartEntryProvider.maybeAddNewEntriesDeferred(cycle)
                     .flatMapCompletable(UpdateHandle.run())
-                    .andThen(Single.just(cycle));
-              }
-            });
-          }
-        })
-        .subscribe(new Consumer<Cycle>() {
-          @Override
-          public void accept(@NonNull Cycle cycle) throws Exception {
-            Intent intent = new Intent(getContext(), ChartEntryListActivity.class);
-            startActivity(intent);
-          }
-        }, new Consumer<Throwable>() {
-          @Override
-          public void accept(@NonNull Throwable throwable) throws Exception {
-            showError("Could not decrypt cycleToShow entries.");
-            new AlertDialog.Builder(getActivity())
-                //set message, title, and icon
-                .setTitle("Delete All Cycles?")
-                .setMessage("This is permanent and cannot be undone!")
-                .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-                  public void onClick(final DialogInterface dialog, int whichButton) {
-                    MyApplication.cycleProvider().flatMapCompletable(new Function<CycleProvider, CompletableSource>() {
-                      @Override
-                      public CompletableSource apply(CycleProvider cycleProvider) throws Exception {
-                        return cycleProvider.dropCycles(user).flatMapCompletable(UpdateHandle.run());
-                      }
-                    }).subscribe(new Action() {
-                      @Override
-                      public void run() throws Exception {
-                        dialog.dismiss();
-                        onUserInitialized(user);
-                      }
-                    });
-                  }
-                })
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                  public void onClick(DialogInterface dialog, int which) {
-                    showError("Please restart the app.");
-                    dialog.dismiss();
-                  }
-                })
-                .create().show();
-          }
+                    .andThen(Single.just(cycle))))
+        .subscribe(cycle -> {
+          Intent intent = new Intent(getContext(), ChartEntryListActivity.class);
+          startActivity(intent);
+        }, throwable -> {
+          showError("Could not decrypt cycleToShow entries.");
+          new AlertDialog.Builder(getActivity())
+              //set message, title, and icon
+              .setTitle("Delete All Cycles?")
+              .setMessage("This is permanent and cannot be undone!")
+              .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
+                public void onClick(final DialogInterface dialog, int whichButton) {
+                  MyApplication.cycleProvider().flatMapCompletable(new Function<CycleProvider, CompletableSource>() {
+                    @Override
+                    public CompletableSource apply(CycleProvider cycleProvider) throws Exception {
+                      return cycleProvider.dropCycles(user).flatMapCompletable(UpdateHandle.run());
+                    }
+                  }).subscribe(new Action() {
+                    @Override
+                    public void run() throws Exception {
+                      dialog.dismiss();
+                      onUserInitialized(user);
+                    }
+                  });
+                }
+              })
+              .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                public void onClick(DialogInterface dialog, int which) {
+                  showError("Please restart the app.");
+                  dialog.dismiss();
+                }
+              })
+              .create().show();
         }));
   }
 
