@@ -12,6 +12,7 @@ import android.widget.EditText;
 import android.widget.LinearLayout;
 
 import com.firebase.ui.auth.AuthUI;
+import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
@@ -37,6 +38,7 @@ public class UserInitActivity extends FragmentActivity {
 
   private static String TAG = UserInitActivity.class.getSimpleName();
 
+  private FirebaseAnalytics mFirebaseAnalytics;
   private CryptoProvider mCryptoProvider;
   private UserInitializationListener mUserListener;
   private SplashFragment mFragment;
@@ -48,6 +50,8 @@ public class UserInitActivity extends FragmentActivity {
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_user_init);
+
+    mFirebaseAnalytics = FirebaseAnalytics.getInstance(this);
 
     mCryptoProvider = new CryptoProvider(FirebaseDatabase.getInstance());
 

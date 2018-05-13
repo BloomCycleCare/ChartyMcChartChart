@@ -63,6 +63,7 @@ dependencies {
     implementation "com.google.firebase:firebase-database:15.0.1"
     implementation "com.google.firebase:firebase-auth:15.1.0"
     implementation "com.google.firebase:firebase-crash:15.0.2"
+    implementation 'com.google.firebase:firebase-perf:15.2.0'
 
     implementation "com.firebaseui:firebase-ui-auth:3.3.1"
 
@@ -99,3 +100,4 @@ dependencies {
 
 
 apply plugin: "com.google.gms.google-services"
+apply plugin: 'com.google.firebase.firebase-perf'

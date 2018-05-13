@@ -11,6 +11,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ProgressBar;
 
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
@@ -46,6 +47,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private RecyclerView mRecyclerView;
+  private ProgressBar mProgressView;
   private SingleSubject<ChartEntryAdapter> mChartEntryAdapter = SingleSubject.create();
   private EntryListView mView;
   private ArrayList<ChartEntry> mChartEntries;
@@ -86,6 +88,13 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     super.onAttach(context);
 
     mView = (ChartEntryListActivity) getActivity();
+  }
+
+  @Override
+  public void onSaveInstanceState(@NonNull Bundle outState) {
+    super.onSaveInstanceState(outState);
+    outState.putParcelable(Cycle.class.getName(), mCycle);
+    outState.putParcelableArrayList(ChartEntry.class.getName(), mChartEntries);
   }
 
   @Override
@@ -161,7 +170,10 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_chart_list, container, false);
 
+    mProgressView = view.findViewById(R.id.list_load_progress);
+    mProgressView.setVisibility(View.VISIBLE);
     mRecyclerView = view.findViewById(R.id.recyclerview_chart_list);
+    mRecyclerView.setVisibility(View.INVISIBLE);
     mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
     mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -173,6 +185,8 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mDisposables.add(mChartEntryAdapter.subscribe(adapter -> {
       mRecyclerView.setAdapter(adapter);
       adapter.notifyDataSetChanged();
+      mProgressView.setVisibility(View.INVISIBLE);
+      mRecyclerView.setVisibility(View.VISIBLE);
     }));
 
     mDisposables.add(MyApplication.chartEntryProvider()

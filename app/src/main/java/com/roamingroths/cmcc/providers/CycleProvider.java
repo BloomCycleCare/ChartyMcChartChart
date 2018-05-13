@@ -151,11 +151,11 @@ public class CycleProvider {
   }
 
   private Observable<Cycle> getAllFromRemote(final FirebaseUser user) {
-    logV("Fetching cycles");
     return RxFirebaseDatabase.observeSingleValueEvent(reference(user), Functions.identity())
+        .doOnSubscribe(__ -> logV("Fetching cycles"))
         .observeOn(Schedulers.computation())
         .flatMapObservable(dataSnapshot -> {
-          if (DEBUG) Log.v(TAG, String.format("Found %d cycles", dataSnapshot.getChildrenCount()));
+          logV(String.format("Found %d cycles", dataSnapshot.getChildrenCount()));
           return Observable.fromIterable(dataSnapshot.getChildren())
               .flatMap(dataSnapshot1 -> {
                 if (DEBUG) Log.v(TAG, String.format("Found ata for cycle %s", dataSnapshot1.getKey()));
@@ -350,6 +350,6 @@ public class CycleProvider {
   }
 
   private void logV(String message) {
-    Log.v("CycleProvider", message);
+    if (DEBUG) Log.v(TAG, message);
   }
 }

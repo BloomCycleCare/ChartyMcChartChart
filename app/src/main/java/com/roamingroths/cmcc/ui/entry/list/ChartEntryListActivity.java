@@ -153,8 +153,6 @@ public class ChartEntryListActivity extends AppCompatActivity
                 String title;
                 if (position == 0) {
                   title = "Current Cycle";
-                } else if (viewingFirstCycle) {
-                  title = "First Cycle";
                 } else {
                   title = position + " Cycles Ago";
                 }

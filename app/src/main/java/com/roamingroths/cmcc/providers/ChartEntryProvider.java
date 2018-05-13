@@ -4,7 +4,6 @@ import android.util.Log;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.AppState;
@@ -16,8 +15,6 @@ import com.roamingroths.cmcc.utils.UpdateHandle;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.List;
 
 import durdinapps.rxfirebase2.RxFirebaseChildEvent;
@@ -41,7 +38,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class ChartEntryProvider {
 
-  private static boolean DEBUG = true;
+  private static boolean DEBUG = false;
   private static String TAG = ChartEntryProvider.class.getSimpleName();
 
   private final ChartEntryCache mCache;
@@ -55,12 +52,7 @@ public class ChartEntryProvider {
   public Completable initCache(Observable<Cycle> cycles, int numCycles) {
     return cycles
         .observeOn(Schedulers.io())
-        .sorted(new Comparator<Cycle>() {
-          @Override
-          public int compare(Cycle o1, Cycle o2) {
-            return o2.startDate.compareTo(o1.startDate);
-          }
-        })
+        .sorted((o1, o2) -> o2.startDate.compareTo(o1.startDate))
         .take(numCycles)
         .toList()
         .flatMapCompletable(new Function<List<Cycle>, CompletableSource>() {
@@ -99,15 +91,19 @@ public class ChartEntryProvider {
   }
 
   public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
-    Collection<LocalDate> entryDates =
-        Collections2.filter(DateUtil.daysBetween(cycle.startDate, cycle.endDate), datePredicate);
-    List<ChartEntry> cachedEntries = mCache.getEntries(entryDates);
-    if (entryDates.size() == cachedEntries.size()) {
-      if (DEBUG) Log.v(TAG, "Return cached values for: " + cycle);
-      return Observable.fromIterable(cachedEntries);
-    }
-    if (DEBUG) Log.v(TAG, "Fetch values for: " + cycle);
-    return mStore.getEntries(cycle, datePredicate).doOnEach(mCache.fill());
+    return Observable.fromIterable(DateUtil.daysBetween(cycle.startDate, cycle.endDate))
+        .filter(datePredicate::apply)
+        .toList()
+        .flatMapObservable(entryDates -> {
+          List<ChartEntry> cachedEntries = mCache.getEntries(entryDates);
+          Log.i(TAG, "Cache miss for cycle:" + cycle.id);
+          if (DEBUG) Log.v(TAG, "Fetch values for: " + cycle);
+          if (entryDates.size() == cachedEntries.size()) {
+            if (DEBUG) Log.v(TAG, "Return cached values for: " + cycle);
+            return Observable.fromIterable(cachedEntries);
+          }
+          return mStore.getEntries(cycle, datePredicate).doOnEach(mCache.fill());
+        });
   }
 
   @Deprecated

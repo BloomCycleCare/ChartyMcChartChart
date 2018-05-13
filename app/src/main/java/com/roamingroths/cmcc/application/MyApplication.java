@@ -1,19 +1,14 @@
 package com.roamingroths.cmcc.application;
 
 import android.app.Application;
-import android.arch.lifecycle.ViewModelProviders;
 import android.content.Context;
-import android.support.annotation.NonNull;
 import android.support.v7.preference.PreferenceManager;
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.ValueEventListener;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.profile.Profile;
@@ -30,14 +25,12 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import java.security.Security;
 
-import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
 import io.reactivex.functions.Action;
-import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 
 /**
@@ -71,6 +64,8 @@ public class MyApplication extends Application {
         return providers.initialize(user, getApplicationContext()).andThen(Single.just(providers));
       }
     }).cache();
+
+    //FirebaseDatabase.getInstance().setLogLevel(Logger.Level.DEBUG);
   }
 
   public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {

@@ -1,7 +1,6 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v7.util.SortedList;
 import android.util.Log;
@@ -165,16 +164,26 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   // Returns the fragment to display for that page
   @Override
-  public Fragment getItem(int position) {
+  public EntryListFragment getItem(int position) {
     Cycle cycle = mCycles.get(position);
 
     int leftPosition = position - 1;
     if (leftPosition >= 0) {
-      mChartEntryProvider.fillCache(mCycles.get(leftPosition)).subscribeOn(Schedulers.io()).subscribe();
+      mChartEntryProvider
+          .fillCache(mCycles.get(leftPosition))
+          .doOnSubscribe(__ -> { if (DEBUG) Log.v(TAG, "Filling cache left"); })
+          .doOnComplete(() -> { if (DEBUG) Log.v(TAG, "Done filling cache left"); })
+          .subscribeOn(Schedulers.io())
+          .subscribe();
     }
     int rightPosition = position + 1;
     if (rightPosition < mCycles.size()) {
-      mChartEntryProvider.fillCache(mCycles.get(rightPosition)).subscribeOn(Schedulers.io()).subscribe();
+      mChartEntryProvider
+          .fillCache(mCycles.get(rightPosition))
+          .doOnSubscribe(__ -> { if (DEBUG) Log.v(TAG, "Filling cache right"); })
+          .doOnComplete(() -> { if (DEBUG) Log.v(TAG, "Done filling cache right"); })
+          .subscribeOn(Schedulers.io())
+          .subscribe();
     }
 
     if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycleToShow:" + cycle);
