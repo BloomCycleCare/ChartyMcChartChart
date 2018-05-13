@@ -12,7 +12,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.logic.chart.Cycle;
-import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
+import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 
@@ -134,6 +134,23 @@ public class CycleProvider {
     return getAllCycles(user)
         .filter(cycle -> cycle.endDate == null)
         .firstElement();
+  }
+
+  public Single<EntrySaveResult> createCycle(FirebaseUser user, LocalDate startDate, LocalDate endDate) {
+    try {
+      Cycle.Builder builder = Cycle.builder(getNewId(user), startDate);
+      builder.endDate = endDate;
+      Cycle newCycle = builder.build();
+      EntrySaveResult result = EntrySaveResult.forCycle(newCycle);
+      result.newCycles.add(newCycle);
+      return Observable.concat(
+          putCycle(user, newCycle),
+          chartEntryProvider.createEmptyEntries(newCycle).toObservable())
+          .flatMapCompletable(UpdateHandle.run())
+          .andThen(Single.just(result));
+    } catch (Exception e) {
+      return Single.error(e);
+    }
   }
 
   public Single<Cycle> getOrCreateCurrentCycle(final FirebaseUser user, Single<LocalDate> startOfFirstCycle) {

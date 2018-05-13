@@ -111,8 +111,29 @@ public class ChartEntryProvider {
     return mStore.putEntry(cycle, chartEntry).doOnComplete(mCache.putEntry(chartEntry));
   }
 
+  public Single<UpdateHandle> createEmptyEntries(Cycle cycle) {
+    Observable<LocalDate> daysToAdd = Observable.fromIterable(DateUtil.daysBetween(cycle.startDate, cycle.endDate));
+    return storeEntries(cycle, daysToAdd);
+  }
+
+  private Single<UpdateHandle> storeEntries(Cycle cycle, Observable<LocalDate> dates) {
+    return dates
+        .map(date -> mStore.createEmptyEntry(cycle, date))
+        .toList()
+        .flatMap(chartEntries -> {
+          List<Single<UpdateHandle>> handles = new ArrayList<>();
+          for (final ChartEntry entry : chartEntries) {
+            handles.add(mStore.putEntryDeferred(cycle, entry).map(updateHandle -> {
+              updateHandle.actions.add(mCache.putEntry(entry));
+              return updateHandle;
+            }));
+          }
+          return Single.concat(handles).collectInto(mStore.newHandle(), UpdateHandle.collector());
+        });
+  }
+
   public Single<UpdateHandle> maybeAddNewEntriesDeferred(final Cycle cycle) {
-    return getEntries(cycle)
+    Observable<LocalDate> daysToAdd = getEntries(cycle)
         .toList()
         .flatMapMaybe(findMostRecent())
         // use tomorrow if no entries exist
@@ -123,30 +144,8 @@ public class ChartEntryProvider {
           public ObservableSource<LocalDate> apply(LocalDate lastEntryDate) throws Exception {
             return Observable.fromIterable(DateUtil.daysBetween(lastEntryDate.plusDays(1), LocalDate.now()));
           }
-        })
-        .map(new Function<LocalDate, ChartEntry>() {
-          @Override
-          public ChartEntry apply(LocalDate localDate) throws Exception {
-            return mStore.createEmptyEntry(cycle, localDate);
-          }
-        })
-        .toList()
-        .flatMap(new Function<List<ChartEntry>, SingleSource<? extends UpdateHandle>>() {
-          @Override
-          public SingleSource<UpdateHandle> apply(List<ChartEntry> chartEntries) throws Exception {
-            List<Single<UpdateHandle>> handles = new ArrayList<>();
-            for (final ChartEntry entry : chartEntries) {
-              handles.add(mStore.putEntryDeferred(cycle, entry).map(new Function<UpdateHandle, UpdateHandle>() {
-                @Override
-                public UpdateHandle apply(UpdateHandle updateHandle) throws Exception {
-                  updateHandle.actions.add(mCache.putEntry(entry));
-                  return updateHandle;
-                }
-              }));
-            }
-            return Single.concat(handles).collectInto(mStore.newHandle(), UpdateHandle.collector());
-          }
         });
+    return storeEntries(cycle, daysToAdd);
   }
 
   public Single<UpdateHandle> dropEntries(final Cycle cycle) {

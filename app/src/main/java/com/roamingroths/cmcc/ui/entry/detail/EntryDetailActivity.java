@@ -39,6 +39,7 @@ import com.roamingroths.cmcc.logic.chart.SymptomEntry;
 import com.roamingroths.cmcc.logic.chart.WellnessEntry;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 
 import org.joda.time.Days;

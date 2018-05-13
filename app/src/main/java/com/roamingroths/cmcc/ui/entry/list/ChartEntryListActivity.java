@@ -31,24 +31,30 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
 import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
-import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
+import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.profile.ProfileActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
+import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
+
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
 
 import java.io.File;
+import java.util.Objects;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Action;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.SingleSubject;
@@ -92,14 +98,11 @@ public class ChartEntryListActivity extends AppCompatActivity
     // Set the "My Chart" item as selected
     mNavView.setNavigationItemSelectedListener(this);
 
-    mNewCycleFab = findViewById(R.id.fab_new_cycle);
-    hideFab();
-
     FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     View navHeaderView = mNavView.getHeaderView(0);
     final TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
     final TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
-    drawerSubtitleView.setText(user.getEmail());
+    drawerSubtitleView.setText(Objects.requireNonNull(user).getEmail());
 
     mToolbar = findViewById(R.id.app_bar);
     setTitle("Current Cycle");
@@ -127,43 +130,75 @@ public class ChartEntryListActivity extends AppCompatActivity
     mDisposables.add(MyApplication.chartEntryProvider()
         .map(EntryListPageAdapter.create(getSupportFragmentManager()))
         .flatMap(EntryListPageAdapter.initializeFn(MyApplication.getCurrentUser().toSingle(), mCycleProvider))
-        .subscribe(new Consumer<EntryListPageAdapter>() {
-          @Override
-          public void accept(final EntryListPageAdapter entryListPageAdapter) throws Exception {
-            mPageAdapter.onSuccess(entryListPageAdapter);
-            mViewPager.setAdapter(entryListPageAdapter);
-            mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-              @Override
-              public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+        .subscribe(entryListPageAdapter -> {
+          mPageAdapter.onSuccess(entryListPageAdapter);
+          mViewPager.setAdapter(entryListPageAdapter);
+          mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+
+            @Override
+            public void onPageScrollStateChanged(int state) {}
+
+            @Override
+            public void onPageSelected(int position) {
+              boolean viewingFirstCycle = position == entryListPageAdapter.getCount() - 1;
+              if (viewingFirstCycle) {
+                showFab();
+              } else {
+                hideFab();
               }
 
-              @Override
-              public void onPageScrollStateChanged(int state) {
+              String title;
+              if (position == 0) {
+                title = "Current Cycle";
+              } else {
+                title = position + " Cycles Ago";
               }
+              setTitle(title);
 
-              @Override
-              public void onPageSelected(int position) {
-                boolean viewingFirstCycle = position == entryListPageAdapter.getCount() - 1;
-                if (viewingFirstCycle) {
-                  showFab();
-                } else {
-                  hideFab();
-                }
-
-                String title;
-                if (position == 0) {
-                  title = "Current Cycle";
-                } else {
-                  title = position + " Cycles Ago";
-                }
-                setTitle(title);
-
-                entryListPageAdapter.onPageActive(position);
-              }
-            });
-            showList();
-          }
+              entryListPageAdapter.onPageActive(position);
+            }
+          });
+          showList();
         }));
+
+    mNewCycleFab = findViewById(R.id.fab_new_cycle);
+    mNewCycleFab.setOnClickListener(__ -> {
+      EntryListPageAdapter adapter = (EntryListPageAdapter) mViewPager.getAdapter();
+      Cycle cycle = adapter.getCycle(mViewPager.getCurrentItem());
+      final LocalDate endDate = cycle.startDate.minusDays(1);
+      DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
+          new DatePickerDialog.OnDateSetListener() {
+            @Override
+            public void onDateSet(
+                DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
+              LocalDate startDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
+              AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
+              builder.setTitle("Create Cycle");
+              builder.setIcon(R.drawable.ic_save_black_24dp);
+              builder.setMessage(
+                  String.format("Create cycle starting %s (%d days)?",
+                  DateUtil.toPrintUiStr(startDate),
+                  Days.daysBetween(startDate, endDate).getDays()));
+              builder.setPositiveButton("Create", (dialog, which) -> {
+                mCycleProvider.flatMap(provider -> provider.createCycle(user, startDate, endDate))
+                    .flatMapCompletable(result -> mPageAdapter.flatMapCompletable(adapter -> {
+                      mViewPager.setCurrentItem(adapter.onResult(result));
+                      return Completable.complete();
+                    }))
+                    .doOnSubscribe(__ -> dialog.dismiss())
+                    .subscribe();
+              });
+              builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+              builder.show();
+            }
+          });
+      datePickerDialog.setTitle("First day of previous cycle");
+      datePickerDialog.setMaxDate(endDate.toDateTimeAtCurrentTime().toGregorianCalendar());
+      datePickerDialog.show(getFragmentManager(), "datepickerdialog");
+    });
+    hideFab();
   }
 
   @Override
@@ -188,12 +223,8 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (data != null) {
       final EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
       if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
-      mPageAdapter.subscribe(new Consumer<EntryListPageAdapter>() {
-        @Override
-        public void accept(EntryListPageAdapter adapter) throws Exception {
-          mViewPager.setCurrentItem(adapter.onResult(result));
-        }
-      });
+      mDisposables.add(mPageAdapter
+          .subscribe(adapter -> mViewPager.setCurrentItem(adapter.onResult(result))));
     }
   }
 
@@ -241,25 +272,17 @@ public class ChartEntryListActivity extends AppCompatActivity
           .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
             public void onClick(final DialogInterface dialog, int whichButton) {
               showProgress();
-              mPageAdapter.subscribe(new Consumer<EntryListPageAdapter>() {
-                @Override
-                public void accept(EntryListPageAdapter adapter) throws Exception {
-                  adapter.shutdown(mViewPager);
-                }
-              });
-              Single.merge(Single.zip(mCycleProvider, MyApplication.getCurrentUser().toSingle(), new BiFunction<CycleProvider, FirebaseUser, Single<UpdateHandle>>() {
-                @Override
-                public Single<UpdateHandle> apply(CycleProvider cycleProvider, FirebaseUser firebaseUser) throws Exception {
-                  return cycleProvider.dropCycles(firebaseUser);
-                }
-              })).flatMapCompletable(UpdateHandle.run()).subscribe(new Action() {
-                @Override
-                public void run() throws Exception {
-                  Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
-                  startActivity(intent);
-                  dialog.dismiss();
-                }
-              });
+              mDisposables.add(mPageAdapter
+                  .subscribe(adapter -> adapter.shutdown(mViewPager)));
+              mDisposables.add(Single
+                  .merge(Single.zip(
+                      mCycleProvider, MyApplication.getCurrentUser().toSingle(), CycleProvider::dropCycles))
+                  .flatMapCompletable(UpdateHandle.run())
+                  .subscribe(() -> {
+                    Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
+                    startActivity(intent);
+                    dialog.dismiss();
+                  }));
             }
           })
           .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
@@ -375,10 +398,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     drawer.closeDrawer(GravityCompat.START);
     setNavItem();
     return true;
-  }
-
-  private void log(String message) {
-    Log.v(ChartEntryListActivity.class.getName(), message);
   }
 
   private void showFab() {

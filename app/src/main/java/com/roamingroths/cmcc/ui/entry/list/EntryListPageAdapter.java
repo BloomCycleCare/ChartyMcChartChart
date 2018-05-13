@@ -11,7 +11,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
-import com.roamingroths.cmcc.ui.entry.detail.EntrySaveResult;
+import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
 import java.util.Comparator;
@@ -244,5 +244,9 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     int index = mCycles.indexOf(fragment.getCycle());
     //return index < 0 ? POSITION_NONE : index;
     return POSITION_NONE;
+  }
+
+  public Cycle getCycle(int position) {
+    return mCycles.get(position);
   }
 }
