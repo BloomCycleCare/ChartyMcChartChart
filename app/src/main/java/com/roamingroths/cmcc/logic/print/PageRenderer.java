@@ -3,14 +3,16 @@ package com.roamingroths.cmcc.logic.print;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
@@ -97,10 +99,12 @@ public class PageRenderer {
   private static void appendHead(StringBuilder builder) {
     builder.append("<head>");
     builder.append("<style>");
+    builder.append("#container { padding-top: 20pt; padding-left: 20pt; }");
     builder.append("table { margin: auto; table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
     builder.append("tr.stickers { border-top: 4px solid black; font-size: 150%; font-style: bold; } ");
-    builder.append("td { text-align: center; height: 70pt; width: 36pt; border: 1px solid black; } ");
-    builder.append("tr.day-num td { height: 30px; } ");
+    builder.append("td { text-align: center; height: 66pt; width: 34pt; border: 1px solid black; } ");
+    builder.append("tr.day-num td { height: 34pt; } ");
+    builder.append("td.stats { padding-left: 2pt } ");
     builder.append("td.red { background: red; } ");
     builder.append("td.yellow { background: yellow; } ");
     builder.append("td.green { background: green; } ");
@@ -112,6 +116,7 @@ public class PageRenderer {
 
   private static void appendBody(StringBuilder builder, List<String> cycleRows) {
     Preconditions.checkArgument(cycleRows.size() <= NUM_ROWS_PER_PAGE);
+    builder.append("<div id=\"container\">");
     builder.append("<table>");
     appendDays(builder);
     for (String row : cycleRows) {
@@ -121,6 +126,7 @@ public class PageRenderer {
       appendEmptyCycle(builder);
     }
     builder.append("</table>");
+    builder.append("</div>");
   }
 
   private static void appendDays(StringBuilder builder) {
@@ -208,7 +214,19 @@ public class PageRenderer {
       }
     }
     fillEmptyDays(builder, startIndex, endIndex);
+    builder.append("<td class=\"stats\" colspan=\"2\">");
+    if (startIndex == 0 && entryList != null) {
+      fillStats(builder, entryList.getStats());
+    }
+    builder.append("</td>");
     builder.append("</tr>");
+  }
+
+  private static void fillStats(StringBuilder builder, ImmutableMap<ChartEntryList.Stat, Object> stats) {
+    for (Map.Entry<ChartEntryList.Stat, Object> entry : stats.entrySet()) {
+      builder.append("<b>").append(entry.getKey().name()).append("</b>\n");
+      builder.append(entry.getValue().toString());
+    }
   }
 
   private static void appendEntries(StringBuilder builder, ChartEntryList entryList, int startIndex, int endIndex) {

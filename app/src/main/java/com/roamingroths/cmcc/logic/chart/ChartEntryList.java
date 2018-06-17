@@ -5,6 +5,7 @@ import android.support.v7.util.SortedList;
 import android.util.Log;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
@@ -28,6 +29,10 @@ public class ChartEntryList {
   private final boolean DEBUG = false;
   private final String TAG = ChartEntryList.class.getSimpleName();
 
+  public enum Stat {
+    MCC
+  }
+
   // Chart state members
   public final Cycle mCurrentCycle;
   private final SortedList<ChartEntry> mEntries;
@@ -44,6 +49,12 @@ public class ChartEntryList {
     mEntries = entries;
     mCurrentCycle = currentCycle;
     mPreferences = preferences;
+  }
+
+  public ImmutableMap<Stat, Object> getStats() {
+    return ImmutableMap.<Stat, Object>builder()
+        .put(Stat.MCC, 4.0f)
+        .build();
   }
 
   public void bindViewHolder(ChartEntryViewHolder holder, int position, String layerKey) {
