@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.providers;
 import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
@@ -16,14 +17,13 @@ import java.util.List;
 
 import javax.crypto.SecretKey;
 
-import durdinapps.rxfirebase2.DataSnapshotMapper;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeSource;
 import io.reactivex.Single;
-import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by parkeroth on 1/13/18.
@@ -49,24 +49,20 @@ public class KeyProvider {
   }
 
   public Maybe<Cycle.Keys> getCycleKeys(String cycleId) {
-    if (DEBUG) Log.v(TAG, "Getting keys for cycle: " + cycleId);
-    Maybe<SecretKey> observationKey = getCycleKey(cycleId, KeyAlias.OBSERVATION);
-    Maybe<SecretKey> wellnessKey = getCycleKey(cycleId, KeyAlias.WELLNESS);
-    Maybe<SecretKey> symptomKey = getCycleKey(cycleId, KeyAlias.SYMPTOM);
-    return Maybe.zip(observationKey, wellnessKey, symptomKey, Cycle.Keys::new);
+    return RxFirebaseDatabase.observeSingleValueEvent(mDb.getReference("keys").child(mCurrentUser.getUid()).child(cycleId))
+        .observeOn(Schedulers.computation())
+        .flatMap(dataSnapshot -> Maybe.zip(
+              getCycleKey(dataSnapshot, KeyAlias.OBSERVATION),
+              getCycleKey(dataSnapshot, KeyAlias.WELLNESS),
+              getCycleKey(dataSnapshot, KeyAlias.SYMPTOM),
+              Cycle.Keys::new))
+        .doOnSubscribe(__ -> logV("Getting keys for cycle: " + cycleId))
+        .doOnSuccess(__ -> logV("Keys ready for cycle: " + cycleId));
   }
 
-  private Maybe<SecretKey> getCycleKey(String cycleId, final KeyAlias alias) {
-    if (DEBUG) Log.v(TAG, String.format("Loading key alias: %s for cycle: %s", alias.name(), cycleId));
-    return RxFirebaseDatabase.observeSingleValueEvent(
-        mDb.getReference("keys").child(mCurrentUser.getUid()).child(cycleId).child(alias.name().toLowerCase()),
-        DataSnapshotMapper.of(String.class))
-        .flatMap(new Function<String, MaybeSource<SecretKey>>() {
-          @Override
-          public MaybeSource<SecretKey> apply(@NonNull String encryptedKey) throws Exception {
-            return mCryptoUtil.decryptKey(encryptedKey);
-          }
-        });
+  private Maybe<SecretKey> getCycleKey(DataSnapshot snapshot, KeyAlias alias) {
+    String encryptedKey = snapshot.child(alias.name().toLowerCase()).getValue(String.class);
+    return mCryptoUtil.decryptKey(encryptedKey);
   }
 
   // TODO(sharing): add support for multiple users
@@ -145,5 +141,9 @@ public class KeyProvider {
             return mCryptoUtil.decryptKey(encryptedKey);
           }
         });
+  }
+
+  public void logV(String message) {
+    if (DEBUG) Log.v(TAG, String.format("%s: %s", Thread.currentThread().getName(), message));
   }
 }

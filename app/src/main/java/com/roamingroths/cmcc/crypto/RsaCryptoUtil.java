@@ -63,30 +63,27 @@ public class RsaCryptoUtil {
   }
 
   public static Callable<String> decrypt(final PrivateKey privateKey, final String cipherText) {
-    return new Callable<String>() {
-      @Override
-      public String call() throws Exception {
-        if (Strings.isNullOrEmpty(cipherText)) {
-          return cipherText;
-        }
-        Cipher output = Cipher.getInstance(TRANSFORM);
-        output.init(Cipher.DECRYPT_MODE, privateKey);
-
-        CipherInputStream cipherInputStream = new CipherInputStream(
-            new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
-        ArrayList<Byte> values = new ArrayList<>();
-        int nextByte;
-        while ((nextByte = cipherInputStream.read()) != -1) {
-          values.add((byte) nextByte);
-        }
-
-        byte[] bytes = new byte[values.size()];
-        for (int i = 0; i < bytes.length; i++) {
-          bytes[i] = values.get(i).byteValue();
-        }
-
-        return new String(bytes, 0, bytes.length, "UTF-8");
+    return () -> {
+      if (Strings.isNullOrEmpty(cipherText)) {
+        return cipherText;
       }
+      Cipher output = Cipher.getInstance(TRANSFORM);
+      output.init(Cipher.DECRYPT_MODE, privateKey);
+
+      CipherInputStream cipherInputStream = new CipherInputStream(
+          new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
+      ArrayList<Byte> values = new ArrayList<>();
+      int nextByte;
+      while ((nextByte = cipherInputStream.read()) != -1) {
+        values.add((byte) nextByte);
+      }
+
+      byte[] bytes = new byte[values.size()];
+      for (int i = 0; i < bytes.length; i++) {
+        bytes[i] = values.get(i).byteValue();
+      }
+
+      return new String(bytes, 0, bytes.length, "UTF-8");
     };
   }
 

@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -35,6 +36,7 @@ import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.internal.functions.Functions;
+import io.reactivex.parallel.ParallelFlowable;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -63,12 +65,15 @@ public class CycleProvider {
   public Completable initCache(final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Initializing cycle cache.");
     return getAllFromRemote(user)
-        .subscribeOn(Schedulers.io())
-        .flatMapCompletable(cycle -> {
-          if (DEBUG) Log.v(TAG, "Caching cycle " + cycle.id);
+        .doOnNext(cycle -> {
+          logV(cycle, "Caching cycle");
           mCycleCache.put(cycle.id, cycle);
-          return Completable.complete();
-        });
+        })
+        .runOn(Schedulers.computation())
+        .sequential()
+        .ignoreElements()
+        .doOnComplete(() -> logV("Done initializing cycle cache."))
+        .subscribeOn(Schedulers.io());
   }
 
   public ChartEntryProvider getEntryProvider() {
@@ -167,20 +172,21 @@ public class CycleProvider {
     return Observable.fromIterable(mCycleCache.values());
   }
 
-  private Observable<Cycle> getAllFromRemote(final FirebaseUser user) {
+  private ParallelFlowable<Cycle> getAllFromRemote(final FirebaseUser user) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(user), Functions.identity())
-        .doOnSubscribe(__ -> logV("Fetching cycles"))
+        .subscribeOn(Schedulers.io())
         .observeOn(Schedulers.computation())
-        .flatMapObservable(dataSnapshot -> {
-          logV(String.format("Found %d cycles", dataSnapshot.getChildrenCount()));
-          return Observable.fromIterable(dataSnapshot.getChildren())
-              .flatMap(dataSnapshot1 -> {
-                if (DEBUG) Log.v(TAG, String.format("Found ata for cycle %s", dataSnapshot1.getKey()));
-                return keyProvider.getCycleKeys(dataSnapshot1.getKey())
-                    .map(Cycle.fromSnapshot(dataSnapshot1))
-                    .toObservable();
-              });
-        });
+        .doOnSubscribe(__ -> logV("Fetching cycles"))
+        .doOnSuccess(dataSnapshot -> logV(String.format("Found %d cycles", dataSnapshot.getChildrenCount())))
+        .flatMapObservable(dataSnapshot -> Observable.fromIterable(dataSnapshot.getChildren()))
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .parallel()
+        .runOn(Schedulers.computation())
+        .flatMap(dataSnapshot -> keyProvider.getCycleKeys(dataSnapshot.getKey())
+            .doOnSuccess(__ -> logV(dataSnapshot.getKey() + ": Keys loaded"))
+            .map(keys -> Cycle.fromSnapshot(dataSnapshot, keys))
+            .doOnSuccess(cycle -> logV(cycle, "Cycle created"))
+            .toFlowable());
   }
 
   public Single<UpdateHandle> dropCycles(final FirebaseUser user) {
@@ -367,6 +373,10 @@ public class CycleProvider {
   }
 
   private void logV(String message) {
-    if (DEBUG) Log.v(TAG, message);
+    if (DEBUG) Log.v(TAG, String.format("%s: %s", Thread.currentThread().getName(), message));
+  }
+
+  private void logV(Cycle cycle, String message) {
+    if (DEBUG) Log.v(TAG, String.format("%s: %s: %s", Thread.currentThread().getName(), cycle.id, message));
   }
 }

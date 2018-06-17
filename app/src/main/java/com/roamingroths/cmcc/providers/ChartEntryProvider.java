@@ -38,7 +38,7 @@ import io.reactivex.schedulers.Schedulers;
 
 public class ChartEntryProvider {
 
-  private static boolean DEBUG = false;
+  private static boolean DEBUG = true;
   private static String TAG = ChartEntryProvider.class.getSimpleName();
 
   private final ChartEntryCache mCache;
@@ -96,12 +96,12 @@ public class ChartEntryProvider {
         .toList()
         .flatMapObservable(entryDates -> {
           List<ChartEntry> cachedEntries = mCache.getEntries(entryDates);
-          Log.i(TAG, "Cache miss for cycle:" + cycle.id);
           if (DEBUG) Log.v(TAG, "Fetch values for: " + cycle);
           if (entryDates.size() == cachedEntries.size()) {
             if (DEBUG) Log.v(TAG, "Return cached values for: " + cycle);
             return Observable.fromIterable(cachedEntries);
           }
+          Log.i(TAG, "Cache miss for cycle:" + cycle.id);
           return mStore.getEntries(cycle, datePredicate).doOnEach(mCache.fill());
         });
   }
