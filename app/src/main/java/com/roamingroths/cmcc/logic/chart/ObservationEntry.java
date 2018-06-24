@@ -27,6 +27,7 @@ public class ObservationEntry extends Entry implements Parcelable {
   public boolean firstDay;
   public boolean pointOfChange;
   public boolean unusualBleeding;
+  public IntercourseTimeOfDay intercourseTimeOfDay;
 
   public ObservationEntry(
       LocalDate date,
@@ -36,6 +37,7 @@ public class ObservationEntry extends Entry implements Parcelable {
       boolean firstDay,
       boolean pointOfChange,
       boolean unusualBleeding,
+      IntercourseTimeOfDay intercourseTimeOfDay,
       SecretKey key) {
     super(date);
     this.observation = observation;
@@ -47,6 +49,7 @@ public class ObservationEntry extends Entry implements Parcelable {
       throw new IllegalArgumentException();
     }
     this.unusualBleeding = unusualBleeding;
+    this.intercourseTimeOfDay = intercourseTimeOfDay;
     swapKey(key);
   }
 
@@ -59,11 +62,21 @@ public class ObservationEntry extends Entry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         in.readByte() != 0,
+        IntercourseTimeOfDay.valueOf(in.readString()),
         AesCryptoUtil.parseKey(in.readString()));
   }
 
+  @Override
+  public boolean maybeUpgrade() {
+    if (intercourseTimeOfDay == null) {
+      intercourseTimeOfDay = intercourse ? IntercourseTimeOfDay.ANY : IntercourseTimeOfDay.NONE;
+      return true;
+    }
+    return false;
+  }
+
   public static ObservationEntry emptyEntry(LocalDate date, SecretKey secretKey) {
-    return new ObservationEntry(date, null, false, false, false, false, false, secretKey);
+    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, secretKey);
   }
 
   @Override
@@ -117,6 +130,7 @@ public class ObservationEntry extends Entry implements Parcelable {
     dest.writeByte((byte) (firstDay ? 1 : 0));
     dest.writeByte((byte) (pointOfChange ? 1 : 0));
     dest.writeByte((byte) (unusualBleeding ? 1 : 0));
+    dest.writeString(intercourseTimeOfDay.name());
     dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
@@ -130,7 +144,8 @@ public class ObservationEntry extends Entry implements Parcelable {
           this.intercourse == that.intercourse &&
           this.firstDay == that.firstDay &&
           this.pointOfChange == that.pointOfChange &&
-          this.unusualBleeding == that.unusualBleeding;
+          this.unusualBleeding == that.unusualBleeding &&
+          this.intercourseTimeOfDay == that.intercourseTimeOfDay;
     }
     return false;
   }
@@ -138,6 +153,25 @@ public class ObservationEntry extends Entry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding);
+        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay);
+  }
+
+  public enum IntercourseTimeOfDay {
+    NONE("None"), ANY("Any time of day"), END("End of day");
+
+    final String value;
+
+    IntercourseTimeOfDay(String value) {
+      this.value = value;
+    }
+
+    public static IntercourseTimeOfDay fromStr(String str) {
+      for (IntercourseTimeOfDay item : IntercourseTimeOfDay.values()) {
+        if (item.value.equals(str)) {
+          return item;
+        }
+      }
+      throw new IllegalArgumentException(str + ": does not match any values");
+    }
   }
 }

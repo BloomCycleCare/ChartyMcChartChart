@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -23,6 +24,8 @@ public class ChartEntry implements Parcelable {
   public final WellnessEntry wellnessEntry;
   public final SymptomEntry symptomEntry;
 
+  private final List<Entry> subEntries;
+
   public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
@@ -30,13 +33,26 @@ public class ChartEntry implements Parcelable {
     this.observationEntry = observationEntry;
     this.wellnessEntry = wellnessEntry;
     this.symptomEntry = symptomEntry;
+
+    subEntries = ImmutableList.of(observationEntry, wellnessEntry, symptomEntry);
   }
 
   protected ChartEntry(Parcel in) {
-    entryDate = DateUtil.fromWireStr(in.readString());
-    observationEntry = in.readParcelable(ObservationEntry.class.getClassLoader());
-    wellnessEntry = in.readParcelable(WellnessEntry.class.getClassLoader());
-    symptomEntry = in.readParcelable(SymptomEntry.class.getClassLoader());
+    this(DateUtil.fromWireStr(in.readString()),
+        in.readParcelable(ObservationEntry.class.getClassLoader()),
+        in.readParcelable(WellnessEntry.class.getClassLoader()),
+        in.readParcelable(SymptomEntry.class.getClassLoader()));
+  }
+
+  // Returns true if an upgrade is performed and the database should be updated
+  public boolean maybeUpgrade() {
+    boolean upgradePerformed = false;
+    for (Entry entry : subEntries) {
+      if (entry.maybeUpgrade()) {
+        upgradePerformed = true;
+      }
+    }
+    return upgradePerformed;
   }
 
   public List<String> getSummaryLines() {

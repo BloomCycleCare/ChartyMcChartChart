@@ -9,6 +9,9 @@ import android.support.v7.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
+import android.widget.ArrayAdapter;
+import android.widget.CompoundButton;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
@@ -35,6 +38,7 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
   private TextView mObservationDescriptionTextView;
   private Switch mPeakDaySwitch;
   private Switch mIntercourseSwitch;
+  private Spinner mIntercourseSpinner;
   private View mFirstDayLayout;
   private Switch mFirstDaySwitch;
   private Switch mPointOfChangeSwitch;
@@ -108,6 +112,22 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
     mPeakDaySwitch = view.findViewById(R.id.switch_peak_day);
     mIntercourseSwitch = view.findViewById(R.id.switch_intercourse);
+    mIntercourseSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+      @Override
+      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+        if (isChecked) {
+          mIntercourseSpinner.setVisibility(View.VISIBLE);
+        } else {
+          mIntercourseSpinner.setVisibility(View.GONE);
+        }
+      }
+    });
+    mIntercourseSpinner = view.findViewById(R.id.spinner_intercourse);
+    ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
+        R.array.intercourse_times_of_day, android.R.layout.simple_spinner_item);
+    adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    mIntercourseSpinner.setAdapter(adapter);
+    mIntercourseSpinner.setVisibility(View.GONE);
     mFirstDayLayout = view.findViewById(R.id.layout_new_cycle);
     mFirstDaySwitch = view.findViewById(R.id.switch_new_cycle);
     mPointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
@@ -179,8 +199,11 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
     boolean firstDay = mFirstDaySwitch.isChecked();
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
+    ObservationEntry.IntercourseTimeOfDay timeOfDay = !intercourse
+        ? ObservationEntry.IntercourseTimeOfDay.NONE
+        : ObservationEntry.IntercourseTimeOfDay.fromStr(mIntercourseSpinner.getSelectedItem().toString());
     return new ObservationEntry(
-        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, getCycle().keys.chartKey);
+        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, timeOfDay, getCycle().keys.chartKey);
   }
 
   @Override

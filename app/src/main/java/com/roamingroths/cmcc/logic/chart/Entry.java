@@ -47,5 +47,9 @@ public abstract class Entry implements Cipherable, Parcelable {
     mKey = key;
   }
 
+  public boolean maybeUpgrade() {
+    return false;
+  }
+
   public abstract List<String> getSummaryLines();
 }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="intercourse_times_of_day">
+        <item>Any time of day</item>
+        <item>End of day</item>
+    </string-array>
+</resources>

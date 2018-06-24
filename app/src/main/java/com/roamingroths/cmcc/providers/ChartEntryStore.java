@@ -18,7 +18,6 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import org.joda.time.LocalDate;
-import org.reactivestreams.Publisher;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,10 +35,8 @@ import io.reactivex.Completable;
 import io.reactivex.CompletableSource;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Function4;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -70,30 +67,16 @@ public class ChartEntryStore {
   public Observable<ChartEntry> getEntries(Cycle cycle, Predicate<LocalDate> datePredicate) {
     return RxFirebaseDatabase.observeSingleValueEvent(reference(cycle))
         .observeOn(Schedulers.computation())
-        .flatMapObservable(new Function<DataSnapshot, ObservableSource<DataSnapshot>>() {
-          @Override
-          public ObservableSource<DataSnapshot> apply(final DataSnapshot dataSnapshot) throws Exception {
-            return Observable.fromIterable(dataSnapshot.getChildren());
-          }
-        })
+        .flatMapObservable(dataSnapshot -> Observable.fromIterable(dataSnapshot.getChildren()))
         .flatMap(snapshotToEntry(cycle, datePredicate));
   }
 
   public Flowable<RxFirebaseChildEvent<ChartEntry>> entryStream(final Cycle cycle) {
     return RxFirebaseDatabase.observeChildEvent(reference(cycle))
         .observeOn(Schedulers.computation())
-        .flatMap(new Function<RxFirebaseChildEvent<DataSnapshot>, Publisher<RxFirebaseChildEvent<ChartEntry>>>() {
-          @Override
-          public Publisher<RxFirebaseChildEvent<ChartEntry>> apply(final RxFirebaseChildEvent<DataSnapshot> childEvent) throws Exception {
-            return snapshotToEntry(cycle).apply(childEvent.getValue())
-                .map(new Function<ChartEntry, RxFirebaseChildEvent<ChartEntry>>() {
-                  @Override
-                  public RxFirebaseChildEvent<ChartEntry> apply(ChartEntry chartEntry) throws Exception {
-                    return new RxFirebaseChildEvent<>(childEvent.getKey(), chartEntry, childEvent.getEventType());
-                  }
-                }).toFlowable(BackpressureStrategy.BUFFER);
-          }
-        });
+        .flatMap(childEvent -> snapshotToEntry(cycle).apply(childEvent.getValue())
+            .map(chartEntry -> new RxFirebaseChildEvent<>(childEvent.getKey(), chartEntry, childEvent.getEventType()))
+            .toFlowable(BackpressureStrategy.BUFFER));
   }
 
   public List<String> getDbPaths(Cycle cycle, List<ChartEntry> entries) {
@@ -117,12 +100,8 @@ public class ChartEntryStore {
   }
 
   public Single<UpdateHandle> putEntriesDeferred(final Cycle toCycle, Observable<ChartEntry> entries) {
-    return entries.flatMap(new Function<ChartEntry, ObservableSource<UpdateHandle>>() {
-      @Override
-      public ObservableSource<UpdateHandle> apply(ChartEntry chartEntry) throws Exception {
-        return putEntryDeferred(toCycle, chartEntry).toObservable();
-      }
-    }).collectInto(UpdateHandle.forDb(mDB), UpdateHandle.collector());
+    return entries.flatMap(chartEntry -> putEntryDeferred(toCycle, chartEntry).toObservable())
+        .collectInto(UpdateHandle.forDb(mDB), UpdateHandle.collector());
   }
 
   public ChartEntry createEmptyEntry(Cycle cycle, LocalDate date) {
@@ -173,30 +152,28 @@ public class ChartEntryStore {
   }
 
   private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(Cycle cycle) {
-    return snapshotToEntry(cycle, Predicates.<LocalDate>alwaysTrue());
+    return snapshotToEntry(cycle, Predicates.alwaysTrue());
   }
 
   private Function<DataSnapshot, Observable<ChartEntry>> snapshotToEntry(final Cycle cycle, final Predicate<LocalDate> datePredicate) {
-    return new Function<DataSnapshot, Observable<ChartEntry>>() {
-      @Override
-      public Observable<ChartEntry> apply(DataSnapshot snapshot) {
-        LocalDate entryDate = DateUtil.fromWireStr(snapshot.getKey());
-        if (!datePredicate.apply(entryDate)) {
-          return Observable.empty();
-        }
-        Single<ObservationEntry> observation =
-            mObservationEntryProvider.decryptEntry(snapshot, cycle.keys);
-        Single<WellnessEntry> wellness =
-            mWellnessEntryProvider.decryptEntry(snapshot, cycle.keys);
-        Single<SymptomEntry> symptom =
-            mSymptomEntryProvider.decryptEntry(snapshot, cycle.keys);
-        return Single.zip(Single.just(entryDate), observation, wellness, symptom, new Function4<LocalDate, ObservationEntry, WellnessEntry, SymptomEntry, ChartEntry>() {
-          @Override
-          public ChartEntry apply(LocalDate localDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) throws Exception {
-            return new ChartEntry(localDate, observationEntry, wellnessEntry, symptomEntry);
-          }
-        }).toObservable();
+    return snapshot -> {
+      LocalDate entryDate = DateUtil.fromWireStr(snapshot.getKey());
+      if (!datePredicate.apply(entryDate)) {
+        return Observable.empty();
       }
+      Single<ObservationEntry> observation =
+          mObservationEntryProvider.decryptEntry(snapshot, cycle.keys);
+      Single<WellnessEntry> wellness =
+          mWellnessEntryProvider.decryptEntry(snapshot, cycle.keys);
+      Single<SymptomEntry> symptom =
+          mSymptomEntryProvider.decryptEntry(snapshot, cycle.keys);
+      return Single.zip(Single.just(entryDate), observation, wellness, symptom, ChartEntry::new).flatMap(chartEntry -> {
+        if (!chartEntry.maybeUpgrade()) {
+          return Single.just(chartEntry);
+        }
+        Log.i(TAG, "Would update entry");
+        return putEntry(cycle, chartEntry).andThen(Single.just(chartEntry));
+      }).toObservable();
     };
   }
 

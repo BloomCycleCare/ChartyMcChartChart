@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.ObservationEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;
@@ -91,6 +92,7 @@ public class PageRenderer {
         appendHead(html);
         appendBody(html, cycleRows);
         html.append("</html>");
+        String out = html.toString();
         return html.toString();
       }
     };
@@ -100,10 +102,13 @@ public class PageRenderer {
     builder.append("<head>");
     builder.append("<style>");
     builder.append("#container { padding-top: 20pt; padding-left: 20pt; }");
-    builder.append("table { margin: auto; table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
+    builder.append("table.outer { margin: auto; table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
+    builder.append("table.sticker { height: 100%; width: 100%; } ");
     builder.append("tr.stickers { border-top: 4px solid black; font-size: 150%; font-style: bold; } ");
-    builder.append("td { text-align: center; height: 66pt; width: 34pt; border: 1px solid black; } ");
+    builder.append("td.cell { text-align: center; height: 66pt; width: 34pt; border: 1px solid black; } ");
     builder.append("tr.day-num td { height: 34pt; } ");
+    builder.append("table.sticker tr { height: 33% } ");
+    builder.append("table.sticker td { text-align: center; font-weight: bold; } ");
     builder.append("td.stats { padding-left: 2pt } ");
     builder.append("td.red { background: red; } ");
     builder.append("td.yellow { background: yellow; } ");
@@ -117,7 +122,7 @@ public class PageRenderer {
   private static void appendBody(StringBuilder builder, List<String> cycleRows) {
     Preconditions.checkArgument(cycleRows.size() <= NUM_ROWS_PER_PAGE);
     builder.append("<div id=\"container\">");
-    builder.append("<table>");
+    builder.append("<table class=\"outer\">");
     appendDays(builder);
     for (String row : cycleRows) {
       builder.append(row);
@@ -143,6 +148,7 @@ public class PageRenderer {
 
   private static String openCellTag(int index, List<String> extraClasses) {
     List<String> classes = new ArrayList<>();
+    classes.add("cell");
     classes.addAll(extraClasses);
     if (index % 7 == 6) {
       classes.add("separator");
@@ -192,6 +198,30 @@ public class PageRenderer {
       for (int i = startIndex; i <= endIndex; i++) {
         ChartEntry entry = entryList.get(entryList.size() - 1 - i);
 
+        int numLines = 3;
+        String[] textLines = new String[numLines];
+        for (int l=0; l<numLines; l++) {
+          textLines[l] = "";
+        }
+
+        if (entry.observationEntry != null) {
+          ObservationEntry observationEntry = entry.observationEntry;
+          if (observationEntry.intercourse) {
+            switch (observationEntry.intercourseTimeOfDay) {
+              case ANY:
+                textLines[0] = "I";
+                break;
+              case END:
+                textLines[2] = "I";
+                break;
+              case NONE:
+              default:
+                break;
+            }
+          }
+          textLines[1] = entryList.getPeakDayViewText(observationEntry);
+        }
+
         List<String> classes = new ArrayList<>();
         classes.add(getColorClass(entryList, entry));
         if (entryList.shouldShowBaby(entry)) {
@@ -199,22 +229,18 @@ public class PageRenderer {
         }
 
         builder.append(openCellTag(i, classes));
-
-        List<String> textItems = new ArrayList<>();
-        if (entry.observationEntry != null && entry.observationEntry.intercourse) {
-          textItems.add("I");
+        builder.append("<table class=\"sticker\">");
+        for (int l=0; l<numLines; l++) {
+          builder.append("<tr><td>");
+          builder.append(textLines[l]);
+          builder.append("</td></tr>");
         }
-        if (entry.observationEntry != null) {
-          textItems.add(entryList.getPeakDayViewText(entry.observationEntry));
-        }
-        if (!textItems.isEmpty()) {
-          builder.append(ON_SPACE.join(textItems));
-        }
+        builder.append("</table>");
         builder.append("</td>");
       }
     }
     fillEmptyDays(builder, startIndex, endIndex);
-    builder.append("<td class=\"stats\" colspan=\"2\">");
+    builder.append("<td class=\"stats\" rowspan=\"2\" valign=\"top\">");
     if (startIndex == 0 && entryList != null) {
       fillStats(builder, entryList.getStats());
     }
