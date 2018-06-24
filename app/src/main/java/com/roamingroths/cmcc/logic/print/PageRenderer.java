@@ -225,7 +225,7 @@ public class PageRenderer {
   private static void fillStats(StringBuilder builder, ImmutableMap<ChartEntryList.Stat, Object> stats) {
     for (Map.Entry<ChartEntryList.Stat, Object> entry : stats.entrySet()) {
       builder.append("<b>").append(entry.getKey().name()).append("</b>\n");
-      builder.append(entry.getValue().toString());
+      builder.append(entry.getValue().toString()).append("\n");
     }
   }
 
