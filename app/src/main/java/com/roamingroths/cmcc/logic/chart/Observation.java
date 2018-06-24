@@ -185,6 +185,10 @@ public class Observation implements Parcelable {
     if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
       throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
     }
+    // Add "implicit" modifiers
+    if (dischargeType.isLubricative()) {
+      mucusModifiers.add(DischargeSummary.MucusModifier.L);
+    }
     DischargeSummary mucusSummary = new DischargeSummary(dischargeType, mucusModifiers);
 
     Occurrences occurrences = null;

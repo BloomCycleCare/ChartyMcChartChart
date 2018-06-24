@@ -4,6 +4,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.util.SortedList;
 import android.util.Log;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.roamingroths.cmcc.Preferences;
@@ -15,7 +16,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -30,7 +33,7 @@ public class ChartEntryList {
   private final String TAG = ChartEntryList.class.getSimpleName();
 
   public enum Stat {
-    MCC
+    MCS, LPP
   }
 
   // Chart state members
@@ -52,8 +55,20 @@ public class ChartEntryList {
   }
 
   public ImmutableMap<Stat, Object> getStats() {
+    List<ChartEntry> entries = new ArrayList<>();
+    Optional<LocalDate> firstPeakDay = mPeakDays.isEmpty() ? Optional.absent() : Optional.of(mPeakDays.first());
+    int lengthOfPrepeakMucusCycle = 0;
+    for (int i = 0; i < mEntries.size(); i++) {
+      ChartEntry entry = mEntries.get(i);
+      entries.add(entry);
+      if (firstPeakDay.isPresent() && firstPeakDay.get().isAfter(entry.entryDate)
+          && entry.observationEntry.hasMucus()) {
+        lengthOfPrepeakMucusCycle++;
+      }
+    }
     return ImmutableMap.<Stat, Object>builder()
-        .put(Stat.MCC, 4.0f)
+        .put(Stat.MCS, String.format("%.1f", MccScorer.getScore(entries, firstPeakDay)))
+        .put(Stat.LPP, String.format("%d", lengthOfPrepeakMucusCycle))
         .build();
   }
 
@@ -122,10 +137,6 @@ public class ChartEntryList {
     } else {
       mEntries.updateItemAt(entryIndex, chartEntry);
     }
-  }
-
-  public void removeEntry(String entryDateStr) {
-    removeEntry(findEntry(entryDateStr));
   }
 
   public synchronized void removeEntry(ChartEntry chartEntry) {

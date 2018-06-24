@@ -3,8 +3,8 @@ package com.roamingroths.cmcc;
 import android.content.Context;
 
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.logic.chart.ChartEntryList;
 import com.roamingroths.cmcc.logic.chart.Cycle;
 import com.roamingroths.cmcc.logic.chart.Observation;
 import com.roamingroths.cmcc.logic.chart.ObservationEntry;
@@ -28,9 +28,9 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class ObservationEntryViewHolderTest {
 
-  /*private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
+  private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
   private static final String CYCLE_ID = "fake-cycleToShow-id";
-  private static final Cycle CYCLE = new Cycle(CYCLE_ID, null, null, CYCLE_START_DATE, null, null);
+  private static final Cycle CYCLE = new Cycle(CYCLE_ID, CYCLE_START_DATE, null, null);
   private static final boolean PREPEAK_YELLOW_ENABLED = true;
   private static final boolean PREPEAK_YELLOW_DISABLED = false;
   private static final boolean POSTPEAK_YELLOW_ENABLED = true;
@@ -484,5 +484,5 @@ public class ObservationEntryViewHolderTest {
       shouldHaveIntercourse = true;
       return this;
     }
-  }*/
+  }
 }

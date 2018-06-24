@@ -215,8 +215,8 @@ public class DischargeSummary implements Parcelable {
     STICKY("6", true, "Sticky", "1/4 inch", "0.5 cm"),
     TACKY("8", true, "Tacky", "1/2 - 3/4 inch", "1.0 - 2.0 cm"),
     DAMP_W_LUB("10DL", true, "Damp with lubrication"),
-    WET_W_LUB("10SL", true, "Wet with lubrication"),
-    SHINY_W_LUB("10WL", true, "Shiny with lubrication"),
+    WET_W_LUB("10WL", true, "Wet with lubrication"),
+    SHINY_W_LUB("10SL", true, "Shiny with lubrication"),
     STRETCHY("10", true, "Stretchy", "1 inch +", "2.5 cm or more");
 
     private String mCode;
@@ -268,6 +268,14 @@ public class DischargeSummary implements Parcelable {
 
     public boolean hasMucus() {
       return mHasMucus;
+    }
+
+    public boolean isLubricative() {
+      return mCode.contains("L");
+    }
+
+    public boolean isStretchy() {
+      return mCode.startsWith("10");
     }
 
     public String getCode() {
