@@ -70,6 +70,9 @@ public class AppStateProvider {
         .flatMapCompletable(new Function<AppState, CompletableSource>() {
           @Override
           public CompletableSource apply(AppState appState) throws Exception {
+            for (AppState.CycleData cycleData : appState.cycles) {
+              cycleData.updateKeys();
+            }
             Completable putProfile = mProfileProvider.putProfile(appState.profile);
             Completable putCycleDatas = mCycleProvider.putCycleDatas(mUser, appState.cycles);
             return Completable.mergeArray(putProfile, putCycleDatas);

@@ -201,7 +201,7 @@ public class ChartEntryList {
         // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
         int lastNonPeakMucus = i + 3;
         boolean consecutiveNonPeakMucus = true;
-        for (int j = i; i < mEntries.size() && j < lastNonPeakMucus; j++) {
+        for (int j = i; j < mEntries.size() && j < lastNonPeakMucus; j++) {
           if (!mEntries.get(j).observationEntry.hasMucus()) {
             consecutiveNonPeakMucus = false;
             break;

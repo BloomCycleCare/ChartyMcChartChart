@@ -17,6 +17,7 @@ import android.print.PrintManager;
 import android.print.pdf.PrintedPdfDocument;
 import android.util.Log;
 import android.view.Display;
+import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.webkit.WebView;
 
@@ -73,6 +74,12 @@ public class ChartPrinter {
 
   private ObservableSource<WebView> createWebView(String html) {
     final MyWebView webView = new MyWebView(mContext);
+    webView.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
+      @Override
+      public void onDraw() {
+        Log.i("asfd", "asdf");
+      }
+    });
     webView.setPadding(0, 100,0, 0);
     Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
     webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());

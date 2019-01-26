@@ -55,6 +55,10 @@ public class Cycle implements Parcelable {
     }
   }
 
+  public void createKeys() throws Exception {
+    this.keys = new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
+  }
+
   public static Builder builder(String id, LocalDate startDate) {
     return new Builder(id, startDate);
   }

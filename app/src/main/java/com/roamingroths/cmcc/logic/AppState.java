@@ -95,5 +95,14 @@ public class AppState {
       this.cycle = cycle;
       this.entries = ImmutableSet.copyOf(entries);
     }
+
+    public void updateKeys() throws Exception {
+      cycle.createKeys();
+      for (ChartEntry entry : entries) {
+        entry.observationEntry.swapKey(cycle.keys.chartKey);
+        entry.symptomEntry.swapKey(cycle.keys.symptomKey);
+        entry.wellnessEntry.swapKey(cycle.keys.wellnessKey);
+      }
+    }
   }
 }
