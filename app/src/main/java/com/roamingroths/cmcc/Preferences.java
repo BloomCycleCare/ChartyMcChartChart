@@ -12,6 +12,7 @@ public class Preferences {
 
   private boolean prePeakYellowEnabled;
   private boolean postPeakYellowEnabled;
+  private boolean specialSamenessYellowEnabled;
 
   public static Preferences fromShared(Context context) {
     Preferences prefs = new Preferences();
@@ -19,18 +20,20 @@ public class Preferences {
     return prefs;
   }
 
-  public Preferences() {
-    this(false, false);
+  private Preferences() {
+    this(false, false, false);
   }
 
-  public Preferences(boolean prePeakYellowEnabled, boolean postPeakYellowEnabled) {
+  private Preferences(boolean prePeakYellowEnabled, boolean postPeakYellowEnabled, boolean specialSamenessYellowEnabled) {
     this.prePeakYellowEnabled = prePeakYellowEnabled;
     this.postPeakYellowEnabled = postPeakYellowEnabled;
+    this.specialSamenessYellowEnabled = specialSamenessYellowEnabled;
   }
 
   public void update(SharedPreferences preferences) {
     this.prePeakYellowEnabled = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
     this.postPeakYellowEnabled = preferences.getBoolean("enable_post_peak_yellow_stickers", false);
+    this.specialSamenessYellowEnabled = preferences.getBoolean("special_sameness_yellow_stickers", false);
   }
 
   public boolean prePeakYellowEnabled() {
@@ -39,5 +42,9 @@ public class Preferences {
 
   public boolean postPeakYellowEnabled() {
     return postPeakYellowEnabled;
+  }
+
+  public boolean specialSamenessYellowEnabled() {
+    return specialSamenessYellowEnabled;
   }
 }

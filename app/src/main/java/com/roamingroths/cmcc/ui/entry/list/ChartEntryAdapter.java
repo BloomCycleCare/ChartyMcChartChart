@@ -11,7 +11,6 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.perf.metrics.AddTrace;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.chart.ChartEntry;
@@ -136,7 +135,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   @Override
-  @AddTrace(name = "onCreateViewHolder")
   public ChartEntryViewHolder.Impl onCreateViewHolder(ViewGroup parent, int viewType) {
     int layoutIdForListItem = R.layout.list_item_observation_entry;
     LayoutInflater inflater = LayoutInflater.from(mContext);
@@ -187,6 +185,9 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
                 EntryDetailActivity.Extras.HAS_PREVIOUS_CYCLE.name(), hasPreviousCycle);
             intent.putExtra(
                 EntryDetailActivity.Extras.IS_FIRST_ENTRY.name(), index == getItemCount() - 1);
+            intent.putExtra(
+                EntryDetailActivity.Extras.ASK_ESSENTIAL_SAMENESS_QUESTION.name(),
+                mContainerList.askEssentialSamenessQuestion(index));
             return intent;
           }
         });

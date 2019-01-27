@@ -20,6 +20,10 @@
             android:defaultValue="false"
             android:key="enable_post_peak_yellow_stickers"
             android:title="Post-peak Yellow Stickers"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="special_sameness_yellow_stickers"
+            android:title="Special Sameness Yellow Stickers"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:title="Wellness"

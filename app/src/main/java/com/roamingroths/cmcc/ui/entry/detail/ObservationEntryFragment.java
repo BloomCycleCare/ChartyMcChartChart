@@ -29,7 +29,7 @@ import java.util.Set;
 public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
 
   public enum Extras {
-    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY
+    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY, ASK_SAMENESS_QUESTION
   }
 
   public static final int OK_RESPONSE = 0;
@@ -42,12 +42,16 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
   private View mFirstDayLayout;
   private Switch mFirstDaySwitch;
   private Switch mPointOfChangeSwitch;
+  private Switch mEssentialSamenessSwitch;
   private View mUnusualBleedingLayout;
   private Switch mUnusualBleedingSwitch;
   private View mPointOfChangeLayout;
+  private View mEssentialSamenessLayout;
 
   private boolean expectUnusualBleeding;
   private boolean usingPrePeakYellowStickers;
+  private boolean shouldAskEssentialSameness;
+  private boolean askedEssentialSameness = false;
 
   public ObservationEntryFragment() {
     super(ObservationEntry.class, "ObservationEntryFragment", R.layout.fragment_chart_entry);
@@ -61,6 +65,11 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
   @Override
   void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
     expectUnusualBleeding = args.getBoolean(Extras.EXPECT_UNUSUAL_BLEEDING.name());
+    shouldAskEssentialSameness = args.getBoolean(Extras.ASK_SAMENESS_QUESTION.name());
+
+    mEssentialSamenessSwitch = view.findViewById(R.id.switch_essential_sameness);
+    mEssentialSamenessSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> askedEssentialSameness = true);
+    mEssentialSamenessLayout = view.findViewById(R.id.essential_sameness_layout);
 
     mPointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
 
@@ -99,6 +108,11 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
             mUnusualBleedingLayout.setVisibility(View.VISIBLE);
           } else {
             mUnusualBleedingLayout.setVisibility(View.GONE);
+          }
+          if (observation != null && observation.dischargeSummary.isPeakType() && shouldAskEssentialSameness) {
+            mEssentialSamenessLayout.setVisibility(View.VISIBLE);
+          } else {
+            mEssentialSamenessLayout.setVisibility(View.GONE);
           }
         } catch (Observation.InvalidObservationException ioe) {
           mObservationDescriptionTextView.setText(null);
@@ -157,8 +171,12 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
   public Set<ValidationIssue> validateEntry(ObservationEntry entry) {
     Set<ValidationIssue> issues = new HashSet<>();
     boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
+    // TODO: accept on yes and on no update lambdas
     if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
-      issues.add(new ValidationIssue("Unusual bleeding?", "Are yousure this bleedin is typical?"));
+      issues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
+    }
+    if (shouldAskEssentialSameness && !askedEssentialSameness) {
+      issues.add(new ValidationIssue("Essentially the same?", "Is today essentially the same?"));
     }
     return issues;
   }
@@ -199,11 +217,12 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
     boolean firstDay = mFirstDaySwitch.isChecked();
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
+    boolean isEssentiallyTheSame = mEssentialSamenessSwitch.isChecked();
     ObservationEntry.IntercourseTimeOfDay timeOfDay = !intercourse
         ? ObservationEntry.IntercourseTimeOfDay.NONE
         : ObservationEntry.IntercourseTimeOfDay.fromStr(mIntercourseSpinner.getSelectedItem().toString());
     return new ObservationEntry(
-        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, timeOfDay, getCycle().keys.chartKey);
+        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, timeOfDay, isEssentiallyTheSame, getCycle().keys.chartKey);
   }
 
   @Override
@@ -219,6 +238,7 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
     } else {
       mUnusualBleedingLayout.setVisibility(View.VISIBLE);
     }
+    mEssentialSamenessSwitch.setChecked(entry.isEssentiallyTheSame);
   }
 
   private void updateUiWithObservation(@Nullable Observation observation) {

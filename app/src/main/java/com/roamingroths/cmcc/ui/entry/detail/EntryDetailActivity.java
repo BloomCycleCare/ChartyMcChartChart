@@ -70,7 +70,7 @@ import static com.roamingroths.cmcc.ui.entry.detail.ObservationEntryFragment.OK_
 public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
 
   public enum Extras {
-    CURRENT_CYCLE, CHART_ENTRY, EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY
+    CURRENT_CYCLE, CHART_ENTRY, EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY, ASK_ESSENTIAL_SAMENESS_QUESTION
   }
 
   private static final boolean DEBUG = true;
@@ -130,6 +130,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     boolean hasPreviousCycle = intent.getBooleanExtra(Extras.HAS_PREVIOUS_CYCLE.name(), false);
     boolean expectUnusualBleeding = intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING.name(), false);
     boolean isFirstEntry = intent.getBooleanExtra(Extras.IS_FIRST_ENTRY.name(), false);
+    boolean askEssentialSamenessQuestion = intent.getBooleanExtra(Extras.ASK_ESSENTIAL_SAMENESS_QUESTION.name(), false);
 
     mUser = FirebaseAuth.getInstance().getCurrentUser();
 
@@ -142,7 +143,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
     mSectionsPagerAdapter =
-        new SectionsPagerAdapter(getSupportFragmentManager(), expectUnusualBleeding, hasPreviousCycle, isFirstEntry);
+        new SectionsPagerAdapter(getSupportFragmentManager(), expectUnusualBleeding, hasPreviousCycle, isFirstEntry, askEssentialSamenessQuestion);
 
     // Set up the ViewPager with the sections adapter.
     mViewPager = findViewById(R.id.container);
@@ -429,15 +430,17 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
    */
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
+    private final boolean mAskSamenessQuestion;
     private final boolean mExpectUnusualBleeding;
     private final boolean mHasPreviousCycle;
     private final boolean mIsFirstEntry;
 
-    public SectionsPagerAdapter(FragmentManager fm, boolean expectUnusualBleeding, boolean hasPreviousCycle, boolean isFirstEntry) {
+    public SectionsPagerAdapter(FragmentManager fm, boolean expectUnusualBleeding, boolean hasPreviousCycle, boolean isFirstEntry, boolean askEssentialSamenessQuestion) {
       super(fm);
       mExpectUnusualBleeding = expectUnusualBleeding;
       mHasPreviousCycle = hasPreviousCycle;
       mIsFirstEntry = isFirstEntry;
+      mAskSamenessQuestion = askEssentialSamenessQuestion;
     }
 
     public EntryFragment getCachedItem(ViewGroup container, int position) {
@@ -454,6 +457,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
       // Return a PlaceholderFragment (defined as a static inner class below).
       switch (position) {
         case 0:
+          args.putBoolean(ObservationEntryFragment.Extras.ASK_SAMENESS_QUESTION.name(), mAskSamenessQuestion);
           args.putBoolean(ObservationEntryFragment.Extras.EXPECT_UNUSUAL_BLEEDING.name(), mExpectUnusualBleeding);
           args.putBoolean(ObservationEntryFragment.Extras.HAS_PREVIOUS_CYCLE.name(), mHasPreviousCycle);
           args.putBoolean(ObservationEntryFragment.Extras.IS_FIRST_ENTRY.name(), mIsFirstEntry);

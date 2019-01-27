@@ -28,6 +28,7 @@ public class ObservationEntry extends Entry implements Parcelable {
   public boolean pointOfChange;
   public boolean unusualBleeding;
   public IntercourseTimeOfDay intercourseTimeOfDay;
+  public boolean isEssentiallyTheSame;
 
   public ObservationEntry(
       LocalDate date,
@@ -38,6 +39,7 @@ public class ObservationEntry extends Entry implements Parcelable {
       boolean pointOfChange,
       boolean unusualBleeding,
       IntercourseTimeOfDay intercourseTimeOfDay,
+      boolean isEssentiallyTheSame,
       SecretKey key) {
     super(date);
     this.observation = observation;
@@ -50,6 +52,7 @@ public class ObservationEntry extends Entry implements Parcelable {
     }
     this.unusualBleeding = unusualBleeding;
     this.intercourseTimeOfDay = intercourseTimeOfDay;
+    this.isEssentiallyTheSame = isEssentiallyTheSame;
     swapKey(key);
   }
 
@@ -63,6 +66,7 @@ public class ObservationEntry extends Entry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         IntercourseTimeOfDay.valueOf(in.readString()),
+        in.readByte() != 0,
         AesCryptoUtil.parseKey(in.readString()));
   }
 
@@ -76,7 +80,7 @@ public class ObservationEntry extends Entry implements Parcelable {
   }
 
   public static ObservationEntry emptyEntry(LocalDate date, SecretKey secretKey) {
-    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, secretKey);
+    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, secretKey);
   }
 
   @Override
@@ -131,6 +135,7 @@ public class ObservationEntry extends Entry implements Parcelable {
     dest.writeByte((byte) (pointOfChange ? 1 : 0));
     dest.writeByte((byte) (unusualBleeding ? 1 : 0));
     dest.writeString(intercourseTimeOfDay.name());
+    dest.writeByte((byte) (isEssentiallyTheSame ? 1 : 0));
     dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
@@ -145,6 +150,7 @@ public class ObservationEntry extends Entry implements Parcelable {
           this.firstDay == that.firstDay &&
           this.pointOfChange == that.pointOfChange &&
           this.unusualBleeding == that.unusualBleeding &&
+          this.isEssentiallyTheSame == that.isEssentiallyTheSame &&
           this.intercourseTimeOfDay == that.intercourseTimeOfDay;
     }
     return false;
@@ -153,7 +159,7 @@ public class ObservationEntry extends Entry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay);
+        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame);
   }
 
   public enum IntercourseTimeOfDay {

@@ -179,6 +179,14 @@ public class ChartEntryList {
         && previousEntry.observationEntry.observation.hasBlood());
   }
 
+  public boolean askEssentialSamenessQuestion(int index) {
+    int previousIndex = index + 1;
+    if (previousIndex >= mEntries.size()) {
+      return false;
+    }
+    return mEntries.get(previousIndex).observationEntry.intercourse;
+  }
+
   private boolean isWithinCountOfThree(int position, ObservationEntry entry) {
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
@@ -193,9 +201,13 @@ public class ChartEntryList {
       if (previousEntry.observationEntry.observation.dischargeSummary == null) {
         continue;
       }
+      // Check for 1 day of peak mucus (D.5)
       if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
-        // Check for 1 day of peak mucus (D.5)
-        return true;
+        if (mPreferences.specialSamenessYellowEnabled() && previousEntry.observationEntry.isEssentiallyTheSame) {
+          continue;
+        } else {
+          return true;
+        }
       }
       if (previousEntry.observationEntry.observation.dischargeSummary.mType.hasMucus() && isPreakPeak(entry)) {
         // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
@@ -231,6 +243,10 @@ public class ChartEntryList {
     }
     // Suppress if prepeak and yellow stickers enabled
     if (mPreferences.prePeakYellowEnabled() && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
+      return false;
+    }
+    // Suppress for special instruction
+    if (mPreferences.specialSamenessYellowEnabled() && entry.observation.dischargeSummary.isPeakType() && entry.isEssentiallyTheSame) {
       return false;
     }
     if (isWithinCountOfThree(position, entry)) {
@@ -285,6 +301,11 @@ public class ChartEntryList {
       if (isPostPeak(entry)) {
         return R.color.entryYellow;
       }
+    }
+    if (mPreferences.specialSamenessYellowEnabled()
+        && entry.observation.dischargeSummary.isPeakType()
+        && entry.isEssentiallyTheSame) {
+      return R.color.entryYellow;
     }
     return R.color.entryWhite;
   }
