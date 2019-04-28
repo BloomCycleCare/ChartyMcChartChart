@@ -54,6 +54,7 @@ import java.util.Objects;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
@@ -130,6 +131,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     mDisposables.add(MyApplication.chartEntryProvider()
         .map(EntryListPageAdapter.create(getSupportFragmentManager()))
         .flatMap(EntryListPageAdapter.initializeFn(MyApplication.getCurrentUser().toSingle(), mCycleProvider))
+        .observeOn(AndroidSchedulers.mainThread())
         .subscribe(entryListPageAdapter -> {
           mPageAdapter.onSuccess(entryListPageAdapter);
           mViewPager.setAdapter(entryListPageAdapter);

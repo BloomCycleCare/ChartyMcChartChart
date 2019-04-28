@@ -65,29 +65,14 @@ public class PrintChartActivity extends AppCompatActivity {
       Observable.merge(Single.zip(
           MyApplication.cycleProvider(),
           MyApplication.getCurrentUser().toSingle(),
-          new BiFunction<CycleProvider, FirebaseUser, Observable<Cycle>>() {
-            @Override
-            public Observable<Cycle> apply(CycleProvider cycleProvider, FirebaseUser firebaseUser) throws Exception {
-              return cycleProvider.getAllCycles(firebaseUser);
-            }
-          }).toObservable())
-          .sorted(new Comparator<Cycle>() {
-            @Override
-            public int compare(Cycle o1, Cycle o2) {
-              return o2.startDate.compareTo(o1.startDate);
-            }
-          })
+          (cycleProvider, firebaseUser) -> cycleProvider.getAllCycles(firebaseUser)).toObservable())
           .flatMap(CycleAdapter.cycleToViewModel(MyApplication.chartEntryProvider()))
+          .sorted((o1, o2) -> o2.mCycle.startDate.compareTo(o1.mCycle.startDate))
           .toList()
           .observeOn(AndroidSchedulers.mainThread())
           .subscribeOn(AndroidSchedulers.mainThread())
-          .subscribe(new Consumer<List<CycleAdapter.ViewModel>>() {
-            @Override
-            public void accept(List<CycleAdapter.ViewModel> viewModels) throws Exception {
-              mRecyclerView.setAdapter(
-                  CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels));
-            }
-          });
+          .subscribe(viewModels -> mRecyclerView.setAdapter(
+              CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels)));
     }
 
     FloatingActionButton fab = findViewById(R.id.fab);
@@ -114,7 +99,7 @@ public class PrintChartActivity extends AppCompatActivity {
         });
         ChartPrinter.create(PrintChartActivity.this, entryLists)
             .print()
-            .flatMapObservable(emitPrintJob())
+            .flatMap(emitPrintJob())
             .filter(new Predicate<PrintJob>() {
               @Override
               public boolean test(PrintJob printJob) throws Exception {

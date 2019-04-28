@@ -192,7 +192,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   }
 
   private void updatePageBreaks() {
-    int firstIndex = -1;
+    int firstIndex = 0;
     for (int i=0; i < mViewModels.size(); i++) {
       if (mSelectedIndexes.contains(i) && firstIndex < 0) {
         firstIndex = i;

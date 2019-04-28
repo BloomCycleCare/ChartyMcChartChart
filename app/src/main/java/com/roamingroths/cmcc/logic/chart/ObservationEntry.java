@@ -113,6 +113,10 @@ public class ObservationEntry extends Entry implements Parcelable {
     return observation.dischargeSummary.hasMucus();
   }
 
+  public boolean hasPeakTypeMucus() {
+    return hasMucus() && observation.dischargeSummary.isPeakType();
+  }
+
   public String getListUiText() {
     if (observation == null) {
       return "----";

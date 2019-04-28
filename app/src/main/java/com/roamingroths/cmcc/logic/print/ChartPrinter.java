@@ -20,8 +20,11 @@ import android.view.Display;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 
 import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+
+import org.joda.time.LocalDate;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,6 +32,9 @@ import java.io.IOException;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
+import io.reactivex.SingleOnSubscribe;
+import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -59,32 +65,40 @@ public class ChartPrinter {
     return new ChartPrinter(pageRenderer, printManager, activity);
   }
 
-  public Single<PrintJob> print() {
+  public Observable<PrintJob> print() {
     WebView.enableSlowWholeDocumentDraw();
     return mPageRenderer.createPages()
         .observeOn(AndroidSchedulers.mainThread())
-        .flatMap(this::createWebView)
-        .scan(new PrintedPdfDocument(mContext, mPrintAttributes), this::addPageToDocument)
-        .lastOrError()
-        .map(pdfDocument -> {
-          PdfPrintAdapter adapter = new PdfPrintAdapter(pdfDocument);
-          return mPrintManager.print("TestDocument", adapter, mPrintAttributes);
+        .flatMapSingle(this::createWebView)
+        .map(webView -> {
+          String jobName = String.format("Chart %s", LocalDate.now().toString());
+          return mPrintManager.print(jobName, webView.createPrintDocumentAdapter(jobName), mPrintAttributes);
         });
   }
 
-  private ObservableSource<WebView> createWebView(String html) {
-    final MyWebView webView = new MyWebView(mContext);
-    webView.getViewTreeObserver().addOnDrawListener(new ViewTreeObserver.OnDrawListener() {
-      @Override
-      public void onDraw() {
-        Log.i("asfd", "asdf");
-      }
+  private SingleSource<WebView> createWebView(String html) {
+    return Single.create(emitter -> {
+      WebView webView = new WebView(mContext);
+      webView.setWebViewClient(new WebViewClient() {
+        private WebView ref = webView;
+        @Override
+        public void onPageFinished(WebView view, String url) {
+          emitter.onSuccess(view);
+          ref = null;
+        }
+      });
+      /*final MyWebView webView = new MyWebView(mContext);
+      webView.setWebViewClient(new WebViewClient() {
+        @Override
+        public void onPageFinished(WebView view, String url) {
+          emitter.onSuccess(view);
+        }
+      });*/
+      webView.setPadding(0, 100,0, 0);
+      Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+      webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());
+      webView.loadDataWithBaseURL("file:///android_asset/", html, "text/HTML", "UTF-8", null);
     });
-    webView.setPadding(0, 100,0, 0);
-    Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-    webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());
-    webView.loadDataWithBaseURL("file:///android_asset/", html, "text/HTML", "UTF-8", null);
-    return webView.source().toObservable();
   }
 
   private PrintedPdfDocument addPageToDocument(PrintedPdfDocument document, WebView webView) {
@@ -94,7 +108,8 @@ public class ChartPrinter {
     PdfDocument.Page page = document.startPage(pageInfo);
     Canvas canvas = page.getCanvas();
     canvas.setDensity(Bitmap.DENSITY_NONE);
-    (webView.capturePicture()).draw(canvas);
+    webView.draw(canvas);
+    //(webView.capturePicture()).draw(canvas);
     document.finishPage(page);
     return document;
   }

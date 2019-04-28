@@ -18,6 +18,7 @@ import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
@@ -270,11 +271,11 @@ public class ChartEntryList {
     if (entry == null || entry.observation == null) {
       return "";
     }
-    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
-    if (mostRecentPeakDay == null) {
+    ChartEntry mostRecentPeakTypeDay = getMostRecentPeakTypeDay(entry);
+    if (mostRecentPeakTypeDay == null) {
       return "";
     }
-    return getPeakDayViewText(entry, mostRecentPeakDay);
+    return getPeakDayViewText(entry, mostRecentPeakTypeDay);
   }
 
   public int getEntryColorResource(ObservationEntry entry) {
@@ -344,16 +345,37 @@ public class ChartEntryList {
     return mostRecentPeakDay;
   }
 
-  private String getPeakDayViewText(ObservationEntry entry, LocalDate peakDay) {
-    if (entry.getDate().isBefore(peakDay)) {
+  @Nullable
+  private ChartEntry getMostRecentPeakTypeDay(ObservationEntry currentEntry) {
+    for (int i=0; i<mEntries.size(); i++) {
+      ChartEntry entry = mEntries.get(i);
+      if (entry.entryDate.isAfter(currentEntry.getDate())) {
+        continue;
+      }
+      if (entry.observationEntry.hasPeakTypeMucus()) {
+        if (mPreferences.specialSamenessYellowEnabled()
+            && entry.observationEntry.isEssentiallyTheSame) {
+          continue;
+        }
+        return entry;
+      }
+      if (entry.observationEntry.unusualBleeding) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  private String getPeakDayViewText(ObservationEntry entry, ChartEntry peakTypeDay) {
+    if (entry.getDate().isBefore(peakTypeDay.entryDate)) {
       return "";
     }
-    if (entry.getDate().equals(peakDay)) {
-      return "P";
+    if (entry.getDate().equals(peakTypeDay.entryDate)) {
+      return peakTypeDay.observationEntry.peakDay ? "P" : "";
     }
-    int daysAfterPeak = Days.daysBetween(peakDay, entry.getDate()).getDays();
-    if (daysAfterPeak < 4) {
-      return String.valueOf(daysAfterPeak);
+    int daysAfterPeakTypeDay = Days.daysBetween(peakTypeDay.entryDate, entry.getDate()).getDays();
+    if (daysAfterPeakTypeDay < 4) {
+      return String.valueOf(daysAfterPeakTypeDay);
     }
     return "";
   }
