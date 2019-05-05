@@ -25,8 +25,6 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
 
   void setPeakDayText(String text);
 
-  void setIntercourse(boolean val);
-
   void setShowBaby(boolean val);
 
   void setOverlay(boolean val);
@@ -90,15 +88,6 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     @Override
     public void setPeakDayText(String text) {
       mEntryPeakTextView.setText(text);
-    }
-
-    @Override
-    public void setIntercourse(boolean val) {
-      if (val) {
-        mEntryDataTextView.setTypeface(null, Typeface.BOLD);
-      } else {
-        mEntryDateTextView.setTypeface(null, Typeface.NORMAL);
-      }
     }
 
     @Override

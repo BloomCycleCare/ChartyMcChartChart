@@ -121,7 +121,7 @@ public class ObservationEntry extends Entry implements Parcelable {
     if (observation == null) {
       return "----";
     }
-    return observation.toString();
+    return String.format("%s %s", observation.toString(), intercourse ? "I" : "");
   }
 
   @Override

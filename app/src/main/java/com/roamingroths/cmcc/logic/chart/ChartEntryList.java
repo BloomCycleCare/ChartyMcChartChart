@@ -82,7 +82,6 @@ public class ChartEntryList {
     holder.setEntryNum(mEntries.size() - position);
     holder.setDate(DateUtil.toUiStr(observationEntry.getDate()));
     holder.setPeakDayText(getPeakDayViewText(position, observationEntry));
-    holder.setIntercourse(observationEntry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, observationEntry));
     holder.setSymptomGoalSummary(entry.symptomEntry.getNumSymptoms());
     holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
