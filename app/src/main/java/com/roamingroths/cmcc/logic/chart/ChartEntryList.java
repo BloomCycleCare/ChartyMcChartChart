@@ -81,7 +81,7 @@ public class ChartEntryList {
     holder.setBackgroundColor(getEntryColorResource(observationEntry));
     holder.setEntryNum(mEntries.size() - position);
     holder.setDate(DateUtil.toUiStr(observationEntry.getDate()));
-    holder.setPeakDayText(getPeakDayViewText(observationEntry));
+    holder.setPeakDayText(getPeakDayViewText(position, observationEntry));
     holder.setIntercourse(observationEntry.intercourse);
     holder.setShowBaby(shouldShowBaby(position, observationEntry));
     holder.setSymptomGoalSummary(entry.symptomEntry.getNumSymptoms());
@@ -188,6 +188,50 @@ public class ChartEntryList {
     return mEntries.get(previousIndex).observationEntry.intercourse;
   }
 
+  private int getCount(int currentPosition, ObservationEntry currentEntry) {
+    if (currentEntry.unusualBleeding || currentEntry.peakDay || currentEntry.hasPeakTypeMucus()) {
+      return 0;
+    }
+    int lastPositionToCheck = currentPosition + 3;
+    for (int i = currentPosition + 1; i < mEntries.size() && i <= lastPositionToCheck; i++) {
+      ChartEntry previousEntry = mEntries.get(i);
+      if (previousEntry.observationEntry.observation == null) {
+        continue;
+      }
+      // Check if any unusual bleeding within count of three (D.6)
+      if (previousEntry.observationEntry.unusualBleeding) {
+        return i - currentPosition;
+      }
+      if (previousEntry.observationEntry.observation.dischargeSummary == null) {
+        continue;
+      }
+      // Check for 1 day of peak mucus (D.5)
+      if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
+        if (mPreferences.specialSamenessYellowEnabled() && previousEntry.observationEntry.isEssentiallyTheSame) {
+          continue;
+        } else {
+          return i - currentPosition;
+        }
+      }
+      if (previousEntry.observationEntry.observation.dischargeSummary.mType.hasMucus()
+          && isPreakPeak(currentEntry)) {
+        // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
+        int lastPositionInWindow = i + 3;
+        boolean consecutiveNonPeakMucus = true;
+        for (int j = i; j < mEntries.size() && j < lastPositionInWindow; j++) {
+          if (!mEntries.get(j).observationEntry.hasMucus()) {
+            consecutiveNonPeakMucus = false;
+            break;
+          }
+        }
+        if (consecutiveNonPeakMucus) {
+          return i - currentPosition;
+        }
+      }
+    }
+    return -1;
+  }
+
   private boolean isWithinCountOfThree(int position, ObservationEntry entry) {
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
@@ -253,6 +297,7 @@ public class ChartEntryList {
     if (isWithinCountOfThree(position, entry)) {
       return true;
     }
+    // TODO: migrate to use getCount
     LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
     if (mostRecentPeakDay != null) {
       if (mostRecentPeakDay.minusDays(1).isBefore(entry.getDate())
@@ -267,15 +312,19 @@ public class ChartEntryList {
     return entry.observation != null && entry.observation.hasMucus();
   }
 
-  public String getPeakDayViewText(ObservationEntry entry) {
+  public String getPeakDayViewText(int position, ObservationEntry entry) {
     if (entry == null || entry.observation == null) {
       return "";
     }
-    ChartEntry mostRecentPeakTypeDay = getMostRecentPeakTypeDay(entry);
-    if (mostRecentPeakTypeDay == null) {
+    if (entry.peakDay) {
+      return "P";
+    }
+    int count = getCount(position, entry);
+    if (count > 0) {
+      return String.valueOf(count);
+    } else {
       return "";
     }
-    return getPeakDayViewText(entry, mostRecentPeakTypeDay);
   }
 
   public int getEntryColorResource(ObservationEntry entry) {
@@ -347,37 +396,37 @@ public class ChartEntryList {
 
   @Nullable
   private ChartEntry getMostRecentPeakTypeDay(ObservationEntry currentEntry) {
+    // For every index from end to start
+    for (int i=mEntries.size()-1; i > 0; i--) {
+      ChartEntry previousEntry = mEntries.get(i);
+
+    }
+    int previousConsecutiveDaysOfMucus = 0;
     for (int i=0; i<mEntries.size(); i++) {
       ChartEntry entry = mEntries.get(i);
       if (entry.entryDate.isAfter(currentEntry.getDate())) {
         continue;
       }
-      if (entry.observationEntry.hasPeakTypeMucus()) {
-        if (mPreferences.specialSamenessYellowEnabled()
-            && entry.observationEntry.isEssentiallyTheSame) {
-          continue;
-        }
+      if (previousConsecutiveDaysOfMucus >= 3) {
         return entry;
       }
       if (entry.observationEntry.unusualBleeding) {
         return entry;
       }
+      if (entry.observationEntry.hasMucus()) {
+        previousConsecutiveDaysOfMucus++;
+        if (entry.observationEntry.hasPeakTypeMucus()) {
+          if (mPreferences.specialSamenessYellowEnabled()
+              && entry.observationEntry.isEssentiallyTheSame) {
+            continue;
+          }
+          return entry;
+        }
+      } else {
+        previousConsecutiveDaysOfMucus = 0;
+      }
     }
     return null;
-  }
-
-  private String getPeakDayViewText(ObservationEntry entry, ChartEntry peakTypeDay) {
-    if (entry.getDate().isBefore(peakTypeDay.entryDate)) {
-      return "";
-    }
-    if (entry.getDate().equals(peakTypeDay.entryDate)) {
-      return peakTypeDay.observationEntry.peakDay ? "P" : "";
-    }
-    int daysAfterPeakTypeDay = Days.daysBetween(peakTypeDay.entryDate, entry.getDate()).getDays();
-    if (daysAfterPeakTypeDay < 4) {
-      return String.valueOf(daysAfterPeakTypeDay);
-    }
-    return "";
   }
 
   private int getEntryIndex(LocalDate entryDate) {
