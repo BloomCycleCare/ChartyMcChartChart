@@ -8,7 +8,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 
 import java.security.NoSuchAlgorithmException;

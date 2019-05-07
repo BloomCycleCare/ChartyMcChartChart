@@ -19,7 +19,7 @@ import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.mvi.MviView;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.goals.create.CreateGoalActivity;

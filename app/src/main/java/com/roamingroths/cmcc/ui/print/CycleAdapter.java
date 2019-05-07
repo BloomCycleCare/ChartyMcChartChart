@@ -17,7 +17,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.print.PageRenderer;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.utils.DateUtil;

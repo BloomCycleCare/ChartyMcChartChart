@@ -1,14 +1,13 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
-import android.graphics.Typeface;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.models.ChartEntryList;
 
 /**
  * Created by parkeroth on 7/1/17.

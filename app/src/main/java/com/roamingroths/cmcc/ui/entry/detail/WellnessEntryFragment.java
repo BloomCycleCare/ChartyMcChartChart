@@ -14,7 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.WellnessEntry;
+import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
 
 import java.util.Map;

@@ -3,6 +3,8 @@ package com.roamingroths.cmcc.logic.chart;
 import android.util.Log;
 
 import com.google.common.base.Optional;
+import com.roamingroths.cmcc.data.domain.Observation;
+import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -11,8 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import static com.roamingroths.cmcc.logic.chart.DischargeSummary.DischargeType;
-import static com.roamingroths.cmcc.logic.chart.DischargeSummary.MucusModifier;
+import static com.roamingroths.cmcc.data.domain.DischargeSummary.DischargeType;
+import static com.roamingroths.cmcc.data.domain.DischargeSummary.MucusModifier;
 
 public class MccScorer {
 

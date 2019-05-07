@@ -1,10 +1,10 @@
 package com.roamingroths.cmcc.logic;
 
 import com.google.common.base.Optional;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
+import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.MccScorer;
-import com.roamingroths.cmcc.logic.chart.Observation;
-import com.roamingroths.cmcc.logic.chart.ObservationEntry;
+import com.roamingroths.cmcc.data.domain.Observation;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
 
 import org.joda.time.LocalDate;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.logic.chart;
+package com.roamingroths.cmcc.data.models;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -6,6 +6,10 @@ import android.os.Parcelable;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
+import com.roamingroths.cmcc.data.entities.Entry;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
+import com.roamingroths.cmcc.data.entities.SymptomEntry;
+import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

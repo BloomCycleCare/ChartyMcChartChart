@@ -7,8 +7,8 @@ import com.google.common.base.Predicates;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
 import com.roamingroths.cmcc.logic.AppState;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 

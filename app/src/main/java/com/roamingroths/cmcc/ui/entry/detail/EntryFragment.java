@@ -10,8 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.logic.chart.Cycle;
-import com.roamingroths.cmcc.logic.chart.Entry;
+import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.Entry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

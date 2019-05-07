@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.logic.chart;
+package com.roamingroths.cmcc.data.entities;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 
 import com.google.common.base.Objects;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

@@ -16,8 +16,8 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.Observation;
-import com.roamingroths.cmcc.logic.chart.ObservationEntry;
+import com.roamingroths.cmcc.data.domain.Observation;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
 
 import java.util.HashSet;
 import java.util.Set;

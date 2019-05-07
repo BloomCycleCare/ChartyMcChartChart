@@ -16,15 +16,14 @@ import android.widget.ProgressBar;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.entities.Cycle;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;

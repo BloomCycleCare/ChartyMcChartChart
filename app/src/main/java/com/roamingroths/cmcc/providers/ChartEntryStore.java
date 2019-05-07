@@ -8,12 +8,12 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.Cycle;
-import com.roamingroths.cmcc.logic.chart.Entry;
-import com.roamingroths.cmcc.logic.chart.ObservationEntry;
-import com.roamingroths.cmcc.logic.chart.SymptomEntry;
-import com.roamingroths.cmcc.logic.chart.WellnessEntry;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.Entry;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
+import com.roamingroths.cmcc.data.entities.SymptomEntry;
+import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.UpdateHandle;
 

@@ -12,9 +12,9 @@ import android.view.ViewGroup;
 import com.google.firebase.auth.FirebaseAuth;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.models.ChartEntryList;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 

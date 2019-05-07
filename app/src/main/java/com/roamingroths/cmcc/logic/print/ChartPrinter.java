@@ -17,12 +17,11 @@ import android.print.PrintManager;
 import android.print.pdf.PrintedPdfDocument;
 import android.util.Log;
 import android.view.Display;
-import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
+import com.roamingroths.cmcc.data.models.ChartEntryList;
 
 import org.joda.time.LocalDate;
 
@@ -30,10 +29,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
-import io.reactivex.SingleOnSubscribe;
 import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Function;

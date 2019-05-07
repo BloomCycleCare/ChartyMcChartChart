@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.logic.chart;
+package com.roamingroths.cmcc.data.models;
 
 import android.support.annotation.Nullable;
 import android.support.v7.util.SortedList;
@@ -9,16 +9,18 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
+import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.domain.DischargeSummary;
+import com.roamingroths.cmcc.logic.chart.MccScorer;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
 
-import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;

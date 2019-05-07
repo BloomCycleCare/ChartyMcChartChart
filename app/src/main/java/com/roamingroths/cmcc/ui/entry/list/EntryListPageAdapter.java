@@ -8,7 +8,7 @@ import android.view.ViewGroup;
 
 import com.google.common.base.Preconditions;
 import com.google.firebase.auth.FirebaseUser;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;

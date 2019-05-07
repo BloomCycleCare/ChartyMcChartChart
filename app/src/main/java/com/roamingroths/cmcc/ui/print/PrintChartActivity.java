@@ -11,25 +11,19 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.ChartEntryList;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntryList;
 import com.roamingroths.cmcc.logic.print.ChartPrinter;
 import com.roamingroths.cmcc.providers.CycleEntryProvider;
-import com.roamingroths.cmcc.providers.CycleProvider;
 
-import java.util.Comparator;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.BiFunction;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;

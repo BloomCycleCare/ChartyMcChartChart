@@ -6,8 +6,8 @@ import android.util.Log;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.gson.Gson;
 import com.roamingroths.cmcc.logic.AppState;
-import com.roamingroths.cmcc.logic.chart.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.utils.GsonUtil;
 

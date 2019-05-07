@@ -1,12 +1,10 @@
 package com.roamingroths.cmcc.logic;
 
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.logic.chart.DischargeSummary;
-import com.roamingroths.cmcc.logic.chart.DischargeSummary.DischargeType;
-import com.roamingroths.cmcc.logic.chart.DischargeSummary.MucusModifier;
-import com.roamingroths.cmcc.logic.chart.Flow;
-import com.roamingroths.cmcc.logic.chart.Observation;
-import com.roamingroths.cmcc.logic.chart.Occurrences;
+import com.roamingroths.cmcc.data.domain.DischargeSummary;
+import com.roamingroths.cmcc.data.domain.Flow;
+import com.roamingroths.cmcc.data.domain.Observation;
+import com.roamingroths.cmcc.data.domain.Occurrences;
 
 import org.junit.Test;
 

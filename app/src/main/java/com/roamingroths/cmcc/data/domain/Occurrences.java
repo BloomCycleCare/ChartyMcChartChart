@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.logic.chart;
+package com.roamingroths.cmcc.data.domain;
 
 import android.os.Parcel;
 import android.os.Parcelable;

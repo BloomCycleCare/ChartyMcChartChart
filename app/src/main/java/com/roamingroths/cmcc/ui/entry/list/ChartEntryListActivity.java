@@ -31,7 +31,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.logic.chart.Cycle;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.providers.ProfileProvider;
