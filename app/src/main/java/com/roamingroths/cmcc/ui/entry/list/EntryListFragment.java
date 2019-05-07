@@ -107,15 +107,12 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
 
-    mDisposables.add(Single.zip(
-        MyApplication.cycleProvider(),
-        MyApplication.chartEntryProvider(),
-        (cycleProvider, chartEntryProvider) -> {
+    mDisposables.add(MyApplication.cycleProvider().map(
+        (cycleProvider) -> {
           final ChartEntryAdapter adapter = new ChartEntryAdapter(
               getActivity().getApplicationContext(),
               mCycle,
               EntryListFragment.this,
-              chartEntryProvider,
               cycleProvider,
               "");
           if (mChartEntries != null) {
