@@ -81,7 +81,7 @@ public class ChartEntryList {
     holder.setBackgroundColor(getEntryColorResource(observationEntry));
     holder.setEntryNum(mEntries.size() - position);
     holder.setDate(DateUtil.toUiStr(observationEntry.getDate()));
-    holder.setPeakDayText(getPeakDayViewText(position, observationEntry));
+    holder.setPeakDayText(getPeakDayViewText(entry));
     holder.setShowBaby(shouldShowBaby(position, observationEntry));
     holder.setSymptomGoalSummary(entry.symptomEntry.getNumSymptoms());
     holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
@@ -187,44 +187,52 @@ public class ChartEntryList {
     return mEntries.get(previousIndex).observationEntry.intercourse;
   }
 
-  private int getCount(int currentPosition, ObservationEntry currentEntry) {
-    if (currentEntry.unusualBleeding || currentEntry.peakDay || currentEntry.hasPeakTypeMucus()) {
+  private int getCount(ChartEntry currentEntry) {
+    int entryIndex = mEntries.indexOf(currentEntry);
+    if (currentEntry.observationEntry == null) {
+      return -1;
+    }
+    if (currentEntry.observationEntry.unusualBleeding
+        || currentEntry.observationEntry.peakDay
+        || currentEntry.observationEntry.hasPeakTypeMucus()) {
       return 0;
     }
-    int lastPositionToCheck = currentPosition + 3;
-    for (int i = currentPosition + 1; i < mEntries.size() && i <= lastPositionToCheck; i++) {
+    int lastPositionToCheck = entryIndex + 3;
+    for (int i = entryIndex + 1; i < mEntries.size() && i <= lastPositionToCheck; i++) {
       ChartEntry previousEntry = mEntries.get(i);
       if (previousEntry.observationEntry.observation == null) {
         continue;
       }
       // Check if any unusual bleeding within count of three (D.6)
       if (previousEntry.observationEntry.unusualBleeding) {
-        return i - currentPosition;
+        return i - entryIndex;
       }
       if (previousEntry.observationEntry.observation.dischargeSummary == null) {
         continue;
       }
       // Check for 1 day of peak mucus (D.5)
       if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
-        if (mPreferences.specialSamenessYellowEnabled() && previousEntry.observationEntry.isEssentiallyTheSame) {
+        if (mPreferences.specialSamenessYellowEnabled()
+            && previousEntry.observationEntry.isEssentiallyTheSame) {
           continue;
         } else {
-          return i - currentPosition;
+          return i - entryIndex;
         }
       }
       if (previousEntry.observationEntry.observation.dischargeSummary.mType.hasMucus()
-          && isPreakPeak(currentEntry)) {
+          && isPreakPeak(currentEntry.observationEntry)) {
         // Check for 3 consecutive days of non-peak mucus pre peak (D.4)
         int lastPositionInWindow = i + 3;
-        boolean consecutiveNonPeakMucus = true;
+        int consecutiveDays = 0;
         for (int j = i; j < mEntries.size() && j < lastPositionInWindow; j++) {
-          if (!mEntries.get(j).observationEntry.hasMucus()) {
-            consecutiveNonPeakMucus = false;
-            break;
+          if (mEntries.get(j).observationEntry.hasMucus()) {
+            consecutiveDays++;
+          } else {
+            consecutiveDays = 0;
           }
         }
-        if (consecutiveNonPeakMucus) {
-          return i - currentPosition;
+        if (consecutiveDays == 3) {
+          return i - entryIndex;
         }
       }
     }
@@ -311,14 +319,14 @@ public class ChartEntryList {
     return entry.observation != null && entry.observation.hasMucus();
   }
 
-  public String getPeakDayViewText(int position, ObservationEntry entry) {
-    if (entry == null || entry.observation == null) {
+  public String getPeakDayViewText(ChartEntry entry) {
+    if (entry == null || entry.observationEntry == null || entry.observationEntry.observation == null) {
       return "";
     }
-    if (entry.peakDay) {
+    if (entry.observationEntry.peakDay) {
       return "P";
     }
-    int count = getCount(position, entry);
+    int count = getCount(entry);
     if (count > 0) {
       return String.valueOf(count);
     } else {

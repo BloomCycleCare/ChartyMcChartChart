@@ -219,7 +219,7 @@ public class PageRenderer {
                 break;
             }
           }
-          textLines[1] = entryList.getPeakDayViewText(i, observationEntry);
+          textLines[1] = entryList.getPeakDayViewText(entry);
         }
 
         List<String> classes = new ArrayList<>();
