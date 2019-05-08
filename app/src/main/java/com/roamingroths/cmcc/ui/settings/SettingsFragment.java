@@ -2,13 +2,13 @@ package com.roamingroths.cmcc.ui.settings;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v14.preference.MultiSelectListPreference;
-import android.support.v7.preference.CheckBoxPreference;
-import android.support.v7.preference.ListPreference;
-import android.support.v7.preference.Preference;
-import android.support.v7.preference.PreferenceFragmentCompat;
-import android.support.v7.preference.PreferenceScreen;
-import android.support.v7.preference.SwitchPreferenceCompat;
+import androidx.preference.MultiSelectListPreference;
+import androidx.preference.CheckBoxPreference;
+import androidx.preference.ListPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 import android.util.Log;
 
 import com.roamingroths.cmcc.R;

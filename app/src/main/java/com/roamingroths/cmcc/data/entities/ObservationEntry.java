@@ -2,10 +2,13 @@ package com.roamingroths.cmcc.data.entities;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
+
+import androidx.room.Entity;
 
 import com.google.common.base.Objects;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -19,7 +22,7 @@ import javax.crypto.SecretKey;
 /**
  * Created by parkeroth on 4/22/17.
  */
-
+@Entity
 public class ObservationEntry extends Entry implements Parcelable {
 
   @Nullable public Observation observation;
@@ -32,7 +35,30 @@ public class ObservationEntry extends Entry implements Parcelable {
   public boolean isEssentiallyTheSame;
 
   public ObservationEntry(
-      LocalDate date,
+      LocalDate entryDate,
+      @Nullable Observation observation,
+      boolean peakDay,
+      boolean intercourse,
+      boolean firstDay,
+      boolean pointOfChange,
+      boolean unusualBleeding,
+      IntercourseTimeOfDay intercourseTimeOfDay,
+      boolean isEssentiallyTheSame) {
+    this(
+        entryDate,
+        observation,
+        peakDay,
+        intercourse,
+        firstDay,
+        pointOfChange,
+        unusualBleeding,
+        intercourseTimeOfDay,
+        isEssentiallyTheSame,
+        null);
+  }
+
+  public ObservationEntry(
+      LocalDate entryDate,
       @Nullable Observation observation,
       boolean peakDay,
       boolean intercourse,
@@ -42,7 +68,7 @@ public class ObservationEntry extends Entry implements Parcelable {
       IntercourseTimeOfDay intercourseTimeOfDay,
       boolean isEssentiallyTheSame,
       SecretKey key) {
-    super(date);
+    super(entryDate);
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
@@ -167,22 +193,4 @@ public class ObservationEntry extends Entry implements Parcelable {
         observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame);
   }
 
-  public enum IntercourseTimeOfDay {
-    NONE("None"), ANY("Any time of day"), END("End of day");
-
-    final String value;
-
-    IntercourseTimeOfDay(String value) {
-      this.value = value;
-    }
-
-    public static IntercourseTimeOfDay fromStr(String str) {
-      for (IntercourseTimeOfDay item : IntercourseTimeOfDay.values()) {
-        if (item.value.equals(str)) {
-          return item;
-        }
-      }
-      throw new IllegalArgumentException(str + ": does not match any values");
-    }
-  }
 }

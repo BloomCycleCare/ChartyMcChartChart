@@ -1,20 +1,9 @@
 package com.roamingroths.cmcc.mvi;
 
-import android.arch.lifecycle.ViewModel;
-import android.content.Intent;
-import android.support.annotation.NonNull;
-
-import com.google.common.collect.ImmutableMap;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
+import androidx.lifecycle.ViewModel;
+import androidx.annotation.NonNull;
 
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
-import io.reactivex.ObservableTransformer;
 import io.reactivex.subjects.PublishSubject;
 
 public abstract class BaseMviViewModel<I extends MviIntent, A extends MviAction, R extends MviResult, S extends MviViewState> extends ViewModel implements MviViewModel<I, S> {

@@ -1,9 +1,8 @@
 package com.roamingroths.cmcc.ui.goals.create;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.google.auto.value.AutoValue;
-import com.roamingroths.cmcc.logic.goals.GoalModel;
 import com.roamingroths.cmcc.mvi.MviAction;
 
 interface CreateGoalAction extends MviAction {

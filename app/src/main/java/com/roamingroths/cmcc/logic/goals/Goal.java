@@ -1,6 +1,6 @@
 package com.roamingroths.cmcc.logic.goals;
 
-import android.support.annotation.NonNull;
+import androidx.annotation.NonNull;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.Cipherable;

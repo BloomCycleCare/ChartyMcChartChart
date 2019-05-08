@@ -2,22 +2,20 @@ package com.roamingroths.cmcc.ui.profile;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.v14.preference.SwitchPreference;
-import android.support.v7.preference.DatePickerPreference;
-import android.support.v7.preference.ListPreference;
-import android.support.v7.preference.NumberPickerPreference;
-import android.support.v7.preference.Preference;
-import android.support.v7.preference.PreferenceScreen;
-import android.support.v7.preference.SwitchPreferenceCompat;
+import androidx.preference.SwitchPreference;
+import androidx.preference.DatePickerPreference;
+import androidx.preference.ListPreference;
+import androidx.preference.NumberPickerPreference;
+import androidx.preference.Preference;
+import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreferenceCompat;
 import android.util.Log;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.providers.ProfileProvider;
 
-import io.reactivex.SingleSource;
 import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
 import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 
 /**

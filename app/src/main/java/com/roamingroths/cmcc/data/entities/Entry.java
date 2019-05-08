@@ -2,6 +2,9 @@ package com.roamingroths.cmcc.data.entities;
 
 import android.os.Parcelable;
 
+import androidx.annotation.NonNull;
+import androidx.room.PrimaryKey;
+
 import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -17,7 +20,9 @@ import javax.crypto.SecretKey;
 
 public abstract class Entry implements Cipherable, Parcelable {
 
-  private final LocalDate mEntryDate;
+  @PrimaryKey
+  @NonNull
+  public final LocalDate mEntryDate;
   private transient volatile SecretKey mKey;
 
   Entry(LocalDate entryDate) {

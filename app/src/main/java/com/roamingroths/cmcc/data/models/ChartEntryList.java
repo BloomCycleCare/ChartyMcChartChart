@@ -1,7 +1,7 @@
 package com.roamingroths.cmcc.data.models;
 
-import android.support.annotation.Nullable;
-import android.support.v7.util.SortedList;
+import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.SortedList;
 import android.util.Log;
 
 import com.google.common.base.Optional;

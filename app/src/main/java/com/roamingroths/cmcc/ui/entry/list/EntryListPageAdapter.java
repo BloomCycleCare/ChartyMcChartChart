@@ -1,8 +1,8 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
-import android.support.v7.util.SortedList;
+import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.SortedList;
 import android.util.Log;
 import android.view.ViewGroup;
 

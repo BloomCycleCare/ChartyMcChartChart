@@ -1,4 +1,4 @@
-<android.support.v4.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
                                             xmlns:app="http://schemas.android.com/apk/res-auto"
                                             xmlns:tools="http://schemas.android.com/tools"
                                             android:layout_width="match_parent"
@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="8dp"
@@ -34,7 +34,7 @@
                 app:srcCompat="@drawable/ic_assignment_black_24dp"
                 tools:ignore="ContentDescription"/>
 
-            <android.support.design.widget.TextInputEditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/et_modify_observation_value"
                 android:hint="Observation text"
                 android:layout_width="wrap_content"
@@ -43,7 +43,7 @@
                 app:layout_constraintHorizontal_bias="0.5"
                 app:layout_constraintStart_toEndOf="@+id/iv_observation"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
         <TextView
             android:id="@+id/tv_modify_observation_description"
@@ -52,7 +52,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"/>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:layout_width="match_parent"
@@ -93,9 +93,9 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
             android:layout_width="match_parent"
@@ -145,9 +145,9 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/essential_sameness_layout"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
@@ -189,8 +189,8 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
-        <android.support.constraint.ConstraintLayout
+        </androidx.constraintlayout.widget.ConstraintLayout>
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/unusual_bleeding_layout"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
@@ -232,9 +232,9 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/point_of_change_layout"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
@@ -276,9 +276,9 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:id="@+id/layout_new_cycle"
             android:layout_marginTop="8dp"
             android:layout_marginBottom="8dp"
@@ -320,9 +320,9 @@
                 android:gravity="right"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
-        <android.support.constraint.ConstraintLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
 
@@ -342,7 +342,7 @@
                 app:srcCompat="@drawable/ic_note_black_24dp"
                 tools:ignore="ContentDescription"/>
 
-            <android.support.design.widget.TextInputLayout
+            <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/til_observation_note"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -353,13 +353,13 @@
                 app:layout_constraintTop_toTopOf="parent"
                 >
 
-                <android.support.design.widget.TextInputEditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/et_modify_observation_note"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:hint="Note"/>
-            </android.support.design.widget.TextInputLayout>
+            </com.google.android.material.textfield.TextInputLayout>
 
-        </android.support.constraint.ConstraintLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
     </LinearLayout>
-</android.support.v4.widget.NestedScrollView>
+</androidx.core.widget.NestedScrollView>

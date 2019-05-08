@@ -3,9 +3,9 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
-import android.support.design.widget.TextInputEditText;
-import android.support.v7.preference.PreferenceManager;
+import androidx.annotation.Nullable;
+import com.google.android.material.textfield.TextInputEditText;
+import androidx.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
@@ -16,6 +16,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 
@@ -218,9 +219,9 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
     boolean pointOfChange = mPointOfChangeSwitch.isChecked();
     boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
     boolean isEssentiallyTheSame = mEssentialSamenessSwitch.isChecked();
-    ObservationEntry.IntercourseTimeOfDay timeOfDay = !intercourse
-        ? ObservationEntry.IntercourseTimeOfDay.NONE
-        : ObservationEntry.IntercourseTimeOfDay.fromStr(mIntercourseSpinner.getSelectedItem().toString());
+    IntercourseTimeOfDay timeOfDay = !intercourse
+        ? IntercourseTimeOfDay.NONE
+        : IntercourseTimeOfDay.fromStr(mIntercourseSpinner.getSelectedItem().toString());
     return new ObservationEntry(
         getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, timeOfDay, isEssentiallyTheSame, getCycle().keys.chartKey);
   }

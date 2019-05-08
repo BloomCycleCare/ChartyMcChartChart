@@ -2,7 +2,7 @@ package com.roamingroths.cmcc;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.v7.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 
 /**
  * Created by parkeroth on 7/1/17.

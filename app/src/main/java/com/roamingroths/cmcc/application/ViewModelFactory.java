@@ -1,9 +1,8 @@
 package com.roamingroths.cmcc.application;
 
-import android.arch.lifecycle.ViewModel;
-import android.arch.lifecycle.ViewModelProvider;
-import android.content.Context;
-import android.support.annotation.NonNull;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.annotation.NonNull;
 
 import com.roamingroths.cmcc.ui.goals.create.CreateGoalViewModel;
 import com.roamingroths.cmcc.ui.goals.list.GoalListViewModel;
