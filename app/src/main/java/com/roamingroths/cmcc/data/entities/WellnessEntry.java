@@ -3,10 +3,13 @@ package com.roamingroths.cmcc.data.entities;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.room.Entity;
+
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.crypto.Cipherable;
+import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -21,25 +24,29 @@ import javax.crypto.SecretKey;
 /**
  * Created by parkeroth on 9/18/17.
  */
-
+@Entity
 public class WellnessEntry extends Entry implements Parcelable, Cipherable {
 
-  public Map<String, Boolean> wellnessItems;
+  public BoolMapping wellnessItems;
 
   public static WellnessEntry emptyEntry(LocalDate date, SecretKey key) {
     return new WellnessEntry(date, new HashMap<String, Boolean>(), key);
   }
 
-  public WellnessEntry(LocalDate date, Map<String, Boolean> wellnessItems, SecretKey key) {
-    super(date);
-    this.wellnessItems = wellnessItems;
+  public WellnessEntry(LocalDate entryDate, BoolMapping wellnessItems) {
+    this(entryDate, wellnessItems, null);
+  }
+
+  public WellnessEntry(LocalDate entryDate, Map<String, Boolean> wellnessItems, SecretKey key) {
+    super(entryDate);
+    this.wellnessItems = new BoolMapping(wellnessItems);
     swapKey(key);
   }
 
   public WellnessEntry(Parcel in) {
     super(DateUtil.fromWireStr(in.readString()));
     int size = in.readInt();
-    wellnessItems = new HashMap<>(size);
+    wellnessItems = new BoolMapping();
     for (int i = 0; i < size; i++) {
       wellnessItems.put(in.readString(), in.readByte() != 0);
     }

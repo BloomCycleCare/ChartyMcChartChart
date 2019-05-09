@@ -3,6 +3,9 @@ package com.roamingroths.cmcc.application;
 import android.app.Application;
 import android.content.Context;
 import androidx.preference.PreferenceManager;
+import androidx.room.Room;
+import androidx.room.migration.Migration;
+
 import android.util.Log;
 
 import com.google.firebase.FirebaseApp;
@@ -11,6 +14,7 @@ import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.logic.profile.Profile;
 import com.roamingroths.cmcc.providers.AppStateProvider;
 import com.roamingroths.cmcc.providers.ChartEntryProvider;
@@ -46,6 +50,8 @@ public class MyApplication extends Application {
   private static Single<Providers> mProviders;
   private static ViewModelFactory mViewModelFactory;
 
+  private AppDatabase mDB;
+
   @Override
   public void onCreate() {
     super.onCreate();
@@ -55,12 +61,19 @@ public class MyApplication extends Application {
     Security.addProvider(new BouncyCastleProvider());
     PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
 
+    Migration[] migrations = new Migration[AppDatabase.MIGRATIONS.size()];
+    AppDatabase.MIGRATIONS.toArray(migrations);
+    mDB = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "room-db")
+        .addMigrations(migrations)
+        .fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
+        .build();
+
     mCryptoUtilFromKeyStore = CryptoProvider.forDb(FirebaseDatabase.getInstance()).tryCreateFromKeyStore().cache();
     mProviders = mCryptoUtilFromKeyStore.flatMapSingle(new Function<CryptoUtil, SingleSource<? extends Providers>>() {
       @Override
       public SingleSource<? extends Providers> apply(CryptoUtil cryptoUtil) throws Exception {
         FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        Providers providers = new Providers(FirebaseDatabase.getInstance(), cryptoUtil, user);
+        Providers providers = new Providers(FirebaseDatabase.getInstance(), mDB, cryptoUtil, user);
         return providers.initialize(user, getApplicationContext()).andThen(Single.just(providers));
       }
     }).cache();
@@ -68,24 +81,26 @@ public class MyApplication extends Application {
     //FirebaseDatabase.getInstance().setLogLevel(Logger.Level.DEBUG);
   }
 
-  public static Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {
+  public AppDatabase db() {
+    return mDB;
+  }
+
+  public static MyApplication cast(Application app) {
+    return (MyApplication) app;
+  }
+
+  public Completable initProviders(final FirebaseUser user, Maybe<String> phoneNumber, final Context context) {
     Log.i(TAG, "Creating crypto util for user: " + user.getUid());
     Single<CryptoUtil> cryptoUtil =
         CryptoProvider.forDb(FirebaseDatabase.getInstance()).createCryptoUtil(user, phoneNumber);
-    return cryptoUtil.flatMapCompletable(new Function<CryptoUtil, CompletableSource>() {
-      @Override
-      public CompletableSource apply(CryptoUtil cryptoUtil) throws Exception {
-        Log.i(TAG, "Crypto initialization complete");
-        final Providers providers = new Providers(FirebaseDatabase.getInstance(), cryptoUtil, user);
-        return providers.initialize(user, context).doOnComplete(new Action() {
-          @Override
-          public void run() throws Exception {
-            Log.i(TAG, "Provider initialization complete");
-            mViewModelFactory = new ViewModelFactory(providers);
-            mProviders = Single.just(providers).cache();
-          }
-        });
-      }
+    return cryptoUtil.flatMapCompletable(cryptoUtil1 -> {
+      Log.i(TAG, "Crypto initialization complete");
+      final Providers providers = new Providers(FirebaseDatabase.getInstance(), mDB, cryptoUtil1, user);
+      return providers.initialize(user, context).doOnComplete(() -> {
+        Log.i(TAG, "Provider initialization complete");
+        mViewModelFactory = new ViewModelFactory(providers);
+        mProviders = Single.just(providers).cache();
+      });
     });
   }
 
@@ -165,11 +180,11 @@ public class MyApplication extends Application {
     final AppStateProvider mAppStateProvider;
     final GoalProvider mGoalProvider;
 
-    Providers(FirebaseDatabase db, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
+    Providers(FirebaseDatabase db, AppDatabase localDB, CryptoUtil cryptoUtil, FirebaseUser currentUser) {
       mKeyProvider = new KeyProvider(cryptoUtil, db, currentUser);
       mProfileProvider = new ProfileProvider(db, currentUser, cryptoUtil, mKeyProvider);
-      mChartEntryProvider = new ChartEntryProvider(db, cryptoUtil);
-      mCycleProvider = new CycleProvider(db, mKeyProvider, mChartEntryProvider);
+      mChartEntryProvider = new ChartEntryProvider(db, localDB, cryptoUtil);
+      mCycleProvider = new CycleProvider(db, localDB, mKeyProvider, mChartEntryProvider);
       mCycleEntryProvider = new CycleEntryProvider(mChartEntryProvider);
       mAppStateProvider = new AppStateProvider(mProfileProvider, mCycleProvider, mChartEntryProvider, currentUser);
       mGoalProvider = new GoalProvider(db, currentUser, cryptoUtil, mKeyProvider);

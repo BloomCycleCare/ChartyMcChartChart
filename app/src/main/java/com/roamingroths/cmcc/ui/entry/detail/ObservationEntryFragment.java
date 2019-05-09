@@ -110,7 +110,10 @@ public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
           } else {
             mUnusualBleedingLayout.setVisibility(View.GONE);
           }
-          if (observation != null && observation.dischargeSummary.isPeakType() && shouldAskEssentialSameness) {
+          if (observation != null
+              && observation.dischargeSummary != null
+              && observation.dischargeSummary.isPeakType()
+              && shouldAskEssentialSameness) {
             mEssentialSamenessLayout.setVisibility(View.VISIBLE);
           } else {
             mEssentialSamenessLayout.setVisibility(View.GONE);

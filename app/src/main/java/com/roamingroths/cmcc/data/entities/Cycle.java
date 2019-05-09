@@ -3,6 +3,12 @@ package com.roamingroths.cmcc.data.entities;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.annotation.NonNull;
+import androidx.room.Embedded;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+import androidx.room.PrimaryKey;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.firebase.database.DataSnapshot;
@@ -16,27 +22,28 @@ import java.util.Comparator;
 
 import javax.crypto.SecretKey;
 
-import io.reactivex.annotations.NonNull;
 import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 4/30/17.
  */
-
+@Entity
 public class Cycle implements Parcelable {
 
   public final String id;
+  @PrimaryKey
+  @NonNull
   public final LocalDate startDate;
   public LocalDate endDate;
+  @Ignore
   public final String startDateStr;
+  @Embedded
   public transient Keys keys;
 
   public static class Builder {
     public final String id;
     public final LocalDate startDate;
     public LocalDate endDate;
-    public Cycle previousCycle;
-    public Cycle nextCycle;
 
     private Builder(String id, LocalDate startDate) {
       this.id = id;

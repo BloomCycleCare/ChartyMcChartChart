@@ -10,6 +10,8 @@ import com.google.common.collect.Maps;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.roamingroths.cmcc.data.db.AppDatabase;
+import com.roamingroths.cmcc.data.db.CycleDao;
 import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
@@ -26,6 +28,7 @@ import java.util.Map;
 import durdinapps.rxfirebase2.RxFirebaseDatabase;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
@@ -50,13 +53,15 @@ public class CycleProvider {
   private static final String TAG = CycleProvider.class.getSimpleName();
 
   private final FirebaseDatabase db;
+  private final CycleDao cycleDao;
   private final KeyProvider keyProvider;
   private final ChartEntryProvider chartEntryProvider;
   private final Map<String, Cycle> mCycleCache;
 
   public CycleProvider(
-      FirebaseDatabase db, KeyProvider keyProvider, ChartEntryProvider chartEntryProvider) {
+      FirebaseDatabase db, AppDatabase localDB, KeyProvider keyProvider, ChartEntryProvider chartEntryProvider) {
     this.db = db;
+    this.cycleDao = localDB.cycleDao();
     this.keyProvider = keyProvider;
     this.chartEntryProvider = chartEntryProvider;
     this.mCycleCache = Maps.newConcurrentMap();
@@ -65,6 +70,10 @@ public class CycleProvider {
   public Completable initCache(final FirebaseUser user) {
     if (DEBUG) Log.v(TAG, "Initializing cycle cache.");
     return getAllFromRemote(user)
+        .flatMap(cycle -> cycleDao
+            .delete(cycle)
+            .andThen(cycleDao.insert(cycle))
+            .andThen(Flowable.just(cycle)))
         .doOnNext(cycle -> {
           logV(cycle, "Caching cycle");
           mCycleCache.put(cycle.id, cycle);

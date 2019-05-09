@@ -6,6 +6,8 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.firebase.database.FirebaseDatabase;
 import com.roamingroths.cmcc.crypto.CryptoUtil;
+import com.roamingroths.cmcc.data.db.AppDatabase;
+import com.roamingroths.cmcc.data.db.ObservationEntryDao;
 import com.roamingroths.cmcc.logic.AppState;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.entities.Cycle;
@@ -43,14 +45,16 @@ public class ChartEntryProvider {
 
   private final ChartEntryCache mCache;
   private final ChartEntryStore mStore;
+  private final ObservationEntryDao mDao;
 
-  public ChartEntryProvider(FirebaseDatabase db, CryptoUtil mCryptoUtil) {
+  public ChartEntryProvider(FirebaseDatabase db, AppDatabase localDB, CryptoUtil mCryptoUtil) {
     this.mStore = new ChartEntryStore(db, mCryptoUtil);
     this.mCache = new ChartEntryCache();
+    mDao = localDB.observationEntryDao();
   }
 
   public Completable initCache(Observable<Cycle> cycles, int numCycles) {
-    return cycles
+    Completable fillCache = cycles
         .observeOn(Schedulers.io())
         .sorted((o1, o2) -> o2.startDate.compareTo(o1.startDate))
         .take(numCycles)
@@ -65,6 +69,13 @@ public class ChartEntryProvider {
             return Completable.merge(completables);
           }
         });
+    Completable fillRoom = cycles
+        .flatMap(cycle -> mStore.getEntries(cycle, Predicates.alwaysTrue()))
+        .map(chartEntry -> chartEntry.observationEntry)
+        .flatMapCompletable(observationEntry -> mDao
+            .delete(observationEntry)
+            .andThen(mDao.insert(observationEntry)));
+    return Completable.mergeArray(fillCache, fillRoom);
   }
 
   public Completable fillCache(final Cycle cycle) {
