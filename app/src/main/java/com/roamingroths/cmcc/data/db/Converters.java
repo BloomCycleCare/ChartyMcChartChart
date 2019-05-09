@@ -22,50 +22,50 @@ import javax.crypto.SecretKey;
 public class Converters {
 
   @TypeConverter
-  String fromObject(Observation in) {
+  public String fromObject(Observation in) {
     return GsonUtil.getGsonInstance().toJson(in);
   }
   @TypeConverter
-  Observation toObject(String in) {
+  public Observation toObject(String in) {
     return GsonUtil.getGsonInstance().fromJson(in, Observation.class);
   }
 
   @TypeConverter
   @Nullable
-  String fromLocalDate(@Nullable LocalDate in) {
+  public String fromLocalDate(@Nullable LocalDate in) {
     return DateUtil.toWireStr(in);
   }
   @TypeConverter
-  LocalDate toLocalDate(String in) {
+  public LocalDate toLocalDate(String in) {
     return DateUtil.fromWireStr(in);
   }
 
   @TypeConverter
-  IntercourseTimeOfDay toTimeOfDay(String in) {
+  public IntercourseTimeOfDay toTimeOfDay(String in) {
     return IntercourseTimeOfDay.fromStr(in);
   }
   @TypeConverter
-  String fromTimeOfDay(IntercourseTimeOfDay in) {
+  public String fromTimeOfDay(IntercourseTimeOfDay in) {
     return in.name();
   }
 
   @TypeConverter
-  String fromSecretKey(SecretKey key) {
+  public String fromSecretKey(SecretKey key) {
     return AesCryptoUtil.serializeKey(key);
   }
 
   @TypeConverter
-  SecretKey fromString(String in) {
+  public SecretKey fromString(String in) {
     return AesCryptoUtil.parseKey(in);
   }
 
   @TypeConverter
-  String fromMap(BoolMapping in) {
+  public String fromMap(BoolMapping in) {
     return GsonUtil.getGsonInstance().toJson(in);
   }
 
   @TypeConverter
-  BoolMapping toMap(String in) {
+  public BoolMapping toMap(String in) {
     return GsonUtil.getGsonInstance().fromJson(in, BoolMapping.class);
   }
 }
