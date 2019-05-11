@@ -3,23 +3,33 @@ package com.roamingroths.cmcc.data.db;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.Query;
+import androidx.room.Update;
 
 import com.roamingroths.cmcc.data.entities.Cycle;
 
+import java.util.List;
+
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
 
 @Dao
-public interface CycleDao {
+public abstract class CycleDao {
+
+  @Query("SELECT * FROM Cycle ORDER BY startDate DESC")
+  public abstract Flowable<List<Cycle>> getStream();
+
+  @Query("SELECT * FROM Cycle WHERE endDate IS NULL")
+  public abstract Single<Cycle> getCurrentCycle();
 
   @Delete
-  Completable delete(Cycle cycle);
+  public abstract Completable delete(Cycle cycle);
 
-  @Insert
-  Completable insert(Cycle cycle);
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
+  public abstract Completable insert(Cycle cycle);
 
-  @Insert
-  Completable insert(Iterable<Cycle> cycles);
-
-  @Insert
-  Completable insert(Cycle... cycles);
+  @Update
+  public abstract Completable update(Cycle cycle);
 }

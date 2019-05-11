@@ -10,6 +10,9 @@ import androidx.sqlite.db.SimpleSQLiteQuery;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.roamingroths.cmcc.data.entities.Entry;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
+import com.roamingroths.cmcc.data.entities.SymptomEntry;
+import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
@@ -17,6 +20,7 @@ import org.joda.time.LocalDate;
 import java.util.List;
 
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
@@ -29,19 +33,21 @@ public abstract class BaseEntryDao<E extends Entry> {
     mTableName = clazz.getSimpleName();
   }
 
-  public Maybe<E> get(LocalDate entryDate) {
+  public Flowable<E> getStream(LocalDate entryDate) {
     return doFind(new SimpleSQLiteQuery(String.format(
         "SELECT * FROM %s WHERE entryDate = %s",
         mTableName,
-        DateUtil.toWireStr(entryDate))));
+        DateUtil.toWireStr(entryDate))))
+        .distinctUntilChanged();
   }
 
-  public Single<List<E>> getAll(LocalDate firstDate, LocalDate lastDate) {
+  public Flowable<List<E>> getStream(LocalDate firstDate, LocalDate lastDate) {
     return doFindBetween(new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate >= %s AND entryDate <= %s",
+        "SELECT * FROM %s WHERE entryDate >= %s AND entryDate <= %s ORDER BY entryDate",
         mTableName,
         DateUtil.toWireStr(firstDate),
-        DateUtil.toWireStr(lastDate))));
+        DateUtil.toWireStr(lastDate))))
+        .distinctUntilChanged();
   }
 
   @Insert
@@ -53,9 +59,17 @@ public abstract class BaseEntryDao<E extends Entry> {
   @Update
   public abstract Completable update(E entry);
 
-  @RawQuery
-  protected abstract Maybe<E> doFind(SupportSQLiteQuery query);
+  @RawQuery(observedEntities = {
+      ObservationEntry.class,
+      WellnessEntry.class,
+      SymptomEntry.class,
+  })
+  protected abstract Flowable<E> doFind(SupportSQLiteQuery query);
 
-  @RawQuery
-  protected abstract Single<List<E>> doFindBetween(SupportSQLiteQuery query);
+  @RawQuery(observedEntities = {
+      ObservationEntry.class,
+      WellnessEntry.class,
+      SymptomEntry.class,
+  })
+  protected abstract Flowable<List<E>> doFindBetween(SupportSQLiteQuery query);
 }
