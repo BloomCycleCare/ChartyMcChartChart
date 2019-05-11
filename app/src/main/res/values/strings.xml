@@ -1,5 +1,4 @@
 <resources>
-    <string name="app_name">CMCC</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_settings">SettingsActivity</string>
     <string name="pref_practitioner_name_label">Practitioner Name</string>
