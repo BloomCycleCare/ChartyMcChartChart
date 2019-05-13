@@ -9,6 +9,7 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.JsonSerializationContext;
 import com.google.gson.JsonSerializer;
+import com.roamingroths.cmcc.data.entities.Entry;
 
 import org.joda.time.LocalDate;
 
@@ -29,6 +30,7 @@ public class GsonUtil {
   private static Gson createInstance() {
     return new GsonBuilder()
         .registerTypeAdapter(LocalDate.class, new LocalDateSerializer())
+        .registerTypeAdapter(Entry.class, new InterfaceAdapter<Entry>())
         .create();
   }
 

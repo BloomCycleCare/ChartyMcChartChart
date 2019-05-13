@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.utils;
 
 import android.content.Context;
 import android.os.Bundle;
-import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +9,8 @@ import android.view.ViewGroup;
 import android.widget.CompoundButton;
 import android.widget.Switch;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.apache.commons.collections4.map.ListOrderedMap;
 

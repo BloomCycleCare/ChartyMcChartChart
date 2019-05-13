@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,13 +12,14 @@ import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
 
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.print.PageRenderer;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.HashSet;
@@ -28,11 +28,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import io.reactivex.ObservableSource;
-import io.reactivex.Single;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -90,25 +86,6 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   public void fillBundle(Bundle bundle) {
     bundle.putParcelableArrayList(BundleKey.VIEW_MODELS.name(), Lists.newArrayList(mViewModels));
     bundle.putIntegerArrayList(BundleKey.SELECTED_INDEXES.name(), Lists.newArrayList(mSelectedIndexes));
-  }
-
-  public static Function<Cycle, ObservableSource<ViewModel>> cycleToViewModel(final Single<ChartEntryProvider> chartEntryProvider) {
-    return new Function<Cycle, ObservableSource<CycleAdapter.ViewModel>>() {
-      @Override
-      public ObservableSource<CycleAdapter.ViewModel> apply(final Cycle cycle) throws Exception {
-        return chartEntryProvider.flatMapObservable(new Function<ChartEntryProvider, ObservableSource<? extends ViewModel>>() {
-          @Override
-          public ObservableSource<? extends ViewModel> apply(ChartEntryProvider provider) throws Exception {
-            return Single.zip(Single.just(cycle), provider.getEntries(cycle).count(), new BiFunction<Cycle, Long, ViewModel>() {
-              @Override
-              public ViewModel apply(Cycle cycle, Long numEntries) throws Exception {
-                return new ViewModel(cycle, numEntries.intValue());
-              }
-            }).toObservable();
-          }
-        });
-      }
-    };
   }
 
   public boolean hasValidSelection() {
@@ -260,7 +237,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     public final Cycle mCycle;
     public final int mNumEntries;
 
-    private ViewModel(Cycle mCycle, int mNumEntries) {
+    public ViewModel(Cycle mCycle, int mNumEntries) {
       this.mCycle = mCycle;
       this.mNumEntries = mNumEntries;
     }

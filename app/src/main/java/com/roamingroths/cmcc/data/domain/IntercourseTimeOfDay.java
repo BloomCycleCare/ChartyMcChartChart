@@ -11,7 +11,7 @@ public enum IntercourseTimeOfDay {
 
   public static IntercourseTimeOfDay fromStr(String str) {
     for (IntercourseTimeOfDay item : IntercourseTimeOfDay.values()) {
-      if (item.value.equals(str)) {
+      if (item.name().equals(str)) {
         return item;
       }
     }

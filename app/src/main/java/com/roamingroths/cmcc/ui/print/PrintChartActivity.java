@@ -2,31 +2,34 @@ package com.roamingroths.cmcc.ui.print;
 
 import android.os.Bundle;
 import android.print.PrintJob;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import androidx.core.app.NavUtils;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NavUtils;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.models.ChartEntryList;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
+import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.logic.print.ChartPrinter;
-import com.roamingroths.cmcc.providers.CycleEntryProvider;
 
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
-import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.functions.Consumer;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
+import io.reactivex.schedulers.Schedulers;
 
 public class PrintChartActivity extends AppCompatActivity {
 
@@ -34,7 +37,7 @@ public class PrintChartActivity extends AppCompatActivity {
   private static final String TAG = PrintChartActivity.class.getSimpleName();
 
   private RecyclerView mRecyclerView;
-  private CycleAdapter mCycleAdapter;
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
@@ -52,21 +55,30 @@ public class PrintChartActivity extends AppCompatActivity {
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
 
+    MyApplication myApp = MyApplication.cast(getApplication());
+    CycleRepo cycleRepo = new CycleRepo(myApp.db());
+    ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+
     CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
     if (adapter != null) {
       mRecyclerView.setAdapter(adapter);
     } else {
-      Observable.merge(Single.zip(
-          MyApplication.cycleProvider(),
-          MyApplication.getCurrentUser().toSingle(),
-          (cycleProvider, firebaseUser) -> cycleProvider.getAllCycles(firebaseUser)).toObservable())
-          .flatMap(CycleAdapter.cycleToViewModel(MyApplication.chartEntryProvider()))
+
+      mDisposables.add(cycleRepo
+          .getStream()
+          .firstOrError()
+          .flatMapObservable(Observable::fromIterable)
+          .flatMap(cycle -> entryRepo
+              .getStream(Flowable.just(cycle))
+              .firstOrError()
+              .map(entries -> new CycleAdapter.ViewModel(cycle, entries.size()))
+              .toObservable())
           .sorted((o1, o2) -> o2.mCycle.startDate.compareTo(o1.mCycle.startDate))
           .toList()
           .observeOn(AndroidSchedulers.mainThread())
           .subscribeOn(AndroidSchedulers.mainThread())
           .subscribe(viewModels -> mRecyclerView.setAdapter(
-              CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels)));
+              CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels))));
     }
 
     FloatingActionButton fab = findViewById(R.id.fab);
@@ -85,13 +97,19 @@ public class PrintChartActivity extends AppCompatActivity {
           invalidSelectionToast.show();
           return;
         }
-        Observable<ChartEntryList> entryLists = MyApplication.cycleEntryProvider().flatMapObservable(new Function<CycleEntryProvider, ObservableSource<? extends ChartEntryList>>() {
-          @Override
-          public ObservableSource<? extends ChartEntryList> apply(CycleEntryProvider cycleEntryProvider) throws Exception {
-            return cycleEntryProvider.getChartEntryLists(getAdapter().getSelectedCycles(), Preferences.fromShared(PrintChartActivity.this));
-          }
-        });
-        ChartPrinter.create(PrintChartActivity.this, entryLists)
+        Observable<ChartEntryList> entryLists = Observable
+            .fromIterable(adapter.getSelectedCycles())
+            .sorted((c1, c2) -> c1.startDate.compareTo(c2.startDate))
+            .flatMap(cycle -> entryRepo
+                .getStream(Flowable.just(cycle))
+                .firstOrError()
+                .map(chartEntries -> ChartEntryList
+                    .builder(cycle, Preferences.fromShared(PrintChartActivity.this))
+                    .addAll(chartEntries)
+                    .build())
+                .toObservable());
+
+        mDisposables.add(ChartPrinter.create(PrintChartActivity.this, entryLists)
             .print()
             .flatMap(emitPrintJob())
             .filter(new Predicate<PrintJob>() {
@@ -101,19 +119,17 @@ public class PrintChartActivity extends AppCompatActivity {
               }
             })
             .firstOrError()
-            .subscribe(new Consumer<PrintJob>() {
-              @Override
-              public void accept(PrintJob printJob) throws Exception {
-                if (printJob.isCompleted()) {
-                  printJobComplete();
-                  return;
-                }
-                if (printJob.isFailed()) {
-                  printJobFailed();
-                  return;
-                }
+            .subscribeOn(Schedulers.computation())
+            .subscribe(printJob -> {
+              if (printJob.isCompleted()) {
+                printJobComplete();
+                return;
               }
-            });
+              if (printJob.isFailed()) {
+                printJobFailed();
+                return;
+              }
+            }));
       }
     });
   }
@@ -127,17 +143,9 @@ public class PrintChartActivity extends AppCompatActivity {
   }
 
   private Function<PrintJob, ObservableSource<PrintJob>> emitPrintJob() {
-    return new Function<PrintJob, ObservableSource<PrintJob>>() {
-      @Override
-      public ObservableSource<PrintJob> apply(final PrintJob printJob) throws Exception {
-        return Observable.interval(100, TimeUnit.MILLISECONDS).map(new Function<Long, PrintJob>() {
-          @Override
-          public PrintJob apply(Long aLong) throws Exception {
-            return printJob;
-          }
-        });
-      }
-    };
+    return printJob -> Observable
+        .interval(100, TimeUnit.MILLISECONDS)
+        .map(l -> printJob);
   }
 
   private CycleAdapter getAdapter() {

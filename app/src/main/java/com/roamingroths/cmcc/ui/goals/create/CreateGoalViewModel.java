@@ -1,17 +1,8 @@
 package com.roamingroths.cmcc.ui.goals.create;
 
-import com.roamingroths.cmcc.logic.goals.GoalModelFactory;
 import com.roamingroths.cmcc.mvi.BaseMviViewModel;
 import com.roamingroths.cmcc.mvi.MviIntent;
-import com.roamingroths.cmcc.mvi.MviViewModel;
 import com.roamingroths.cmcc.providers.GoalProvider;
-import com.roamingroths.cmcc.ui.goals.list.GoalListResult;
-
-import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
-import io.reactivex.ObservableTransformer;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.schedulers.Schedulers;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 

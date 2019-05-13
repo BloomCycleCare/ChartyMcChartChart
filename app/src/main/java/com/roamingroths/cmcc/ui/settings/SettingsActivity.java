@@ -1,8 +1,9 @@
 package com.roamingroths.cmcc.ui.settings;
 
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
 import android.view.MenuItem;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 import com.roamingroths.cmcc.R;
 

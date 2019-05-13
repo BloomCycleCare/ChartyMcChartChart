@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data.domain;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+
 import androidx.annotation.Nullable;
 
 import com.google.common.base.Joiner;

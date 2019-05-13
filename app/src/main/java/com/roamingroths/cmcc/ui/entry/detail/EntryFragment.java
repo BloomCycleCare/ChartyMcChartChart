@@ -2,12 +2,13 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.Context;
 import android.os.Bundle;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
 
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.data.entities.Cycle;
@@ -15,6 +16,7 @@ import com.roamingroths.cmcc.data.entities.Entry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+import org.parceler.Parcels;
 
 import java.util.Set;
 
@@ -40,9 +42,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   private final String mTag;
   private final int layoutId;
   private EntryListener mUpdateListener;
-  private Cycle mCycle;
-  private LocalDate mEntryDate;
-  private E mExistingEntry;
+  private EntryContext mEntryContext;
 
   protected boolean mUiActive = false;
 
@@ -69,9 +69,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     super.onCreate(savedInstanceState);
     Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Start");
 
-    mCycle = getArguments().getParcelable(Extras.CURRENT_CYCLE.name());
-    mExistingEntry = getArguments().getParcelable(Extras.EXISTING_ENTRY.name());
-    mEntryDate = mExistingEntry.getDate();
+    mEntryContext = Parcels.unwrap(getArguments().getParcelable(EntryContext.class.getCanonicalName()));
 
     Log.v(mTag, "onCreate (" + mClazz.getSimpleName() + "): Finish");
   }
@@ -86,9 +84,7 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
     duringCreateView(view, getArguments(), savedInstanceState);
     Log.v(mTag, "duringCreateView: (" + mClazz.getSimpleName() + "): Finish");
 
-    if (mExistingEntry != null) {
-      updateUiWithEntry(processExistingEntry(mExistingEntry));
-    }
+    updateUiWithEntry(processExistingEntry(getExistingEntry()));
 
     mUiActive = true;
 
@@ -141,20 +137,26 @@ public abstract class EntryFragment<E extends Entry> extends Fragment {
   }
 
   LocalDate getEntryDate() {
-    return mEntryDate;
+    return mEntryContext.chartEntry.entryDate;
   }
 
   String getEntryDateStr() {
-    return DateUtil.toWireStr(mEntryDate);
+    return DateUtil.toWireStr(getEntryDate());
   }
 
   Cycle getCycle() {
-    return mCycle;
+    return mEntryContext.currentCycle;
+  }
+
+  EntryContext entryContext() {
+    return mEntryContext;
   }
 
   E getExistingEntry() {
-    return mExistingEntry;
+    return getExistingEntry(mEntryContext);
   }
+
+  abstract E getExistingEntry(EntryContext entryContext);
 
   public static class ValidationIssue {
     public String title;

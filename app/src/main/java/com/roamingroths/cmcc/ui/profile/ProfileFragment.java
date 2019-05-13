@@ -2,20 +2,18 @@ package com.roamingroths.cmcc.ui.profile;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import androidx.preference.SwitchPreference;
+import android.util.Log;
+
 import androidx.preference.DatePickerPreference;
 import androidx.preference.ListPreference;
 import androidx.preference.NumberPickerPreference;
 import androidx.preference.Preference;
 import androidx.preference.PreferenceScreen;
+import androidx.preference.SwitchPreference;
 import androidx.preference.SwitchPreferenceCompat;
-import android.util.Log;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.providers.ProfileProvider;
 
-import io.reactivex.functions.Consumer;
 import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 
 /**
@@ -73,12 +71,7 @@ public class ProfileFragment extends PreferenceFragmentCompat implements
     Preference preference = findPreference(key);
     if (null != preference) {
       updateSummary(preference, sharedPreferences);
-      MyApplication.profileProvider().subscribe(new Consumer<ProfileProvider>() {
-        @Override
-        public void accept(ProfileProvider profileProvider) throws Exception {
-          profileProvider.maybeUpdateProfile(sharedPreferences, key);
-        }
-      });
+      // TODO: something with this update
     }
   }
 

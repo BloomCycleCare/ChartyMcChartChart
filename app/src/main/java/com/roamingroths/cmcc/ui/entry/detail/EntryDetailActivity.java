@@ -3,15 +3,6 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import com.google.android.material.tabs.TabLayout;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -22,29 +13,35 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
+
+import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.entities.Entry;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.data.entities.SymptomEntry;
 import com.roamingroths.cmcc.data.entities.WellnessEntry;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
-import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -53,26 +50,22 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import io.reactivex.Completable;
-import io.reactivex.CompletableSource;
 import io.reactivex.Maybe;
-import io.reactivex.MaybeSource;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.ObservableSource;
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
+import io.reactivex.schedulers.Schedulers;
+import timber.log.Timber;
 
 import static com.roamingroths.cmcc.ui.entry.detail.ObservationEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity implements EntryFragment.EntryListener {
-
-  public enum Extras {
-    CURRENT_CYCLE, CHART_ENTRY, EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY, ASK_ESSENTIAL_SAMENESS_QUESTION
-  }
 
   private static final boolean DEBUG = true;
   private static final String TAG = EntryDetailActivity.class.getSimpleName();
@@ -89,13 +82,14 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
    */
   private SectionsPagerAdapter mSectionsPagerAdapter;
 
+  private ChartEntryRepo mEntryRepo;
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
+
   /**
    * The {@link ViewPager} that will host the section contents.
    */
   private ViewPager mViewPager;
-  private Cycle mCycle;
-  private FirebaseUser mUser;
-  private LocalDate mDate;
+  private EntryContext mEntryContext;
 
   private Map<Class<? extends Entry>, Entry> mExistingEntries = new HashMap<>();
   private Map<Class<? extends Entry>, Entry> mEntries = new HashMap<>();
@@ -122,29 +116,22 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
 
+    mEntryRepo = new ChartEntryRepo(MyApplication.cast(getApplication()).db());
+
     if (DEBUG) Log.v(TAG, "onCreate: Start");
 
     Intent intent = getIntent();
-    ChartEntry chartEntry = intent.getParcelableExtra(Extras.CHART_ENTRY.name());
-    mDate = chartEntry.entryDate;
-    mCycle = intent.getParcelableExtra(Extras.CURRENT_CYCLE.name());
-    boolean hasPreviousCycle = intent.getBooleanExtra(Extras.HAS_PREVIOUS_CYCLE.name(), false);
-    boolean expectUnusualBleeding = intent.getBooleanExtra(Extras.EXPECT_UNUSUAL_BLEEDING.name(), false);
-    boolean isFirstEntry = intent.getBooleanExtra(Extras.IS_FIRST_ENTRY.name(), false);
-    boolean askEssentialSamenessQuestion = intent.getBooleanExtra(Extras.ASK_ESSENTIAL_SAMENESS_QUESTION.name(), false);
+    mEntryContext = Parcels.unwrap(intent.getParcelableExtra(EntryContext.class.getCanonicalName()));
 
-    mUser = FirebaseAuth.getInstance().getCurrentUser();
-
-    updateMaps(chartEntry);
+    updateMaps(mEntryContext.chartEntry);
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle(getTitle(mCycle, mDate));
+    getSupportActionBar().setTitle(getTitle(mEntryContext.currentCycle, mEntryContext.chartEntry.entryDate));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    mSectionsPagerAdapter =
-        new SectionsPagerAdapter(getSupportFragmentManager(), expectUnusualBleeding, hasPreviousCycle, isFirstEntry, askEssentialSamenessQuestion);
+    mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), mEntryContext);
 
     // Set up the ViewPager with the sections adapter.
     mViewPager = findViewById(R.id.container);
@@ -229,11 +216,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
           .setTitle("Save Entry?")
           .setIcon(R.drawable.ic_assignment_black_24dp)
           .setPositiveButton("Save", null)
-          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.dismiss();
-            }
-          });
+          .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
       dialogBuilder.setView(dialogView);
 
       final AlertDialog dialog = dialogBuilder.create();
@@ -254,43 +237,28 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
             EntryFragment fragment = mSectionsPagerAdapter.getCachedItem(mViewPager, i);
             issues.addAll(fragment.validateEntry(mEntries.get(fragment.getClazz())));
           }
-          Observable.fromIterable(issues)
+          mDisposables.add(Observable.fromIterable(issues)
               .flatMap(addressIssue())
+              .filter(shouldProceed -> !shouldProceed)
               .toList()
-              .flatMapMaybe(new Function<List<Boolean>, MaybeSource<EntrySaveResult>>() {
-                @Override
-                public MaybeSource<EntrySaveResult> apply(List<Boolean> shouldProceedValues) throws Exception {
-                  if (!shouldProceedValues.isEmpty()
-                      && !Collections2.filter(shouldProceedValues, Predicates.equalTo(false)).isEmpty()) {
-                    return Maybe.empty();
-                  }
-                  return doSave(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) throws Exception {
-                      progressSummary.setText(s);
-                    }
-                  }).toMaybe();
-                }
-              })
-              .subscribe(new Consumer<EntrySaveResult>() {
-                @Override
-                public void accept(EntrySaveResult result) throws Exception {
-                  Intent returnIntent = new Intent();
-                  returnIntent.putExtra(EntrySaveResult.class.getName(), result);
-                  returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
-                  setResult(OK_RESPONSE, returnIntent);
-                  dialog.dismiss();
-                  finish();
-                }
-              }, new Consumer<Throwable>() {
-                @Override
-                public void accept(Throwable throwable) throws Exception {
-                  // TODO: make this better
-                  Log.e(TAG, "Error saving entry.", throwable);
-                  dialog.dismiss();
-                  finish();
-                }
-              });
+              .flatMapMaybe(unresolvedIssues -> unresolvedIssues.isEmpty()
+                  ? doSave(progressSummary::setText).toMaybe()
+                  : Maybe.empty())
+              .subscribeOn(Schedulers.computation())
+              .observeOn(AndroidSchedulers.mainThread())
+              .subscribe(result -> {
+                Intent returnIntent = new Intent();
+                returnIntent.putExtra(EntrySaveResult.class.getName(), result);
+                returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
+                setResult(OK_RESPONSE, returnIntent);
+                dialog.dismiss();
+                finish();
+              }, throwable -> {
+                // TODO: make this better
+                Timber.e(throwable);
+                dialog.dismiss();
+                finish();
+              }));
         }
       });
       return true;
@@ -376,28 +344,20 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
 
   private ChartEntry getChartEntry() {
     return new ChartEntry(
-        mDate,
+        mEntryContext.chartEntry.entryDate,
         (ObservationEntry) mEntries.get(ObservationEntry.class),
         (WellnessEntry) mEntries.get(WellnessEntry.class),
         (SymptomEntry) mEntries.get(SymptomEntry.class));
   }
 
   private Single<EntrySaveResult> doSave(final Consumer<String> updateConsumer) {
-    if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycleToShow: " + mCycle.id);
+    if (DEBUG) Log.v(TAG, "Checking for updates to entry on cycleToShow: " + mEntryContext.currentCycle.id);
     final ChartEntry entry = updateEntryMapFromUIs();
 
-    Completable putDone = MyApplication.chartEntryProvider().flatMapCompletable(new Function<ChartEntryProvider, CompletableSource>() {
-      @Override
-      public CompletableSource apply(ChartEntryProvider chartEntryProvider) throws Exception {
-        return chartEntryProvider.putEntry(mCycle, entry);
-      }
-    });
+    return mEntryRepo.insert(entry)
+        .andThen(Single.just(EntrySaveResult.forCycle(mEntryContext.currentCycle)));
 
-    if (DEBUG) Log.v(TAG, "Done putting entries");
-    ObservationEntryFragment observationEntryFragment =
-        (ObservationEntryFragment) mSectionsPagerAdapter.getCachedItem(mViewPager, 0);
-
-    if (observationEntryFragment.shouldSplitCycle()) {
+    /*if (observationEntryFragment.shouldSplitCycle()) {
       if (DEBUG) Log.v(TAG, "Splitting cycleToShow");
       final Single<LocalDate> firstEntryDate = observationEntryFragment.getEntryFromUiRx().map(new Function<ObservationEntry, LocalDate>() {
         @Override
@@ -421,8 +381,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
         }
       });
       return putDone.andThen(combineCyles);
-    }
-    return putDone.andThen(Single.just(EntrySaveResult.forCycle(mCycle)));
+    }*/
   }
 
   /**
@@ -431,17 +390,11 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
    */
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
-    private final boolean mAskSamenessQuestion;
-    private final boolean mExpectUnusualBleeding;
-    private final boolean mHasPreviousCycle;
-    private final boolean mIsFirstEntry;
+    private final EntryContext mEntryContext;
 
-    public SectionsPagerAdapter(FragmentManager fm, boolean expectUnusualBleeding, boolean hasPreviousCycle, boolean isFirstEntry, boolean askEssentialSamenessQuestion) {
+    public SectionsPagerAdapter(FragmentManager fm, EntryContext entryContext) {
       super(fm);
-      mExpectUnusualBleeding = expectUnusualBleeding;
-      mHasPreviousCycle = hasPreviousCycle;
-      mIsFirstEntry = isFirstEntry;
-      mAskSamenessQuestion = askEssentialSamenessQuestion;
+      mEntryContext = entryContext;
     }
 
     public EntryFragment getCachedItem(ViewGroup container, int position) {
@@ -451,33 +404,23 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     @Override
     public EntryFragment getItem(int position) {
       Bundle args = new Bundle();
-      args.putParcelable(EntryFragment.Extras.CURRENT_CYCLE.name(), mCycle);
+      args.putParcelable(EntryContext.class.getCanonicalName(), Parcels.wrap(mEntryContext));
 
       EntryFragment fragment;
       // getItem is called to instantiate the fragment for the given page.
       // Return a PlaceholderFragment (defined as a static inner class below).
       switch (position) {
         case 0:
-          args.putBoolean(ObservationEntryFragment.Extras.ASK_SAMENESS_QUESTION.name(), mAskSamenessQuestion);
-          args.putBoolean(ObservationEntryFragment.Extras.EXPECT_UNUSUAL_BLEEDING.name(), mExpectUnusualBleeding);
-          args.putBoolean(ObservationEntryFragment.Extras.HAS_PREVIOUS_CYCLE.name(), mHasPreviousCycle);
-          args.putBoolean(ObservationEntryFragment.Extras.IS_FIRST_ENTRY.name(), mIsFirstEntry);
-          args.putParcelable(EntryFragment.Extras.EXISTING_ENTRY.name(), getExistingEntry(ObservationEntry.class));
-
           fragment = new ObservationEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of ObservationEntryFragment");
           return fragment;
         case 1:
-          args.putParcelable(EntryFragment.Extras.EXISTING_ENTRY.name(), getExistingEntry(WellnessEntry.class));
-
           fragment = new WellnessEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of WellnessEntryFragment");
           return fragment;
         case 2:
-          args.putParcelable(EntryFragment.Extras.EXISTING_ENTRY.name(), getExistingEntry(SymptomEntry.class));
-
           fragment = new SymptomEntryFragment();
           fragment.setArguments(args);
           if (DEBUG) Log.v(TAG, "Creating new instance of SymptomEntryFragment");
@@ -506,14 +449,10 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
     }
   }
 
-  private Entry getExistingEntry(Class<? extends Entry> clazz) {
-    return mExistingEntries.get(clazz);
-  }
-
   private String getSaveMessage(ChartEntry container) {
     List<String> lines = new ArrayList<>();
 
-    int dayNum = 1 + Days.daysBetween(mCycle.startDate, container.entryDate).getDays();
+    int dayNum = 1 + Days.daysBetween(mEntryContext.currentCycle.startDate, container.entryDate).getDays();
     lines.add("Day #" + dayNum + " Summary\n");
     lines.addAll(container.getSummaryLines());
     return ON_NEW_LINE.join(lines);

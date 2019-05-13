@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.logic.goals;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.roamingroths.cmcc.crypto.Cipherable;
 
 import java.util.ArrayList;
 import java.util.HashSet;

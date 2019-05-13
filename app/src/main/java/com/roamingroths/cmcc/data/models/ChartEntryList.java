@@ -1,18 +1,20 @@
 package com.roamingroths.cmcc.data.models;
 
+import android.util.Log;
+
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.SortedList;
-import android.util.Log;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.entities.ObservationEntry;
-import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
+import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.logic.chart.MccScorer;
+import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -20,6 +22,7 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,7 +171,17 @@ public class ChartEntryList {
     return mEntries.get(index);
   }
 
-  public boolean expectUnusualBleeding(int index) {
+  public EntryContext getEntryContext(int index) {
+    EntryContext context = new EntryContext();
+    context.chartEntry = get(index);
+    context.currentCycle = mCurrentCycle;
+    context.expectUnusualBleeding = expectUnusualBleeding(index);
+    context.isFirstEntry = index == size() - 1;
+    context.shouldAskEssentialSameness = askEssentialSamenessQuestion(index);
+    return context;
+  }
+
+  private boolean expectUnusualBleeding(int index) {
     int previousIndex = index + 1;
     if (previousIndex >= mEntries.size()) {
       return false;
@@ -181,7 +194,7 @@ public class ChartEntryList {
         && previousEntry.observationEntry.observation.hasBlood());
   }
 
-  public boolean askEssentialSamenessQuestion(int index) {
+  private boolean askEssentialSamenessQuestion(int index) {
     int previousIndex = index + 1;
     if (previousIndex >= mEntries.size()) {
       return false;
@@ -452,20 +465,14 @@ public class ChartEntryList {
 
     private final Cycle currentCycle;
     private final Preferences preferences;
+    private final SortedList<ChartEntry> entries;
     private ChartEntryAdapter adapter;
 
     private Builder(Cycle currentCycle, Preferences preferences) {
       this.currentCycle = Preconditions.checkNotNull(currentCycle);
       this.preferences = Preconditions.checkNotNull(preferences);
-    }
 
-    public Builder withAdapter(ChartEntryAdapter adapter) {
-      this.adapter = adapter;
-      return this;
-    }
-
-    public ChartEntryList build() {
-      SortedList<ChartEntry> entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
+      entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
         @Override
         public void onInserted(int position, int count) {
           if (adapter != null) {
@@ -509,6 +516,19 @@ public class ChartEntryList {
           return item1 == item2;
         }
       });
+    }
+
+    public Builder withAdapter(ChartEntryAdapter adapter) {
+      this.adapter = adapter;
+      return this;
+    }
+
+    public Builder addAll(Collection<ChartEntry> chartEntries) {
+      entries.addAll(chartEntries);
+      return this;
+    }
+
+    public ChartEntryList build() {
       return new ChartEntryList(currentCycle, preferences, entries);
     }
   }

@@ -15,8 +15,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import javax.crypto.SecretKey;
-
 import static com.roamingroths.cmcc.logic.goals.GoalModel.Instances;
 import static com.roamingroths.cmcc.logic.goals.GoalModel.Period;
 import static com.roamingroths.cmcc.logic.goals.GoalModel.RelativeChange;

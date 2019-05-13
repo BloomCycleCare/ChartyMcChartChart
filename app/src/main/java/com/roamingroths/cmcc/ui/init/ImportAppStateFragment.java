@@ -3,29 +3,26 @@ package com.roamingroths.cmcc.ui.init;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
 
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.backup.AppStateImporter;
+import com.roamingroths.cmcc.data.backup.AppStateParser;
 import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.providers.AppStateProvider;
-import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
+import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 
-import java.io.InputStream;
-import java.util.concurrent.Callable;
-
-import io.reactivex.CompletableSource;
-import io.reactivex.MaybeSource;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
 import io.reactivex.SingleOnSubscribe;
-import io.reactivex.SingleSource;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.NonNull;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 10/8/17.
@@ -33,69 +30,69 @@ import io.reactivex.functions.Function;
 
 public class ImportAppStateFragment extends SplashFragment implements UserInitializationListener {
 
+  private CycleRepo mCycleRepo;
+  private ChartEntryRepo mEntryRepo;
+  private CompositeDisposable mDisposables = new CompositeDisposable();
+
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
+    mCycleRepo = new CycleRepo(MyApplication.cast(getActivity().getApplication()).db());
+    mEntryRepo = new ChartEntryRepo(MyApplication.cast(getActivity().getApplication()).db());
   }
 
   @Override
   public void onUserInitialized(final FirebaseUser user) {
-    MyApplication.cycleProvider()
-        .flatMapMaybe(new Function<CycleProvider, MaybeSource<Cycle>>() {
-          @Override
-          public MaybeSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
-            return cycleProvider.getCurrentCycle(user);
-          }
-        })
+    mDisposables.add(mCycleRepo.getCurrentCycle()
         .isEmpty()
-        .flatMap(new Function<Boolean, SingleSource<Boolean>>() {
-          @Override
-          public SingleSource<Boolean> apply(@NonNull Boolean isEmpty) throws Exception {
-            if (!isEmpty) {
-              return confirmImport();
-            }
-            return Single.just(true);
+        .observeOn(AndroidSchedulers.mainThread())
+        .flatMap(isEmpty -> {
+          if (!isEmpty) {
+            return confirmImport();
           }
+          return Single.just(true);
         })
-        .subscribe(new Consumer<Boolean>() {
-          @Override
-          public void accept(@NonNull Boolean shouldImport) throws Exception {
-            importDataFromIntent(getActivity().getIntent(), user);
+        .observeOn(Schedulers.computation())
+        .flatMap(shouldImport -> {
+          if (!shouldImport) {
+            showProgress("Not importing data.");
+            return mCycleRepo.getCurrentCycle().toSingle();
           }
-        });
+          showProgress("Importing data.");
+          AppStateImporter importer = new AppStateImporter(MyApplication.cast(getActivity().getApplication()));
+          return AppStateParser.parse(() -> getActivity()
+              .getContentResolver()
+              .openInputStream(getActivity().getIntent().getData()))
+              .doOnSuccess(appState -> showProgress("Successfully parsed data."))
+              .flatMapCompletable(appState -> Completable.mergeArray(
+                  mCycleRepo.deleteAll(),
+                  mEntryRepo.deleteAll())
+                  .doOnComplete(() -> showProgress("Done clearing old data."))
+                  .andThen(importer.importAppState(appState))
+                  .doOnComplete(() -> showProgress("Done importing data.")))
+              .andThen(mCycleRepo
+                  .getCurrentCycle()
+                  .toSingle());
+        })
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(cycle -> {
+          showProgress("Staring app");
+          Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
+          intent.putExtra(Cycle.class.getName(), cycle);
+          getActivity().finish();
+          startActivity(intent);
+        }, throwable -> {
+          showError("Error importing data");
+          Timber.e(throwable);
+        }));
   }
 
-  private void importDataFromIntent(Intent intent, final FirebaseUser user) {
-    final Uri uri = intent.getData();
-    Log.v("UserInitActivity", "Reading data from " + uri.getPath());
-    final Callable<InputStream> openFile = new Callable<InputStream>() {
-      @Override
-      public InputStream call() throws Exception {
-        return getActivity().getContentResolver().openInputStream(uri);
-      }
-    };
-    MyApplication.appStateProvider()
-        .flatMapCompletable(new Function<AppStateProvider, CompletableSource>() {
-          @Override
-          public CompletableSource apply(AppStateProvider appStateProvider) throws Exception {
-            return appStateProvider.parseAndPushToRemote(openFile);
-          }
-        })
-        .andThen(MyApplication.cycleProvider().flatMapMaybe(new Function<CycleProvider, MaybeSource<Cycle>>() {
-          @Override
-          public MaybeSource<Cycle> apply(CycleProvider cycleProvider) throws Exception {
-            return cycleProvider.getCurrentCycle(user);
-          }
-        }))
-        .subscribe(new Consumer<Cycle>() {
-          @Override
-          public void accept(Cycle cycle) throws Exception {
-            Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
-            intent.putExtra(Cycle.class.getName(), cycle);
-            getActivity().finish();
-            startActivity(intent);
-          }
-        });
+  @Override
+  public void onDestroy() {
+    mDisposables.clear();
+    super.onDestroy();
   }
 
   private Single<Boolean> confirmImport() {

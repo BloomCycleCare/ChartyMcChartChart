@@ -4,25 +4,18 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import androidx.annotation.NonNull;
-import androidx.room.Embedded;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.firebase.database.DataSnapshot;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Comparator;
-
-import javax.crypto.SecretKey;
-
-import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 4/30/17.
@@ -37,9 +30,8 @@ public class Cycle implements Parcelable {
   public LocalDate endDate;
   @Ignore
   public final String startDateStr;
-  @Embedded
-  public transient Keys keys;
 
+  @Deprecated
   public static class Builder {
     public final String id;
     public final LocalDate startDate;
@@ -52,40 +44,15 @@ public class Cycle implements Parcelable {
     }
 
     public Cycle build() throws NoSuchAlgorithmException {
-      Cycle.Keys keys = new Cycle.Keys(
-          AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
       return new Cycle(
           id,
           startDate,
-          endDate,
-          keys);
+          endDate);
     }
-  }
-
-  public void createKeys() throws Exception {
-    this.keys = new Cycle.Keys(AesCryptoUtil.createKey(), AesCryptoUtil.createKey(), AesCryptoUtil.createKey());
   }
 
   public static Builder builder(String id, LocalDate startDate) {
     return new Builder(id, startDate);
-  }
-
-  public static Cycle fromSnapshot(DataSnapshot snapshot, Keys keys) {
-    LocalDate startDate = DateUtil.fromWireStr(snapshot.child("start-date").getValue(String.class));
-    LocalDate endDate = null;
-    if (snapshot.hasChild("end-date")) {
-      endDate = DateUtil.fromWireStr(snapshot.child("end-date").getValue(String.class));
-    }
-    return new Cycle(snapshot.getKey(), startDate, endDate, keys);
-  }
-
-  public static Function<Keys, Cycle> fromSnapshot(final DataSnapshot snapshot) {
-    return new Function<Keys, Cycle>() {
-      @Override
-      public Cycle apply(@NonNull Keys keys) throws Exception {
-        return fromSnapshot(snapshot, keys);
-      }
-    };
   }
 
   public static Comparator<Cycle> comparator() {
@@ -100,13 +67,12 @@ public class Cycle implements Parcelable {
     };
   }
 
-  public Cycle(String id, LocalDate startDate, LocalDate endDate, Keys keys) {
+  public Cycle(String id, LocalDate startDate, LocalDate endDate) {
     Preconditions.checkNotNull(startDate);
     this.id = id;
     this.startDate = startDate;
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
-    this.keys = keys;
   }
 
   public Cycle(Cycle other) {
@@ -114,18 +80,13 @@ public class Cycle implements Parcelable {
     this.startDate = other.startDate;
     this.startDateStr = other.startDateStr;
     this.endDate = other.endDate;
-    this.keys = other.keys;
   }
 
   protected Cycle(Parcel in) {
     this(
         in.readString(),
         Preconditions.checkNotNull(DateUtil.fromWireStr(in.readString())),
-        DateUtil.fromWireStr(in.readString()),
-        new Keys(
-            AesCryptoUtil.parseKey(in.readString()),
-            AesCryptoUtil.parseKey(in.readString()),
-            AesCryptoUtil.parseKey(in.readString())));
+        DateUtil.fromWireStr(in.readString()));
   }
 
   public static final Creator<Cycle> CREATOR = new Creator<Cycle>() {
@@ -150,9 +111,6 @@ public class Cycle implements Parcelable {
     dest.writeString(id);
     dest.writeString(startDateStr);
     dest.writeString(DateUtil.toWireStr(endDate));
-    dest.writeString(AesCryptoUtil.serializeKey(keys.chartKey));
-    dest.writeString(AesCryptoUtil.serializeKey(keys.wellnessKey));
-    dest.writeString(AesCryptoUtil.serializeKey(keys.symptomKey));
   }
 
   @Override
@@ -169,22 +127,6 @@ public class Cycle implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(id, startDate, endDate);
-  }
-
-  public void setKeys(Keys keys) {
-    this.keys = keys;
-  }
-
-  public static class Keys {
-    public SecretKey chartKey;
-    public SecretKey wellnessKey;
-    public SecretKey symptomKey;
-
-    public Keys(SecretKey chartKey, SecretKey wellnessKey, SecretKey symptomKey) {
-      this.chartKey = chartKey;
-      this.wellnessKey = wellnessKey;
-      this.symptomKey = symptomKey;
-    }
   }
 
   @Override

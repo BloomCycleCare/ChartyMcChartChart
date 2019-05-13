@@ -1,9 +1,10 @@
 package com.roamingroths.cmcc.ui.goals.create;
 
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.goals.GoalModel;

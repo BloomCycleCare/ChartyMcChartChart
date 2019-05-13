@@ -1,14 +1,16 @@
 package com.roamingroths.cmcc.data.db;
 
+import androidx.arch.core.util.Function;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
-import androidx.room.Query;
+import androidx.room.OnConflictStrategy;
 import androidx.room.RawQuery;
 import androidx.room.Update;
 import androidx.sqlite.db.SimpleSQLiteQuery;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
+import com.google.common.base.Optional;
 import com.roamingroths.cmcc.data.entities.Entry;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.data.entities.SymptomEntry;
@@ -22,39 +24,68 @@ import java.util.List;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
-import io.reactivex.Single;
 
 @Dao
 public abstract class BaseEntryDao<E extends Entry> {
 
-  private String mTableName;
+  private final String mTableName;
+  private final Function<LocalDate, E> mEmptyEntryFn;
 
-  BaseEntryDao(Class<E> clazz) {
+  BaseEntryDao(Class<E> clazz, Function<LocalDate, E> emptyEntryFn) {
     mTableName = clazz.getSimpleName();
+    mEmptyEntryFn = emptyEntryFn;
+  }
+
+  public Maybe<E> get(LocalDate entryDate) {
+    return doMaybeT(new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s WHERE entryDate = \"%s\"",
+        mTableName,
+        DateUtil.toWireStr(entryDate))));
   }
 
   public Flowable<E> getStream(LocalDate entryDate) {
-    return doFind(new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate = %s",
+    SimpleSQLiteQuery query = new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s WHERE entryDate = \"%s\"",
         mTableName,
-        DateUtil.toWireStr(entryDate))))
+        DateUtil.toWireStr(entryDate)));
+    return doMaybeT(query)
+        .map(Optional::of)
+        .toSingle(Optional.absent())
+        .flatMapPublisher(initialEntry -> doFlowableT(query)
+            .startWith(initialEntry.or(mEmptyEntryFn.apply(entryDate))))
         .distinctUntilChanged();
   }
 
   public Flowable<List<E>> getStream(LocalDate firstDate, LocalDate lastDate) {
-    return doFindBetween(new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate >= %s AND entryDate <= %s ORDER BY entryDate",
+    return doFlowableList(new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s WHERE entryDate >= \"%s\" AND entryDate <= \"%s\" ORDER BY entryDate",
         mTableName,
         DateUtil.toWireStr(firstDate),
         DateUtil.toWireStr(lastDate))))
         .distinctUntilChanged();
   }
 
-  @Insert
+  public Flowable<List<E>> getStream() {
+    return doFlowableList(new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s",
+        mTableName)))
+        .distinctUntilChanged();
+  }
+
+  @Insert(onConflict = OnConflictStrategy.REPLACE)
   public abstract Completable insert(E entry);
 
   @Delete
   public abstract Completable delete(E entry);
+
+  @Delete
+  public abstract Completable delete(List<E> entries);
+
+  public Completable deleteAll() {
+    return getStream()
+        .firstOrError()
+        .flatMapCompletable(this::delete);
+  }
 
   @Update
   public abstract Completable update(E entry);
@@ -64,12 +95,19 @@ public abstract class BaseEntryDao<E extends Entry> {
       WellnessEntry.class,
       SymptomEntry.class,
   })
-  protected abstract Flowable<E> doFind(SupportSQLiteQuery query);
+  protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
   @RawQuery(observedEntities = {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
   })
-  protected abstract Flowable<List<E>> doFindBetween(SupportSQLiteQuery query);
+  protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
+
+  @RawQuery(observedEntities = {
+      ObservationEntry.class,
+      WellnessEntry.class,
+      SymptomEntry.class,
+  })
+  protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

@@ -12,9 +12,12 @@ import com.roamingroths.cmcc.utils.RxUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.Collection;
 import java.util.List;
 
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
 import timber.log.Timber;
 
 public class ChartEntryRepo {
@@ -32,6 +35,7 @@ public class ChartEntryRepo {
   public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
     return Flowable.merge(cycleStream
         .map(ChartEntryRepo::datesForCycle)
+        .doOnNext(dates -> Timber.v("Fetching %d entries for cycle", dates.size()))
         .distinctUntilChanged()
         .switchMap(dates -> Flowable
             .fromIterable(dates)
@@ -39,7 +43,37 @@ public class ChartEntryRepo {
             .toList()
             .toFlowable()
             .map(RxUtil::combineLatest)
-        ));
+        ))
+        .doOnSubscribe(s -> Timber.v("Fetching entries"));
+  }
+
+  public Completable insertAll(Collection<ChartEntry> entries) {
+    return Observable
+        .fromIterable(entries)
+        .flatMapCompletable(this::insert);
+  }
+
+  public Completable insert(ChartEntry entry) {
+    return Completable.mergeArray(
+        observationEntryDao.insert(entry.observationEntry),
+        wellnessEntryDao.insert(entry.wellnessEntry),
+        symptomEntryDao.insert(entry.symptomEntry));
+  }
+
+  public Completable deleteAll() {
+    return Completable.mergeArray(
+        observationEntryDao.deleteAll(),
+        wellnessEntryDao.deleteAll(),
+        symptomEntryDao.deleteAll())
+        .doOnSubscribe(s -> Timber.i("Deleting all entries"))
+        .doOnComplete(() -> Timber.i("Done deleting all entries"));
+  }
+
+  public Completable delete(ChartEntry entry) {
+    return Completable.mergeArray(
+        observationEntryDao.delete(entry.observationEntry),
+        wellnessEntryDao.delete(entry.wellnessEntry),
+        symptomEntryDao.delete(entry.symptomEntry));
   }
 
   private Flowable<ChartEntry> getStream(LocalDate entryDate) {
@@ -49,9 +83,7 @@ public class ChartEntryRepo {
             observationEntryDao.getStream(entryDate),
             wellnessEntryDao.getStream(entryDate),
             symptomEntryDao.getStream(entryDate),
-            ChartEntry::new)
-        .doOnSubscribe(s -> Timber.d("New ChartEntry stream for %s", entryDate))
-        .doOnNext(e -> Timber.d("New data on ChartEntry stream for %s", entryDate));
+            ChartEntry::new);
   }
 
   private static List<LocalDate> datesForCycle(Cycle cycle) {

@@ -3,12 +3,13 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
@@ -108,7 +109,12 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
     if (!mUiActive) {
       return null;
     }
-    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.wellnessKey);
+    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries());
+  }
+
+  @Override
+  WellnessEntry getExistingEntry(EntryContext entryContext) {
+    return entryContext.chartEntry.wellnessEntry;
   }
 
   private void hideKeyboard() {

@@ -3,13 +3,14 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
+
 import androidx.annotation.Nullable;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import android.util.Log;
-import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
@@ -106,7 +107,12 @@ public class SymptomEntryFragment extends EntryFragment<SymptomEntry> {
     if (!mUiActive) {
       return null;
     }
-    return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), getCycle().keys.symptomKey);
+    return new SymptomEntry(getEntryDate(), mAdapter.getActiveEntries(), null);
+  }
+
+  @Override
+  SymptomEntry getExistingEntry(EntryContext entryContext) {
+    return entryContext.chartEntry.symptomEntry;
   }
 
   private void hideKeyboard() {

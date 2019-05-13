@@ -2,12 +2,11 @@ package com.roamingroths.cmcc.data.entities;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import androidx.annotation.Nullable;
 
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 
 import com.google.common.base.Objects;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -57,6 +56,7 @@ public class ObservationEntry extends Entry implements Parcelable {
         null);
   }
 
+  @Deprecated
   public ObservationEntry(
       LocalDate entryDate,
       @Nullable Observation observation,
@@ -80,7 +80,10 @@ public class ObservationEntry extends Entry implements Parcelable {
     this.unusualBleeding = unusualBleeding;
     this.intercourseTimeOfDay = intercourseTimeOfDay;
     this.isEssentiallyTheSame = isEssentiallyTheSame;
-    swapKey(key);
+  }
+
+  public ObservationEntry() {
+    super();
   }
 
   public ObservationEntry(Parcel in) {
@@ -93,21 +96,11 @@ public class ObservationEntry extends Entry implements Parcelable {
         in.readByte() != 0,
         in.readByte() != 0,
         IntercourseTimeOfDay.valueOf(in.readString()),
-        in.readByte() != 0,
-        AesCryptoUtil.parseKey(in.readString()));
+        in.readByte() != 0);
   }
 
-  @Override
-  public boolean maybeUpgrade() {
-    if (intercourseTimeOfDay == null) {
-      intercourseTimeOfDay = intercourse ? IntercourseTimeOfDay.ANY : IntercourseTimeOfDay.NONE;
-      return true;
-    }
-    return false;
-  }
-
-  public static ObservationEntry emptyEntry(LocalDate date, SecretKey secretKey) {
-    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, secretKey);
+  public static ObservationEntry emptyEntry(LocalDate date) {
+    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false);
   }
 
   @Override
@@ -167,7 +160,6 @@ public class ObservationEntry extends Entry implements Parcelable {
     dest.writeByte((byte) (unusualBleeding ? 1 : 0));
     dest.writeString(intercourseTimeOfDay.name());
     dest.writeByte((byte) (isEssentiallyTheSame ? 1 : 0));
-    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
   @Override

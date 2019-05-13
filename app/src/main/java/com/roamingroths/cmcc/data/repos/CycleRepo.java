@@ -10,7 +10,7 @@ import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
+import timber.log.Timber;
 
 public class CycleRepo {
 
@@ -26,7 +26,7 @@ public class CycleRepo {
         .distinctUntilChanged();
   }
 
-  public Single<Cycle> getCurrentCycle() {
+  public Maybe<Cycle> getCurrentCycle() {
     return cycleDao.getCurrentCycle();
   }
 
@@ -34,7 +34,10 @@ public class CycleRepo {
     return getStream()
         .firstOrError()
         .flatMapObservable(Observable::fromIterable)
-        .flatMapCompletable(this::delete);
+        .flatMapCompletable(this::delete)
+        .doOnSubscribe(s -> Timber.d("Deleting all cycles"))
+        .doOnComplete(() -> Timber.d("Done deleting all cycles"))
+        ;
   }
 
   public Completable delete(Cycle cycle) {

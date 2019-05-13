@@ -13,7 +13,7 @@ import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import io.reactivex.Single;
+import io.reactivex.Maybe;
 
 @Dao
 public abstract class CycleDao {
@@ -22,7 +22,7 @@ public abstract class CycleDao {
   public abstract Flowable<List<Cycle>> getStream();
 
   @Query("SELECT * FROM Cycle WHERE endDate IS NULL")
-  public abstract Single<Cycle> getCurrentCycle();
+  public abstract Maybe<Cycle> getCurrentCycle();
 
   @Delete
   public abstract Completable delete(Cycle cycle);

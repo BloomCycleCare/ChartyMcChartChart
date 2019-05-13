@@ -2,35 +2,37 @@ package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Context;
 import android.os.Bundle;
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.models.ChartEntry;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/13/17.
@@ -41,15 +43,15 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   private static boolean DEBUG = false;
   private static String TAG = EntryListFragment.class.getSimpleName();
   private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 200;
+  public static String IS_LAST_CYCLE = "IS_LAST_CYCLE";
 
   private final Subject<ScrollState> mScrollState;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private RecyclerView mRecyclerView;
   private ProgressBar mProgressView;
-  private SingleSubject<ChartEntryAdapter> mChartEntryAdapter = SingleSubject.create();
+  private ChartEntryAdapter mChartEntryAdapter;
   private EntryListView mView;
-  private ArrayList<ChartEntry> mChartEntries;
   private Cycle mCycle;
   private Map<Neighbor, WeakReference<EntryListFragment>> mNeighbors;
 
@@ -93,7 +95,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   public void onSaveInstanceState(@NonNull Bundle outState) {
     super.onSaveInstanceState(outState);
     outState.putParcelable(Cycle.class.getName(), mCycle);
-    outState.putParcelableArrayList(ChartEntry.class.getName(), mChartEntries);
   }
 
   @Override
@@ -101,28 +102,9 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     super.onCreate(savedInstanceState);
 
     Bundle arguments = getArguments();
-    mChartEntries = arguments.getParcelableArrayList(ChartEntry.class.getName());
     mCycle = arguments.getParcelable(Cycle.class.getName());
 
     if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
-
-    mDisposables.add(MyApplication.cycleProvider().map(
-        (cycleProvider) -> {
-          final ChartEntryAdapter adapter = new ChartEntryAdapter(
-              getActivity().getApplicationContext(),
-              mCycle,
-              EntryListFragment.this,
-              cycleProvider,
-              "");
-          if (mChartEntries != null) {
-            adapter.initialize(mChartEntries);
-          }
-          mDisposables.add(((ChartEntryListActivity) getActivity())
-              .layerStream()
-              .subscribe(adapter::updateLayerKey));
-          return adapter;
-        })
-        .subscribe(chartEntryAdapter -> mChartEntryAdapter.onSuccess(chartEntryAdapter)));
   }
 
   public void setScrollState(ScrollState scrollState) {
@@ -178,21 +160,37 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
       }
     });
 
-    mDisposables.add(mChartEntryAdapter.subscribe(adapter -> {
-      mRecyclerView.setAdapter(adapter);
-      adapter.notifyDataSetChanged();
-      mProgressView.setVisibility(View.INVISIBLE);
-      mRecyclerView.setVisibility(View.VISIBLE);
-    }));
+    mChartEntryAdapter = new ChartEntryAdapter(
+        getActivity().getApplicationContext(),
+        mCycle,
+        !getArguments().getBoolean(IS_LAST_CYCLE, false),
+        EntryListFragment.this,
+        "");
+    mDisposables.add(((ChartEntryListActivity) getActivity())
+        .layerStream()
+        .subscribe(mChartEntryAdapter::updateLayerKey));
 
-    mDisposables.add(MyApplication.chartEntryProvider()
-        .flatMapObservable(chartEntryProvider -> chartEntryProvider.getEntries(mCycle))
-        .subscribeOn(Schedulers.io())
-        .toList()
+    MyApplication myApp = MyApplication.cast(getActivity().getApplication());
+    ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+
+    mDisposables.add(entryRepo
+        .getStream(Flowable.just(mCycle))
+        .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(mChartEntryAdapter::initialize, Timber::w));
+
+    mRecyclerView.setAdapter(mChartEntryAdapter);
+    mChartEntryAdapter.notifyDataSetChanged();
+    mProgressView.setVisibility(View.INVISIBLE);
+    mRecyclerView.setVisibility(View.VISIBLE);
+
+    mDisposables.add(entryRepo
+        .getStream(Flowable.just(mCycle))
+        .firstOrError()
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribeOn(Schedulers.computation())
         .subscribe(chartEntries -> {
-          mDisposables.add(mChartEntryAdapter
-              .subscribe(chartEntryAdapter -> chartEntryAdapter.initialize(chartEntries)));
           for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
             EntryListFragment neighbor = ref.get();
             if (neighbor != null) {
@@ -209,33 +207,12 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
           }
         }));
 
-    if (mChartEntries != null && !mChartEntries.isEmpty()) {
-      mView.showList();
-    }
-
-    if (DEBUG) Log.v(TAG, "onCreateView: done for " + mCycle.startDateStr);
-
     return view;
   }
 
   @Override
-  public void onResume() {
-    super.onResume();
-    // mChartEntryAdapter.start();
-  }
-
-  @Override
-  public void onPause() {
-    super.onPause();
-    // mChartEntryAdapter.shutdown();
-  }
-
-  @Override
   public void onClick(ChartEntry container, int index) {
-    if (mChartEntryAdapter.hasValue()) {
-      mDisposables.add(mChartEntryAdapter.blockingGet().getIntentForModification(container, index)
-          .subscribe(intent -> startActivityForResult(intent, 0)));
-    }
+    startActivityForResult(mChartEntryAdapter.getIntentForModification(container, index), 0);
   }
 
   public void shutdown() {
@@ -246,7 +223,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   @Override
   public void onDestroy() {
-    mDisposables.add(mChartEntryAdapter.subscribe(ChartEntryAdapter::shutdown));
+    mChartEntryAdapter.shutdown();
 
     mDisposables.dispose();
 

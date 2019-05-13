@@ -28,7 +28,7 @@ public class ChartEntry implements Parcelable {
   public final WellnessEntry wellnessEntry;
   public final SymptomEntry symptomEntry;
 
-  private final List<Entry> subEntries;
+  private transient final List<Entry> subEntries;
 
   public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
     this.entryDate = entryDate;
@@ -46,17 +46,6 @@ public class ChartEntry implements Parcelable {
         in.readParcelable(ObservationEntry.class.getClassLoader()),
         in.readParcelable(WellnessEntry.class.getClassLoader()),
         in.readParcelable(SymptomEntry.class.getClassLoader()));
-  }
-
-  // Returns true if an upgrade is performed and the database should be updated
-  public boolean maybeUpgrade() {
-    boolean upgradePerformed = false;
-    for (Entry entry : subEntries) {
-      if (entry.maybeUpgrade()) {
-        upgradePerformed = true;
-      }
-    }
-    return upgradePerformed;
   }
 
   public List<String> getSummaryLines() {

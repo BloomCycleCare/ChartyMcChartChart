@@ -3,7 +3,6 @@ package com.roamingroths.cmcc.data.db;
 import androidx.annotation.Nullable;
 import androidx.room.TypeConverter;
 
-import com.google.common.base.Strings;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
@@ -12,10 +11,6 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
 import org.joda.time.LocalDate;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import java.util.Map;
 
 import javax.crypto.SecretKey;
 

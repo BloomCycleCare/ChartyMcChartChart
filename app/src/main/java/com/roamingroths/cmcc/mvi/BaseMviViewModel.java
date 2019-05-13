@@ -1,7 +1,7 @@
 package com.roamingroths.cmcc.mvi;
 
-import androidx.lifecycle.ViewModel;
 import androidx.annotation.NonNull;
+import androidx.lifecycle.ViewModel;
 
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;

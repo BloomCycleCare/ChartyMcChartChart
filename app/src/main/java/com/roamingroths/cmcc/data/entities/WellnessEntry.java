@@ -7,15 +7,12 @@ import androidx.room.Entity;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,22 +22,22 @@ import javax.crypto.SecretKey;
  * Created by parkeroth on 9/18/17.
  */
 @Entity
-public class WellnessEntry extends Entry implements Parcelable, Cipherable {
+public class WellnessEntry extends Entry implements Parcelable {
 
   public BoolMapping wellnessItems;
 
-  public static WellnessEntry emptyEntry(LocalDate date, SecretKey key) {
-    return new WellnessEntry(date, new HashMap<String, Boolean>(), key);
+  public static WellnessEntry emptyEntry(LocalDate date) {
+    return new WellnessEntry(date, new BoolMapping());
   }
 
-  public WellnessEntry(LocalDate entryDate, BoolMapping wellnessItems) {
+  public WellnessEntry(LocalDate entryDate, Map<String, Boolean> wellnessItems) {
     this(entryDate, wellnessItems, null);
   }
 
+  @Deprecated
   public WellnessEntry(LocalDate entryDate, Map<String, Boolean> wellnessItems, SecretKey key) {
     super(entryDate);
     this.wellnessItems = new BoolMapping(wellnessItems);
-    swapKey(key);
   }
 
   public WellnessEntry(Parcel in) {
@@ -50,7 +47,10 @@ public class WellnessEntry extends Entry implements Parcelable, Cipherable {
     for (int i = 0; i < size; i++) {
       wellnessItems.put(in.readString(), in.readByte() != 0);
     }
-    swapKey(AesCryptoUtil.parseKey(in.readString()));
+  }
+
+  public WellnessEntry() {
+    super();
   }
 
   public boolean hasItem(String key) {
@@ -85,7 +85,6 @@ public class WellnessEntry extends Entry implements Parcelable, Cipherable {
       dest.writeString(entry.getKey());
       dest.writeByte((byte) (entry.getValue() ? 1 : 0));
     }
-    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
   @Override

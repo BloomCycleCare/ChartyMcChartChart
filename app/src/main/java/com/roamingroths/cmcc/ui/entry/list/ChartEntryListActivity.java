@@ -1,22 +1,9 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.navigation.NavigationView;
-import androidx.fragment.app.FragmentManager;
-import androidx.core.app.ShareCompat;
-import androidx.core.content.FileProvider;
-import androidx.core.view.GravityCompat;
-import androidx.viewpager.widget.ViewPager;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -25,24 +12,35 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.viewpager.widget.ViewPager;
+
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import com.google.android.material.navigation.NavigationView;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.logic.profile.Profile;
-import com.roamingroths.cmcc.providers.CycleProvider;
-import com.roamingroths.cmcc.providers.ProfileProvider;
+import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
-import com.roamingroths.cmcc.ui.init.UserInitActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.profile.ProfileActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.DateUtil;
-import com.roamingroths.cmcc.utils.UpdateHandle;
+import com.roamingroths.cmcc.utils.GsonUtil;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.Days;
@@ -51,15 +49,11 @@ import org.joda.time.LocalDate;
 import java.io.File;
 import java.util.Objects;
 
-import io.reactivex.Completable;
 import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 public class ChartEntryListActivity extends AppCompatActivity
     implements EntryListView, NavigationView.OnNavigationItemSelectedListener {
@@ -78,11 +72,11 @@ public class ChartEntryListActivity extends AppCompatActivity
   private ViewPager mViewPager;
   private FloatingActionButton mNewCycleFab;
 
-  private Single<CycleProvider> mCycleProvider;
+  private CycleRepo mCycleRepo;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private final Subject<String> mLayerSubject = BehaviorSubject.create();
-  private SingleSubject<EntryListPageAdapter> mPageAdapter = SingleSubject.create();
+  private EntryListPageAdapter mPageAdapter;
 
   public Observable<String> layerStream() {
     return mLayerSubject;
@@ -93,7 +87,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_list);
 
-    mCycleProvider = MyApplication.cycleProvider().cache();
+    mCycleRepo = new CycleRepo(MyApplication.cast(getApplication()).db());
 
     mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
@@ -119,51 +113,40 @@ public class ChartEntryListActivity extends AppCompatActivity
     mProgressBar = findViewById(R.id.progress_bar);
     mViewPager = findViewById(R.id.view_pager);
 
-    mDisposables.add(MyApplication.profileProvider()
-        .flatMap(ProfileProvider.getProfileFn(ChartEntryListActivity.this))
-        .subscribe(new Consumer<Profile>() {
-          @Override
-          public void accept(Profile profile) throws Exception {
-            drawerTitleView.setText(profile.mPreferredName);
-          }
-        }));
+    drawerTitleView.setText("TODO: name");
 
-    mDisposables.add(MyApplication.chartEntryProvider()
-        .map(EntryListPageAdapter.create(getSupportFragmentManager()))
-        .flatMap(EntryListPageAdapter.initializeFn(MyApplication.getCurrentUser().toSingle(), mCycleProvider))
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(entryListPageAdapter -> {
-          mPageAdapter.onSuccess(entryListPageAdapter);
-          mViewPager.setAdapter(entryListPageAdapter);
-          mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
+    mDisposables.add(mPageAdapter.attach(mCycleRepo.getStream()));
 
-            @Override
-            public void onPageScrollStateChanged(int state) {}
+    mViewPager.setAdapter(mPageAdapter);
+    mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+      @Override
+      public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
-            @Override
-            public void onPageSelected(int position) {
-              boolean viewingFirstCycle = position == entryListPageAdapter.getCount() - 1;
-              if (viewingFirstCycle) {
-                showFab();
-              } else {
-                hideFab();
-              }
+      @Override
+      public void onPageSelected(int position) {
+        boolean viewingFirstCycle = position == mPageAdapter.getCount() - 1;
+        if (viewingFirstCycle) {
+          showFab();
+        } else {
+          hideFab();
+        }
 
-              String title;
-              if (position == 0) {
-                title = "Current Cycle";
-              } else {
-                title = position + " Cycles Ago";
-              }
-              setTitle(title);
+        String title;
+        if (position == 0) {
+          title = "Current Cycle";
+        } else {
+          title = position + " Cycles Ago";
+        }
+        setTitle(title);
 
-              entryListPageAdapter.onPageActive(position);
-            }
-          });
-          showList();
-        }));
+        mPageAdapter.onPageActive(position);
+      }
+
+      @Override
+      public void onPageScrollStateChanged(int state) {}
+    });
+    showList();
 
     mNewCycleFab = findViewById(R.id.fab_new_cycle);
     mNewCycleFab.setOnClickListener(__ -> {
@@ -171,30 +154,25 @@ public class ChartEntryListActivity extends AppCompatActivity
       Cycle cycle = adapter.getCycle(mViewPager.getCurrentItem());
       final LocalDate endDate = cycle.startDate.minusDays(1);
       DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
-          new DatePickerDialog.OnDateSetListener() {
-            @Override
-            public void onDateSet(
-                DatePickerDialog view, int year, int monthOfYear, int dayOfMonth) {
-              LocalDate startDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
-              AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
-              builder.setTitle("Create Cycle");
-              builder.setIcon(R.drawable.ic_save_black_24dp);
-              builder.setMessage(
-                  String.format("Create cycle starting %s (%d days)?",
-                  DateUtil.toPrintUiStr(startDate),
-                  Days.daysBetween(startDate, endDate).getDays()));
-              builder.setPositiveButton("Create", (dialog, which) -> {
-                mCycleProvider.flatMap(provider -> provider.createCycle(user, startDate, endDate))
-                    .flatMapCompletable(result -> mPageAdapter.flatMapCompletable(adapter -> {
-                      mViewPager.setCurrentItem(adapter.onResult(result));
-                      return Completable.complete();
-                    }))
-                    .doOnSubscribe(__ -> dialog.dismiss())
-                    .subscribe();
-              });
-              builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-              builder.show();
-            }
+          (view, year, monthOfYear, dayOfMonth) -> {
+            LocalDate startDate = new LocalDate(year, monthOfYear + 1, dayOfMonth);
+            AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
+            builder.setTitle("Create Cycle");
+            builder.setIcon(R.drawable.ic_save_black_24dp);
+            builder.setMessage(
+                String.format("Create cycle starting %s (%d days)?",
+                DateUtil.toPrintUiStr(startDate),
+                Days.daysBetween(startDate, endDate).getDays()));
+            builder.setPositiveButton("Create", (dialog, which) -> {
+              Cycle newCycle = new Cycle("baz", startDate, endDate);
+              mDisposables.add(mCycleRepo
+                  .insertOrUpdate(newCycle)
+                  .doOnSubscribe(s -> dialog.dismiss())
+                  .doOnComplete(() -> mViewPager.setCurrentItem(mPageAdapter.getItemPosition(newCycle)))
+                  .subscribe(() -> Timber.i("New cycle created"), Timber::w));
+            });
+            builder.setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+            builder.show();
           });
       datePickerDialog.setTitle("First day of previous cycle");
       datePickerDialog.setMaxDate(endDate.toDateTimeAtCurrentTime().toGregorianCalendar());
@@ -225,8 +203,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (data != null) {
       final EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
       if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
-      mDisposables.add(mPageAdapter
-          .subscribe(adapter -> mViewPager.setCurrentItem(adapter.onResult(result))));
+      mViewPager.setCurrentItem(mPageAdapter.onResult(result));
     }
   }
 
@@ -267,7 +244,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_drop_cycles) {
-      new AlertDialog.Builder(this)
+      /*new AlertDialog.Builder(this)
           //set message, title, and icon
           .setTitle("Delete All Cycles?")
           .setMessage("This is permanent and cannot be undone!")
@@ -293,13 +270,14 @@ public class ChartEntryListActivity extends AppCompatActivity
             }
           })
           .create().show();
-      return true;
+      return true;*/
     }
     if (id == R.id.action_export) {
       Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
-      mDisposables.add(MyApplication.appStateProvider()
-          .flatMap(provider -> provider.fetchAsJson(ChartEntryListActivity.this))
+      AppStateExporter exporter = new AppStateExporter(MyApplication.cast(getApplication()));
+      mDisposables.add(exporter.export()
+          .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
           .subscribe(json -> {
             File path = new File(activity.getFilesDir(), "tmp/");
             if (!path.exists()) {

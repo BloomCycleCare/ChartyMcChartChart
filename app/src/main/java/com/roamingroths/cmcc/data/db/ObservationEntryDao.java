@@ -9,7 +9,6 @@ import com.roamingroths.cmcc.data.entities.ObservationEntry;
 public abstract class ObservationEntryDao extends BaseEntryDao<ObservationEntry> {
 
   public ObservationEntryDao() {
-    super(ObservationEntry.class);
+    super(ObservationEntry.class, ObservationEntry::emptyEntry);
   }
-
 }

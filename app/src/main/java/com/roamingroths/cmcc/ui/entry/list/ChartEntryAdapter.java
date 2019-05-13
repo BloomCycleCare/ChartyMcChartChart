@@ -2,25 +2,26 @@ package com.roamingroths.cmcc.ui.entry.list;
 
 import android.content.Context;
 import android.content.Intent;
-import androidx.annotation.NonNull;
-import androidx.preference.PreferenceManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.google.firebase.auth.FirebaseAuth;
+import androidx.annotation.NonNull;
+import androidx.preference.PreferenceManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.models.ChartEntryList;
-import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.providers.CycleProvider;
+import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
+
+import org.parceler.Parcels;
 
 import java.util.List;
 
-import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 
 /**
@@ -35,24 +36,24 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private final Context mContext;
   private final OnClickHandler mClickHandler;
   private final Preferences mPreferences;
-  private final CycleProvider mCycleProvider;
   private final CompositeDisposable mDisposables;
+  private final boolean mHasPreviousCycle;
   private ChartEntryList mContainerList;
   private String mLayerKey;
 
   ChartEntryAdapter(
       Context context,
       Cycle currentCycle,
+      boolean hasPreviousCycle,
       OnClickHandler clickHandler,
-      CycleProvider cycleProvider,
       String layerKey) {
     mContext = context;
     mClickHandler = clickHandler;
     mLayerKey = layerKey;
-    mCycleProvider = cycleProvider;
     mDisposables = new CompositeDisposable();
     mPreferences = Preferences.fromShared(mContext);
     mContainerList = ChartEntryList.builder(currentCycle, mPreferences).withAdapter(this).build();
+    mHasPreviousCycle = hasPreviousCycle;
 
     PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
         (sharedPreferences, key) -> {
@@ -116,25 +117,11 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     void onClick(ChartEntry container, int index);
   }
 
-  Single<Intent> getIntentForModification(final ChartEntry chartEntry, final int index) {
-    return mCycleProvider.hasPreviousCycle(FirebaseAuth.getInstance().getCurrentUser(), mContainerList.mCurrentCycle)
-        .map(hasPreviousCycle -> {
-          Intent intent = new Intent(mContext, EntryDetailActivity.class);
-          intent.putExtra(
-              EntryDetailActivity.Extras.CHART_ENTRY.name(), chartEntry);
-          intent.putExtra(
-              EntryDetailActivity.Extras.EXPECT_UNUSUAL_BLEEDING.name(),
-              mContainerList.expectUnusualBleeding(index));
-          intent.putExtra(
-              EntryDetailActivity.Extras.CURRENT_CYCLE.name(), mContainerList.mCurrentCycle);
-          intent.putExtra(
-              EntryDetailActivity.Extras.HAS_PREVIOUS_CYCLE.name(), hasPreviousCycle);
-          intent.putExtra(
-              EntryDetailActivity.Extras.IS_FIRST_ENTRY.name(), index == getItemCount() - 1);
-          intent.putExtra(
-              EntryDetailActivity.Extras.ASK_ESSENTIAL_SAMENESS_QUESTION.name(),
-              mContainerList.askEssentialSamenessQuestion(index));
-          return intent;
-        });
+  Intent getIntentForModification(final ChartEntry chartEntry, final int index) {
+    EntryContext entryContext = mContainerList.getEntryContext(index);
+    entryContext.hasPreviousCycle = mHasPreviousCycle;
+    Intent intent = new Intent(mContext, EntryDetailActivity.class);
+    intent.putExtra(EntryContext.class.getCanonicalName(), Parcels.wrap(entryContext));
+    return intent;
   }
 }

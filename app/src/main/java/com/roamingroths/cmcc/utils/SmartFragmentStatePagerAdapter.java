@@ -1,10 +1,11 @@
 package com.roamingroths.cmcc.utils;
 
+import android.util.SparseArray;
+import android.view.ViewGroup;
+
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-import android.util.SparseArray;
-import android.view.ViewGroup;
 
 /**
  * Created by parkeroth on 11/26/17.

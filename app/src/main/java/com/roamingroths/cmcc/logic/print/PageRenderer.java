@@ -6,9 +6,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.models.ChartEntryList;
-import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;

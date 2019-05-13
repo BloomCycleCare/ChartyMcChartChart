@@ -9,15 +9,12 @@ import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
-import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.crypto.Cipherable;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,22 +24,22 @@ import javax.crypto.SecretKey;
  * Created by parkeroth on 9/18/17.
  */
 @Entity
-public class SymptomEntry extends Entry implements Parcelable, Cipherable {
+public class SymptomEntry extends Entry implements Parcelable {
 
   public BoolMapping symptoms;
 
-  public static SymptomEntry emptyEntry(LocalDate date, SecretKey key) {
-    return new SymptomEntry(date, new HashMap<String, Boolean>(), key);
+  public static SymptomEntry emptyEntry(LocalDate date) {
+    return new SymptomEntry(date, new BoolMapping());
   }
 
   public SymptomEntry(LocalDate entryDate, BoolMapping symptoms) {
     this(entryDate, symptoms, null);
   }
 
+  @Deprecated
   public SymptomEntry(LocalDate entryDate, Map<String, Boolean> symptoms, SecretKey key) {
     super(entryDate);
     this.symptoms = new BoolMapping(symptoms);
-    swapKey(key);
   }
 
   public SymptomEntry(Parcel in) {
@@ -52,7 +49,10 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
     for (int i = 0; i < size; i++) {
       symptoms.put(in.readString(), in.readByte() != 0);
     }
-    swapKey(AesCryptoUtil.parseKey(in.readString()));
+  }
+
+  public SymptomEntry() {
+    super();
   }
 
   public int getNumSymptoms() {
@@ -91,7 +91,6 @@ public class SymptomEntry extends Entry implements Parcelable, Cipherable {
       dest.writeString(entry.getKey());
       dest.writeByte((byte) (entry.getValue() ? 1 : 0));
     }
-    dest.writeString(AesCryptoUtil.serializeKey(getKey()));
   }
 
   @Override

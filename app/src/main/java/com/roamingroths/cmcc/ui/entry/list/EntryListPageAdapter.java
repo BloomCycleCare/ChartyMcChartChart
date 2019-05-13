@@ -1,29 +1,25 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
 import android.os.Bundle;
-import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.widget.SortedList;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.fragment.app.FragmentManager;
+import androidx.recyclerview.widget.SortedList;
+
 import com.google.common.base.Preconditions;
-import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.providers.ChartEntryProvider;
-import com.roamingroths.cmcc.providers.CycleProvider;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
-import java.util.Comparator;
 import java.util.List;
 
-import io.reactivex.Completable;
-import io.reactivex.Single;
+import io.reactivex.Flowable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.functions.BiFunction;
-import io.reactivex.functions.Consumer;
-import io.reactivex.functions.Function;
-import io.reactivex.schedulers.Schedulers;
+import io.reactivex.disposables.Disposable;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/16/17.
@@ -34,21 +30,10 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
 
-  private final ChartEntryProvider mChartEntryProvider;
   private final SortedList<Cycle> mCycles;
 
-  public static Function<ChartEntryProvider, EntryListPageAdapter> create(final FragmentManager fragmentManager) {
-    return new Function<ChartEntryProvider, EntryListPageAdapter>() {
-      @Override
-      public EntryListPageAdapter apply(ChartEntryProvider chartEntryProvider) throws Exception {
-        return new EntryListPageAdapter(fragmentManager, chartEntryProvider);
-      }
-    };
-  }
-
-  public EntryListPageAdapter(FragmentManager fragmentManager, ChartEntryProvider chartEntryProvider) {
+  public EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
-    mChartEntryProvider = chartEntryProvider;
     mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
       @Override
       public int compare(Cycle o1, Cycle o2) {
@@ -93,48 +78,14 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     notifyDataSetChanged();*/
   }
 
-  public static Function<EntryListPageAdapter, Single<EntryListPageAdapter>> initializeFn(
-      final Single<FirebaseUser> user, final Single<CycleProvider> cycleProvider) {
-    return new Function<EntryListPageAdapter, Single<EntryListPageAdapter>>() {
-      @Override
-      public Single<EntryListPageAdapter> apply(EntryListPageAdapter adapter) throws Exception {
-        return adapter.initialize(user, cycleProvider).andThen(Single.just(adapter));
-      }
-    };
-  }
-
-  public Completable initialize(Single<FirebaseUser> user, Single<CycleProvider> cycleProvider) {
-    Single<List<Cycle>> cycles = Single.merge(Single.zip(user, cycleProvider, new BiFunction<FirebaseUser, CycleProvider, Single<List<Cycle>>>() {
-      @Override
-      public Single<List<Cycle>> apply(FirebaseUser firebaseUser, CycleProvider cycleProvider) throws Exception {
-        return cycleProvider
-            .getAllCycles(firebaseUser)
-            .sorted(new Comparator<Cycle>() {
-              @Override
-              public int compare(Cycle o1, Cycle o2) {
-                return o2.startDate.compareTo(o1.startDate);
-              }
-            })
-            .toList();
-      }
-    }));
-    return Completable.fromSingle(cycles.doOnSuccess(new Consumer<List<Cycle>>() {
-      @Override
-      public void accept(List<Cycle> cycles) throws Exception {
-        mCycles.beginBatchedUpdates();
-        mCycles.addAll(cycles);
-        mCycles.endBatchedUpdates();
-      }
-    }));
-  }
-
-  public void shutdown(ViewGroup viewGroup) {
-    for (int i = 0; i < mCycles.size(); i++) {
-      EntryListFragment fragment = (EntryListFragment) instantiateItem(viewGroup, i);
-      fragment.shutdown();
-    }
-
-    notifyDataSetChanged();
+  public Disposable attach(Flowable<List<Cycle>> cycleStream) {
+    return cycleStream.observeOn(AndroidSchedulers.mainThread()).subscribe(cycles -> {
+      // TODO: make this incremental
+      mCycles.beginBatchedUpdates();
+      mCycles.clear();
+      mCycles.addAll(cycles);
+      mCycles.endBatchedUpdates();
+    }, Timber::e);
   }
 
   public int onResult(EntrySaveResult result) {
@@ -167,29 +118,11 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   public EntryListFragment getItem(int position) {
     Cycle cycle = mCycles.get(position);
 
-    int leftPosition = position - 1;
-    if (leftPosition >= 0) {
-      mChartEntryProvider
-          .fillCache(mCycles.get(leftPosition))
-          .doOnSubscribe(__ -> { if (DEBUG) Log.v(TAG, "Filling cache left"); })
-          .doOnComplete(() -> { if (DEBUG) Log.v(TAG, "Done filling cache left"); })
-          .subscribeOn(Schedulers.io())
-          .subscribe();
-    }
-    int rightPosition = position + 1;
-    if (rightPosition < mCycles.size()) {
-      mChartEntryProvider
-          .fillCache(mCycles.get(rightPosition))
-          .doOnSubscribe(__ -> { if (DEBUG) Log.v(TAG, "Filling cache right"); })
-          .doOnComplete(() -> { if (DEBUG) Log.v(TAG, "Done filling cache right"); })
-          .subscribeOn(Schedulers.io())
-          .subscribe();
-    }
-
     if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycleToShow:" + cycle);
 
     Bundle args = new Bundle();
     args.putParcelable(Cycle.class.getName(), cycle);
+    args.putBoolean(EntryListFragment.IS_LAST_CYCLE, position == mCycles.size() - 1);
 
     EntryListFragment fragment = new EntryListFragment();
     fragment.setArguments(args);
@@ -199,7 +132,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     return fragment;
   }
 
-  public void onPageActive(int position) {
+  void onPageActive(int position) {
     EntryListFragment f = getRegisteredFragment(position);
     if (f != null) {
       f.onScrollStateUpdate(f.getScrollState());
@@ -221,11 +154,8 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     }
   }
 
-  private void maybeUpdateFragments(int position) {
-    maybeUpdateFragments(getRegisteredFragment(position), position);
-  }
-
   @Override
+  @NonNull
   public Object instantiateItem(ViewGroup container, int position) {
     EntryListFragment f = (EntryListFragment) super.instantiateItem(container, position);
     maybeUpdateFragments(f, position);
@@ -238,13 +168,13 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     return "Tab Title";
   }
 
-  @Override
+  /*@Override
   public int getItemPosition(Object object) {
     EntryListFragment fragment = (EntryListFragment) object;
     int index = mCycles.indexOf(fragment.getCycle());
     //return index < 0 ? POSITION_NONE : index;
     return POSITION_NONE;
-  }
+  }*/
 
   public Cycle getCycle(int position) {
     return mCycles.get(position);
