@@ -14,6 +14,8 @@ import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 
+import org.parceler.Parcels;
+
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.SingleEmitter;
@@ -80,7 +82,7 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
         .subscribe(cycle -> {
           showProgress("Staring app");
           Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
-          intent.putExtra(Cycle.class.getName(), cycle);
+          intent.putExtra(Cycle.class.getName(), Parcels.wrap(cycle));
           getActivity().finish();
           startActivity(intent);
         }, throwable -> {

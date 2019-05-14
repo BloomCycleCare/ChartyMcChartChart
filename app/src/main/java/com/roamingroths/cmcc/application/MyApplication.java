@@ -45,6 +45,8 @@ public class MyApplication extends Application {
         .addMigrations(migrations)
         .fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
+
+    mViewModelFactory = new ViewModelFactory();
   }
 
   public AppDatabase db() {

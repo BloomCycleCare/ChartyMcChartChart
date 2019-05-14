@@ -22,6 +22,8 @@ import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.print.PageRenderer;
 import com.roamingroths.cmcc.utils.DateUtil;
 
+import org.parceler.Parcels;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -266,7 +268,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
     @Override
     public void writeToParcel(Parcel dest, int flags) {
-      dest.writeParcelable(mCycle, flags);
+      dest.writeParcelable(Parcels.wrap(mCycle), flags);
       dest.writeInt(mNumEntries);
     }
   }

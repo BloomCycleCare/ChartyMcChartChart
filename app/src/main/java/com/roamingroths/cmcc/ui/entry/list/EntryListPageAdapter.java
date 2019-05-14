@@ -13,6 +13,8 @@ import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
+import org.parceler.Parcels;
+
 import java.util.List;
 
 import io.reactivex.Flowable;
@@ -121,7 +123,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycleToShow:" + cycle);
 
     Bundle args = new Bundle();
-    args.putParcelable(Cycle.class.getName(), cycle);
+    args.putParcelable(Cycle.class.getName(), Parcels.wrap(cycle));
     args.putBoolean(EntryListFragment.IS_LAST_CYCLE, position == mCycles.size() - 1);
 
     EntryListFragment fragment = new EntryListFragment();

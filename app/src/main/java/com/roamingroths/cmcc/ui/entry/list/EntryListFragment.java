@@ -21,6 +21,8 @@ import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 
+import org.parceler.Parcels;
+
 import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -94,7 +96,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onSaveInstanceState(@NonNull Bundle outState) {
     super.onSaveInstanceState(outState);
-    outState.putParcelable(Cycle.class.getName(), mCycle);
+    outState.putParcelable(Cycle.class.getName(), Parcels.wrap(mCycle));
   }
 
   @Override
@@ -102,7 +104,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     super.onCreate(savedInstanceState);
 
     Bundle arguments = getArguments();
-    mCycle = arguments.getParcelable(Cycle.class.getName());
+    mCycle = Parcels.unwrap(arguments.getParcelable(Cycle.class.getName()));
 
     if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
   }

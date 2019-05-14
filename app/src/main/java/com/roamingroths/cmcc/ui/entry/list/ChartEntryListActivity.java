@@ -45,6 +45,7 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.parceler.Parcels;
 
 import java.io.File;
 import java.util.Objects;
@@ -201,7 +202,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
-      final EntrySaveResult result = data.getParcelableExtra(EntrySaveResult.class.getName());
+      final EntrySaveResult result = Parcels.unwrap(data.getParcelableExtra(EntrySaveResult.class.getName()));
       if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
       mViewPager.setCurrentItem(mPageAdapter.onResult(result));
     }

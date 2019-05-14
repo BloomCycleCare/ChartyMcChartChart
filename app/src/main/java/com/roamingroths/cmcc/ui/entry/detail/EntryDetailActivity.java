@@ -248,7 +248,7 @@ public class EntryDetailActivity extends AppCompatActivity implements EntryFragm
               .observeOn(AndroidSchedulers.mainThread())
               .subscribe(result -> {
                 Intent returnIntent = new Intent();
-                returnIntent.putExtra(EntrySaveResult.class.getName(), result);
+                returnIntent.putExtra(EntrySaveResult.class.getName(), Parcels.wrap(result));
                 returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
                 setResult(OK_RESPONSE, returnIntent);
                 dialog.dismiss();
