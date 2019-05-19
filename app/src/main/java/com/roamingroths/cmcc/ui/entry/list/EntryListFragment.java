@@ -106,7 +106,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     Bundle arguments = getArguments();
     mCycle = Parcels.unwrap(arguments.getParcelable(Cycle.class.getName()));
 
-    if (DEBUG) Log.v(TAG, "onCreate() cycleToShow starting:" + mCycle.startDateStr);
+    Timber.v("Created Fragment for cycle starting %s", mCycle.startDateStr);
   }
 
   public void setScrollState(ScrollState scrollState) {
@@ -176,7 +176,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
 
     mDisposables.add(entryRepo
-        .getStream(Flowable.just(mCycle))
+        .getStreamForCycle(Flowable.just(mCycle))
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(mChartEntryAdapter::initialize, Timber::w));

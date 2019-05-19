@@ -82,6 +82,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   public Disposable attach(Flowable<List<Cycle>> cycleStream) {
     return cycleStream.observeOn(AndroidSchedulers.mainThread()).subscribe(cycles -> {
+      Timber.v("Updating adapter with %d cycles", cycles.size());
       // TODO: make this incremental
       mCycles.beginBatchedUpdates();
       mCycles.clear();

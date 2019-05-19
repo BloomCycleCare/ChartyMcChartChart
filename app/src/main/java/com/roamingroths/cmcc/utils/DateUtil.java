@@ -1,6 +1,7 @@
 package com.roamingroths.cmcc.utils;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
@@ -57,13 +58,13 @@ public class DateUtil {
     return WIRE_FORMAT.parseLocalDate(dateStr);
   }
 
-  public static List<LocalDate> daysBetween(LocalDate firstDay, @Nullable LocalDate lastDay) {
+  public static List<LocalDate> daysBetween(LocalDate firstDay, @Nullable LocalDate lastDay, boolean reversed) {
     List<LocalDate> dates = new ArrayList<>();
     LocalDate end = lastDay == null ? LocalDate.now() : lastDay;
     for (LocalDate date = firstDay; date.isBefore(end.plusDays(1)); date = date.plusDays(1)) {
       dates.add(date);
     }
-    return dates;
+    return reversed ? Lists.reverse(dates) : dates;
   }
 
   public static LocalDate now() {

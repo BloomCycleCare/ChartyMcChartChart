@@ -19,7 +19,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -56,13 +58,28 @@ public abstract class BaseEntryDao<E extends Entry> {
         .distinctUntilChanged();
   }
 
-  public Flowable<List<E>> getStream(LocalDate firstDate, LocalDate lastDate) {
+  public Flowable<Map<LocalDate, E>> getIndexedStream(LocalDate firstDate, LocalDate lastDate) {
     return doFlowableList(new SimpleSQLiteQuery(String.format(
         "SELECT * FROM %s WHERE entryDate >= \"%s\" AND entryDate <= \"%s\" ORDER BY entryDate",
         mTableName,
         DateUtil.toWireStr(firstDate),
         DateUtil.toWireStr(lastDate))))
-        .distinctUntilChanged();
+        .distinctUntilChanged()
+        .map(entries -> {
+          List<LocalDate> daysMissingData = DateUtil.daysBetween(firstDate, lastDate, false);
+          Map<LocalDate, E> out = new HashMap<>(daysMissingData.size());
+          for (E entry : entries) {
+            out.put(entry.getDate(), entry);
+            daysMissingData.remove(entry.getDate());
+          }
+          for (LocalDate d : daysMissingData) {
+            if (!out.containsKey(d)) {
+              out.put(d, mEmptyEntryFn.apply(d));
+            }
+          }
+          return out;
+        })
+        ;
   }
 
   public Flowable<List<E>> getStream() {

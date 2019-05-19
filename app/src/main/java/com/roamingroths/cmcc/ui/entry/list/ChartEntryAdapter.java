@@ -23,6 +23,7 @@ import org.parceler.Parcels;
 import java.util.List;
 
 import io.reactivex.disposables.CompositeDisposable;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -73,6 +74,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   }
 
   void initialize(List<ChartEntry> containers) {
+    Timber.v("Initializing adapter for cycle starting %s with %d entries", getCycle().startDateStr, containers.size());
     for (ChartEntry container : containers) {
       mContainerList.addEntry(container);
     }
