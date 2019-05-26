@@ -39,6 +39,7 @@ public class ChartEntryRepo {
     symptomEntryDao = db.symptomEntryDao();
   }
 
+  @Deprecated
   public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
     return Flowable.merge(cycleStream
         .map(ChartEntryRepo::datesForCycle)
@@ -72,8 +73,7 @@ public class ChartEntryRepo {
                 out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d)));
               }
               return out;
-            })
-        );
+            }));
   }
 
   public Completable insertAll(Collection<ChartEntry> entries) {

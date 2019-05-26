@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="20dp"
+    >
+
+    <TextView
+        android:text="Start Date:"
+        android:id="@+id/tv_start_date_header"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        />
+    <TextView
+        android:text="6 Nov 2910"
+        android:id="@+id/tv_start_date"
+        app:layout_constraintTop_toTopOf="@id/tv_start_date_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_start_date_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
+    <TextView
+        android:text="End Date:"
+        android:id="@+id/tv_end_date_header"
+        app:layout_constraintTop_toBottomOf="@id/tv_start_date_header"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:textStyle="bold"
+        />
+    <TextView
+        android:text="6 Nov 2910"
+        android:id="@+id/tv_end_date"
+        app:layout_constraintTop_toTopOf="@id/tv_end_date_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_end_date_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
+    <TextView
+        android:id="@+id/tv_pre_peak_yellow_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Prepeak Yellow Stickers"
+        app:layout_constraintTop_toBottomOf="@id/tv_end_date_header"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="20dp"
+        />
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_pre_peak_yellow"
+        app:layout_constraintTop_toTopOf="@id/tv_pre_peak_yellow_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_pre_peak_yellow_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tv_post_peak_yellow_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Postpeak Yellow Stickers"
+        app:layout_constraintTop_toBottomOf="@id/tv_pre_peak_yellow_header"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="20dp"
+        />
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_post_peak_yellow"
+        app:layout_constraintTop_toTopOf="@id/tv_post_peak_yellow_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_post_peak_yellow_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/tv_special_sameness_yellow_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Special Sameness Yellow Stickers"
+        app:layout_constraintTop_toBottomOf="@id/tv_post_peak_yellow_header"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="20dp"
+        />
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/switch_special_sameness_yellow"
+        app:layout_constraintTop_toTopOf="@id/tv_special_sameness_yellow_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_special_sameness_yellow_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

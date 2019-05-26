@@ -34,7 +34,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
-import com.roamingroths.cmcc.ui.appointments.AppointmentListActivity;
+import com.roamingroths.cmcc.ui.instructions.InstructionsListActivity;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.profile.ProfileActivity;
@@ -357,8 +357,8 @@ public class ChartEntryListActivity extends AppCompatActivity
     int id = item.getItemId();
 
     switch (item.getItemId()) {
-      case R.id.nav_appointments:
-        startActivity(new Intent(this, AppointmentListActivity.class));
+      case R.id.nav_instructions:
+        startActivity(new Intent(this, InstructionsListActivity.class));
         break;
       case R.id.nav_profile:
         // TODO: get updated profile

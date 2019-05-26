@@ -72,7 +72,7 @@
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
         <activity
-            android:name=".ui.appointments.AppointmentListActivity"
+            android:name=".ui.instructions.InstructionsListActivity"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
         <provider

@@ -15,9 +15,9 @@
             android:icon="@drawable/ic_list_black_24dp"
             android:title="Chart" />
         <item
-            android:id="@+id/nav_appointments"
-            android:icon="@drawable/ic_event_black_24dp"
-            android:title="Appointments" />
+            android:id="@+id/nav_instructions"
+            android:icon="@drawable/ic_instructions_black_24dp"
+            android:title="Instructions" />
         <item
             android:id="@+id/nav_share"
             android:icon="@drawable/ic_menu_share"

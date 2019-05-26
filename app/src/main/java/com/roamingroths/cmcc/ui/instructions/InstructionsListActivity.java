@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.appointments;
+package com.roamingroths.cmcc.ui.instructions;
 
 import android.os.Bundle;
 import android.view.MenuItem;
@@ -8,36 +8,41 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.tabs.TabLayout;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.entities.Instructions;
 
-public class AppointmentListActivity extends AppCompatActivity {
+import java.util.ArrayList;
+import java.util.List;
+
+public class InstructionsListActivity extends AppCompatActivity {
 
   private SectionsPagerAdapter mPagerAdapter;
   private ViewPager mViewPager;
-  private FloatingActionButton mFab;
+  private InstructionsListViewModel mViewModel;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_appointment_list);
 
+    mViewModel = ViewModelProviders.of(this).get(InstructionsListViewModel.class);
+
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle("Your Appointments");
-
-    mFab = findViewById(R.id.floatingActionButton);
+    getSupportActionBar().setTitle("Your Instructions");
 
     mPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
     mViewPager = findViewById(R.id.container);
     mViewPager.setAdapter(mPagerAdapter);
 
-    TabLayout tabLayout = findViewById(R.id.tabs);
-    tabLayout.setupWithViewPager(mViewPager);
+    mViewModel.instructions().observe(
+        this, instructions -> mPagerAdapter.updateInstructions(instructions));
   }
 
   @Override
@@ -53,30 +58,25 @@ public class AppointmentListActivity extends AppCompatActivity {
 
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
-    public SectionsPagerAdapter(FragmentManager fm) {
+    private final List<Instructions> mInstructions = new ArrayList<>();
+
+    SectionsPagerAdapter(FragmentManager fm) {
       super(fm);
+    }
+
+    void updateInstructions(List<Instructions> instructions) {
+      mInstructions.clear();
+      mInstructions.addAll(instructions);
     }
 
     @Override
     public Fragment getItem(int position) {
-      return new AppointmentListFragment();
+      return new InstructionsListFragment();
     }
 
     @Override
     public int getCount() {
-      return 2;
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-      switch (position) {
-        case 0:
-          return "Consultations";
-        case 1:
-          return "Other";
-        default:
-          throw new IllegalArgumentException();
-      }
+      return mInstructions.size();
     }
   }
 }
