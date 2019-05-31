@@ -110,6 +110,13 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     return index;
   }
 
+  @Override
+  public int getItemPosition(@NonNull Object object) {
+    // DO NOT REMOVE...
+    // https://stackoverflow.com/questions/7263291/viewpager-pageradapter-not-updating-the-view
+    return POSITION_NONE;
+  }
+
   // Returns total number of pages
   @Override
   public int getCount() {

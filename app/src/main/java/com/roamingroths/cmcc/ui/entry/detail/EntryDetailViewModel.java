@@ -252,11 +252,11 @@ public class EntryDetailViewModel extends AndroidViewModel {
     if (!originalEntry.observationEntry.firstDay && updatedEntry.observationEntry.firstDay) {
       // We need to split the current cycle...
       Cycle currentCycle = viewState.entryContext.currentCycle;
-      currentCycle.endDate = updatedEntry.entryDate.minusDays(1);
-      actions.add(mCycleRepo.insertOrUpdate(currentCycle));
-
       Cycle newCycle = new Cycle("asdf", updatedEntry.entryDate, currentCycle.endDate);
       actions.add(mCycleRepo.insertOrUpdate(newCycle));
+
+      currentCycle.endDate = updatedEntry.entryDate.minusDays(1);
+      actions.add(mCycleRepo.insertOrUpdate(currentCycle));
     }
     if (originalEntry.observationEntry.firstDay && !updatedEntry.observationEntry.firstDay) {
       // We need to join the current cycle with the previous...
