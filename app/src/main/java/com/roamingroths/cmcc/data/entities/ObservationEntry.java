@@ -111,6 +111,21 @@ public class ObservationEntry extends Entry implements Parcelable {
     } else {
       lines.add("Empty Observation");
     }
+    if (intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {
+      lines.add("Intercourse @ " + intercourseTimeOfDay.toString());
+    }
+    if (pointOfChange) {
+      lines.add("Point of change: yes");
+    }
+    if (peakDay) {
+      lines.add("Peak day: yes");
+    }
+    if (unusualBleeding) {
+      lines.add("Unusual bleeding: yes");
+    }
+    if (isEssentiallyTheSame) {
+      lines.add("Essentially the same: yes");
+    }
     return lines;
   }
 

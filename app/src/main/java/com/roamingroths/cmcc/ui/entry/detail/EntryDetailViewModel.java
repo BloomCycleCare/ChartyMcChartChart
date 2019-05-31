@@ -66,7 +66,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
     mCycleRepo = new CycleRepo(myApp.db());
 
     mDisposables.add(intercourseUpdates.subscribe(value -> {
-      if (!value) {
+      if (value) {
+        timeOfDayUpdates.onNext(IntercourseTimeOfDay.ANY);
+      } else {
         timeOfDayUpdates.onNext(IntercourseTimeOfDay.NONE);
       }
     }));
@@ -181,6 +183,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     mEntryContext.onSuccess(context);
     if (context.chartEntry.observationEntry.observation != null) {
       observationUpdates.onNext(context.chartEntry.observationEntry.observation.toString());
+    } else {
+      observationUpdates.onNext("");
     }
     peakDayUpdates.onNext(context.chartEntry.observationEntry.peakDay);
     intercourseUpdates.onNext(context.chartEntry.observationEntry.intercourse);
