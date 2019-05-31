@@ -34,8 +34,8 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
-import com.roamingroths.cmcc.ui.instructions.InstructionsListActivity;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
+import com.roamingroths.cmcc.ui.instructions.InstructionsListActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
 import com.roamingroths.cmcc.ui.profile.ProfileActivity;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
@@ -203,8 +203,8 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onActivityResult(requestCode, resultCode, data);
     if (data != null) {
       final EntrySaveResult result = Parcels.unwrap(data.getParcelableExtra(EntrySaveResult.class.getName()));
-      if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
-      mViewPager.setCurrentItem(mPageAdapter.onResult(result));
+      //if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
+      //mViewPager.setCurrentItem(mPageAdapter.onResult(result));
     }
   }
 

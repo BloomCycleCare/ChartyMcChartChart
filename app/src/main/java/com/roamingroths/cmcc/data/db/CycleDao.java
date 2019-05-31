@@ -5,9 +5,12 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.TypeConverters;
 import androidx.room.Update;
 
 import com.roamingroths.cmcc.data.entities.Cycle;
+
+import org.joda.time.LocalDate;
 
 import java.util.List;
 
@@ -23,6 +26,10 @@ public abstract class CycleDao {
 
   @Query("SELECT * FROM Cycle WHERE endDate IS NULL")
   public abstract Maybe<Cycle> getCurrentCycle();
+
+  @TypeConverters(Converters.class)
+  @Query("SELECT * FROM Cycle WHERE endDate=:endDate")
+  public abstract Maybe<Cycle> getCycleWithEndDate(LocalDate endDate);
 
   @Delete
   public abstract Completable delete(Cycle cycle);

@@ -3,259 +3,182 @@ package com.roamingroths.cmcc.ui.entry.detail;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.text.Editable;
-import android.text.TextWatcher;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.preference.PreferenceManager;
 
-import com.google.android.material.textfield.TextInputEditText;
+import com.google.common.base.Strings;
+import com.jakewharton.rxbinding2.widget.RxAdapterView;
+import com.jakewharton.rxbinding2.widget.RxCompoundButton;
+import com.jakewharton.rxbinding2.widget.RxTextView;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import io.reactivex.functions.Action;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 9/11/17.
  */
 
-public class ObservationEntryFragment extends EntryFragment<ObservationEntry> {
-
-  public enum Extras {
-    EXPECT_UNUSUAL_BLEEDING, HAS_PREVIOUS_CYCLE, IS_FIRST_ENTRY, ASK_SAMENESS_QUESTION
-  }
+public class ObservationEntryFragment extends Fragment {
 
   public static final int OK_RESPONSE = 0;
 
-  private TextInputEditText mObservationEditText;
-  private TextView mObservationDescriptionTextView;
-  private Switch mPeakDaySwitch;
-  private Switch mIntercourseSwitch;
-  private Spinner mIntercourseSpinner;
-  private View mFirstDayLayout;
-  private Switch mFirstDaySwitch;
-  private Switch mPointOfChangeSwitch;
-  private Switch mEssentialSamenessSwitch;
-  private View mUnusualBleedingLayout;
-  private Switch mUnusualBleedingSwitch;
-  private View mPointOfChangeLayout;
-  private View mEssentialSamenessLayout;
-
-  private boolean expectUnusualBleeding;
-  private boolean usingPrePeakYellowStickers;
-  private boolean shouldAskEssentialSameness;
-  private boolean askedEssentialSameness = false;
-
-  public ObservationEntryFragment() {
-    super(ObservationEntry.class, "ObservationEntryFragment", R.layout.fragment_chart_entry);
-  }
+  private EntryDetailViewModel mEntryDetailViewModel;
 
   @Override
   public void onAttach(Context context) {
     super.onAttach(context);
+    mEntryDetailViewModel = ViewModelProviders.of(getActivity()).get(EntryDetailViewModel.class);
   }
 
   @Override
-  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
-    expectUnusualBleeding = args.getBoolean(Extras.EXPECT_UNUSUAL_BLEEDING.name());
-    shouldAskEssentialSameness = args.getBoolean(Extras.ASK_SAMENESS_QUESTION.name());
+  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment_chart_entry, container, false);
 
-    mEssentialSamenessSwitch = view.findViewById(R.id.switch_essential_sameness);
-    mEssentialSamenessSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> askedEssentialSameness = true);
-    mEssentialSamenessLayout = view.findViewById(R.id.essential_sameness_layout);
-
-    mPointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
-
-    mUnusualBleedingLayout = view.findViewById(R.id.unusual_bleeding_layout);
-    mUnusualBleedingSwitch = view.findViewById(R.id.switch_unusual_bleeding);
-
-    mObservationDescriptionTextView =
+    TextView observationDescriptionTextView =
         view.findViewById(R.id.tv_modify_observation_description);
+    EditText observationEditText = view.findViewById(R.id.et_modify_observation_value);
+    Switch unusualBleedingSwitch = view.findViewById(R.id.switch_unusual_bleeding);
+    Switch peakDaySwitch = view.findViewById(R.id.switch_peak_day);
+    Switch intercourseSwitch = view.findViewById(R.id.switch_intercourse);
+    Switch essentialSamenessSwitch = view.findViewById(R.id.switch_essential_sameness);
+    Switch firstDaySwitch = view.findViewById(R.id.switch_new_cycle);
+    Switch pointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
+    Spinner intercourseSpinner = view.findViewById(R.id.spinner_intercourse);
 
-    mObservationEditText = view.findViewById(R.id.et_modify_observation_value);
-    mObservationEditText.setOnFocusChangeListener(new View.OnFocusChangeListener() {
-      @Override
-      public void onFocusChange(View v, boolean hasFocus) {
-        if (!hasFocus) {
-          try {
-            updateUiWithObservation(getObservationFromView(v));
-          } catch (Observation.InvalidObservationException ioe) {
-            mObservationEditText.setError(ioe.getMessage());
-          }
-        }
-      }
-    });
-    mObservationEditText.addTextChangedListener(new TextWatcher() {
-      @Override
-      public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-      }
-
-      @Override
-      public void onTextChanged(CharSequence s, int start, int before, int count) {
-        try {
-          Observation observation = getObservationFromEditText();
-          if (observation != null) {
-            mObservationDescriptionTextView.setText(observation.getDescription());
-          }
-          if (observation != null && observation.hasBlood()) {
-            mUnusualBleedingLayout.setVisibility(View.VISIBLE);
-          } else {
-            mUnusualBleedingLayout.setVisibility(View.GONE);
-          }
-          if (observation != null
-              && observation.dischargeSummary != null
-              && observation.dischargeSummary.isPeakType()
-              && shouldAskEssentialSameness) {
-            mEssentialSamenessLayout.setVisibility(View.VISIBLE);
-          } else {
-            mEssentialSamenessLayout.setVisibility(View.GONE);
-          }
-        } catch (Observation.InvalidObservationException ioe) {
-          mObservationDescriptionTextView.setText(null);
-        }
-      }
-
-      @Override
-      public void afterTextChanged(Editable s) {
-      }
-    });
-
-    mPeakDaySwitch = view.findViewById(R.id.switch_peak_day);
-    mIntercourseSwitch = view.findViewById(R.id.switch_intercourse);
-    mIntercourseSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-      @Override
-      public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-        if (isChecked) {
-          mIntercourseSpinner.setVisibility(View.VISIBLE);
-        } else {
-          mIntercourseSpinner.setVisibility(View.GONE);
-        }
-      }
-    });
-    mIntercourseSpinner = view.findViewById(R.id.spinner_intercourse);
     ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
         R.array.intercourse_times_of_day, android.R.layout.simple_spinner_item);
     adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-    mIntercourseSpinner.setAdapter(adapter);
-    mIntercourseSpinner.setVisibility(View.GONE);
-    mFirstDayLayout = view.findViewById(R.id.layout_new_cycle);
-    mFirstDaySwitch = view.findViewById(R.id.switch_new_cycle);
-    mPointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
+    intercourseSpinner.setAdapter(adapter);
+    intercourseSpinner.setVisibility(View.GONE);
 
-    boolean hasPreviousCycle = args.getBoolean(Extras.HAS_PREVIOUS_CYCLE.name());
-    boolean isFirstEntry = args.getBoolean(Extras.IS_FIRST_ENTRY.name());
-    if (isFirstEntry && !hasPreviousCycle) {
-      mFirstDayLayout.setVisibility(View.GONE);
-    }
+    View essentialSamenessLayout = view.findViewById(R.id.essential_sameness_layout);
+    View pointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
+    View unusualBleedingLayout = view.findViewById(R.id.unusual_bleeding_layout);
+    View firstDayLayout = view.findViewById(R.id.layout_new_cycle);
+
+    Action connectStreams = () -> {
+      Timber.d("Connecting RX streams for UI updates");
+      RxCompoundButton
+          .checkedChanges(unusualBleedingSwitch)
+          .subscribe(mEntryDetailViewModel.unusualBleedingUpdates);
+      RxCompoundButton
+          .checkedChanges(peakDaySwitch)
+          .subscribe(mEntryDetailViewModel.peakDayUpdates);
+      RxCompoundButton
+          .checkedChanges(intercourseSwitch)
+          .subscribe(mEntryDetailViewModel.intercourseUpdates);
+      RxCompoundButton
+          .checkedChanges(essentialSamenessSwitch)
+          .subscribe(mEntryDetailViewModel.isEssentiallyTheSameUpdates);
+      RxCompoundButton
+          .checkedChanges(firstDaySwitch)
+          .subscribe(mEntryDetailViewModel.firstDayOfCycleUpdates);
+      RxCompoundButton
+          .checkedChanges(pointOfChangeSwitch)
+          .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
+
+      RxAdapterView.itemSelections(intercourseSpinner)
+          .map(index -> IntercourseTimeOfDay.values()[index])
+          .subscribe(mEntryDetailViewModel.timeOfDayUpdates);
+
+      RxTextView.afterTextChangeEvents(observationEditText)
+          .map(event -> event.view().getText().toString())
+          .subscribe(mEntryDetailViewModel.observationUpdates);
+    };
+
+    final AtomicBoolean uiInitialized = new AtomicBoolean(false);
+    mEntryDetailViewModel.viewStates().observe(this, (viewState -> {
+      Timber.d("Updating ViewState");
+      if (viewState.entryContext.isFirstEntry && !viewState.entryContext.hasPreviousCycle) {
+        firstDayLayout.setVisibility(View.GONE);
+      }
+      ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
+      if (!Strings.isNullOrEmpty(viewState.observationErrorText)) {
+        Timber.d("Found invalid observation");
+        if (!observationEditText.getError().toString().equals(viewState.observationErrorText)) {
+          observationEditText.setError(viewState.observationErrorText);
+          observationDescriptionTextView.setText(null);
+        } else {
+          Timber.v("Error text already updated");
+        }
+      } else {
+        Timber.d("Found valid observation");
+        observationEditText.setError(null);
+        Observation observation = observationEntry.observation;
+        if (observation != null) {
+          String newText = observation.toString();
+          String existingText = observationEditText.getText() == null ? null : observationEditText.getText().toString();
+          if (existingText == null || existingText.equals(newText)) {
+            observationEditText.setText(newText);
+            observationDescriptionTextView.setText(observation.getDescription());
+          }
+          observationEditText.setText(observation.toString());
+          observationDescriptionTextView.setText(observation.getDescription());
+          if (observation.hasBlood()) {
+            unusualBleedingLayout.setVisibility(View.VISIBLE);
+          } else {
+            unusualBleedingLayout.setVisibility(View.GONE);
+          }
+          if (observation.dischargeSummary != null
+              && observation.dischargeSummary.isPeakType()
+              && viewState.entryContext.shouldAskEssentialSameness) {
+            essentialSamenessLayout.setVisibility(View.VISIBLE);
+          } else {
+            essentialSamenessLayout.setVisibility(View.GONE);
+          }
+        }
+      }
+      if (observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {
+        intercourseSpinner.setSelection(observationEntry.intercourseTimeOfDay.ordinal());
+      }
+      if (observationEntry.intercourse) {
+        intercourseSpinner.setVisibility(View.VISIBLE);
+      } else {
+        intercourseSpinner.setVisibility(View.GONE);
+      }
+      maybeUpdate(intercourseSwitch, observationEntry.intercourse);
+      maybeUpdate(peakDaySwitch, observationEntry.peakDay);
+      maybeUpdate(firstDaySwitch, observationEntry.firstDay);
+      maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
+      maybeUpdate(unusualBleedingSwitch, observationEntry.unusualBleeding);
+      maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
+
+      SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
+      boolean usingPrePeakYellowStickers = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
+      pointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
+
+      if (uiInitialized.compareAndSet(false, true)) {
+        try {
+          connectStreams.run();
+        } catch (Exception e) {
+          Timber.e(e);
+        }
+      }
+    }));
+
+    return view;
   }
 
-  @Override
-  public void onResume() {
-    super.onResume();
-    SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-    usingPrePeakYellowStickers = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
-    mPointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
-  }
-
-  @Override
-  public void onSaveInstanceState(Bundle outState) {
-    super.onSaveInstanceState(outState);
-    // TODO
-  }
-
-  @Override
-  public Set<ValidationIssue> validateEntry(ObservationEntry entry) {
-    Set<ValidationIssue> issues = new HashSet<>();
-    boolean entryHasBlood = entry.observation != null && entry.observation.hasBlood();
-    // TODO: accept on yes and on no update lambdas
-    if (entryHasBlood && expectUnusualBleeding && !entry.unusualBleeding) {
-      issues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
-    }
-    if (shouldAskEssentialSameness && !askedEssentialSameness) {
-      issues.add(new ValidationIssue("Essentially the same?", "Is today essentially the same?"));
-    }
-    return issues;
-  }
-
-  @Override
-  ObservationEntry getExistingEntry(EntryContext entryContext) {
-    return entryContext.chartEntry.observationEntry;
-  }
-
-  public boolean shouldJoinCycle() {
-    try {
-      return getExistingEntry().firstDay && !getEntryFromUi().firstDay;
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  public boolean shouldSplitCycle() {
-    try {
-      return !getExistingEntry().firstDay && getEntryFromUi().firstDay;
-    } catch (Exception e) {
-      return false;
-    }
-  }
-
-  private Observation getObservationFromView(View v)
-      throws Observation.InvalidObservationException {
-    TextView tv = (TextView) v;
-    String observationStr = tv.getText().toString();
-    return Observation.fromString(observationStr);
-  }
-
-  private Observation getObservationFromEditText()
-      throws Observation.InvalidObservationException {
-    return getObservationFromView(mObservationEditText);
-  }
-
-  @Override
-  public ObservationEntry getEntryFromUi() throws Exception {
-    Observation observation = getObservationFromEditText();
-    boolean peakDay = mPeakDaySwitch.isChecked();
-    boolean intercourse = mIntercourseSwitch.isChecked();
-    boolean firstDay = mFirstDaySwitch.isChecked();
-    boolean pointOfChange = mPointOfChangeSwitch.isChecked();
-    boolean unusualBleeding = mUnusualBleedingSwitch.isChecked();
-    boolean isEssentiallyTheSame = mEssentialSamenessSwitch.isChecked();
-    IntercourseTimeOfDay timeOfDay = !intercourse
-        ? IntercourseTimeOfDay.NONE
-        : IntercourseTimeOfDay.fromStr(mIntercourseSpinner.getSelectedItem().toString());
-    return new ObservationEntry(
-        getEntryDate(), observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, timeOfDay, isEssentiallyTheSame, null);
-  }
-
-  @Override
-  void updateUiWithEntry(ObservationEntry entry) {
-    updateUiWithObservation(entry.observation);
-    mPeakDaySwitch.setChecked(entry.peakDay);
-    mIntercourseSwitch.setChecked(entry.intercourse);
-    mFirstDaySwitch.setChecked(entry.firstDay);
-    mPointOfChangeSwitch.setChecked(entry.pointOfChange);
-    mUnusualBleedingSwitch.setChecked(entry.unusualBleeding);
-    if (entry.observation == null || !entry.observation.hasBlood()) {
-      mUnusualBleedingLayout.setVisibility(View.GONE);
-    } else {
-      mUnusualBleedingLayout.setVisibility(View.VISIBLE);
-    }
-    mEssentialSamenessSwitch.setChecked(entry.isEssentiallyTheSame);
-  }
-
-  private void updateUiWithObservation(@Nullable Observation observation) {
-    if (observation != null) {
-      mObservationDescriptionTextView.setText(observation.getDescription());
-      mObservationEditText.setText(observation.toString());
-      mObservationEditText.setError(null);
+  private static void maybeUpdate(Switch view, boolean value) {
+    if (view.isChecked() != value) {
+      Timber.d("Updating %s", view.getResources().getResourceEntryName(view.getId()));
+      view.setChecked(value);
     }
   }
 }

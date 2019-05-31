@@ -4,38 +4,42 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
+import android.view.ViewGroup;
 
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapDifference;
-import com.google.common.collect.Maps;
+import com.jakewharton.rxbinding2.support.v7.widget.RxRecyclerViewAdapter;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.MultiSelectPrefAdapter;
-
-import java.util.Map;
+import com.roamingroths.cmcc.utils.UiUtil;
 
 /**
  * Created by parkeroth on 9/11/17.
  */
 
-public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
+public class WellnessEntryFragment extends Fragment {
 
-  private RecyclerView mRecyclerView;
+  private EntryDetailViewModel mViewModel;
   private MultiSelectPrefAdapter mAdapter;
   private SharedPreferences.OnSharedPreferenceChangeListener mPreferenceChangeListener;
 
-  public WellnessEntryFragment() {
-    super(WellnessEntry.class, "WellnessEntryFragment", R.layout.fragment_wellness_entry);
+  @Override
+  public void onAttach(Context context) {
+    super.onAttach(context);
+    mViewModel = ViewModelProviders.of(getActivity()).get(EntryDetailViewModel.class);
   }
 
   @Override
-  void duringCreateView(View view, Bundle args, Bundle savedInstanceState) {
+  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment_wellness_entry, container, false);
+
     String[] values = getActivity().getResources().getStringArray(R.array.pref_wellness_option_values);
     String[] keys = getActivity().getResources().getStringArray(R.array.pref_wellness_option_keys);
     mAdapter = new MultiSelectPrefAdapter(
@@ -48,86 +52,49 @@ public class WellnessEntryFragment extends EntryFragment<WellnessEntry> {
     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
     mAdapter.updateActiveItems(
         preferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
-    mPreferenceChangeListener = new SharedPreferences.OnSharedPreferenceChangeListener() {
-      @Override
-      public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("pref_key_wellness_options")) {
-          Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
-          mAdapter.updateActiveItems(
-              sharedPreferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
-        }
+    mPreferenceChangeListener = (sharedPreferences, key) -> {
+      if (key.equals("pref_key_wellness_options")) {
+        Log.v("WellnessEntryFragment", "onSharedPreferenceChanged: " + key);
+        mAdapter.updateActiveItems(
+            sharedPreferences.getStringSet("pref_key_wellness_options", ImmutableSet.<String>of()));
       }
     };
     preferences.registerOnSharedPreferenceChangeListener(mPreferenceChangeListener);
 
-    mRecyclerView = view.findViewById(R.id.recyclerview_wellness_entry);
+    RecyclerView mRecyclerView = view.findViewById(R.id.recyclerview_wellness_entry);
     mRecyclerView.setLayoutManager(
         new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
     mRecyclerView.setHasFixedSize(false);
     mRecyclerView.setAdapter(mAdapter);
-  }
 
-  @Override
-  WellnessEntry processExistingEntry(WellnessEntry existingEntry) {
-    MapDifference<String, Boolean> difference =
-        Maps.difference(existingEntry.wellnessItems, mAdapter.getActiveEntries());
-    if (difference.areEqual()) {
-      return existingEntry;
-    }
+    RxRecyclerViewAdapter
+        .dataChanges(mAdapter)
+        .map(MultiSelectPrefAdapter::getData)
+        .subscribe(mViewModel.wellnessUpdates);
 
-    for (Map.Entry<String, Boolean> entry : difference.entriesOnlyOnLeft().entrySet()) {
-      existingEntry.wellnessItems.remove(entry.getKey());
-    }
-    existingEntry.wellnessItems.putAll(difference.entriesOnlyOnRight());
-
-    return existingEntry;
+    return view;
   }
 
   @Override
   public void setUserVisibleHint(boolean isVisibleToUser) {
-    Log.v("WellnessEntryFragment", "Hint visible: " + isVisibleToUser);
     if (isVisibleToUser) {
-      hideKeyboard();
+      if (getView() != null) {
+        UiUtil.hideKeyboard(getContext(), getView().getRootView());
+      }
     }
   }
 
   @Override
   public void onResume() {
     super.onResume();
-    Log.v("WellnessEntryFragment", "onCreateView");
-    hideKeyboard();
+    if (getView() != null) {
+      UiUtil.hideKeyboard(getContext(), getView().getRootView());
+    }
   }
 
   @Override
   public void onSaveInstanceState(Bundle outState) {
     super.onSaveInstanceState(outState);
     mAdapter.fillBundle(outState);
-  }
-
-  @Override
-  public WellnessEntry getEntryFromUi() {
-    if (!mUiActive) {
-      return null;
-    }
-    return new WellnessEntry(getEntryDate(), mAdapter.getActiveEntries());
-  }
-
-  @Override
-  WellnessEntry getExistingEntry(EntryContext entryContext) {
-    return entryContext.chartEntry.wellnessEntry;
-  }
-
-  private void hideKeyboard() {
-    Context context = getContext();
-    if (context != null) {
-      InputMethodManager imm =
-          (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
-      imm.hideSoftInputFromWindow(getView().getRootView().getWindowToken(), 0);
-    }
-  }
-
-  @Override
-  void updateUiWithEntry(WellnessEntry entry) {
-    mAdapter.updateValues(entry.wellnessItems);
   }
 }

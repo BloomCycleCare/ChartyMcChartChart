@@ -60,6 +60,10 @@ public class MultiSelectPrefAdapter extends RecyclerView.Adapter<MultiSelectPref
     }
   }
 
+  public BoolMapping getData() {
+    return new BoolMapping(mActiveItems);
+  }
+
   public void updateActiveItems(Set<String> activeKeys) {
     Log.v("MultiSelectPrefAdapter", "Active items: " + activeKeys.size());
     for (Map.Entry<String, Boolean> entry : mActiveItems.entrySet()) {

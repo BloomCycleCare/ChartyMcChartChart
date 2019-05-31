@@ -26,6 +26,10 @@ public class CycleRepo {
         .distinctUntilChanged();
   }
 
+  public Maybe<Cycle> getPreviousCycle(Cycle cycle) {
+    return cycleDao.getCycleWithEndDate(cycle.startDate.minusDays(1));
+  }
+
   public Maybe<Cycle> getCurrentCycle() {
     return cycleDao.getCurrentCycle();
   }
