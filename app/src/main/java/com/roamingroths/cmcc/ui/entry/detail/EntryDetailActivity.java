@@ -27,8 +27,8 @@ import com.google.common.base.Joiner;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
+import com.roamingroths.cmcc.utils.DateUtil;
 
-import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
@@ -229,8 +229,7 @@ public class EntryDetailActivity extends AppCompatActivity {
   }
 
   private static String getTitle(Cycle cycle, LocalDate entryDate) {
-    int daysBetween = Days.daysBetween(cycle.startDate, entryDate).getDays();
-    return "Day #" + (daysBetween + 1);
+    return DateUtil.toUiStr(entryDate);
   }
 
   /**

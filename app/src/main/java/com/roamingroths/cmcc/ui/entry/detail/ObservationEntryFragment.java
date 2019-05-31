@@ -111,7 +111,9 @@ public class ObservationEntryFragment extends Fragment {
       ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
       if (!Strings.isNullOrEmpty(viewState.observationErrorText)) {
         Timber.d("Found invalid observation");
-        if (!observationEditText.getError().toString().equals(viewState.observationErrorText)) {
+        String existingErrorText = observationEditText.getError() == null
+            ? "" : observationEditText.getError().toString();
+        if (!existingErrorText.equals(viewState.observationErrorText)) {
           observationEditText.setError(viewState.observationErrorText);
           observationDescriptionTextView.setText(null);
         } else {

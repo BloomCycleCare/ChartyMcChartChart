@@ -146,7 +146,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New EntryContext update")),
         errorOrObservationStream
-            .map(errorOrObservation -> !errorOrObservation.hasError() ? "" : errorOrObservation.error().toString())
+            .map(errorOrObservation -> !errorOrObservation.hasError() ? "" : errorOrObservation.error().getMessage())
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New observation error")),
         observationEntryStream
