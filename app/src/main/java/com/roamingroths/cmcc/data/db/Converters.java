@@ -3,7 +3,9 @@ package com.roamingroths.cmcc.data.db;
 import androidx.annotation.Nullable;
 import androidx.room.TypeConverter;
 
+import com.google.gson.reflect.TypeToken;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
+import com.roamingroths.cmcc.data.domain.Instruction;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.utils.BoolMapping;
@@ -11,6 +13,9 @@ import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
 import org.joda.time.LocalDate;
+
+import java.lang.reflect.Type;
+import java.util.List;
 
 import javax.crypto.SecretKey;
 
@@ -62,5 +67,17 @@ public class Converters {
   @TypeConverter
   public BoolMapping toMap(String in) {
     return GsonUtil.getGsonInstance().fromJson(in, BoolMapping.class);
+  }
+
+  @TypeConverter
+  public List<Instruction> toInstructionList(String wire) {
+    Type type = new TypeToken<List<Instruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().fromJson(wire, type);
+  }
+
+  @TypeConverter
+  public String fromInstructionList(List<Instruction> instructionList) {
+    Type type = new TypeToken<List<Instruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().toJson(instructionList, type);
   }
 }

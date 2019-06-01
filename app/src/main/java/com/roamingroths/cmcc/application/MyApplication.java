@@ -43,7 +43,7 @@ public class MyApplication extends Application {
     AppDatabase.MIGRATIONS.toArray(migrations);
     mDB = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "room-db")
         .addMigrations(migrations)
-        //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
+        .fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
     mViewModelFactory = new ViewModelFactory();

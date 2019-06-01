@@ -7,7 +7,6 @@ import com.roamingroths.cmcc.data.entities.Instructions;
 import java.util.LinkedList;
 import java.util.List;
 
-import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.subjects.BehaviorSubject;
 
@@ -24,6 +23,6 @@ public class InstructionsRepo {
   }
 
   public Flowable<List<Instructions>> getAll() {
-    return mInstructionsStream.toFlowable(BackpressureStrategy.DROP);
+    return mInstructionDao.getAll().distinctUntilChanged();
   }
 }

@@ -11,13 +11,14 @@ import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.viewpager.widget.ViewPager;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.tabs.TabLayout;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Instructions;
 
+import org.parceler.Parcels;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class InstructionsListActivity extends AppCompatActivity {
 
@@ -40,9 +41,32 @@ public class InstructionsListActivity extends AppCompatActivity {
     mPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
     mViewPager = findViewById(R.id.container);
     mViewPager.setAdapter(mPagerAdapter);
+    mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
+      @Override
+      public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
-    mViewModel.instructions().observe(
-        this, instructions -> mPagerAdapter.updateInstructions(instructions));
+      @Override
+      public void onPageSelected(int position) {
+        if (position == 0) {
+          toolbar.setTitle("New Instructions");
+        } else if (position == 1) {
+          toolbar.setTitle("Current Instructions");
+        } else {
+          toolbar.setTitle("Previous Instructions");
+        }
+      }
+
+      @Override
+      public void onPageScrollStateChanged(int state) {}
+    });
+
+    final AtomicBoolean initialLoad = new AtomicBoolean(false);
+    mViewModel.instructionsStream().observe(this, instructions -> {
+      mPagerAdapter.updateInstructions(instructions);
+      if (initialLoad.compareAndSet(false, true)) {
+        mViewPager.setCurrentItem(1);
+      }
+    });
   }
 
   @Override
@@ -67,11 +91,16 @@ public class InstructionsListActivity extends AppCompatActivity {
     void updateInstructions(List<Instructions> instructions) {
       mInstructions.clear();
       mInstructions.addAll(instructions);
+      notifyDataSetChanged();
     }
 
     @Override
     public Fragment getItem(int position) {
-      return new InstructionsListFragment();
+      Fragment f = new InstructionsListFragment();
+      Bundle args = new Bundle();
+      args.putParcelable(Instructions.class.getCanonicalName(), Parcels.wrap(mInstructions.get(position)));
+      f.setArguments(args);
+      return f;
     }
 
     @Override
