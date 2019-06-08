@@ -4,6 +4,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.models.AppState;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
+import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
@@ -13,22 +14,26 @@ public class AppStateExporter {
 
   private final CycleRepo mCycleRepo;
   private final ChartEntryRepo mEntryRepo;
+  private final InstructionsRepo mInstructionsRepo;
 
   public AppStateExporter(MyApplication myApp) {
     mCycleRepo = new CycleRepo(myApp.db());
     mEntryRepo = new ChartEntryRepo(myApp.db());
+    mInstructionsRepo = myApp.instructionsRepo();
   }
 
   public Single<AppState> export() {
-    return mCycleRepo.getStream()
-        .firstOrError()
-        .flatMapObservable(Observable::fromIterable)
-        .flatMapSingle(cycle -> mEntryRepo
-            .getStream(Flowable.just(cycle))
+    return Single.zip(
+        mCycleRepo.getStream()
             .firstOrError()
-            .map(entries -> new AppState.CycleData(cycle, entries))
-        )
-        .toList()
-        .map(cycleDatas -> new AppState(cycleDatas, null));
-  }
-}
+            .flatMapObservable(Observable::fromIterable)
+            .flatMapSingle(cycle -> mEntryRepo
+                .getStream(Flowable.just(cycle))
+                .firstOrError()
+                .map(entries -> new AppState.CycleData(cycle, entries))
+            )
+            .toList(),
+        mInstructionsRepo.getAll()
+            .firstOrError(),
+        (cycleDatas, instructions) -> new AppState(cycleDatas, null, instructions));
+  }}

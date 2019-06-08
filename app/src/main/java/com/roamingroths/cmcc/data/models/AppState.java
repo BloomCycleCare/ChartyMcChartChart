@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.data.models;
 
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.logic.profile.Profile;
 
 import java.util.Collection;
@@ -15,10 +16,12 @@ import java.util.Set;
 public class AppState {
   public final List<CycleData> cycles;
   public final Profile profile;
+  public final List<Instructions> instructions;
 
-  public AppState(List<CycleData> cycles, Profile profile) {
+  public AppState(List<CycleData> cycles, Profile profile, List<Instructions> instructions) {
     this.cycles = cycles;
     this.profile = profile;
+    this.instructions = instructions;
   }
 
   public static class CycleData {
