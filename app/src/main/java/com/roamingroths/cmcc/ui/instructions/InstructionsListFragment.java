@@ -21,9 +21,11 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.utils.SimpleArrayAdapter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -59,9 +61,9 @@ public class InstructionsListFragment extends Fragment {
     View view = inflater.inflate(R.layout.fragment_instruction_edit, container, false);
 
     ListView instructionsView = view.findViewById(R.id.lv_instructions);
-    SimpleArrayAdapter<InstructionContainer, ViewHolder> adapter = new SimpleArrayAdapter<>(
+    SimpleArrayAdapter<InstructionContainer, InstructionViewHolder> adapter = new SimpleArrayAdapter<>(
         getActivity(), R.layout.list_item_instruction,
-        v -> new ViewHolder(v, (instruction, isChecked) -> mViewModel.updateInstruction(instruction, isChecked)),
+        v -> new InstructionViewHolder(v, (instruction, isChecked) -> mViewModel.updateInstruction(instruction, isChecked)),
         t -> {});
     List<InstructionContainer> values = new ArrayList<>();
     values.addAll(EXTRA_INSTRUCTIONS);
@@ -79,6 +81,14 @@ public class InstructionsListFragment extends Fragment {
     startDate.setText("Unspecified");
     TextView status = view.findViewById(R.id.tv_status);
     status.setText("Unspecified");
+
+    ListView specialInstructionsView = view.findViewById(R.id.lv_special_instructions);
+    SimpleArrayAdapter<SpecialInstruction, SpecialInstructionViewHolder> specialAdapter = new SimpleArrayAdapter<>(
+        getActivity(), R.layout.list_item_instruction,
+        v -> new SpecialInstructionViewHolder(v, (specialInstruction, isChecked) -> mViewModel.updateSpecialInstruction(specialInstruction, isChecked)),
+        t -> {});
+    specialAdapter.updateData(Arrays.asList(SpecialInstruction.values()));
+    specialInstructionsView.setAdapter(specialAdapter);
     mViewModel.viewState().observe(this, viewState -> {
       Timber.i("Updating ViewState for instructions starting %s", viewState.instructions.startDate);
       startDate.setText(viewState.startDateStr);
@@ -103,7 +113,7 @@ public class InstructionsListFragment extends Fragment {
       status.setText(viewState.statusStr);
 
       for (Instruction instruction : Instruction.values()) {
-        ViewHolder holder = adapter.holderForItem(new InstructionContainer(instruction));
+        InstructionViewHolder holder = adapter.holderForItem(new InstructionContainer(instruction));
         holder.setChecked(viewState.instructions.activeItems.contains(instruction));
       }
       if (!Strings.isNullOrEmpty(viewState.collisionPrompt)) {
@@ -112,6 +122,10 @@ public class InstructionsListFragment extends Fragment {
             .setMessage(viewState.collisionPrompt)
             .setPositiveButton("Ok", (dialogInterface, i) -> dialogInterface.dismiss())
             .show();
+      }
+      for (SpecialInstruction instruction : SpecialInstruction.values()) {
+        SpecialInstructionViewHolder holder = specialAdapter.holderForItem(instruction);
+        holder.setChecked(viewState.instructions.specialInstructions.contains(instruction));
       }
     });
 
@@ -170,7 +184,7 @@ public class InstructionsListFragment extends Fragment {
     }
   }
 
-  private static class ViewHolder extends SimpleArrayAdapter.SimpleViewHolder<InstructionContainer> {
+  private static class InstructionViewHolder extends SimpleArrayAdapter.SimpleViewHolder<InstructionContainer> {
 
     private final TextView mKey;
     private final TextView mText;
@@ -178,7 +192,7 @@ public class InstructionsListFragment extends Fragment {
 
     private InstructionContainer mBoundInstruction;
 
-    public ViewHolder(View view, BiConsumer<Instruction, Boolean> toggleConsumer) {
+    public InstructionViewHolder(View view, BiConsumer<Instruction, Boolean> toggleConsumer) {
       super(view);
       mKey = view.findViewById(R.id.tv_instruction_key);
       mText = view.findViewById(R.id.tv_instruction_text);
@@ -200,6 +214,41 @@ public class InstructionsListFragment extends Fragment {
       mText.setText(data.text);
       mSwitch.setVisibility(data.instruction != null ? View.VISIBLE : View.GONE);
       mText.setTypeface(null, data.instruction != null ? Typeface.NORMAL : Typeface.ITALIC);
+    }
+
+    void setChecked(boolean checked) {
+      if (mSwitch.isChecked() != checked) {
+        mSwitch.setChecked(checked);
+      }
+    }
+  }
+
+  private static class SpecialInstructionViewHolder extends SimpleArrayAdapter.SimpleViewHolder<SpecialInstruction> {
+
+    private final TextView mText;
+    private final SwitchCompat mSwitch;
+
+    private SpecialInstruction mBoundInstruction;
+
+    public SpecialInstructionViewHolder(View view, BiConsumer<SpecialInstruction, Boolean> toggleConsumer) {
+      super(view);
+      TextView keyView = view.findViewById(R.id.tv_instruction_key);
+      keyView.setText("");
+      mText = view.findViewById(R.id.tv_instruction_text);
+      mSwitch = view.findViewById(R.id.switch_instruction);
+      mSwitch.setOnCheckedChangeListener((compoundButton, checked) -> {
+        try {
+          toggleConsumer.accept(mBoundInstruction, checked);
+        } catch (Exception e) {
+          throw new IllegalStateException(e);
+        }
+      });
+    }
+
+    @Override
+    protected void updateUI(SpecialInstruction data) {
+      mBoundInstruction = data;
+      mText.setText(data.description);
     }
 
     void setChecked(boolean checked) {

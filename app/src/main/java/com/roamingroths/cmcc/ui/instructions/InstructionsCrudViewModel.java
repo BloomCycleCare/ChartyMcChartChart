@@ -14,6 +14,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -43,7 +44,8 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
 
   final BehaviorSubject<LocalDate> startDateUpdates = BehaviorSubject.create();
   private final BehaviorSubject<Instructions> initialInstructions = BehaviorSubject.create();
-  private final Map<Instruction, BehaviorSubject<InstructionState>> instructionStates = new HashMap<>();
+  private final Map<Instruction, BehaviorSubject<ToggleState<Instruction>>> instructionStates = new HashMap<>();
+  private final Map<SpecialInstruction, BehaviorSubject<ToggleState<SpecialInstruction>>> specialInstructionStates = new HashMap<>();
 
   private final InstructionsRepo mInstructionsRepo;
 
@@ -56,6 +58,10 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
 
     for (Instruction instruction : Instruction.values()) {
       instructionStates.put(instruction, BehaviorSubject.create());
+    }
+
+    for (SpecialInstruction specialInstruction : SpecialInstruction.values()) {
+      specialInstructionStates.put(specialInstruction, BehaviorSubject.create());
     }
 
     // Connect subject for the current ViewState
@@ -155,6 +161,10 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
           boolean isActive = instructions.activeItems.contains(instruction);
           updateInstruction(instruction, isActive);
         }
+        for (SpecialInstruction instruction : SpecialInstruction.values()) {
+          boolean isActive = instructions.specialInstructions.contains(instruction);
+          updateSpecialInstruction(instruction, isActive);
+        }
       }
     }
   }
@@ -169,7 +179,14 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     if (!instructionStates.containsKey(instruction)) {
       Timber.w("No subject for %s", instruction.name());
     }
-    instructionStates.get(instruction).onNext(new InstructionState(instruction,isActive));
+    instructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
+  }
+
+  void updateSpecialInstruction(SpecialInstruction instruction, boolean isActive) {
+    if (!instructionStates.containsKey(instruction)) {
+      Timber.w("No subject for %s", instruction.name());
+    }
+    specialInstructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
   }
 
   LiveData<ViewState> viewState() {
@@ -177,8 +194,8 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
   }
 
   private Flowable<ViewState> viewStateStream() {
-    List<Observable<InstructionState>> dedupedActiveUpdates = new ArrayList<>();
-    for (BehaviorSubject<InstructionState> state : instructionStates.values()) {
+    List<Observable<ToggleState<Instruction>>> dedupedActiveUpdates = new ArrayList<>();
+    for (BehaviorSubject<ToggleState<Instruction>> state : instructionStates.values()) {
       dedupedActiveUpdates.add(state.distinctUntilChanged());
     }
     Observable<Set<Instruction>> activeStream = Observable.combineLatest(
@@ -186,9 +203,25 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
         states -> {
           Set<Instruction> activeInstructions = new HashSet<>();
           for (Object o : states) {
-            InstructionState state = (InstructionState) o;
+            ToggleState<Instruction> state = (ToggleState<Instruction>) o;
             if (state.isActive) {
-              activeInstructions.add(state.instruction);
+              activeInstructions.add(state.value);
+            }
+          }
+          return activeInstructions;
+        }).distinctUntilChanged();
+    List<Observable<ToggleState<SpecialInstruction>>> dedupedSpecialActiveUpdates = new ArrayList<>();
+    for (BehaviorSubject<ToggleState<SpecialInstruction>> state : specialInstructionStates.values()) {
+      dedupedSpecialActiveUpdates.add(state.distinctUntilChanged());
+    }
+    Observable<Set<SpecialInstruction>> activeSpecialStream = Observable.combineLatest(
+        dedupedSpecialActiveUpdates,
+        states -> {
+          Set<SpecialInstruction> activeInstructions = new HashSet<>();
+          for (Object o : states) {
+            ToggleState<SpecialInstruction> state = (ToggleState<SpecialInstruction>) o;
+            if (state.isActive) {
+              activeInstructions.add(state.value);
             }
           }
           return activeInstructions;
@@ -217,8 +250,9 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
         initialInstructions.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged().doOnNext(v -> Timber.v("New initial instruction")),
         startDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged().doOnNext(v -> Timber.v("New startDateUpdate %s", v)),
         activeStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New activeItemUpdate")),
+        activeSpecialStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New special")),
         collisionStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New collisions")),
-        (initialInstructions, startDate, activeInstructionSet, collisions) -> mInstructionsRepo
+        (initialInstructions, startDate, activeInstructionSet, activeSpecialInstructionSet, collisions) -> mInstructionsRepo
             .hasAnyAfter(startDate)
             .map(hasAnyAfter -> {
               Set<Instruction> instructionsToDeactivate = new HashSet<>();
@@ -233,7 +267,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
                   activeInstructions.add(activeInstruction);
                 }
               }
-              Instructions instructions = new Instructions(startDate, activeInstructions);
+              Instructions instructions = new Instructions(startDate, activeInstructions, new ArrayList<>(activeSpecialInstructionSet));
               ViewState viewState = new ViewState(instructions, initialInstructions, collisionPrompt);
               viewState.startDateStr = DateUtil.toWireStr(instructions.startDate);
               viewState.statusStr = hasAnyAfter ? "Inactive" : "Active";
@@ -264,12 +298,12 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     }
   }
 
-  private static class InstructionState {
-    public final Instruction instruction;
+  private static class ToggleState<T> {
+    public final T value;
     public final boolean isActive;
 
-    private InstructionState(Instruction instruction, boolean isActive) {
-      this.instruction = instruction;
+    private ToggleState(T value, boolean isActive) {
+      this.value = value;
       this.isActive = isActive;
     }
   }

@@ -9,6 +9,7 @@ import androidx.room.TypeConverters;
 import com.google.common.base.Objects;
 import com.roamingroths.cmcc.data.db.Converters;
 import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
@@ -26,16 +27,18 @@ public class Instructions {
   public LocalDate startDate;
   @TypeConverters(Converters.class)
   public List<Instruction> activeItems;
+  @TypeConverters(Converters.class)
+  public List<SpecialInstruction> specialInstructions;
 
   @ParcelConstructor
-  public Instructions(@NonNull LocalDate startDate, @NonNull List<Instruction> activeItems) {
+  public Instructions(@NonNull LocalDate startDate, @NonNull List<Instruction> activeItems, @NonNull List<SpecialInstruction> specialInstructions) {
     this.startDate = startDate;
-    this.activeItems = new ArrayList<>();
-    this.activeItems.addAll(activeItems);
+    this.activeItems = new ArrayList<>(activeItems);
+    this.specialInstructions = new ArrayList<>(specialInstructions);
   }
 
   public Instructions(Instructions that) {
-    this(that.startDate, that.activeItems);
+    this(that.startDate, that.activeItems, that.specialInstructions);
   }
 
   @NonNull
@@ -50,13 +53,14 @@ public class Instructions {
       Instructions that = (Instructions) o;
       return Objects.equal(this.startDate, that.startDate)
           && this.activeItems.size() == that.activeItems.size()
-          && this.activeItems.containsAll(that.activeItems);
+          && this.activeItems.containsAll(that.activeItems)
+          && this.specialInstructions.containsAll(that.specialInstructions);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(startDate, activeItems);
+    return Objects.hashCode(startDate, activeItems, specialInstructions);
   }
 }

@@ -53,7 +53,7 @@ android:padding="20dp">
 
 <TextView
     android:id="@+id/tv_instruction_header"
-    android:text="Active Instructions:"
+    android:text="Basic Instructions:"
     android:layout_marginTop="20dp"
     android:textStyle="bold"
     app:layout_constraintTop_toBottomOf="@id/tv_status_header"
@@ -64,6 +64,24 @@ android:padding="20dp">
 <com.roamingroths.cmcc.utils.NonScrollListView
     android:id="@+id/lv_instructions"
     app:layout_constraintTop_toBottomOf="@id/tv_instruction_header"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content" />
+
+<TextView
+    android:id="@+id/tv_special_instruction_header"
+    android:text="Special Instructions:"
+    android:layout_marginTop="20dp"
+    android:textStyle="bold"
+    app:layout_constraintTop_toBottomOf="@id/lv_instructions"
+    app:layout_constraintStart_toStartOf="parent"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content" />
+
+<com.roamingroths.cmcc.utils.NonScrollListView
+    android:id="@+id/lv_special_instructions"
+    app:layout_constraintTop_toBottomOf="@id/tv_special_instruction_header"
     app:layout_constraintStart_toStartOf="parent"
     app:layout_constraintEnd_toEndOf="parent"
     android:layout_width="match_parent"

@@ -8,6 +8,7 @@ import com.roamingroths.cmcc.crypto.AesCryptoUtil;
 import com.roamingroths.cmcc.data.domain.Instruction;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
+import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -79,5 +80,17 @@ public class Converters {
   public String fromInstructionList(List<Instruction> instructionList) {
     Type type = new TypeToken<List<Instruction>>() {}.getType();
     return GsonUtil.getGsonInstance().toJson(instructionList, type);
+  }
+
+  @TypeConverter
+  public List<SpecialInstruction> toSpecialInstructionList(String wire) {
+    Type type = new TypeToken<List<SpecialInstruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().fromJson(wire, type);
+  }
+
+  @TypeConverter
+  public String fromSpecialInstructionList(List<SpecialInstruction> in) {
+    Type type = new TypeToken<List<Instruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().toJson(in, type);
   }
 }

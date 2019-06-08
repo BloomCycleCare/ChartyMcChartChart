@@ -59,14 +59,14 @@ public class InstructionsListViewModel extends AndroidViewModel {
   Completable createNewInstructions(LocalDate newInstructionsStartDate) {
     return Completable.defer(() -> {
       mHasStartedNewInsructions.onNext(true);
-      Instructions newInstructions = new Instructions(newInstructionsStartDate, ImmutableList.of());
+      Instructions newInstructions = new Instructions(newInstructionsStartDate, ImmutableList.of(), ImmutableList.of());
       return mInstructionsRepo.insertOrUpdate(newInstructions);
     });
   }
 
   Completable addPreviousInstructions(LocalDate newInstructionsStartDate) {
     return Completable.defer(() -> {
-      Instructions newInstructions = new Instructions(newInstructionsStartDate, ImmutableList.of());
+      Instructions newInstructions = new Instructions(newInstructionsStartDate, ImmutableList.of(), ImmutableList.of());
         mInstructionsForFocus.onNext(Optional.of(newInstructions));
         return mInstructionsRepo.insertOrUpdate(newInstructions);
       });
@@ -95,7 +95,7 @@ public class InstructionsListViewModel extends AndroidViewModel {
                 .getCurrentCycle().toSingle()
                 .flatMapPublisher(currentCycle -> {
                   List<Instructions> updatedInstructions = new ArrayList<>(instructions);
-                  Instructions newInstructions = new Instructions(currentCycle.startDate, new ArrayList<>());
+                  Instructions newInstructions = new Instructions(currentCycle.startDate, ImmutableList.of(), ImmutableList.of());
                   updatedInstructions.add(newInstructions);
                   Timber.i("Inserting instructions for cycle beginning %s", currentCycle.startDate);
                   return mInstructionsRepo
