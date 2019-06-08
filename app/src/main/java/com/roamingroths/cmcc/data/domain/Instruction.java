@@ -30,7 +30,11 @@ public enum Instruction {
 
   J('J', null, "Essential samness quesiton -- Is today essentially the same as yesterday? -- yes or no"),
 
-  // TODO: K, L, M, N, O
+  // TODO: K, L
+
+  M('M', null, "End of day instructions apply through the first normal menstrual cycle"),
+
+  // TODO: N, O
   ;
 
   public final char section;
