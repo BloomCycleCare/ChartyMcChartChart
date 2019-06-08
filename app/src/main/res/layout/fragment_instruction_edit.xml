@@ -32,8 +32,8 @@ android:padding="20dp">
     />
 
 <TextView
-    android:text="End Date:"
-    android:id="@+id/tv_end_date_header"
+    android:text="Status:"
+    android:id="@+id/tv_status_header"
     app:layout_constraintTop_toBottomOf="@id/tv_start_date_header"
     app:layout_constraintStart_toStartOf="parent"
     android:layout_width="wrap_content"
@@ -42,10 +42,10 @@ android:padding="20dp">
     android:textStyle="bold"
     />
 <TextView
-    android:text="6 Nov 2910"
-    android:id="@+id/tv_end_date"
-    app:layout_constraintTop_toTopOf="@id/tv_end_date_header"
-    app:layout_constraintBottom_toBottomOf="@id/tv_end_date_header"
+    android:text="Active"
+    android:id="@+id/tv_status"
+    app:layout_constraintTop_toTopOf="@id/tv_status_header"
+    app:layout_constraintBottom_toBottomOf="@id/tv_status_header"
     app:layout_constraintEnd_toEndOf="parent"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
@@ -56,7 +56,7 @@ android:padding="20dp">
     android:text="Active Instructions:"
     android:layout_marginTop="20dp"
     android:textStyle="bold"
-    app:layout_constraintTop_toBottomOf="@id/tv_end_date_header"
+    app:layout_constraintTop_toBottomOf="@id/tv_status_header"
     app:layout_constraintStart_toStartOf="parent"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content" />

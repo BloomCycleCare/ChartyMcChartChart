@@ -25,7 +25,7 @@ import java.util.List;
         SymptomEntry.class,
         WellnessEntry.class,
     },
-    version = 4)
+    version = 5)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 

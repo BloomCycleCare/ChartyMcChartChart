@@ -28,6 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 import io.reactivex.functions.BiConsumer;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/13/17.
@@ -71,11 +72,36 @@ public class InstructionsListFragment extends Fragment {
     adapter.updateData(values);
     instructionsView.setAdapter(adapter);
 
+    InstructionsListViewModel activityViewModel =
+        ViewModelProviders.of(getActivity()).get(InstructionsListViewModel.class);
+
     TextView startDate = view.findViewById(R.id.tv_start_date);
-    TextView endDate = view.findViewById(R.id.tv_end_date);
+    startDate.setText("Unspecified");
+    TextView status = view.findViewById(R.id.tv_status);
+    status.setText("Unspecified");
     mViewModel.viewState().observe(this, viewState -> {
+      Timber.i("Updating ViewState for instructions starting %s", viewState.instructions.startDate);
       startDate.setText(viewState.startDateStr);
-      endDate.setText(viewState.endDateStr);
+      /*LocalDate currentStartDate = viewState.instructions.startDate;
+      startDate.setOnClickListener(view1 -> new DatePickerDialog(getContext(), (datePicker, year, month, day) -> {
+        mViewModel.updateStartDate(new LocalDate(year, month+1, day), (instructionsToRemove) -> Single.create(emitter -> {
+          new AlertDialog.Builder(getActivity())
+              .setTitle("Remove Instructions?")
+              .setMessage(String.format("This change would overlap %d existing instructions. Should they be dropped?", instructionsToRemove.size()))
+              .setPositiveButton("Yes", (d, i) -> {
+                emitter.onSuccess(true);
+                d.dismiss();
+              })
+              .setNegativeButton("No", (d, i) -> {
+                emitter.onSuccess(false);
+                d.dismiss();
+              })
+              .show();
+        })).subscribe();
+      }, currentStartDate.getYear(), currentStartDate.getMonthOfYear()-1, currentStartDate.getDayOfMonth()).show());*/
+
+      status.setText(viewState.statusStr);
+
       for (Instruction instruction : Instruction.values()) {
         ViewHolder holder = adapter.holderForItem(new InstructionContainer(instruction));
         holder.setChecked(viewState.instructions.activeItems.contains(instruction));
@@ -90,6 +116,12 @@ public class InstructionsListFragment extends Fragment {
     });
 
     return view;
+  }
+
+  @Override
+  public void onDestroy() {
+    mViewModel.onCleared();
+    super.onDestroy();
   }
 
   private static final List<InstructionContainer> EXTRA_INSTRUCTIONS = ImmutableList.of(

@@ -10,6 +10,7 @@ import com.google.firebase.FirebaseApp;
 import com.roamingroths.cmcc.BuildConfig;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.db.AppDatabase;
+import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -26,6 +27,7 @@ public class MyApplication extends Application {
   private static ViewModelFactory mViewModelFactory;
 
   private AppDatabase mDB;
+  private InstructionsRepo mInstructionsRepo;
 
   @Override
   public void onCreate() {
@@ -46,11 +48,18 @@ public class MyApplication extends Application {
         .fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
+    mInstructionsRepo = new InstructionsRepo(this);
+
     mViewModelFactory = new ViewModelFactory();
   }
 
+  @Deprecated
   public AppDatabase db() {
     return mDB;
+  }
+
+  public InstructionsRepo instructionsRepo() {
+    return mInstructionsRepo;
   }
 
   public static MyApplication cast(Application app) {
