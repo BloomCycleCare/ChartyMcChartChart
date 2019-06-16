@@ -18,6 +18,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -41,20 +42,33 @@ public class ChartEntryRepo {
 
   @Deprecated
   public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
-    return Flowable.merge(cycleStream
+    return cycleStream
         .map(ChartEntryRepo::datesForCycle)
         .doOnNext(dates -> Timber.v("Fetching %d entries for cycle", dates.size()))
         .distinctUntilChanged()
-        .switchMap(dates -> Flowable
-            .fromIterable(dates)
-            .parallel()
-            .map(this::getStream)
-            .sequential()
-            .toList()
-            .toFlowable()
-            .map(RxUtil::combineLatest)
-        ))
+        .switchMap(this::entriesForDates)
         .doOnSubscribe(s -> Timber.v("Fetching entries"));
+  }
+
+  public Flowable<List<ChartEntry>> getLatestN(int n) {
+    return Flowable
+        .interval(0, 30, TimeUnit.SECONDS)
+        .doOnNext(i -> Timber.v("Tick"))
+        .map(i -> DateUtil.daysBetween(LocalDate.now().minusDays(n - 1), LocalDate.now(), false))
+        .distinctUntilChanged()
+        .switchMap(this::entriesForDates)
+        .doOnNext(i -> Timber.v("New data"));
+  }
+
+  private Flowable<List<ChartEntry>> entriesForDates(List<LocalDate> dates) {
+    return Flowable.merge(Flowable
+        .fromIterable(dates)
+        .parallel()
+        .map(this::getStream)
+        .sequential()
+        .toList()
+        .toFlowable()
+        .map(RxUtil::combineLatest));
   }
 
   public Flowable<List<ChartEntry>> getStreamForCycle(Flowable<Cycle> cycleStream) {
@@ -112,8 +126,7 @@ public class ChartEntryRepo {
             observationEntryDao.getStream(entryDate),
             wellnessEntryDao.getStream(entryDate),
             symptomEntryDao.getStream(entryDate),
-            ChartEntry::new)
-        .doOnNext(e -> Timber.v("New value for entry: %s", e.entryDate));
+            ChartEntry::new);
   }
 
   private static List<LocalDate> datesForCycle(Cycle cycle) {

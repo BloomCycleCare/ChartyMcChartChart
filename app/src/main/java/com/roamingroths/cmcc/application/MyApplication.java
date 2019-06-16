@@ -1,6 +1,8 @@
 package com.roamingroths.cmcc.application;
 
 import android.app.Application;
+import android.content.Intent;
+import android.os.Build;
 
 import androidx.preference.PreferenceManager;
 import androidx.room.Room;
@@ -11,6 +13,7 @@ import com.roamingroths.cmcc.BuildConfig;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
+import com.roamingroths.cmcc.notifications.ChartingService;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -51,6 +54,14 @@ public class MyApplication extends Application {
     mInstructionsRepo = new InstructionsRepo(this);
 
     mViewModelFactory = new ViewModelFactory();
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      getApplicationContext().startForegroundService(
+          new Intent(getApplicationContext(), ChartingService.class));
+    } else {
+      getApplicationContext().startService(
+          new Intent(getApplicationContext(), ChartingService.class));
+    }
   }
 
   @Deprecated
