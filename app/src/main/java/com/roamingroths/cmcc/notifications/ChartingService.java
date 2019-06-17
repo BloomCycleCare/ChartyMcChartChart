@@ -32,6 +32,7 @@ public class ChartingService extends Service {
   @Override
   public void onCreate() {
     super.onCreate();
+    Timber.i("Creating service");
     MyApplication myApp = MyApplication.cast(getApplication());
 
     initNotificationChannel(this);
@@ -46,6 +47,7 @@ public class ChartingService extends Service {
           ChartEntry entryForYesterday = entries.get(0);
           return entryForYesterday.observationEntry.observation != null;
         })
+        .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
         .distinctUntilChanged()
         .subscribe(yesterdayHasObservation -> {
           NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -58,6 +60,15 @@ public class ChartingService extends Service {
             manager.cancel(R.string.charting_reminder);
           }
         }, Timber::e));
+  }
+
+  @Override
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    Timber.i("Starting service");
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      //startForegroundService(intent);
+    }
+    return START_NOT_STICKY;
   }
 
   @Nullable
@@ -73,6 +84,7 @@ public class ChartingService extends Service {
   }
 
   private static Notification createNotification(Context context, String text) {
+    Timber.d("Creating notification with text: %s", text);
     NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
         .setSmallIcon(R.drawable.ic_assignment_black_24dp)
         .setContentTitle("Charting Reminder")
@@ -87,6 +99,7 @@ public class ChartingService extends Service {
   }
 
   private static void initNotificationChannel(Context context) {
+    Timber.d("Initializing notification channel");
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
       return;
     }

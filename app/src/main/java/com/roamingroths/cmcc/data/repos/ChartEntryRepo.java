@@ -4,6 +4,7 @@ import androidx.core.util.Pair;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ForwardingList;
+import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.data.db.ObservationEntryDao;
 import com.roamingroths.cmcc.data.db.SymptomEntryDao;
@@ -53,9 +54,10 @@ public class ChartEntryRepo {
   public Flowable<List<ChartEntry>> getLatestN(int n) {
     return Flowable
         .interval(0, 30, TimeUnit.SECONDS)
-        .doOnNext(i -> Timber.v("Tick"))
+        .doOnNext(i -> Timber.v("Tick: %d", i))
         .map(i -> DateUtil.daysBetween(LocalDate.now().minusDays(n - 1), LocalDate.now(), false))
         .distinctUntilChanged()
+        .doOnNext(days -> Timber.v("New date range: %s", Iterables.toString(days)))
         .switchMap(this::entriesForDates)
         .doOnNext(i -> Timber.v("New data"));
   }
