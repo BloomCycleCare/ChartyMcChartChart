@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.notifications;
 
+import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -19,6 +20,8 @@ import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
 
+import org.joda.time.DateTime;
+
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
@@ -36,6 +39,11 @@ public class ChartingService extends Service {
     MyApplication myApp = MyApplication.cast(getApplication());
 
     initNotificationChannel(this);
+
+    int NOTIFICATION_ID = (int) (System.currentTimeMillis()%10000);
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      startForeground(NOTIFICATION_ID, new Notification.Builder(this, CHANNEL_ID).build());
+    }
 
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
     mDisposables.add(entryRepo
@@ -58,17 +66,25 @@ public class ChartingService extends Service {
           } else {
             Timber.d("Not showing notification");
             manager.cancel(R.string.charting_reminder);
+            scheduleRestart(DateTime.now().plusMinutes(30));
+            Timber.i("Stopping reminder service");
+            stopSelf();
           }
         }, Timber::e));
   }
 
+  private void scheduleRestart(DateTime restartTime) {
+    Timber.i("Scheduling restart at %s", restartTime);
+    Intent restartIntent = new Intent(this, ChartingReceiver.class);
+    PendingIntent pi = PendingIntent.getBroadcast(
+        this, 0, restartIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+    AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+    am.set(AlarmManager.RTC_WAKEUP, restartTime.getMillis(), pi);
+  }
+
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
-    Timber.i("Starting service");
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      //startForegroundService(intent);
-    }
-    return START_NOT_STICKY;
+    return START_STICKY;
   }
 
   @Nullable

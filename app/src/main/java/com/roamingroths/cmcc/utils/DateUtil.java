@@ -3,14 +3,18 @@ package com.roamingroths.cmcc.utils;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import io.reactivex.Flowable;
 import io.reactivex.annotations.Nullable;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 5/14/17.
@@ -56,6 +60,14 @@ public class DateUtil {
       return null;
     }
     return WIRE_FORMAT.parseLocalDate(dateStr);
+  }
+
+  public static Flowable<LocalDate> nowStream() {
+    long millisToMidnight = LocalDate.now().plusDays(1).toDate().getTime() - DateTime.now().getMillis();
+    return Flowable.interval(millisToMidnight, 1, TimeUnit.DAYS)
+        .map(i -> LocalDate.now())
+        .startWith(LocalDate.now())
+        .doOnNext(now -> Timber.v("Now: %s", now));
   }
 
   public static List<LocalDate> daysBetween(LocalDate firstDay, @Nullable LocalDate lastDay, boolean reversed) {

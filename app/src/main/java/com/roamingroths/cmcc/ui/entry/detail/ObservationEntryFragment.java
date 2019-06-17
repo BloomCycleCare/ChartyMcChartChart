@@ -132,18 +132,19 @@ public class ObservationEntryFragment extends Fragment {
           }
           observationEditText.setText(observation.toString());
           observationDescriptionTextView.setText(observation.getDescription());
-          if (observation.hasBlood()) {
-            unusualBleedingLayout.setVisibility(View.VISIBLE);
-          } else {
-            unusualBleedingLayout.setVisibility(View.GONE);
-          }
-          if (observation.dischargeSummary != null
-              && observation.dischargeSummary.isPeakType()
-              && viewState.entryContext.shouldAskEssentialSameness) {
-            essentialSamenessLayout.setVisibility(View.VISIBLE);
-          } else {
-            essentialSamenessLayout.setVisibility(View.GONE);
-          }
+        }
+        if (observation != null && observation.hasBlood()) {
+          unusualBleedingLayout.setVisibility(View.VISIBLE);
+        } else {
+          unusualBleedingLayout.setVisibility(View.GONE);
+        }
+        if (observation != null
+            && observation.dischargeSummary != null
+            && observation.dischargeSummary.isPeakType()
+            && viewState.entryContext.shouldAskEssentialSameness) {
+          essentialSamenessLayout.setVisibility(View.VISIBLE);
+        } else {
+          essentialSamenessLayout.setVisibility(View.GONE);
         }
       }
       if (observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {

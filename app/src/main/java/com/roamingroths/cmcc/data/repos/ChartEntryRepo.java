@@ -44,7 +44,7 @@ public class ChartEntryRepo {
   @Deprecated
   public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
     return cycleStream
-        .map(ChartEntryRepo::datesForCycle)
+        .switchMap(ChartEntryRepo::datesForCycle)
         .doOnNext(dates -> Timber.v("Fetching %d entries for cycle", dates.size()))
         .distinctUntilChanged()
         .switchMap(this::entriesForDates)
@@ -55,7 +55,9 @@ public class ChartEntryRepo {
     return Flowable
         .interval(0, 30, TimeUnit.SECONDS)
         .doOnNext(i -> Timber.v("Tick: %d", i))
-        .map(i -> DateUtil.daysBetween(LocalDate.now().minusDays(n - 1), LocalDate.now(), false))
+        .switchMap(i -> DateUtil
+            .nowStream()
+            .map(now -> DateUtil.daysBetween(now.minusDays(n - 1), now, false)))
         .distinctUntilChanged()
         .doOnNext(days -> Timber.v("New date range: %s", Iterables.toString(days)))
         .switchMap(this::entriesForDates)
@@ -131,9 +133,9 @@ public class ChartEntryRepo {
             ChartEntry::new);
   }
 
-  private static List<LocalDate> datesForCycle(Cycle cycle) {
-    LocalDate lastDate = Optional.fromNullable(cycle.endDate).or(LocalDate.now());
-    return DateUtil.daysBetween(cycle.startDate, lastDate, true);
+  private static Flowable<List<LocalDate>> datesForCycle(Cycle cycle) {
+    Flowable<LocalDate> endDate = cycle.endDate != null ? Flowable.just(cycle.endDate) : DateUtil.nowStream();
+    return endDate.map(lastDay -> DateUtil.daysBetween(cycle.startDate, lastDay, true));
   }
 
 
