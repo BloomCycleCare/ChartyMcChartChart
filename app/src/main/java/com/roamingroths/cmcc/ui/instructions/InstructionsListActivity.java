@@ -194,7 +194,7 @@ public class InstructionsListActivity extends AppCompatActivity {
       return true;
     }
     if (id == R.id.action_insert_after) {
-      Instructions instructions = mPagerAdapter.mInstructions.get(mViewPager.getCurrentItem());
+      Instructions instructions = mPagerAdapter.get(mViewPager.getCurrentItem());
       DatePickerDialog dialog = new DatePickerDialog(InstructionsListActivity.this, (d, year, month, day) -> {
         mViewModel.addPreviousInstructions(new LocalDate(year, month + 1, day)).subscribe();
       }, instructions.startDate.getYear(), instructions.startDate.getMonthOfYear() - 1, instructions.startDate.getDayOfMonth());
