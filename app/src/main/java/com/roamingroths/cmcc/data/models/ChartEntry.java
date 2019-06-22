@@ -3,6 +3,8 @@ package com.roamingroths.cmcc.data.models;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.annotation.NonNull;
+
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -46,6 +48,12 @@ public class ChartEntry implements Parcelable {
         in.readParcelable(ObservationEntry.class.getClassLoader()),
         in.readParcelable(WellnessEntry.class.getClassLoader()),
         in.readParcelable(SymptomEntry.class.getClassLoader()));
+  }
+
+  @NonNull
+  @Override
+  public String toString() {
+    return entryDate.toString();
   }
 
   public List<String> getSummaryLines() {

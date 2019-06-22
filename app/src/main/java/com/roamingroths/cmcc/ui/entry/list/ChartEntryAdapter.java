@@ -7,12 +7,11 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
-import androidx.preference.PreferenceManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.models.ChartEntryList;
 import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
@@ -20,6 +19,7 @@ import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 
 import org.parceler.Parcels;
 
+import java.util.Collection;
 import java.util.List;
 
 import io.reactivex.disposables.CompositeDisposable;
@@ -36,7 +36,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
 
   private final Context mContext;
   private final OnClickHandler mClickHandler;
-  private final Preferences mPreferences;
   private final CompositeDisposable mDisposables;
   private final boolean mHasPreviousCycle;
   private ChartEntryList mContainerList;
@@ -52,22 +51,19 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mClickHandler = clickHandler;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
-    mPreferences = Preferences.fromShared(mContext);
-    mContainerList = ChartEntryList.builder(currentCycle, mPreferences).withAdapter(this).build();
+    mContainerList = ChartEntryList.builder(currentCycle).withAdapter(this).build();
     mHasPreviousCycle = hasPreviousCycle;
-
-    PreferenceManager.getDefaultSharedPreferences(context).registerOnSharedPreferenceChangeListener(
-        (sharedPreferences, key) -> {
-          mPreferences.update(sharedPreferences);
-          notifyDataSetChanged();
-        }
-    );
   }
 
   void updateLayerKey(String key) {
     mLayerKey = key;
     notifyDataSetChanged();
   }
+
+  void updateInstructions(Collection<Instructions> instructions) {
+    mContainerList.updateInstructions(instructions);
+  }
+
 
   void shutdown() {
     mDisposables.clear();

@@ -41,6 +41,14 @@ public class Instructions {
     this(that.startDate, that.activeItems, that.specialInstructions);
   }
 
+  public boolean isActive(SpecialInstruction specialInstruction) {
+    return specialInstructions.contains(specialInstruction);
+  }
+
+  public boolean isActive(Instruction instruction) {
+    return activeItems.contains(instruction);
+  }
+
   @NonNull
   @Override
   public String toString() {
@@ -54,6 +62,7 @@ public class Instructions {
       return Objects.equal(this.startDate, that.startDate)
           && this.activeItems.size() == that.activeItems.size()
           && this.activeItems.containsAll(that.activeItems)
+          && this.specialInstructions.size() == that.specialInstructions.size()
           && this.specialInstructions.containsAll(that.specialInstructions);
     }
     return false;

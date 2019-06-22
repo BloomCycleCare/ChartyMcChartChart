@@ -183,7 +183,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
   }
 
   void updateSpecialInstruction(SpecialInstruction instruction, boolean isActive) {
-    if (!instructionStates.containsKey(instruction)) {
+    if (!specialInstructionStates.containsKey(instruction)) {
       Timber.w("No subject for %s", instruction.name());
     }
     specialInstructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
@@ -278,7 +278,8 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
 
   private static final ImmutableSet<ImmutableSet<Instruction>> EXCLUSIVE_SETS = ImmutableSet.of(
       ImmutableSet.of(Instruction.E_1, Instruction.E_2),
-      ImmutableSet.of(Instruction.E_4, Instruction.E_5, Instruction.E_6));
+      ImmutableSet.of(Instruction.E_4, Instruction.E_5, Instruction.E_6),
+      Instruction.POST_PEAK_YELLOW_INSTRUCTIONS);
 
   public class ViewState {
     public String startDateStr;

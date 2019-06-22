@@ -8,10 +8,13 @@ import androidx.recyclerview.widget.SortedList;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
+import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.data.entities.Entry;
+import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.logic.chart.MccScorer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Created by parkeroth on 6/24/17.
@@ -47,17 +51,53 @@ public class ChartEntryList {
   private final SortedList<ChartEntry> mEntries;
   private final Map<LocalDate, ChartEntry> mEntryIndex = new HashMap<>();
   private final SortedSet<LocalDate> mPeakDays = new TreeSet<>();
-  private final Preferences mPreferences;
+  private final ReentrantReadWriteLock mInstructionsLock = new ReentrantReadWriteLock();
+  private final TreeSet<Instructions> mInstructions = new TreeSet<>((a, b) -> a.startDate.compareTo(b.startDate));
+
   private LocalDate mPointOfChange;
 
-  public static Builder builder(Cycle currentCycle, Preferences preferences) {
-    return new Builder(currentCycle, preferences);
+  public static Builder builder(Cycle currentCycle) {
+    return new Builder(currentCycle);
   }
 
-  private ChartEntryList(Cycle currentCycle, Preferences preferences, SortedList<ChartEntry> entries) {
+  private ChartEntryList(Cycle currentCycle, SortedList<ChartEntry> entries) {
     mEntries = entries;
     mCurrentCycle = currentCycle;
-    mPreferences = preferences;
+  }
+
+  public void updateInstructions(Collection<Instructions> newInstructions) {
+    try {
+      mInstructionsLock.writeLock().lock();
+      mInstructions.clear();
+      mInstructions.addAll(newInstructions);
+    } finally {
+      mInstructionsLock.writeLock().unlock();
+    }
+  }
+
+  private Optional<Instructions> getActiveInstructions(LocalDate date) {
+    try {
+      mInstructionsLock.readLock().lock();
+      for (Instructions instructions : mInstructions.descendingSet()) {
+        if (date.isAfter(instructions.startDate)) {
+          return Optional.of(instructions);
+        }
+      }
+      return Optional.absent();
+    } finally {
+      mInstructionsLock.readLock().unlock();
+    }
+  }
+
+  private boolean postPeakYellowEnabled(LocalDate date) {
+    return getActiveInstructions(date).transform(instructions -> {
+      for (Instruction i : Instruction.POST_PEAK_YELLOW_INSTRUCTIONS) {
+        if (instructions.isActive(i)) {
+          return true;
+        }
+      }
+      return false;
+    }).or(false);
   }
 
   public ImmutableMap<Stat, Object> getStats() {
@@ -195,16 +235,29 @@ public class ChartEntryList {
   }
 
   private boolean askEssentialSamenessQuestion(int index) {
-    int previousIndex = index + 1;
-    if (previousIndex >= mEntries.size()) {
-      return false;
+    ChartEntry entry = get(index);
+    // TODO: change wording of question
+    boolean askForSpecialInstruction = false;
+    if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, entry.entryDate)) {
+      int previousIndex = index + 1;
+      if (previousIndex < mEntries.size()) {
+        askForSpecialInstruction = mEntries.get(previousIndex).observationEntry.intercourse;
+      }
     }
-    return mEntries.get(previousIndex).observationEntry.intercourse;
+    boolean askForPrePeakYellow = false;
+    if (isActive(Instruction.K_1, entry.entryDate) && isPreakPeak(entry.observationEntry)) {
+      askForPrePeakYellow = true;
+    }
+    return askForPrePeakYellow || askForSpecialInstruction;
   }
 
   private int getCount(ChartEntry currentEntry) {
     int entryIndex = mEntries.indexOf(currentEntry);
     if (currentEntry.observationEntry == null) {
+      return -1;
+    }
+    if (isActive(Instruction.K_1, currentEntry.entryDate)
+        && isBeforePointOfChange(currentEntry.observationEntry)) {
       return -1;
     }
     if (currentEntry.observationEntry.unusualBleeding
@@ -227,7 +280,7 @@ public class ChartEntryList {
       }
       // Check for 1 day of peak mucus (D.5)
       if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
-        if (mPreferences.specialSamenessYellowEnabled()
+        if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, currentEntry.entryDate)
             && previousEntry.observationEntry.isEssentiallyTheSame) {
           continue;
         } else {
@@ -254,7 +307,23 @@ public class ChartEntryList {
     return -1;
   }
 
-  private boolean isWithinCountOfThree(int position, ObservationEntry entry) {
+  private boolean isActive(SpecialInstruction specialInstruction, LocalDate date) {
+    return getActiveInstructions(date).transform(i -> i.isActive(specialInstruction)).or(false);
+  }
+
+  private boolean isActive(Instruction instruction, LocalDate date) {
+    return getActiveInstructions(date).transform(i -> i.isActive(instruction)).or(false);
+  }
+
+  private int getPosition(Entry entry) {
+    if (!mEntryIndex.containsKey(entry.getDate())) {
+      return -1;
+    }
+    return mEntries.indexOf(mEntryIndex.get(entry.getDate()));
+  }
+
+  private boolean isWithinCountOfThree(ObservationEntry entry) {
+    int position = getPosition(entry);
     int lastPosition = position + 3;
     for (int i = position + 1; i < mEntries.size() && i <= lastPosition; i++) {
       ChartEntry previousEntry = mEntries.get(i);
@@ -270,7 +339,8 @@ public class ChartEntryList {
       }
       // Check for 1 day of peak mucus (D.5)
       if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
-        if (mPreferences.specialSamenessYellowEnabled() && previousEntry.observationEntry.isEssentiallyTheSame) {
+        if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, entry.getDate())
+            && previousEntry.observationEntry.isEssentiallyTheSame) {
           continue;
         } else {
           return true;
@@ -309,14 +379,16 @@ public class ChartEntryList {
       return false;
     }
     // Suppress if prepeak and yellow stickers enabled
-    if (mPreferences.prePeakYellowEnabled() && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
+    if (isActive(Instruction.K_1, entry.getDate())
+        && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
       return false;
     }
     // Suppress for special instruction
-    if (mPreferences.specialSamenessYellowEnabled() && entry.observation.dischargeSummary.isPeakType() && entry.isEssentiallyTheSame) {
+    if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, entry.getDate())
+        && entry.observation.dischargeSummary.isPeakType() && entry.isEssentiallyTheSame) {
       return false;
     }
-    if (isWithinCountOfThree(position, entry)) {
+    if (isWithinCountOfThree(entry)) {
       return true;
     }
     // TODO: migrate to use getCount
@@ -326,7 +398,7 @@ public class ChartEntryList {
           && mostRecentPeakDay.plusDays(4).isAfter(entry.getDate())) {
         return true;
       }
-      if (mPreferences.postPeakYellowEnabled()
+      if (postPeakYellowEnabled(entry.getDate())
           && entry.getDate().isAfter(mostRecentPeakDay.plusDays(3))) {
         return false;
       }
@@ -362,19 +434,23 @@ public class ChartEntryList {
     if (!entry.observation.dischargeSummary.mType.hasMucus()) {
       return R.color.entryGreen;
     }
-    if (mPreferences.prePeakYellowEnabled()) {
+    if (isActive(Instruction.K_1, entry.getDate())) {
       // Prepeak yellow stickers enabled
       if (isPreakPeak(entry) && isBeforePointOfChange(entry)) {
         return R.color.entryYellow;
       }
     }
-    if (mPreferences.postPeakYellowEnabled()) {
+    if (postPeakYellowEnabled(entry.getDate())) {
+      boolean isPostPeakPlus4 = Optional
+          .fromNullable(getMostRecentPeakDay(entry))
+          .transform(mostRecentPeakDay -> entry.getDate().isAfter(mostRecentPeakDay.plusDays(3)))
+          .or(false);
       // Postpeak yellow stickers enabled
-      if (isPostPeak(entry)) {
+      if (isPostPeakPlus4) {
         return R.color.entryYellow;
       }
     }
-    if (mPreferences.specialSamenessYellowEnabled()
+    if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, entry.getDate())
         && entry.observation.dischargeSummary.isPeakType()
         && entry.isEssentiallyTheSame) {
       return R.color.entryYellow;
@@ -416,41 +492,6 @@ public class ChartEntryList {
     return mostRecentPeakDay;
   }
 
-  @Nullable
-  private ChartEntry getMostRecentPeakTypeDay(ObservationEntry currentEntry) {
-    // For every index from end to start
-    for (int i=mEntries.size()-1; i > 0; i--) {
-      ChartEntry previousEntry = mEntries.get(i);
-
-    }
-    int previousConsecutiveDaysOfMucus = 0;
-    for (int i=0; i<mEntries.size(); i++) {
-      ChartEntry entry = mEntries.get(i);
-      if (entry.entryDate.isAfter(currentEntry.getDate())) {
-        continue;
-      }
-      if (previousConsecutiveDaysOfMucus >= 3) {
-        return entry;
-      }
-      if (entry.observationEntry.unusualBleeding) {
-        return entry;
-      }
-      if (entry.observationEntry.hasMucus()) {
-        previousConsecutiveDaysOfMucus++;
-        if (entry.observationEntry.hasPeakTypeMucus()) {
-          if (mPreferences.specialSamenessYellowEnabled()
-              && entry.observationEntry.isEssentiallyTheSame) {
-            continue;
-          }
-          return entry;
-        }
-      } else {
-        previousConsecutiveDaysOfMucus = 0;
-      }
-    }
-    return null;
-  }
-
   private int getEntryIndex(LocalDate entryDate) {
     for (int i = 0; i < mEntries.size(); i++) {
       ChartEntry chartEntry = mEntries.get(i);
@@ -464,15 +505,13 @@ public class ChartEntryList {
   public static class Builder {
 
     private final Cycle currentCycle;
-    private final Preferences preferences;
     private final SortedList<ChartEntry> entries;
     private ChartEntryAdapter adapter;
 
-    private Builder(Cycle currentCycle, Preferences preferences) {
+    private Builder(Cycle currentCycle) {
       this.currentCycle = Preconditions.checkNotNull(currentCycle);
-      this.preferences = Preconditions.checkNotNull(preferences);
 
-      entries = new SortedList<ChartEntry>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
+      entries = new SortedList<>(ChartEntry.class, new SortedList.Callback<ChartEntry>() {
         @Override
         public void onInserted(int position, int count) {
           if (adapter != null) {
@@ -529,7 +568,7 @@ public class ChartEntryList {
     }
 
     public ChartEntryList build() {
-      return new ChartEntryList(currentCycle, preferences, entries);
+      return new ChartEntryList(currentCycle, entries);
     }
   }
 

@@ -20,6 +20,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
+import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 
 import org.parceler.Parcels;
 
@@ -171,6 +172,10 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()
         .subscribe(mChartEntryAdapter::updateLayerKey));
+    InstructionsRepo instructionsRepo = new InstructionsRepo(MyApplication.cast(getActivity().getApplication()));
+    mDisposables.add(instructionsRepo
+        .getAll()
+        .subscribe(instructions -> mChartEntryAdapter.updateInstructions(instructions)));
 
     MyApplication myApp = MyApplication.cast(getActivity().getApplication());
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());

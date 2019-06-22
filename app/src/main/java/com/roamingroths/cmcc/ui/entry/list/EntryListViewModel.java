@@ -109,7 +109,7 @@ public class EntryListViewModel extends AndroidViewModel {
         .getStream(Flowable.just(cycle))
         .distinctUntilChanged()
         .map(entries -> {
-          ChartEntryList entryList = ChartEntryList.builder(cycle, mPreferences).build();
+          ChartEntryList entryList = ChartEntryList.builder(cycle).build();
           for (ChartEntry entry : entries) {
             entryList.addEntry(entry);
           }

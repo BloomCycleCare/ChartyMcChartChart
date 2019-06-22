@@ -143,6 +143,16 @@ public class InstructionsListActivity extends AppCompatActivity {
   }
 
   @Override
+  protected void onStop() {
+    mViewModel.isDirty().subscribe(isDirty -> {
+      if (isDirty) {
+        Timber.w("Repo is dirty!");
+      }
+    });
+    super.onStop();
+  }
+
+  @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     int id = item.getItemId();
     if (id == android.R.id.home) {

@@ -140,7 +140,6 @@ public class ObservationEntryFragment extends Fragment {
         }
         if (observation != null
             && observation.dischargeSummary != null
-            && observation.dischargeSummary.isPeakType()
             && viewState.entryContext.shouldAskEssentialSameness) {
           essentialSamenessLayout.setVisibility(View.VISIBLE);
         } else {
@@ -163,8 +162,7 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
 
       SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-      boolean usingPrePeakYellowStickers = preferences.getBoolean("enable_pre_peak_yellow_stickers", false);
-      pointOfChangeLayout.setVisibility(usingPrePeakYellowStickers ? View.VISIBLE : View.GONE);
+      pointOfChangeLayout.setVisibility(viewState.entryContext.shouldAskEssentialSameness ? View.VISIBLE : View.GONE);
 
       if (uiInitialized.compareAndSet(false, true)) {
         try {

@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.roamingroths.cmcc.Preferences;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.models.ChartEntryList;
@@ -104,7 +103,7 @@ public class PrintChartActivity extends AppCompatActivity {
                 .getStream(Flowable.just(cycle))
                 .firstOrError()
                 .map(chartEntries -> ChartEntryList
-                    .builder(cycle, Preferences.fromShared(PrintChartActivity.this))
+                    .builder(cycle)
                     .addAll(chartEntries)
                     .build())
                 .toObservable());

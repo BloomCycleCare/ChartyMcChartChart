@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.data.domain;
 
+import com.google.common.collect.ImmutableSet;
+
 public enum Instruction {
   A('A', null, "Always keep to the observation routine."),
   B('B', null, "Chart at the end of your day, every day, and record the most fertile sign of the day."),
@@ -30,7 +32,14 @@ public enum Instruction {
 
   J('J', null, "Essential samness quesiton -- Is today essentially the same as yesterday? -- yes or no"),
 
-  // TODO: K, L
+  K_1('K', 1, "Pre-Peak -- end of the day, alternate days"),
+  K_2('K', 2, "Post-Peak (after the fourth day) -- end of the day, alternate days"),
+  K_3('K', 3, "Post-Peak (after the fourth day) -- end of the day, every day"),
+  K_4('K', 4, "Post-Peak (after the fourth day) -- any time of day"),
+  K_5('K', 5, "Discontinue use when period starts"),
+  K_6('K', 6, "Discontinue pre-Peak Y.S. in regular cycles when mucus cycle < 9 days"),
+
+  // TODO: L
 
   M('M', null, "End of day instructions apply through the first normal menstrual cycle"),
 
@@ -46,4 +55,6 @@ public enum Instruction {
     this.subSection = subSection;
     this.description = description;
   }
+
+  public static ImmutableSet<Instruction> POST_PEAK_YELLOW_INSTRUCTIONS = ImmutableSet.of(K_2, K_3, K_4);
 }
