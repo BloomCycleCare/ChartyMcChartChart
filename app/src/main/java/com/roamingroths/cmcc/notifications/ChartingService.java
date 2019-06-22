@@ -40,12 +40,8 @@ public class ChartingService extends Service {
 
     initNotificationChannel(this);
 
-    int NOTIFICATION_ID = (int) (System.currentTimeMillis()%10000);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      startForeground(NOTIFICATION_ID, new Notification.Builder(this, CHANNEL_ID).build());
-    }
-
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+    NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     mDisposables.add(entryRepo
         .getLatestN(2)
         .map(entries -> {
@@ -56,21 +52,29 @@ public class ChartingService extends Service {
           return entryForYesterday.observationEntry.observation != null;
         })
         .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
+        .takeUntil(yesterdayHasObservation -> yesterdayHasObservation)
         .distinctUntilChanged()
+        .doOnComplete(() -> clearNotificationAndTerminate(manager))
         .subscribe(yesterdayHasObservation -> {
-          NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-          if (!yesterdayHasObservation) {
-            Timber.d("Showing notification");
-            manager.notify(R.string.charting_reminder, createNotification(
-                this, "Input entry for yesterday"));
+          Timber.d("Showing notification");
+          Notification notification = createNotification(this, "Input entry for yesterday");
+          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForeground(R.string.charting_reminder, notification);
           } else {
-            Timber.d("Not showing notification");
-            manager.cancel(R.string.charting_reminder);
-            scheduleRestart(DateTime.now().plusMinutes(30));
-            Timber.i("Stopping reminder service");
-            stopSelf();
+            manager.notify(R.string.charting_reminder, notification);
           }
-        }, Timber::e));
+        }, t -> {
+          Timber.e(t);
+          clearNotificationAndTerminate(manager);
+        }));
+  }
+
+  private void clearNotificationAndTerminate(NotificationManager manager) {
+    Timber.d("Canceling notification");
+    manager.cancel(R.string.charting_reminder);
+    scheduleRestart(DateTime.now().plusMinutes(30));
+    Timber.i("Stopping reminder service");
+    stopSelf();
   }
 
   private void scheduleRestart(DateTime restartTime) {
