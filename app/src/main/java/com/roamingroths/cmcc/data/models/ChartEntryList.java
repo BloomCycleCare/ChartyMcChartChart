@@ -278,6 +278,9 @@ public class ChartEntryList {
       if (previousEntry.observationEntry.observation.dischargeSummary == null) {
         continue;
       }
+      if (previousEntry.observationEntry.peakDay) {
+        return i - entryIndex;
+      }
       // Check for 1 day of peak mucus (D.5)
       if (previousEntry.observationEntry.observation.dischargeSummary.isPeakType()) {
         if (isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS, currentEntry.entryDate)
