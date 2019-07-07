@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.ui.goals.create;
 
 import com.roamingroths.cmcc.mvi.BaseMviViewModel;
 import com.roamingroths.cmcc.mvi.MviIntent;
-import com.roamingroths.cmcc.providers.GoalProvider;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -12,8 +11,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CreateGoalViewModel extends BaseMviViewModel<CreateGoalIntent, CreateGoalAction, CreateGoalResult, CreateGoalViewState> {
 
-  public static CreateGoalViewModel create(GoalProvider goalProvider) {
-    return new CreateGoalViewModel(new CreateGoalProcessors(goalProvider));
+  public static CreateGoalViewModel create() {
+    return new CreateGoalViewModel(new CreateGoalProcessors());
   }
 
   public CreateGoalViewModel(CreateGoalProcessors processors) {

@@ -3,17 +3,13 @@ package com.roamingroths.cmcc.logic.print;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.entities.ObservationEntry;
-import com.roamingroths.cmcc.data.models.ChartEntry;
-import com.roamingroths.cmcc.data.models.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.logic.chart.StickerColor;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
@@ -31,14 +27,14 @@ public class PageRenderer {
   private static final Joiner ON_SPACE = Joiner.on(" ");
   private static final Joiner ON_BR = Joiner.on("<br>");
 
-  private final Observable<ChartEntryList> mLists;
+  private final Observable<CycleRenderer> renderers;
 
-  public PageRenderer(Observable<ChartEntryList> mLists) {
-    this.mLists = mLists;
+  public PageRenderer(Observable<CycleRenderer> renderers) {
+    this.renderers = renderers;
   }
 
   public Observable<String> createPages() {
-    return mLists.flatMap(createCycleRows()).buffer(NUM_ROWS_PER_PAGE).map(createPage());
+    return renderers.flatMap(createCycleRows()).buffer(NUM_ROWS_PER_PAGE).map(createPage());
   }
 
   public static int numRowsPerPage() {
@@ -57,29 +53,27 @@ public class PageRenderer {
     return numEntries % NUM_DAYS_PER_CHART != 0;
   }
 
-  private static Function<ChartEntryList, ObservableSource<String>> createCycleRows() {
-    return new Function<ChartEntryList, ObservableSource<String>>() {
-      @Override
-      public ObservableSource<String> apply(ChartEntryList chartEntryList) throws Exception {
-        List<String> rows = new ArrayList<>();
-        int numFullRows = numFullRows(chartEntryList.size());
-        boolean hasPartialRow = hasPartialRow(chartEntryList.size());
-        for (int i=0; i < numFullRows; i++) {
-          StringBuilder builder = new StringBuilder();
-          int startIndex = i * NUM_DAYS_PER_CHART;
-          int endIndex = startIndex + NUM_DAYS_PER_CHART - 1;
-          appendCycle(builder, chartEntryList, startIndex, endIndex);
-          rows.add(builder.toString());
-        }
-        if (hasPartialRow) {
-          StringBuilder builder = new StringBuilder();
-          int startIndex = numFullRows * NUM_DAYS_PER_CHART;
-          int endIndex = chartEntryList.size() - 1;
-          appendCycle(builder, chartEntryList, startIndex, endIndex);
-          rows.add(builder.toString());
-        }
-        return Observable.fromIterable(rows);
+  private static Function<CycleRenderer, ObservableSource<String>> createCycleRows() {
+    return (Function<CycleRenderer, ObservableSource<String>>) renderer -> {
+      List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render();
+      List<String> rows = new ArrayList<>();
+      int numFullRows = numFullRows(renderableEntries.size());
+      boolean hasPartialRow = hasPartialRow(renderableEntries.size());
+      for (int i=0; i < numFullRows; i++) {
+        StringBuilder builder = new StringBuilder();
+        int startIndex = i * NUM_DAYS_PER_CHART;
+        int endIndex = startIndex + NUM_DAYS_PER_CHART - 1;
+        appendCycle(builder, renderableEntries, startIndex, endIndex);
+        rows.add(builder.toString());
       }
+      if (hasPartialRow) {
+        StringBuilder builder = new StringBuilder();
+        int startIndex = numFullRows * NUM_DAYS_PER_CHART;
+        int endIndex = renderableEntries.size() - 1;
+        appendCycle(builder, renderableEntries, startIndex, endIndex);
+        rows.add(builder.toString());
+      }
+      return Observable.fromIterable(rows);
     };
   }
 
@@ -154,7 +148,7 @@ public class PageRenderer {
       classes.add("separator");
     }
     StringBuilder builder = new StringBuilder();
-    builder.append("<td");
+    builder.append("<td valign=\"top\"");
     if (!classes.isEmpty()) {
       builder.append(" class=\"").append(ON_SPACE.join(classes)).append("\"");
     }
@@ -162,27 +156,26 @@ public class PageRenderer {
     return builder.toString();
   }
 
-  private static String getColorClass(ChartEntryList entryList, ChartEntry entry) {
-    int colorId = entryList.getEntryColorResource(entry.observationEntry);
-    switch (colorId) {
-      case R.color.entryRed:
+  private static String getColorClass(StickerColor color) {
+    switch (color) {
+      case RED:
         return "red";
-      case R.color.entryYellow:
+      case YELLOW:
         return "yellow";
-      case R.color.entryWhite:
-      case R.color.entryGrey:
+      case WHITE:
+      case GREY:
         return "white";
-      case R.color.entryGreen:
+      case GREEN:
         return "green";
       default:
-        throw new IllegalArgumentException("Unkown color id: " + colorId);
+        throw new IllegalArgumentException("Unkown color id: " + color);
     }
   }
 
-  private static void appendCycle(StringBuilder builder, ChartEntryList entryList, int startIndex, int endIndex) {
-    Preconditions.checkArgument(startIndex >= 0 && endIndex < entryList.size());
-    appendStickers(builder, entryList, startIndex, endIndex);
-    appendEntries(builder, entryList, startIndex, endIndex);
+  private static void appendCycle(StringBuilder builder, List<CycleRenderer.RenderableEntry> renderableEntries, int startIndex, int endIndex) {
+    Preconditions.checkArgument(startIndex >= 0 && endIndex < renderableEntries.size());
+    appendStickers(builder, renderableEntries, startIndex, endIndex);
+    appendEntries(builder, renderableEntries, startIndex, endIndex);
   }
 
   private static void appendEmptyCycle(StringBuilder builder) {
@@ -192,11 +185,11 @@ public class PageRenderer {
     appendEntries(builder, null, 1, 0);
   }
 
-  private static void appendStickers(StringBuilder builder, @Nullable ChartEntryList entryList, int startIndex, int endIndex) {
+  private static void appendStickers(StringBuilder builder, @Nullable List<CycleRenderer.RenderableEntry> renderableEntries, int startIndex, int endIndex) {
     builder.append("<tr class=\"stickers\">");
-    if (entryList != null) {
+    if (renderableEntries != null) {
       for (int i = startIndex; i <= endIndex; i++) {
-        ChartEntry entry = entryList.get(entryList.size() - 1 - i);
+        CycleRenderer.RenderableEntry entry = renderableEntries.get(i);
 
         int numLines = 3;
         String[] textLines = new String[numLines];
@@ -204,34 +197,30 @@ public class PageRenderer {
           textLines[l] = "";
         }
 
-        if (entry.observationEntry != null) {
-          ObservationEntry observationEntry = entry.observationEntry;
-          if (observationEntry.intercourse) {
-            switch (observationEntry.intercourseTimeOfDay) {
-              case ANY:
-                textLines[0] = "I";
-                break;
-              case END:
-                textLines[2] = "I";
-                break;
-              case NONE:
-              default:
-                break;
-            }
-          }
-          textLines[1] = entryList.getPeakDayViewText(entry);
+        switch (entry.intercourseTimeOfDay) {
+          case ANY:
+            textLines[0] = "I";
+            break;
+          case END:
+            textLines[2] = "I";
+            break;
+          case NONE:
+          default:
+            break;
         }
 
+        textLines[1] = entry.peakDayText;
+
         List<String> classes = new ArrayList<>();
-        classes.add(getColorClass(entryList, entry));
-        if (entryList.shouldShowBaby(entry)) {
+        classes.add(getColorClass(entry.backgroundColor));
+        if (entry.showBaby) {
           classes.add("baby");
         }
 
         builder.append(openCellTag(i, classes));
         builder.append("<table class=\"sticker\">");
         for (int l=0; l<numLines; l++) {
-          builder.append("<tr><td>");
+          builder.append("<tr><td valign=\"top\">");
           builder.append(textLines[l]);
           builder.append("</td></tr>");
         }
@@ -241,29 +230,27 @@ public class PageRenderer {
     }
     fillEmptyDays(builder, startIndex, endIndex);
     builder.append("<td class=\"stats\" rowspan=\"2\" valign=\"top\">");
-    if (startIndex == 0 && entryList != null) {
-      fillStats(builder, entryList.getStats());
+    if (startIndex == 0 && renderableEntries != null) {
+      //fillStats(builder, entryList.getStats());
     }
     builder.append("</td>");
     builder.append("</tr>");
   }
 
-  private static void fillStats(StringBuilder builder, ImmutableMap<ChartEntryList.Stat, Object> stats) {
-    for (Map.Entry<ChartEntryList.Stat, Object> entry : stats.entrySet()) {
-      builder.append("<b>").append(entry.getKey().name()).append("</b>\n");
-      builder.append(entry.getValue().toString()).append("\n");
-    }
-  }
-
-  private static void appendEntries(StringBuilder builder, ChartEntryList entryList, int startIndex, int endIndex) {
+  private static void appendEntries(StringBuilder builder, List<CycleRenderer.RenderableEntry> renderableEntries, int startIndex, int endIndex) {
     builder.append("<tr>");
-    if (entryList != null) {
+    if (renderableEntries != null) {
       for (int i = startIndex; i <= endIndex; i++) {
-        ChartEntry entry = entryList.get(entryList.size() - 1 - i);
+        CycleRenderer.RenderableEntry entry = renderableEntries.get(i);
         List<String> lines = new ArrayList<>();
-        lines.add(DateUtil.toPrintStr(entry.entryDate));
-        if (entry.observationEntry != null && entry.observationEntry.observation != null) {
-          lines.addAll(Lists.newArrayList(entry.observationEntry.observation.toString().split(" ")));
+        lines.add(DateUtil.toPrintStr(entry.modificationContext.entry.entryDate));
+        List<String> summaryPieces = Lists.newArrayList(entry.entrySummary.split(" "));
+        if (summaryPieces.size() > 0 && summaryPieces.get(summaryPieces.size() - 1).equals("I")) {
+          summaryPieces.remove(summaryPieces.size() - 1);
+        }
+        lines.addAll(summaryPieces);
+        if (entry.isPointOfChange) {
+          lines.add("POC");
         }
         while (lines.size() < 4) {
           lines.add("&nbsp;");

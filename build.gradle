@@ -40,7 +40,7 @@ task clean(type: Delete) {
 }
 
 ext {
-    guavaVersion = '23.6-android'
+    guavaVersion = '28.0-android'
     supportLibraryVersion = '28.0.0'
     firebaseVersion = '11.8.0'
 }

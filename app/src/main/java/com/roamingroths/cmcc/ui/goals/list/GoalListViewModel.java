@@ -6,7 +6,6 @@ import com.roamingroths.cmcc.logic.goals.Goal;
 import com.roamingroths.cmcc.logic.goals.GoalFilterType;
 import com.roamingroths.cmcc.mvi.BaseMviViewModel;
 import com.roamingroths.cmcc.mvi.MviIntent;
-import com.roamingroths.cmcc.providers.GoalProvider;
 
 import java.util.List;
 
@@ -18,8 +17,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class GoalListViewModel extends BaseMviViewModel<GoalListIntent, GoalListAction, GoalListResult, GoalListViewState> {
 
-  public static GoalListViewModel create(GoalProvider goalProvider) {
-    GoalListProcessors processors = new GoalListProcessors(goalProvider);
+  public static GoalListViewModel create() {
+    GoalListProcessors processors = new GoalListProcessors();
     return new GoalListViewModel(processors);
   }
 

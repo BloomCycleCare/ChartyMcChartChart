@@ -10,20 +10,15 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.data.entities.Instructions;
-import com.roamingroths.cmcc.data.models.ChartEntry;
-import com.roamingroths.cmcc.data.models.ChartEntryList;
-import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
 
 import org.parceler.Parcels;
 
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.List;
 
 import io.reactivex.disposables.CompositeDisposable;
-import timber.log.Timber;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -38,12 +33,11 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private final OnClickHandler mClickHandler;
   private final CompositeDisposable mDisposables;
   private final boolean mHasPreviousCycle;
-  private ChartEntryList mContainerList;
   private String mLayerKey;
+  private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
 
   ChartEntryAdapter(
       Context context,
-      Cycle currentCycle,
       boolean hasPreviousCycle,
       OnClickHandler clickHandler,
       String layerKey) {
@@ -51,7 +45,6 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     mClickHandler = clickHandler;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
-    mContainerList = ChartEntryList.builder(currentCycle).withAdapter(this).build();
     mHasPreviousCycle = hasPreviousCycle;
   }
 
@@ -60,25 +53,13 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     notifyDataSetChanged();
   }
 
-  void updateInstructions(Collection<Instructions> instructions) {
-    mContainerList.updateInstructions(instructions);
-  }
-
-
-  void shutdown() {
-    mDisposables.clear();
-  }
-
-  void initialize(List<ChartEntry> containers) {
-    Timber.v("Initializing adapter for cycle starting %s with %d entries", getCycle().startDateStr, containers.size());
-    for (ChartEntry container : containers) {
-      mContainerList.addEntry(container);
-    }
+  void updateRenderer(CycleRenderer renderer) {
+    mRenderableEntries = renderer.render();
     notifyDataSetChanged();
   }
 
-  public Cycle getCycle() {
-    return mContainerList.mCurrentCycle;
+  void shutdown() {
+    mDisposables.clear();
   }
 
   @NonNull
@@ -88,7 +69,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new ChartEntryViewHolder.Impl(view, mContainerList, mClickHandler);
+    return new ChartEntryViewHolder.Impl(view, mClickHandler);
   }
 
   /**
@@ -103,23 +84,22 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
    */
   @Override
   public void onBindViewHolder(@NonNull ChartEntryViewHolder.Impl holder, int position) {
-    mContainerList.bindViewHolder(holder, position, mLayerKey);
+    holder.bind(mRenderableEntries.get(mRenderableEntries.size() - position - 1));
   }
 
   @Override
   public int getItemCount() {
-    return mContainerList.size();
+    return mRenderableEntries.size();
   }
 
   public interface OnClickHandler {
-    void onClick(ChartEntry container, int index);
+    void onClick(CycleRenderer.EntryModificationContext modificationContext, int index);
   }
 
-  Intent getIntentForModification(final ChartEntry chartEntry, final int index) {
-    EntryContext entryContext = mContainerList.getEntryContext(index);
-    entryContext.hasPreviousCycle = mHasPreviousCycle;
+  Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext, final int index) {
+    modificationContext.hasPreviousCycle = mHasPreviousCycle;
     Intent intent = new Intent(mContext, EntryDetailActivity.class);
-    intent.putExtra(EntryContext.class.getCanonicalName(), Parcels.wrap(entryContext));
+    intent.putExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(modificationContext));
     return intent;
   }
 }

@@ -21,7 +21,7 @@ import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.roamingroths.cmcc.data.models.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
 import org.joda.time.LocalDate;
 
@@ -55,9 +55,9 @@ public class ChartPrinter {
     mPageRenderer = pageRenderer;
   }
 
-  public static ChartPrinter create(Activity activity, Observable<ChartEntryList> lists) {
+  public static ChartPrinter create(Activity activity, Observable<CycleRenderer> renderers) {
     PrintManager printManager = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
-    PageRenderer pageRenderer = new PageRenderer(lists);
+    PageRenderer pageRenderer = new PageRenderer(renderers);
     return new ChartPrinter(pageRenderer, printManager, activity);
   }
 

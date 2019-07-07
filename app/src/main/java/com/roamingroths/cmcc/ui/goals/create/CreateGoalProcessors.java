@@ -4,7 +4,6 @@ import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.logic.goals.GoalModel;
 import com.roamingroths.cmcc.logic.goals.GoalModelFactory;
 import com.roamingroths.cmcc.mvi.MviProcessors;
-import com.roamingroths.cmcc.providers.GoalProvider;
 
 import io.reactivex.Observable;
 import io.reactivex.ObservableTransformer;
@@ -18,12 +17,10 @@ import io.reactivex.schedulers.Schedulers;
 class CreateGoalProcessors extends MviProcessors<CreateGoalAction, CreateGoalResult> {
 
   private final GoalModelFactory mModelFactory;
-  private final GoalProvider mGoalProvider;
 
-  CreateGoalProcessors(GoalProvider goalProvider) {
+  CreateGoalProcessors() {
     super();
     this.mModelFactory = GoalModelFactory.withDefaultTemplates();
-    this.mGoalProvider = goalProvider;
 
     registerTransformer(CreateGoalAction.GetSuggestions.class, loadGoalsProcessor());
     registerTransformer(CreateGoalAction.CreateGoal.class, saveGoalProcessor());
@@ -44,9 +41,7 @@ class CreateGoalProcessors extends MviProcessors<CreateGoalAction, CreateGoalRes
         .map(action -> mModelFactory.fromInput(action.input(), 2))
         .flatMap(suggestions -> {
           GoalModel model = Iterables.getOnlyElement(suggestions);
-          return mGoalProvider
-              .putGoalModel(model)
-              .andThen(Observable.just(CreateGoalResult.CreateGoal.success()));
+          return Observable.just(CreateGoalResult.CreateGoal.success());
         })
         .onErrorReturn(CreateGoalResult.CreateGoal::failure)
         .subscribeOn(Schedulers.io())

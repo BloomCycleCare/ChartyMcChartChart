@@ -18,9 +18,9 @@ import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.entities.Cycle;
-import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
 import org.parceler.Parcels;
 
@@ -165,26 +165,24 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     mChartEntryAdapter = new ChartEntryAdapter(
         getActivity().getApplicationContext(),
-        mCycle,
         !getArguments().getBoolean(IS_LAST_CYCLE, false),
         EntryListFragment.this,
         "");
     mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()
         .subscribe(mChartEntryAdapter::updateLayerKey));
-    InstructionsRepo instructionsRepo = new InstructionsRepo(MyApplication.cast(getActivity().getApplication()));
-    mDisposables.add(instructionsRepo
-        .getAll()
-        .subscribe(instructions -> mChartEntryAdapter.updateInstructions(instructions)));
 
     MyApplication myApp = MyApplication.cast(getActivity().getApplication());
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+    InstructionsRepo instructionsRepo = new InstructionsRepo(MyApplication.cast(getActivity().getApplication()));
 
-    mDisposables.add(entryRepo
-        .getStreamForCycle(Flowable.just(mCycle))
+    mDisposables.add(Flowable.combineLatest(
+        instructionsRepo.getAll(),
+        entryRepo.getStream(Flowable.just(mCycle)),
+        (instructions, entries) -> new CycleRenderer(mCycle, entries, instructions))
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(mChartEntryAdapter::initialize, Timber::w));
+        .subscribe(newRenderer -> mChartEntryAdapter.updateRenderer(newRenderer)));
 
     mRecyclerView.setAdapter(mChartEntryAdapter);
     mChartEntryAdapter.notifyDataSetChanged();
@@ -218,8 +216,8 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   @Override
-  public void onClick(ChartEntry container, int index) {
-    startActivityForResult(mChartEntryAdapter.getIntentForModification(container, index), 0);
+  public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
+    startActivityForResult(mChartEntryAdapter.getIntentForModification(modificationContext, index), 0);
   }
 
   public void shutdown() {

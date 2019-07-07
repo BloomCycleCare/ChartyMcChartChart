@@ -2,25 +2,25 @@ package com.roamingroths.cmcc.data.models;
 
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.SortedList;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
-import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.entities.Entry;
 import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.logic.chart.MccScorer;
-import com.roamingroths.cmcc.ui.entry.detail.EntryContext;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryAdapter;
-import com.roamingroths.cmcc.ui.entry.list.ChartEntryViewHolder;
-import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 
@@ -29,6 +29,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -91,7 +92,7 @@ public class ChartEntryList {
 
   private boolean postPeakYellowEnabled(LocalDate date) {
     return getActiveInstructions(date).transform(instructions -> {
-      for (Instruction i : Instruction.POST_PEAK_YELLOW_INSTRUCTIONS) {
+      for (BasicInstruction i : BasicInstruction.postPeakYellowBasicInstructions) {
         if (instructions.isActive(i)) {
           return true;
         }
@@ -116,22 +117,6 @@ public class ChartEntryList {
         .put(Stat.MCS, String.format("%.1f", MccScorer.getScore(entries, firstPeakDay)))
         .put(Stat.LPP, String.format("%d", lengthOfPrepeakMucusCycle))
         .build();
-  }
-
-  public void bindViewHolder(ChartEntryViewHolder holder, int position, String layerKey) {
-    if (DEBUG) Log.v(TAG, "bindViewHolder(" + position + ")");
-    ChartEntry entry = mEntries.get(position);
-    ObservationEntry observationEntry = mEntries.get(position).observationEntry;
-    holder.setEntrySummary(observationEntry.getListUiText());
-    holder.setBackgroundColor(getEntryColorResource(observationEntry));
-    holder.setEntryNum(mEntries.size() - position);
-    holder.setDate(DateUtil.toUiStr(observationEntry.getDate()));
-    holder.setPeakDayText(getPeakDayViewText(entry));
-    holder.setShowBaby(shouldShowBaby(position, observationEntry));
-    holder.setSymptomGoalSummary(entry.symptomEntry.getNumSymptoms());
-    holder.setOverlay(entry.wellnessEntry.hasItem(layerKey) || entry.symptomEntry.hasItem(layerKey));
-    String foo = observationEntry.getDate().dayOfWeek().getAsString();
-    holder.setWeekTransition(foo.equals("1"));
   }
 
   public synchronized void addEntry(ChartEntry chartEntry) {
@@ -184,41 +169,12 @@ public class ChartEntryList {
     }
   }
 
-  public synchronized void removeEntry(ChartEntry chartEntry) {
-    if (chartEntry.observationEntry.pointOfChange) {
-      mPointOfChange = null;
-    }
-    // Maybe remove peak day from set
-    mEntryIndex.remove(chartEntry.entryDate);
-    mPeakDays.remove(chartEntry.entryDate);
-    mEntries.remove(chartEntry);
-  }
-
-  @Nullable
-  public ChartEntry findEntry(String dateStr) {
-    int index = getEntryIndex(DateUtil.fromWireStr(dateStr));
-    if (index < 0) {
-      return null;
-    }
-    return get(index);
-  }
-
   public int size() {
     return mEntries.size();
   }
 
   public ChartEntry get(int index) {
     return mEntries.get(index);
-  }
-
-  public EntryContext getEntryContext(int index) {
-    EntryContext context = new EntryContext();
-    context.chartEntry = get(index);
-    context.currentCycle = mCurrentCycle;
-    context.expectUnusualBleeding = expectUnusualBleeding(index);
-    context.isFirstEntry = index == size() - 1;
-    context.shouldAskEssentialSameness = askEssentialSamenessQuestion(index);
-    return context;
   }
 
   private boolean expectUnusualBleeding(int index) {
@@ -245,7 +201,7 @@ public class ChartEntryList {
       }
     }
     boolean askForPrePeakYellow = false;
-    if (isActive(Instruction.K_1, entry.entryDate) && isPreakPeak(entry.observationEntry)) {
+    if (isActive(BasicInstruction.K_1, entry.entryDate) && isPreakPeak(entry.observationEntry)) {
       askForPrePeakYellow = true;
     }
     return askForPrePeakYellow || askForSpecialInstruction;
@@ -256,7 +212,7 @@ public class ChartEntryList {
     if (currentEntry.observationEntry == null) {
       return -1;
     }
-    if (isActive(Instruction.K_1, currentEntry.entryDate)
+    if (isActive(BasicInstruction.K_1, currentEntry.entryDate)
         && isBeforePointOfChange(currentEntry.observationEntry)) {
       return -1;
     }
@@ -314,8 +270,8 @@ public class ChartEntryList {
     return getActiveInstructions(date).transform(i -> i.isActive(specialInstruction)).or(false);
   }
 
-  private boolean isActive(Instruction instruction, LocalDate date) {
-    return getActiveInstructions(date).transform(i -> i.isActive(instruction)).or(false);
+  private boolean isActive(BasicInstruction basicInstruction, LocalDate date) {
+    return getActiveInstructions(date).transform(i -> i.isActive(basicInstruction)).or(false);
   }
 
   private int getPosition(Entry entry) {
@@ -382,7 +338,7 @@ public class ChartEntryList {
       return false;
     }
     // Suppress if prepeak and yellow stickers enabled
-    if (isActive(Instruction.K_1, entry.getDate())
+    if (isActive(BasicInstruction.K_1, entry.getDate())
         && isPreakPeak(entry) && isBeforePointOfChange(entry)) {
       return false;
     }
@@ -437,7 +393,7 @@ public class ChartEntryList {
     if (!entry.observation.dischargeSummary.mType.hasMucus()) {
       return R.color.entryGreen;
     }
-    if (isActive(Instruction.K_1, entry.getDate())) {
+    if (isActive(BasicInstruction.K_1, entry.getDate())) {
       // Prepeak yellow stickers enabled
       if (isPreakPeak(entry) && isBeforePointOfChange(entry)) {
         return R.color.entryYellow;
@@ -461,10 +417,64 @@ public class ChartEntryList {
     return R.color.entryWhite;
   }
 
-  private boolean isPostPeak(ObservationEntry entry) {
-    Preconditions.checkNotNull(entry);
-    LocalDate mostRecentPeakDay = getMostRecentPeakDay(entry);
-    return mostRecentPeakDay != null && mostRecentPeakDay.isBefore(entry.getDate());
+  public Set<String> isUsableDay(ObservationEntry entry) {
+    Instructions instructions = getActiveInstructions(entry.getDate()).orNull();
+    if (instructions == null) {
+      return ImmutableSet.of("IDK, no active instructions...");
+    }
+    // TODO: finish
+    return ImmutableSet.of();
+  }
+
+  private Set<BasicInstruction> getFertilityReasons(@NonNull Instructions instructions, ObservationEntry entry) {
+    ImmutableSet.Builder<BasicInstruction> fertilityReasons = ImmutableSet.builder();
+    if (instructions.isActive(BasicInstruction.D_1)
+        && isInMenstrualFlow(entry)) {
+      fertilityReasons.add(BasicInstruction.D_1);
+    }
+    if (instructions.isActive(BasicInstruction.D_2)
+        && entry.getDate().isBefore(mPeakDays.last().plusDays(4))
+        && anyMucusOnOrBefore(entry.getDate())) {
+      fertilityReasons.add(BasicInstruction.D_2);
+    }
+    if (instructions.isActive(BasicInstruction.D_3)
+        && entry.observation != null && entry.observation.hasMucus()) {
+      fertilityReasons.add(BasicInstruction.D_3);
+    }
+    return fertilityReasons.build();
+  }
+
+  private boolean anyMucusOnOrBefore(LocalDate date) {
+    for (int i=mEntries.size()-1; i <=0; i++) {
+      ChartEntry previousEntry = mEntries.get(i);
+      if (previousEntry.entryDate.isAfter(date)) {
+        break;
+      }
+      if (previousEntry.observationEntry.observation == null) {
+        return false;
+      }
+      if (previousEntry.observationEntry.observation.hasMucus()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  private boolean isInMenstrualFlow(ObservationEntry entry) {
+    for (int i=mEntries.size()-1; i <=0; i++) {
+      ChartEntry previousEntry = mEntries.get(i);
+      if (previousEntry.entryDate.isAfter(entry.getDate())) {
+        break;
+      }
+      if (previousEntry.observationEntry.observation == null) {
+        return false;
+      }
+      Observation previousObservation = previousEntry.observationEntry.observation;
+      if (previousObservation.flow == null) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private boolean isPreakPeak(ObservationEntry entry) {

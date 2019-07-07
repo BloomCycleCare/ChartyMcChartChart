@@ -5,10 +5,11 @@ import androidx.room.TypeConverter;
 
 import com.google.gson.reflect.TypeToken;
 import com.roamingroths.cmcc.crypto.AesCryptoUtil;
-import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.domain.SpecialInstruction;
+import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -71,15 +72,15 @@ public class Converters {
   }
 
   @TypeConverter
-  public List<Instruction> toInstructionList(String wire) {
-    Type type = new TypeToken<List<Instruction>>() {}.getType();
+  public List<BasicInstruction> toInstructionList(String wire) {
+    Type type = new TypeToken<List<BasicInstruction>>() {}.getType();
     return GsonUtil.getGsonInstance().fromJson(wire, type);
   }
 
   @TypeConverter
-  public String fromInstructionList(List<Instruction> instructionList) {
-    Type type = new TypeToken<List<Instruction>>() {}.getType();
-    return GsonUtil.getGsonInstance().toJson(instructionList, type);
+  public String fromInstructionList(List<BasicInstruction> basicInstructionList) {
+    Type type = new TypeToken<List<BasicInstruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().toJson(basicInstructionList, type);
   }
 
   @TypeConverter
@@ -90,7 +91,19 @@ public class Converters {
 
   @TypeConverter
   public String fromSpecialInstructionList(List<SpecialInstruction> in) {
-    Type type = new TypeToken<List<Instruction>>() {}.getType();
+    Type type = new TypeToken<List<BasicInstruction>>() {}.getType();
     return GsonUtil.getGsonInstance().toJson(in, type);
+  }
+
+  @TypeConverter
+  public String fromYellowStampInstructionList(List<YellowStampInstruction> in) {
+    Type type = new TypeToken<List<YellowStampInstruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().toJson(in, type);
+  }
+
+  @TypeConverter
+  public List<YellowStampInstruction> toYellowStampInstructionList(String wire) {
+    Type type = new TypeToken<List<YellowStampInstruction>>() {}.getType();
+    return GsonUtil.getGsonInstance().fromJson(wire, type);
   }
 }

@@ -26,6 +26,7 @@ import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
 import com.roamingroths.cmcc.utils.DateUtil;
 
@@ -60,15 +61,15 @@ public class EntryDetailActivity extends AppCompatActivity {
     if (DEBUG) Log.v(TAG, "onCreate: Start");
 
     Intent intent = getIntent();
-    EntryContext entryContext = Parcels.unwrap(intent.getParcelableExtra(EntryContext.class.getCanonicalName()));
+    CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
 
     mViewModel = ViewModelProviders.of(this).get(EntryDetailViewModel.class);
-    mViewModel.initialize(entryContext);
+    mViewModel.initialize(entryModifyContext);
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
     getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle(getTitle(entryContext.currentCycle, entryContext.chartEntry.entryDate));
+    getSupportActionBar().setTitle(getTitle(entryModifyContext.cycle, entryModifyContext.entry.entryDate));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
     /**
@@ -79,7 +80,7 @@ public class EntryDetailActivity extends AppCompatActivity {
      * may be best to switch to a
      * {@link FragmentStatePagerAdapter}.
      */
-    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), entryContext);
+    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), entryModifyContext);
 
     // Set up the ViewPager with the sections adapter.
     /**
@@ -238,17 +239,17 @@ public class EntryDetailActivity extends AppCompatActivity {
    */
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
-    private final EntryContext mEntryContext;
+    private final CycleRenderer.EntryModificationContext mEntryModificationContext;
 
-    public SectionsPagerAdapter(FragmentManager fm, EntryContext entryContext) {
+    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext) {
       super(fm);
-      mEntryContext = entryContext;
+      mEntryModificationContext = entryModificationContext;
     }
 
     @Override
     public Fragment getItem(int position) {
       Bundle args = new Bundle();
-      args.putParcelable(EntryContext.class.getCanonicalName(), Parcels.wrap(mEntryContext));
+      args.putParcelable(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(mEntryModificationContext));
 
       Fragment fragment = null;
       // getItem is called to instantiate the fragment for the given page.

@@ -1,7 +1,6 @@
 package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -14,7 +13,6 @@ import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.preference.PreferenceManager;
 
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
@@ -105,7 +103,7 @@ public class ObservationEntryFragment extends Fragment {
     final AtomicBoolean uiInitialized = new AtomicBoolean(false);
     mEntryDetailViewModel.viewStates().observe(this, (viewState -> {
       Timber.d("Updating ViewState");
-      if (viewState.entryContext.isFirstEntry && !viewState.entryContext.hasPreviousCycle) {
+      if (viewState.entryModificationContext.isFirstEntry && !viewState.entryModificationContext.hasPreviousCycle) {
         firstDayLayout.setVisibility(View.GONE);
       }
       ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
@@ -140,7 +138,7 @@ public class ObservationEntryFragment extends Fragment {
         }
         if (observation != null
             && observation.dischargeSummary != null
-            && viewState.entryContext.shouldAskEssentialSameness) {
+            && viewState.entryModificationContext.shouldAskEssentialSameness) {
           essentialSamenessLayout.setVisibility(View.VISIBLE);
         } else {
           essentialSamenessLayout.setVisibility(View.GONE);
@@ -161,8 +159,7 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(unusualBleedingSwitch, observationEntry.unusualBleeding);
       maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
 
-      SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getActivity());
-      pointOfChangeLayout.setVisibility(viewState.entryContext.shouldAskEssentialSameness ? View.VISIBLE : View.GONE);
+      pointOfChangeLayout.setVisibility(viewState.entryModificationContext.shouldAskEssentialSameness ? View.VISIBLE : View.GONE);
 
       if (uiInitialized.compareAndSet(false, true)) {
         try {

@@ -7,13 +7,10 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 
-import com.firebase.ui.auth.AuthUI;
 import com.google.firebase.analytics.FirebaseAnalytics;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
-
-import java.util.Arrays;
 
 import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
 
@@ -59,7 +56,7 @@ public class UserInitActivity extends FragmentActivity {
 
     mFragment.updateStatus("Initializing");
 
-    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+    /*FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     if (user == null) {
       mFragment.updateStatus("Launching login");
       startActivityForResult(
@@ -72,7 +69,8 @@ public class UserInitActivity extends FragmentActivity {
           RC_SIGN_IN);
     } else {
       mUserListener.onUserInitialized(user);
-    }
+    }*/
+    mUserListener.onUserInitialized(null);
   }
 
   @Override

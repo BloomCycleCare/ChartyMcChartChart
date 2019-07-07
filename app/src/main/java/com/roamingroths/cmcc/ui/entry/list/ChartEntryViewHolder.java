@@ -8,34 +8,16 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.models.ChartEntry;
-import com.roamingroths.cmcc.data.models.ChartEntryList;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
 /**
  * Created by parkeroth on 7/1/17.
  */
 
 public interface ChartEntryViewHolder extends View.OnClickListener {
-  void setEntrySummary(String summary);
-
-  void setBackgroundColor(int colorResourceId);
-
-  void setEntryNum(int num);
-
-  void setDate(String dateStr);
-
-  void setPeakDayText(String text);
-
-  void setShowBaby(boolean val);
-
-  void setOverlay(boolean val);
-
-  void setWeekTransition(boolean val);
-
-  void setSymptomGoalSummary(int symptoms);
 
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
-    private final ChartEntryList mContainerList;
     private final TextView mEntryNumTextView;
     private final TextView mEntryDateTextView;
     private final TextView mEntryDataTextView;
@@ -47,11 +29,13 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final View mSeparator;
     private final View mWeekSeparator;
 
+    private CycleRenderer.EntryModificationContext mBoundModificationContext;
+
     public Impl(
-        View itemView, ChartEntryList containerList, ChartEntryAdapter.OnClickHandler clickHandler) {
+        View itemView,
+        ChartEntryAdapter.OnClickHandler clickHandler) {
       super(itemView);
       itemView.setOnClickListener(this);
-      mContainerList = containerList;
       mClickHandler = clickHandler;
       mEntryNumTextView = itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
@@ -65,67 +49,37 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mWeekSeparator = itemView.findViewById(R.id.week_separator);
     }
 
-    @Override
-    public void setEntrySummary(String summary) {
-      mEntryDataTextView.setText(summary);
-    }
+    public void bind(CycleRenderer.RenderableEntry renderableEntry) {
+      mEntryDataTextView.setText(renderableEntry.entrySummary);
+      mEntryBackgroundView.setBackgroundResource(renderableEntry.backgroundColor.resourceId);
+      mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum));
+      mEntryDateTextView.setText(renderableEntry.dateSummary);
+      mEntryPeakTextView.setText(renderableEntry.peakDayText);
+      mBabyImageView.setVisibility(renderableEntry.showBaby ? View.VISIBLE : View.INVISIBLE);
 
-    @Override
-    public void setBackgroundColor(int colorResourceId) {
-      mEntryBackgroundView.setBackgroundResource(colorResourceId);
-    }
+      ChartEntry entry = renderableEntry.modificationContext.entry;
+      mSymptomGoalSummaryView.setText(String.format("S: %d", entry.symptomEntry.getNumSymptoms()));
 
-    @Override
-    public void setEntryNum(int num) {
-      mEntryNumTextView.setText(String.valueOf(num));
-    }
-
-    @Override
-    public void setDate(String dateStr) {
-      mEntryDateTextView.setText(dateStr);
-    }
-
-    @Override
-    public void setPeakDayText(String text) {
-      mEntryPeakTextView.setText(text);
-    }
-
-    @Override
-    public void setShowBaby(boolean val) {
-      if (val) {
-        mBabyImageView.setVisibility(View.VISIBLE);
-      } else {
-        mBabyImageView.setVisibility(View.INVISIBLE);
-      }
-    }
-
-    @Override
-    public void setOverlay(boolean val) {
-      if (val) {
+      boolean showOverlay = entry.wellnessEntry.hasItem(null) || entry.symptomEntry.hasItem(null);
+      if (showOverlay) {
         mStarImageView.setVisibility(View.VISIBLE);
         mSymptomGoalSummaryView.setVisibility(View.INVISIBLE);
       } else {
         mStarImageView.setVisibility(View.INVISIBLE);
         mSymptomGoalSummaryView.setVisibility(View.VISIBLE);
       }
+
+      boolean showTransition = entry.observationEntry.getDate().dayOfWeek().getAsString().equals("1");
+      mWeekSeparator.setVisibility(showTransition ? View.VISIBLE : View.GONE);
+      mSeparator.setVisibility(showTransition ? View.GONE : View.VISIBLE);
+
+      mBoundModificationContext = renderableEntry.modificationContext;
     }
 
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      ChartEntry container = mContainerList.get(index);
-      mClickHandler.onClick(container, index);
-    }
-
-    @Override
-    public void setWeekTransition(boolean val) {
-      mWeekSeparator.setVisibility(val ? View.VISIBLE : View.GONE);
-      mSeparator.setVisibility(val ? View.GONE : View.VISIBLE);
-    }
-
-    @Override
-    public void setSymptomGoalSummary(int symptoms) {
-      mSymptomGoalSummaryView.setText(String.format("S: %d", symptoms));
+      mClickHandler.onClick(mBoundModificationContext, index);
     }
   }
 }

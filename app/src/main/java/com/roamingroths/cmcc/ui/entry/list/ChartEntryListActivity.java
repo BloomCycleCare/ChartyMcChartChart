@@ -27,8 +27,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
@@ -48,7 +46,6 @@ import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
 import java.io.File;
-import java.util.Objects;
 
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
@@ -94,11 +91,10 @@ public class ChartEntryListActivity extends AppCompatActivity
     // Set the "My Chart" item as selected
     mNavView.setNavigationItemSelectedListener(this);
 
-    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
     View navHeaderView = mNavView.getHeaderView(0);
     final TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
     final TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
-    drawerSubtitleView.setText(Objects.requireNonNull(user).getEmail());
+    //drawerSubtitleView.setText(Objects.requireNonNull(user).getEmail());
 
     mToolbar = findViewById(R.id.app_bar);
     setTitle("Current Cycle");

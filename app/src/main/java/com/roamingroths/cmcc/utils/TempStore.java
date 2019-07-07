@@ -184,6 +184,7 @@ public class TempStore<T, P extends Comparable<? super P>> {
                 actions.add(dao.insert(storedValue));
                 continue;
               }
+              Timber.v("Nothing needed for %s", primaryKey);
               index.remove(primaryKey);
             }
             if (!index.isEmpty()) {

@@ -14,9 +14,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.models.ChartEntryList;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
+import com.roamingroths.cmcc.data.repos.InstructionsRepo;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.logic.print.ChartPrinter;
 
 import java.util.concurrent.TimeUnit;
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Function;
@@ -57,6 +59,7 @@ public class PrintChartActivity extends AppCompatActivity {
     MyApplication myApp = MyApplication.cast(getApplication());
     CycleRepo cycleRepo = new CycleRepo(myApp.db());
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+    InstructionsRepo instructionsRepo = new InstructionsRepo(myApp);
 
     CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
     if (adapter != null) {
@@ -96,19 +99,16 @@ public class PrintChartActivity extends AppCompatActivity {
           invalidSelectionToast.show();
           return;
         }
-        Observable<ChartEntryList> entryLists = Observable
+        Observable<CycleRenderer> renderers = Observable
             .fromIterable(adapter.getSelectedCycles())
             .sorted((c1, c2) -> c1.startDate.compareTo(c2.startDate))
-            .flatMap(cycle -> entryRepo
-                .getStream(Flowable.just(cycle))
-                .firstOrError()
-                .map(chartEntries -> ChartEntryList
-                    .builder(cycle)
-                    .addAll(chartEntries)
-                    .build())
+            .flatMap(cycle -> Single.zip(
+                entryRepo.getStream(Flowable.just(cycle)).firstOrError(),
+                instructionsRepo.getAll().firstOrError(),
+                (entries, instructions) -> new CycleRenderer(cycle, entries, instructions))
                 .toObservable());
 
-        mDisposables.add(ChartPrinter.create(PrintChartActivity.this, entryLists)
+        mDisposables.add(ChartPrinter.create(PrintChartActivity.this, renderers)
             .print()
             .flatMap(emitPrintJob())
             .filter(new Predicate<PrintJob>() {

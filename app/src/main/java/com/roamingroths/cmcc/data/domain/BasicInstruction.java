@@ -2,7 +2,7 @@ package com.roamingroths.cmcc.data.domain;
 
 import com.google.common.collect.ImmutableSet;
 
-public enum Instruction {
+public enum BasicInstruction implements AbstractInstruction {
   A('A', null, "Always keep to the observation routine."),
   B('B', null, "Chart at the end of your day, every day, and record the most fertile sign of the day."),
   C('C', null, "Avoid genital contact"),
@@ -46,15 +46,38 @@ public enum Instruction {
   // TODO: N, O
   ;
 
-  public final char section;
-  public final Integer subSection;
-  public final String description;
+  private final char section;
+  private final Integer subSection;
+  private final String description;
 
-  Instruction(char section, Integer subSection, String description) {
+  BasicInstruction(char section, Integer subSection, String description) {
     this.section = section;
     this.subSection = subSection;
     this.description = description;
   }
 
-  public static ImmutableSet<Instruction> POST_PEAK_YELLOW_INSTRUCTIONS = ImmutableSet.of(K_2, K_3, K_4);
+  @Override
+  public String section() {
+    return String.valueOf(section);
+  }
+
+  @Override
+  public String subsection() {
+    if (subSection == null) {
+      return "";
+    }
+    return subSection.toString();
+  }
+
+  @Override
+  public String description() {
+    return description;
+  }
+
+  @Override
+  public String toString() {
+    return description;
+  }
+
+  public static ImmutableSet<BasicInstruction> postPeakYellowBasicInstructions = ImmutableSet.of(K_2, K_3, K_4);
 }

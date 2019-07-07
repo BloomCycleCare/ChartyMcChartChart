@@ -17,6 +17,7 @@ import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.ErrorOr;
 
@@ -53,7 +54,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
-  private final SingleSubject<EntryContext> mEntryContext = SingleSubject.create();
+  private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
 
   private final ChartEntryRepo mEntryRepo;
   private final CycleRepo mCycleRepo;
@@ -87,8 +88,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     Flowable<ObservationEntry> observationEntryStream = Flowable.combineLatest(
         mEntryContext.toFlowable()
             .distinctUntilChanged()
-            .map(context -> context.chartEntry.entryDate)
-            .doOnNext(i -> Timber.v("New EntryContext update")),
+            .map(context -> context.entry.entryDate)
+            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
         errorOrObservationStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New errorOrObservation update")),
@@ -126,25 +127,25 @@ public class EntryDetailViewModel extends AndroidViewModel {
     Flowable<SymptomEntry> symptomEntryStream = Flowable.combineLatest(
         mEntryContext.toFlowable()
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryContext update")),
+            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
         symptomUpdates.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New symptom udpates")),
-        (entryContext, activeSymptoms) -> new SymptomEntry(entryContext.chartEntry.entryDate, activeSymptoms));
+        (entryContext, activeSymptoms) -> new SymptomEntry(entryContext.entry.entryDate, activeSymptoms));
 
     Flowable<WellnessEntry> wellnessEntryStream = Flowable.combineLatest(
         mEntryContext.toFlowable()
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryContext update")),
+            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
         wellnessUpdates.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New wellness udpates")),
-        (entryContext, activeItems) -> new WellnessEntry(entryContext.chartEntry.entryDate, activeItems));
+        (entryContext, activeItems) -> new WellnessEntry(entryContext.entry.entryDate, activeItems));
 
     Flowable.combineLatest(
         mEntryContext.toFlowable()
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryContext update")),
+            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
         errorOrObservationStream
             .map(errorOrObservation -> !errorOrObservation.hasError() ? "" : errorOrObservation.error().getMessage())
             .distinctUntilChanged()
@@ -160,13 +161,13 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .doOnNext(i -> Timber.v("New wellness entry")),
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry) -> {
           ViewState state = new ViewState(entryContext,
-              new ChartEntry(entryContext.chartEntry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
 
           boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
           if (entryHasBlood && entryContext.expectUnusualBleeding && !observationEntry.unusualBleeding) {
             state.validationIssues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
           }
-          /*if (entryContext.shouldAskEssentialSameness && !askedEssentialSameness) {
+          /*if (entryRenderContext.shouldAskEssentialSameness && !askedEssentialSameness) {
             issues.add(new ValidationIssue("Essentially the same?", "Is today essentially the same?"));
           }*/
 
@@ -176,26 +177,26 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .subscribe(mViewStates);
   }
 
-  void initialize(EntryContext context) {
+  void initialize(CycleRenderer.EntryModificationContext context) {
     if (mEntryContext.hasValue()) {
-      Timber.w("Reinitializing EntryContext!");
+      Timber.w("Reinitializing EntryRenderContext!");
     }
     mEntryContext.onSuccess(context);
-    if (context.chartEntry.observationEntry.observation != null) {
-      observationUpdates.onNext(context.chartEntry.observationEntry.observation.toString());
+    if (context.entry.observationEntry.observation != null) {
+      observationUpdates.onNext(context.entry.observationEntry.observation.toString());
     } else {
       observationUpdates.onNext("");
     }
-    peakDayUpdates.onNext(context.chartEntry.observationEntry.peakDay);
-    intercourseUpdates.onNext(context.chartEntry.observationEntry.intercourse);
-    firstDayOfCycleUpdates.onNext(context.chartEntry.observationEntry.firstDay);
-    unusualBleedingUpdates.onNext(context.chartEntry.observationEntry.unusualBleeding);
-    pointOfChangeUpdates.onNext(context.chartEntry.observationEntry.pointOfChange);
-    isEssentiallyTheSameUpdates.onNext(context.chartEntry.observationEntry.isEssentiallyTheSame);
-    timeOfDayUpdates.onNext(context.chartEntry.observationEntry.intercourseTimeOfDay);
+    peakDayUpdates.onNext(context.entry.observationEntry.peakDay);
+    intercourseUpdates.onNext(context.entry.observationEntry.intercourse);
+    firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
+    unusualBleedingUpdates.onNext(context.entry.observationEntry.unusualBleeding);
+    pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
+    isEssentiallyTheSameUpdates.onNext(context.entry.observationEntry.isEssentiallyTheSame);
+    timeOfDayUpdates.onNext(context.entry.observationEntry.intercourseTimeOfDay);
 
-    symptomUpdates.onNext(context.chartEntry.symptomEntry.symptoms);
-    wellnessUpdates.onNext(context.chartEntry.wellnessEntry.wellnessItems);
+    symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
+    wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
   }
 
   LiveData<ViewState> viewStates() {
@@ -242,7 +243,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   }
 
   private Completable updateRepos(ViewState viewState) {
-    ChartEntry originalEntry = viewState.entryContext.chartEntry;
+    ChartEntry originalEntry = viewState.entryModificationContext.entry;
     ChartEntry updatedEntry = viewState.chartEntry;
     if (updatedEntry.equals(originalEntry)) {
       Timber.w("Trying to save clean entry!");
@@ -251,7 +252,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     List<Completable> actions = new ArrayList<>();
     if (!originalEntry.observationEntry.firstDay && updatedEntry.observationEntry.firstDay) {
       // We need to split the current cycle...
-      Cycle currentCycle = viewState.entryContext.currentCycle;
+      Cycle currentCycle = viewState.entryModificationContext.cycle;
       Cycle newCycle = new Cycle("asdf", updatedEntry.entryDate, currentCycle.endDate);
       actions.add(mCycleRepo.insertOrUpdate(newCycle));
 
@@ -260,10 +261,10 @@ public class EntryDetailViewModel extends AndroidViewModel {
     }
     if (originalEntry.observationEntry.firstDay && !updatedEntry.observationEntry.firstDay) {
       // We need to join the current cycle with the previous...
-      if (!viewState.entryContext.hasPreviousCycle) {
+      if (!viewState.entryModificationContext.hasPreviousCycle) {
         throw new IllegalStateException("No previous cycle to join");
       }
-      Cycle currentCycle = viewState.entryContext.currentCycle;
+      Cycle currentCycle = viewState.entryModificationContext.cycle;
       actions.add(mCycleRepo
           .getPreviousCycle(currentCycle)
           .toSingle()
@@ -277,19 +278,19 @@ public class EntryDetailViewModel extends AndroidViewModel {
   }
 
   public static class ViewState {
-    public final EntryContext entryContext;
+    public final CycleRenderer.EntryModificationContext entryModificationContext;
     public final ChartEntry chartEntry;
     public final String observationErrorText;
     public final List<ValidationIssue> validationIssues = new ArrayList<>();
 
-    public ViewState(EntryContext entryContext, ChartEntry chartEntry, String observationErrorText) {
-      this.entryContext = entryContext;
+    public ViewState(CycleRenderer.EntryModificationContext entryModificationContext, ChartEntry chartEntry, String observationErrorText) {
+      this.entryModificationContext = entryModificationContext;
       this.chartEntry = chartEntry;
       this.observationErrorText = observationErrorText;
     }
 
     public boolean isDirty() {
-      return !chartEntry.equals(entryContext.chartEntry);
+      return !chartEntry.equals(entryModificationContext.entry);
     }
   }
 

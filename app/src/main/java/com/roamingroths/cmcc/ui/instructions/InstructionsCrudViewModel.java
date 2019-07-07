@@ -13,8 +13,9 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.application.MyApplication;
-import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.SpecialInstruction;
+import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
 import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 import com.roamingroths.cmcc.utils.DateUtil;
@@ -44,8 +45,9 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
 
   final BehaviorSubject<LocalDate> startDateUpdates = BehaviorSubject.create();
   private final BehaviorSubject<Instructions> initialInstructions = BehaviorSubject.create();
-  private final Map<Instruction, BehaviorSubject<ToggleState<Instruction>>> instructionStates = new HashMap<>();
+  private final Map<BasicInstruction, BehaviorSubject<ToggleState<BasicInstruction>>> instructionStates = new HashMap<>();
   private final Map<SpecialInstruction, BehaviorSubject<ToggleState<SpecialInstruction>>> specialInstructionStates = new HashMap<>();
+  private final Map<YellowStampInstruction, BehaviorSubject<ToggleState<YellowStampInstruction>>> yellowStampInstructionStates = new HashMap<>();
 
   private final InstructionsRepo mInstructionsRepo;
 
@@ -56,12 +58,16 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     super(application);
     mInstructionsRepo = MyApplication.cast(application).instructionsRepo();
 
-    for (Instruction instruction : Instruction.values()) {
-      instructionStates.put(instruction, BehaviorSubject.create());
+    for (BasicInstruction basicInstruction : BasicInstruction.values()) {
+      instructionStates.put(basicInstruction, BehaviorSubject.create());
     }
 
     for (SpecialInstruction specialInstruction : SpecialInstruction.values()) {
       specialInstructionStates.put(specialInstruction, BehaviorSubject.create());
+    }
+
+    for (YellowStampInstruction yellowStampInstruction : YellowStampInstruction.values()) {
+      yellowStampInstructionStates.put(yellowStampInstruction, BehaviorSubject.create());
     }
 
     // Connect subject for the current ViewState
@@ -157,13 +163,14 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
       if (instructions != null) {
         initialInstructions.onNext(instructions);
         startDateUpdates.onNext(instructions.startDate);
-        for (Instruction instruction : Instruction.values()) {
-          boolean isActive = instructions.activeItems.contains(instruction);
-          updateInstruction(instruction, isActive);
+        for (BasicInstruction basicInstruction : BasicInstruction.values()) {
+          updateInstruction(basicInstruction, instructions.isActive(basicInstruction));
         }
         for (SpecialInstruction instruction : SpecialInstruction.values()) {
-          boolean isActive = instructions.specialInstructions.contains(instruction);
-          updateSpecialInstruction(instruction, isActive);
+          updateSpecialInstruction(instruction, instructions.isActive(instruction));
+        }
+        for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
+          updateYellowStampInstruction(instruction, instructions.isActive(instruction));
         }
       }
     }
@@ -175,11 +182,11 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     super.onCleared();
   }
 
-  void updateInstruction(Instruction instruction, boolean isActive) {
-    if (!instructionStates.containsKey(instruction)) {
-      Timber.w("No subject for %s", instruction.name());
+  void updateInstruction(BasicInstruction basicInstruction, boolean isActive) {
+    if (!instructionStates.containsKey(basicInstruction)) {
+      Timber.w("No subject for %s", basicInstruction.name());
     }
-    instructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
+    instructionStates.get(basicInstruction).onNext(new ToggleState<>(basicInstruction,isActive));
   }
 
   void updateSpecialInstruction(SpecialInstruction instruction, boolean isActive) {
@@ -189,26 +196,33 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     specialInstructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
   }
 
+  void updateYellowStampInstruction(YellowStampInstruction instruction, boolean isActive) {
+    if (!yellowStampInstructionStates.containsKey(instruction)) {
+      Timber.w("No subject for %s", instruction.name());
+    }
+    yellowStampInstructionStates.get(instruction).onNext(new ToggleState<>(instruction,isActive));
+  }
+
   LiveData<ViewState> viewState() {
     return LiveDataReactiveStreams.fromPublisher(mViewState.toFlowable(BackpressureStrategy.BUFFER));
   }
 
   private Flowable<ViewState> viewStateStream() {
-    List<Observable<ToggleState<Instruction>>> dedupedActiveUpdates = new ArrayList<>();
-    for (BehaviorSubject<ToggleState<Instruction>> state : instructionStates.values()) {
+    List<Observable<ToggleState<BasicInstruction>>> dedupedActiveUpdates = new ArrayList<>();
+    for (BehaviorSubject<ToggleState<BasicInstruction>> state : instructionStates.values()) {
       dedupedActiveUpdates.add(state.distinctUntilChanged());
     }
-    Observable<Set<Instruction>> activeStream = Observable.combineLatest(
+    Observable<Set<BasicInstruction>> activeStream = Observable.combineLatest(
         dedupedActiveUpdates,
         states -> {
-          Set<Instruction> activeInstructions = new HashSet<>();
+          Set<BasicInstruction> activeBasicInstructions = new HashSet<>();
           for (Object o : states) {
-            ToggleState<Instruction> state = (ToggleState<Instruction>) o;
+            ToggleState<BasicInstruction> state = (ToggleState<BasicInstruction>) o;
             if (state.isActive) {
-              activeInstructions.add(state.value);
+              activeBasicInstructions.add(state.value);
             }
           }
-          return activeInstructions;
+          return activeBasicInstructions;
         }).distinctUntilChanged();
     List<Observable<ToggleState<SpecialInstruction>>> dedupedSpecialActiveUpdates = new ArrayList<>();
     for (BehaviorSubject<ToggleState<SpecialInstruction>> state : specialInstructionStates.values()) {
@@ -226,14 +240,30 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
           }
           return activeInstructions;
         }).distinctUntilChanged();
-    Observable<List<Pair<Instruction, Instruction>>> collisionStream = activeStream
+    List<Observable<ToggleState<YellowStampInstruction>>> dedupedYellowStampActiveUpdates = new ArrayList<>();
+    for (BehaviorSubject<ToggleState<YellowStampInstruction>> state : yellowStampInstructionStates.values()) {
+      dedupedYellowStampActiveUpdates.add(state.distinctUntilChanged());
+    }
+    Observable<Set<YellowStampInstruction>> activeYellowStampStream = Observable.combineLatest(
+        dedupedYellowStampActiveUpdates,
+        states -> {
+          Set<YellowStampInstruction> activeInstructions = new HashSet<>();
+          for (Object o : states) {
+            ToggleState<YellowStampInstruction> state = (ToggleState<YellowStampInstruction>) o;
+            if (state.isActive) {
+              activeInstructions.add(state.value);
+            }
+          }
+          return activeInstructions;
+        }).distinctUntilChanged();
+    Observable<List<Pair<BasicInstruction, BasicInstruction>>> collisionStream = activeStream
         .map(activeInstructions -> {
-          Set<Instruction> entriesToDrop = new HashSet<>();
-          List<Pair<Instruction, Instruction>> collisions = new ArrayList<>();
-          for (Instruction activeInstruction : activeInstructions) {
-            for (Set<Instruction> exclusiveSet : EXCLUSIVE_SETS) {
+          Set<BasicInstruction> entriesToDrop = new HashSet<>();
+          List<Pair<BasicInstruction, BasicInstruction>> collisions = new ArrayList<>();
+          for (BasicInstruction activeInstruction : activeInstructions) {
+            for (Set<BasicInstruction> exclusiveSet : EXCLUSIVE_SETS) {
               if (exclusiveSet.contains(activeInstruction)) {
-                for (Instruction exclusiveInstruction : exclusiveSet) {
+                for (BasicInstruction exclusiveInstruction : exclusiveSet) {
                   if (exclusiveInstruction != activeInstruction
                       && !entriesToDrop.contains(activeInstruction)
                       && activeInstructions.contains(exclusiveInstruction)) {
@@ -251,23 +281,24 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
         startDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged().doOnNext(v -> Timber.v("New startDateUpdate %s", v)),
         activeStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New activeItemUpdate")),
         activeSpecialStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New special")),
+        activeYellowStampStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New yellow stamps")),
         collisionStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New collisions")),
-        (initialInstructions, startDate, activeInstructionSet, activeSpecialInstructionSet, collisions) -> mInstructionsRepo
+        (initialInstructions, startDate, activeInstructionSet, activeSpecialInstructionSet, activeYellowStampSet, collisions) -> mInstructionsRepo
             .hasAnyAfter(startDate)
             .map(hasAnyAfter -> {
-              Set<Instruction> instructionsToDeactivate = new HashSet<>();
-              for (Pair<Instruction, Instruction> collision : collisions) {
+              Set<BasicInstruction> instructionsToDeactivate = new HashSet<>();
+              for (Pair<BasicInstruction, BasicInstruction> collision : collisions) {
                 instructionsToDeactivate.add(collision.second);
               }
               String collisionPrompt = collisions.isEmpty()
                   ? "" : String.format("%s and %s cannot both be active!", collisions.get(0).first, collisions.get(0).second);
-              List<Instruction> activeInstructions = new ArrayList<>();
-              for (Instruction activeInstruction : activeInstructionSet) {
-                if (!instructionsToDeactivate.contains(activeInstruction)) {
-                  activeInstructions.add(activeInstruction);
+              List<BasicInstruction> activeBasicInstructions = new ArrayList<>();
+              for (BasicInstruction activeBasicInstruction : activeInstructionSet) {
+                if (!instructionsToDeactivate.contains(activeBasicInstruction)) {
+                  activeBasicInstructions.add(activeBasicInstruction);
                 }
               }
-              Instructions instructions = new Instructions(startDate, activeInstructions, new ArrayList<>(activeSpecialInstructionSet));
+              Instructions instructions = new Instructions(startDate, activeBasicInstructions, new ArrayList<>(activeSpecialInstructionSet), new ArrayList<>(activeYellowStampSet));
               ViewState viewState = new ViewState(instructions, initialInstructions, collisionPrompt);
               viewState.startDateStr = DateUtil.toWireStr(instructions.startDate);
               viewState.statusStr = hasAnyAfter ? "Inactive" : "Active";
@@ -276,10 +307,10 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
             .toFlowable()));
   }
 
-  private static final ImmutableSet<ImmutableSet<Instruction>> EXCLUSIVE_SETS = ImmutableSet.of(
-      ImmutableSet.of(Instruction.E_1, Instruction.E_2),
-      ImmutableSet.of(Instruction.E_4, Instruction.E_5, Instruction.E_6),
-      Instruction.POST_PEAK_YELLOW_INSTRUCTIONS);
+  private static final ImmutableSet<ImmutableSet<BasicInstruction>> EXCLUSIVE_SETS = ImmutableSet.of(
+      ImmutableSet.of(BasicInstruction.E_1, BasicInstruction.E_2),
+      ImmutableSet.of(BasicInstruction.E_4, BasicInstruction.E_5, BasicInstruction.E_6),
+      BasicInstruction.postPeakYellowBasicInstructions);
 
   public class ViewState {
     public String startDateStr;

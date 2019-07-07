@@ -1,23 +1,11 @@
 package com.roamingroths.cmcc.logic;
 
-import com.google.common.base.Optional;
-import com.roamingroths.cmcc.data.models.ChartEntry;
-import com.roamingroths.cmcc.logic.chart.MccScorer;
-import com.roamingroths.cmcc.data.domain.Observation;
-import com.roamingroths.cmcc.data.entities.ObservationEntry;
-
 import org.joda.time.LocalDate;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
 
 public class MccScorerTest {
 
   private static final LocalDate TODAY = LocalDate.now();
-
+/*
   @Test
   public void test_table_14_2_A() throws Exception {
     List<String> observations = new ArrayList<>();
@@ -108,4 +96,5 @@ public class MccScorerTest {
     LocalDate peakDay = start.plusDays(peakDayNum - 1);
     return MccScorer.getScore(entries, Optional.of(peakDay));
   }
+  */
 }

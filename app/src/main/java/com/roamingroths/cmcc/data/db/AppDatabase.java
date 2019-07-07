@@ -25,7 +25,7 @@ import java.util.List;
         SymptomEntry.class,
         WellnessEntry.class,
     },
-    version = 6)
+    version = 7)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -42,5 +42,12 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
-    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3);
+    private static final Migration MIGRATION_6_7 = new Migration(6, 7) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE Instructions ADD yellowStampInstructions TEXT");
+        }
+    };
+
+    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3, MIGRATION_6_7);
 }

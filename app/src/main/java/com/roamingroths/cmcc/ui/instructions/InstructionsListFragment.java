@@ -20,8 +20,10 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.domain.Instruction;
+import com.roamingroths.cmcc.data.domain.AbstractInstruction;
+import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.SpecialInstruction;
+import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
 import com.roamingroths.cmcc.utils.SimpleArrayAdapter;
 
 import java.util.ArrayList;
@@ -61,17 +63,17 @@ public class InstructionsListFragment extends Fragment {
     View view = inflater.inflate(R.layout.fragment_instruction_edit, container, false);
 
     ListView instructionsView = view.findViewById(R.id.lv_instructions);
-    SimpleArrayAdapter<InstructionContainer, InstructionViewHolder> adapter = new SimpleArrayAdapter<>(
+    SimpleArrayAdapter<InstructionContainer<BasicInstruction>, InstructionViewHolder<BasicInstruction>> adapter = new SimpleArrayAdapter<>(
         getActivity(), R.layout.list_item_instruction,
-        v -> new InstructionViewHolder(v, (instruction, isChecked) -> mViewModel.updateInstruction(instruction, isChecked)),
+        v -> new InstructionViewHolder<>(v, (instruction, isChecked) -> mViewModel.updateInstruction(instruction, isChecked)),
         t -> {});
-    List<InstructionContainer> values = new ArrayList<>();
-    values.addAll(EXTRA_INSTRUCTIONS);
-    for (Instruction instruction : Instruction.values()) {
-      values.add(new InstructionContainer(instruction));
+    List<InstructionContainer<BasicInstruction>> basicValues = new ArrayList<>();
+    basicValues.addAll(EXTRA_INSTRUCTIONS);
+    for (BasicInstruction basicInstruction : BasicInstruction.values()) {
+      basicValues.add(new InstructionContainer(basicInstruction));
     }
-    Collections.sort(values, (a, b) -> a.sortKey.compareTo(b.sortKey));
-    adapter.updateData(values);
+    Collections.sort(basicValues, (a, b) -> a.sortKey.compareTo(b.sortKey));
+    adapter.updateData(basicValues);
     instructionsView.setAdapter(adapter);
 
     InstructionsListViewModel activityViewModel =
@@ -89,6 +91,20 @@ public class InstructionsListFragment extends Fragment {
         t -> {});
     specialAdapter.updateData(Arrays.asList(SpecialInstruction.values()));
     specialInstructionsView.setAdapter(specialAdapter);
+
+    ListView ysInstructionsView = view.findViewById(R.id.lv_ys_instructions);
+    SimpleArrayAdapter<InstructionContainer<YellowStampInstruction>, InstructionViewHolder<YellowStampInstruction>> ysAdapter = new SimpleArrayAdapter<>(
+        getActivity(), R.layout.list_item_instruction,
+        v -> new InstructionViewHolder<>(v, (specialInstruction, isChecked) -> mViewModel.updateYellowStampInstruction(specialInstruction, isChecked)),
+        t -> {});
+    List<InstructionContainer<YellowStampInstruction>> values = new ArrayList<>();
+    values.addAll(EXTRA_YELLOW_INSTRUCTIONS);
+    for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
+      values.add(new InstructionContainer(instruction));
+    }
+    Collections.sort(values, (a, b) -> a.sortKey.compareTo(b.sortKey));
+    ysAdapter.updateData(values);
+    ysInstructionsView.setAdapter(ysAdapter);
     mViewModel.viewState().observe(this, viewState -> {
       Timber.i("Updating ViewState for instructions starting %s", viewState.instructions.startDate);
       startDate.setText(viewState.startDateStr);
@@ -112,9 +128,10 @@ public class InstructionsListFragment extends Fragment {
 
       status.setText(viewState.statusStr);
 
-      for (Instruction instruction : Instruction.values()) {
-        InstructionViewHolder holder = adapter.holderForItem(new InstructionContainer(instruction));
-        holder.setChecked(viewState.instructions.activeItems.contains(instruction));
+      for (BasicInstruction basicInstruction : BasicInstruction.values()) {
+        InstructionViewHolder<BasicInstruction> holder =
+            adapter.holderForItem(new InstructionContainer<>(basicInstruction));
+        holder.setChecked(viewState.instructions.isActive(basicInstruction));
       }
       if (!Strings.isNullOrEmpty(viewState.collisionPrompt)) {
         new AlertDialog.Builder(getActivity())
@@ -125,7 +142,12 @@ public class InstructionsListFragment extends Fragment {
       }
       for (SpecialInstruction instruction : SpecialInstruction.values()) {
         SpecialInstructionViewHolder holder = specialAdapter.holderForItem(instruction);
-        holder.setChecked(viewState.instructions.specialInstructions.contains(instruction));
+        holder.setChecked(viewState.instructions.isActive(instruction));
+      }
+      for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
+        InstructionViewHolder<YellowStampInstruction> holder =
+            ysAdapter.holderForItem(new InstructionContainer<>(instruction));
+        holder.setChecked(viewState.instructions.isActive(instruction));
       }
     });
 
@@ -138,26 +160,31 @@ public class InstructionsListFragment extends Fragment {
     super.onDestroy();
   }
 
-  private static final List<InstructionContainer> EXTRA_INSTRUCTIONS = ImmutableList.of(
-      new InstructionContainer('D', "Days of fertility (use to achieve pregnancy)"),
-      new InstructionContainer('E', "Days of infertility (use to avoid pregnancy)"),
-      new InstructionContainer('G', "Double Peak"));
+  private static final List<InstructionContainer<BasicInstruction>> EXTRA_INSTRUCTIONS = ImmutableList.of(
+      new InstructionContainer<>('D', "Days of fertility (use to achieve pregnancy)"),
+      new InstructionContainer<>('E', "Days of infertility (use to avoid pregnancy)"),
+      new InstructionContainer<>('G', "Double Peak"));
 
-  private static class InstructionContainer {
+  private static final List<InstructionContainer<YellowStampInstruction>> EXTRA_YELLOW_INSTRUCTIONS = ImmutableList.of(
+      new InstructionContainer<>('1', "Days of fertility (use to achieve pregancy)"),
+      new InstructionContainer<>('2', "Days of infertility (use to avoid pregancy)"),
+      new InstructionContainer<>('3', "Discontinuation of Yellow Stamps"));
+
+  private static class InstructionContainer<I extends AbstractInstruction> {
 
     public final String sortKey;
     public final String text;
-    @Nullable public final Instruction instruction;
+    @Nullable public final I instruction;
 
 
-    InstructionContainer(Instruction instruction) {
+    InstructionContainer(I instruction) {
       StringBuilder keyBuilder = new StringBuilder();
-      keyBuilder.append(instruction.section);
-      if (instruction.subSection != null) {
-        keyBuilder.append(".").append(instruction.subSection);
+      keyBuilder.append(instruction.section());
+      if (!Strings.isNullOrEmpty(instruction.section())) {
+        keyBuilder.append(".").append(instruction.subsection());
       }
       this.sortKey = keyBuilder.toString();
-      this.text = instruction.description;
+      this.text = instruction.description();
       this.instruction = instruction;
     }
 
@@ -184,15 +211,15 @@ public class InstructionsListFragment extends Fragment {
     }
   }
 
-  private static class InstructionViewHolder extends SimpleArrayAdapter.SimpleViewHolder<InstructionContainer> {
+  private static class InstructionViewHolder<I extends AbstractInstruction> extends SimpleArrayAdapter.SimpleViewHolder<InstructionContainer<I>> {
 
     private final TextView mKey;
     private final TextView mText;
     private final SwitchCompat mSwitch;
 
-    private InstructionContainer mBoundInstruction;
+    private InstructionContainer<I> mBoundInstruction;
 
-    public InstructionViewHolder(View view, BiConsumer<Instruction, Boolean> toggleConsumer) {
+    public InstructionViewHolder(View view, BiConsumer<I, Boolean> toggleConsumer) {
       super(view);
       mKey = view.findViewById(R.id.tv_instruction_key);
       mText = view.findViewById(R.id.tv_instruction_text);
@@ -208,7 +235,7 @@ public class InstructionsListFragment extends Fragment {
     }
 
     @Override
-    protected void updateUI(InstructionContainer data) {
+    protected void updateUI(InstructionContainer<I> data) {
       mBoundInstruction = data;
       mKey.setText(data.sortKey);
       mText.setText(data.text);

@@ -1,7 +1,5 @@
 package com.roamingroths.cmcc.data.entities;
 
-import android.os.Parcelable;
-
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.Ignore;
@@ -13,9 +11,6 @@ import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
-
-import java.security.NoSuchAlgorithmException;
-import java.util.Comparator;
 
 /**
  * Created by parkeroth on 4/30/17.
