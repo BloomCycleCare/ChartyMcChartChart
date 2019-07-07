@@ -27,7 +27,6 @@ import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
 import com.roamingroths.cmcc.utils.SimpleArrayAdapter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -85,11 +84,15 @@ public class InstructionsListFragment extends Fragment {
     status.setText("Unspecified");
 
     ListView specialInstructionsView = view.findViewById(R.id.lv_special_instructions);
-    SimpleArrayAdapter<SpecialInstruction, SpecialInstructionViewHolder> specialAdapter = new SimpleArrayAdapter<>(
+    SimpleArrayAdapter<InstructionContainer<SpecialInstruction>, InstructionViewHolder<SpecialInstruction>> specialAdapter = new SimpleArrayAdapter<>(
         getActivity(), R.layout.list_item_instruction,
-        v -> new SpecialInstructionViewHolder(v, (specialInstruction, isChecked) -> mViewModel.updateSpecialInstruction(specialInstruction, isChecked)),
+        v -> new InstructionViewHolder<>(v, (specialInstruction, isChecked) -> mViewModel.updateSpecialInstruction(specialInstruction, isChecked)),
         t -> {});
-    specialAdapter.updateData(Arrays.asList(SpecialInstruction.values()));
+    List<InstructionContainer<SpecialInstruction>> specialValues = new ArrayList<>();
+    for (SpecialInstruction specialInstruction : SpecialInstruction.values()) {
+      specialValues.add(new InstructionContainer<>(specialInstruction));
+    }
+    specialAdapter.updateData(specialValues);
     specialInstructionsView.setAdapter(specialAdapter);
 
     ListView ysInstructionsView = view.findViewById(R.id.lv_ys_instructions);
@@ -97,13 +100,12 @@ public class InstructionsListFragment extends Fragment {
         getActivity(), R.layout.list_item_instruction,
         v -> new InstructionViewHolder<>(v, (specialInstruction, isChecked) -> mViewModel.updateYellowStampInstruction(specialInstruction, isChecked)),
         t -> {});
-    List<InstructionContainer<YellowStampInstruction>> values = new ArrayList<>();
-    values.addAll(EXTRA_YELLOW_INSTRUCTIONS);
+    List<InstructionContainer<YellowStampInstruction>> yellowStampValues = new ArrayList<>(EXTRA_YELLOW_INSTRUCTIONS);
     for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
-      values.add(new InstructionContainer(instruction));
+      yellowStampValues.add(new InstructionContainer<>(instruction));
     }
-    Collections.sort(values, (a, b) -> a.sortKey.compareTo(b.sortKey));
-    ysAdapter.updateData(values);
+    Collections.sort(yellowStampValues, (a, b) -> a.sortKey.compareTo(b.sortKey));
+    ysAdapter.updateData(yellowStampValues);
     ysInstructionsView.setAdapter(ysAdapter);
     mViewModel.viewState().observe(this, viewState -> {
       Timber.i("Updating ViewState for instructions starting %s", viewState.instructions.startDate);
@@ -141,7 +143,8 @@ public class InstructionsListFragment extends Fragment {
             .show();
       }
       for (SpecialInstruction instruction : SpecialInstruction.values()) {
-        SpecialInstructionViewHolder holder = specialAdapter.holderForItem(instruction);
+        InstructionViewHolder<SpecialInstruction> holder =
+            specialAdapter.holderForItem(new InstructionContainer<>(instruction));
         holder.setChecked(viewState.instructions.isActive(instruction));
       }
       for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
@@ -241,41 +244,6 @@ public class InstructionsListFragment extends Fragment {
       mText.setText(data.text);
       mSwitch.setVisibility(data.instruction != null ? View.VISIBLE : View.GONE);
       mText.setTypeface(null, data.instruction != null ? Typeface.NORMAL : Typeface.ITALIC);
-    }
-
-    void setChecked(boolean checked) {
-      if (mSwitch.isChecked() != checked) {
-        mSwitch.setChecked(checked);
-      }
-    }
-  }
-
-  private static class SpecialInstructionViewHolder extends SimpleArrayAdapter.SimpleViewHolder<SpecialInstruction> {
-
-    private final TextView mText;
-    private final SwitchCompat mSwitch;
-
-    private SpecialInstruction mBoundInstruction;
-
-    public SpecialInstructionViewHolder(View view, BiConsumer<SpecialInstruction, Boolean> toggleConsumer) {
-      super(view);
-      TextView keyView = view.findViewById(R.id.tv_instruction_key);
-      keyView.setText("");
-      mText = view.findViewById(R.id.tv_instruction_text);
-      mSwitch = view.findViewById(R.id.switch_instruction);
-      mSwitch.setOnCheckedChangeListener((compoundButton, checked) -> {
-        try {
-          toggleConsumer.accept(mBoundInstruction, checked);
-        } catch (Exception e) {
-          throw new IllegalStateException(e);
-        }
-      });
-    }
-
-    @Override
-    protected void updateUI(SpecialInstruction data) {
-      mBoundInstruction = data;
-      mText.setText(data.description);
     }
 
     void setChecked(boolean checked) {
