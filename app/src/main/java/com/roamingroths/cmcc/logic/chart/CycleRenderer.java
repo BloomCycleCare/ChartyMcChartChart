@@ -44,22 +44,6 @@ public class CycleRenderer {
     mInstructions.addAll(allInstructions);
   }
 
-  public static class State {
-    public Cycle cycle;
-    public ChartEntry entry;
-    public Instructions instructions;
-    public int entryNum;
-    public boolean isPrePeak;
-    public boolean isPeakDay;
-    public boolean isPostPeak;
-    public int daysPostPeak = -1;
-    public boolean isInMenstrualFlow;
-    public boolean isPointOfChange;
-    public boolean isBeforePointOfChange;
-    public Map<Enum, CountOfThreeReason> countOfThreeReasons;
-    public ChartEntry previousEntry;
-  }
-
   public List<RenderableEntry> render() {
     return render(getStates());
   }
@@ -82,14 +66,7 @@ public class CycleRenderer {
     for (ChartEntry e : mEntries) {
       entriesEvaluated.add(e);
 
-      Instructions instructions = null;
-      for (Instructions i : mInstructions.descendingSet()) {
-        if (!e.entryDate.isBefore(i.startDate)) {
-          instructions = i;
-          break;
-        }
-      }
-
+      // Step 1: Gather basic info which does not depend on the active instructions
       Set<BasicInstruction> fertilityReasons = new HashSet<>();
       if (e.observationEntry.peakDay) {
         peakDays.add(e.entryDate);
@@ -133,7 +110,6 @@ public class CycleRenderer {
       State state = new State();
       state.cycle = mCycle;
       state.entry = e;
-      state.instructions = instructions;
       state.entryNum = Days.daysBetween(mCycle.startDate, e.entryDate).getDays() + 1;
       state.isPeakDay = e.observationEntry.peakDay;
       state.isPrePeak = !state.isPeakDay && peakDays.isEmpty();
@@ -144,6 +120,16 @@ public class CycleRenderer {
       state.previousEntry = previousEntry;
       state.countOfThreeReasons = new HashMap<>();
 
+      Instructions instructions = null;
+      for (Instructions i : mInstructions.descendingSet()) {
+        if (!e.entryDate.isBefore(i.startDate)) {
+          instructions = i;
+          break;
+        }
+      }
+      state.instructions = instructions;
+
+      // Step 2: Check conditions which depend on the active instructions
       LocalDate threeDaysAgo = e.entryDate.minusDays(3);
       Optional<LocalDate> mostRecentPeakDay = getMostRecent(peakDays, e.entryDate);
       if (state.instructions.isActive(BasicInstruction.D_2)
@@ -166,9 +152,9 @@ public class CycleRenderer {
             Days.daysBetween(mostRecentPointOfChange.get(), e.entryDate).getDays()));
       }
 
-      // Check count of three conditions...
-      boolean endOfFertitilityStretch = yesterdayWasFertile && fertilityReasons.isEmpty();
-      if (endOfFertitilityStretch || countOfThreeStarted) {
+      // Step 3: Check conditions which depend both on active instructions and recent fertility trend
+      boolean endOfFertilityStretch = yesterdayWasFertile && fertilityReasons.isEmpty();
+      if (endOfFertilityStretch || countOfThreeStarted) {
         if (instructions.isActive(BasicInstruction.D_5)
             && mostRecentPeakTypeMucus != null
             && !mostRecentPeakTypeMucus.isBefore(threeDaysAgo)) {
@@ -206,48 +192,6 @@ public class CycleRenderer {
     return outStates;
   }
 
-  public static class CountOfThreeReason {
-    public final Enum instruction;
-    public final int count;
-
-    public CountOfThreeReason(Enum instruction, int count) {
-      this.instruction = instruction;
-      this.count = count;
-    }
-
-    @Override
-    public boolean equals(@Nullable Object o) {
-      if (o instanceof CountOfThreeReason) {
-        CountOfThreeReason that = (CountOfThreeReason) o;
-        return Objects.equal(this.instruction, that.instruction) && Objects.equal(this.count, that.count);
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(instruction, count);
-    }
-  }
-
-  public static class RenderableEntry {
-    public String entrySummary;
-    public StickerColor backgroundColor;
-    public int entryNum;
-    public String dateSummary;
-    public String peakDayText;
-    public boolean showBaby;
-    public IntercourseTimeOfDay intercourseTimeOfDay;
-    public boolean isPointOfChange;
-    public EntryModificationContext modificationContext;
-
-    @NonNull
-    @Override
-    public String toString() {
-      return String.format("%s: %s", dateSummary, entrySummary);
-    }
-  }
-
   private static RenderableEntry render(State state) {
     RenderableEntry entry = new RenderableEntry();
 
@@ -270,16 +214,6 @@ public class CycleRenderer {
     entry.modificationContext = modificationContext;
 
     return entry;
-  }
-
-  @Parcel
-  public static class EntryModificationContext {
-    public Cycle cycle;
-    public ChartEntry entry;
-    public boolean hasPreviousCycle;
-    public boolean expectUnusualBleeding;
-    public boolean isFirstEntry;
-    public boolean shouldAskEssentialSameness;
   }
 
   private static List<RenderableEntry> render(List<State> states) {
@@ -436,6 +370,74 @@ public class CycleRenderer {
       }
     }
     return Optional.absent();
+  }
+
+  public static class State {
+    public Cycle cycle;
+    public ChartEntry entry;
+    public Instructions instructions;
+    public int entryNum;
+    public boolean isPrePeak;
+    public boolean isPeakDay;
+    public boolean isPostPeak;
+    public int daysPostPeak = -1;
+    public boolean isInMenstrualFlow;
+    public boolean isPointOfChange;
+    public boolean isBeforePointOfChange;
+    public Map<Enum, CountOfThreeReason> countOfThreeReasons;
+    public ChartEntry previousEntry;
+  }
+
+  public static class CountOfThreeReason {
+    public final Enum instruction;
+    public final int count;
+
+    public CountOfThreeReason(Enum instruction, int count) {
+      this.instruction = instruction;
+      this.count = count;
+    }
+
+    @Override
+    public boolean equals(@Nullable Object o) {
+      if (o instanceof CountOfThreeReason) {
+        CountOfThreeReason that = (CountOfThreeReason) o;
+        return Objects.equal(this.instruction, that.instruction) && Objects.equal(this.count, that.count);
+      }
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(instruction, count);
+    }
+  }
+
+  public static class RenderableEntry {
+    public String entrySummary;
+    public StickerColor backgroundColor;
+    public int entryNum;
+    public String dateSummary;
+    public String peakDayText;
+    public boolean showBaby;
+    public IntercourseTimeOfDay intercourseTimeOfDay;
+    public boolean isPointOfChange;
+    public EntryModificationContext modificationContext;
+
+    @NonNull
+    @Override
+    public String toString() {
+      return String.format("%s: %s", dateSummary, entrySummary);
+    }
+  }
+
+  @Parcel
+  public static class EntryModificationContext {
+    public Cycle cycle;
+    public ChartEntry entry;
+    public boolean hasPreviousCycle;
+    public boolean expectUnusualBleeding;
+    public boolean isFirstEntry;
+    public boolean shouldAskEssentialSameness;
   }
 
 }
