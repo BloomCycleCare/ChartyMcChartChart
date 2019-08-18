@@ -5,6 +5,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Transaction;
 import androidx.room.TypeConverters;
 import androidx.room.Update;
 
@@ -17,6 +18,7 @@ import java.util.List;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 @Dao
 public abstract class CycleDao {
@@ -39,4 +41,14 @@ public abstract class CycleDao {
 
   @Update
   public abstract Completable update(Cycle cycle);
+
+  @Transaction
+  public Cycle startNewCycle(Cycle currentCycle, LocalDate startDate) {
+    Cycle newCycle = new Cycle("fooo", startDate, null);
+    Cycle copyOfCurrent = new Cycle(currentCycle);
+    copyOfCurrent.endDate = startDate.minusDays(1);
+    return Completable
+        .concatArray(insert(newCycle), update(copyOfCurrent))
+        .andThen(Single.just(newCycle)).blockingGet();
+  }
 }

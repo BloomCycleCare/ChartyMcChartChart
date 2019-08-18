@@ -1,5 +1,7 @@
 package com.roamingroths.cmcc.ui.init;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
@@ -15,6 +17,7 @@ import org.joda.time.LocalDate;
 
 import java.util.Calendar;
 
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -51,6 +54,19 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     updateStatus("Loading your data");
     if (DEBUG) Log.v(TAG, "Getting current cycleToShow");
     mDisposables.add(mCycleRepo.getCurrentCycle()
+        .switchIfEmpty(mCycleRepo.getLatestCycle()
+            .observeOn(AndroidSchedulers.mainThread())
+            .flatMap(latestCycle -> promptUseLatestAsCurrent()
+                .observeOn(Schedulers.computation())
+                .flatMapMaybe(useCurrent -> {
+                  if (!useCurrent) {
+                    return Maybe.empty();
+                  }
+                  Cycle copyOfLatest = new Cycle(latestCycle);
+                  copyOfLatest.endDate = null;
+                  return mCycleRepo.insertOrUpdate(copyOfLatest).andThen(Maybe.just(copyOfLatest));
+                })))
+        .observeOn(AndroidSchedulers.mainThread())
         .switchIfEmpty(promptForStart()
             .flatMap(startDate -> {
               Cycle cycle = new Cycle("foo", LocalDate.now(), null);
@@ -65,6 +81,28 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
           Timber.e(throwable);
           showError("Could not find or create a cycle!");
         }));
+  }
+
+  private Single<Boolean> promptUseLatestAsCurrent() {
+    return Single.create(e -> {
+      new AlertDialog.Builder(getActivity())
+          //set message, title, and icon
+          .setTitle("Use latest cycle?")
+          .setMessage("Would you like to use the latest cycle as the current? Probably recovering from an error...")
+          .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+              e.onSuccess(true);
+              dialog.dismiss();
+            }
+          })
+          .setNegativeButton("No", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+              e.onSuccess(false);
+              dialog.dismiss();
+            }
+          })
+          .create().show();
+    });
   }
 
   private Single<LocalDate> promptForStart() {

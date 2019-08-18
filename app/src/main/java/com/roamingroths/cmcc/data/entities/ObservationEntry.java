@@ -148,6 +148,21 @@ public class ObservationEntry extends Entry implements Parcelable {
     return observation.dischargeSummary.hasMucus();
   }
 
+  public boolean hasBlood() {
+    if (observation == null || observation.dischargeSummary == null) {
+      return false;
+    }
+    return observation.dischargeSummary.hasBlood();
+  }
+
+  public boolean hasObservation() {
+    return observation != null;
+  }
+
+  public boolean isDryDay() {
+    return hasObservation() && !hasBlood() && !hasMucus();
+  }
+
   public boolean hasPeakTypeMucus() {
     return hasMucus() && observation.dischargeSummary.isPeakType();
   }
