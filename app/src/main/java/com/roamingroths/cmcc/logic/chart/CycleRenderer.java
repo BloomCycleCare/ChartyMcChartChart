@@ -425,7 +425,7 @@ public class CycleRenderer {
     if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
       return StickerColor.RED;
     }
-    if (!observation.dischargeSummary.mType.hasMucus()) {
+    if (state.fertilityReasons.isEmpty() && state.suppressedFertilityReasons.isEmpty() && state.relaxedInfertilityReasons.isEmpty()) {
       return StickerColor.GREEN;
     }
     // Now it's either white or yellow...
