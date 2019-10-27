@@ -7,15 +7,20 @@ import androidx.preference.PreferenceManager;
 import androidx.room.Room;
 import androidx.room.migration.Migration;
 
+import com.google.common.base.Charsets;
+import com.google.common.io.Files;
 import com.google.firebase.FirebaseApp;
 import com.roamingroths.cmcc.BuildConfig;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 import com.roamingroths.cmcc.notifications.ChartingReceiver;
+import com.roamingroths.cmcc.utils.GsonUtil;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.File;
 import java.security.Security;
 
 import timber.log.Timber;
@@ -57,6 +62,20 @@ public class MyApplication extends Application {
     Timber.i("Sending charting reminder restart intent");
     Intent restartIntent = new Intent(this, ChartingReceiver.class);
     sendBroadcast(restartIntent);
+
+    AppStateExporter exporter = new AppStateExporter(this);
+    exporter
+        .export()
+        .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
+        .subscribe(json -> {
+          File path = new File(this.getFilesDir(), "backup/");
+          if (!path.exists()) {
+            path.mkdir();
+          }
+          File file = new File(path, "cmcc_export.chart");
+
+          Files.write(json, file, Charsets.UTF_8);
+        });
   }
 
   @Deprecated

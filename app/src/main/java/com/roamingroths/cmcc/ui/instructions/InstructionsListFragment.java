@@ -166,7 +166,8 @@ public class InstructionsListFragment extends Fragment {
   private static final List<InstructionContainer<BasicInstruction>> EXTRA_INSTRUCTIONS = ImmutableList.of(
       new InstructionContainer<>('D', "Days of fertility (use to achieve pregnancy)"),
       new InstructionContainer<>('E', "Days of infertility (use to avoid pregnancy)"),
-      new InstructionContainer<>('G', "Double Peak"));
+      new InstructionContainer<>('G', "Double Peak"),
+      new InstructionContainer<>('K', "Yellow stamp instructions (for avoiding pregnancy)"));
 
   private static final List<InstructionContainer<YellowStampInstruction>> EXTRA_YELLOW_INSTRUCTIONS = ImmutableList.of(
       new InstructionContainer<>('1', "Days of fertility (use to achieve pregancy)"),

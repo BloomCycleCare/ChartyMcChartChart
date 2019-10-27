@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.logic.print;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
@@ -249,8 +250,8 @@ public class PageRenderer {
           summaryPieces.remove(summaryPieces.size() - 1);
         }
         lines.addAll(summaryPieces);
-        if (entry.isPointOfChange) {
-          lines.add("POC");
+        if (!Strings.isNullOrEmpty(entry.pocSummary)) {
+          lines.add(entry.pocSummary);
         }
         while (lines.size() < 4) {
           lines.add("&nbsp;");

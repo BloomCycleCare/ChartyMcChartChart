@@ -6,9 +6,16 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Collections2;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 7/1/17.
@@ -23,6 +30,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final TextView mEntryDataTextView;
     private final TextView mEntryPeakTextView;
     private final TextView mSymptomGoalSummaryView;
+    private final TextView mPocSummaryTextView;
     private final ImageView mBabyImageView;
     private final ImageView mStarImageView;
     private final View mEntryBackgroundView;
@@ -41,6 +49,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
       mEntryDataTextView = itemView.findViewById(R.id.tv_entry_data);
       mEntryPeakTextView = itemView.findViewById(R.id.tv_peak_day);
+      mPocSummaryTextView = itemView.findViewById(R.id.tv_tv_poc_summary);
       mSymptomGoalSummaryView = itemView.findViewById(R.id.tv_goal_symptom_summary);
       mBabyImageView = itemView.findViewById(R.id.baby_image_view);
       mStarImageView = itemView.findViewById(R.id.star_image_view);
@@ -56,6 +65,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mEntryDateTextView.setText(renderableEntry.dateSummary);
       mEntryPeakTextView.setText(renderableEntry.peakDayText);
       mBabyImageView.setVisibility(renderableEntry.showBaby ? View.VISIBLE : View.INVISIBLE);
+      mPocSummaryTextView.setText(renderableEntry.pocSummary);
 
       ChartEntry entry = renderableEntry.modificationContext.entry;
       mSymptomGoalSummaryView.setText(String.format("S: %d", entry.symptomEntry.getNumSymptoms()));
@@ -74,6 +84,28 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mSeparator.setVisibility(showTransition ? View.GONE : View.VISIBLE);
 
       mBoundModificationContext = renderableEntry.modificationContext;
+
+      List<String> parts = new ArrayList<>();
+      parts.add(String.format("%s: ", renderableEntry.dateSummary));
+      if (!renderableEntry.infertilityReasons.isEmpty()) {
+        parts.add(String.format("infertility[%s]", Joiner.on(",").join(
+            Collections2.transform(renderableEntry.infertilityReasons, i -> String.format("%s.%s", i.section(), i.subsection())))));
+      }
+      if (!renderableEntry.fertilityReasons.isEmpty()) {
+        parts.add(String.format("fertility[%s]", Joiner.on(",").join(
+            Collections2.transform(renderableEntry.fertilityReasons, i -> String.format("%s.%s", i.section(), i.subsection())))));
+      }
+      if (!renderableEntry.suppressedFertilityReasons.isEmpty()) {
+        parts.add(String.format("suppressed[%s]", Joiner.on(",").join(
+            Collections2.transform(renderableEntry.suppressedFertilityReasons.entrySet(),
+                e -> String.format("%s|%s", e.getKey(), e.getValue())))));
+      }
+      if (!renderableEntry.relaxedInfertilityReasons.isEmpty()) {
+        parts.add(String.format("relaxed[%s]", Joiner.on(",").join(
+            Collections2.transform(renderableEntry.relaxedInfertilityReasons.entrySet(),
+                e -> String.format("%s|%s", e.getKey(), e.getValue())))));
+      }
+      Timber.d(Joiner.on(", ").join(parts));
     }
 
     @Override

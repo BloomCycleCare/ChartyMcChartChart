@@ -149,7 +149,13 @@ public class ObservationEntry extends Entry implements Parcelable {
   }
 
   public boolean hasBlood() {
-    if (observation == null || observation.dischargeSummary == null) {
+    if (observation == null) {
+      return false;
+    }
+    if (observation.flow != null) {
+      return true;
+    }
+    if (observation.dischargeSummary == null) {
       return false;
     }
     return observation.dischargeSummary.hasBlood();
