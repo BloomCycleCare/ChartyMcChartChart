@@ -353,9 +353,9 @@ public class CycleRenderer {
     entry.peakDayText = peakDayText(state);
     entry.intercourseTimeOfDay = state.entry.observationEntry.intercourseTimeOfDay;
     if (state.isPocTowardFertility()) {
-      entry.pocSummary = "POC+";
+      entry.pocSummary = "POC↑";
     } else if (state.isPocAwayFromFertility()) {
-      entry.pocSummary = "POC-";
+      entry.pocSummary = "POC↓";
     } else {
       entry.pocSummary = "";
     }
