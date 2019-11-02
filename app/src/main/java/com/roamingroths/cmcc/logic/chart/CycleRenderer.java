@@ -236,7 +236,7 @@ public class CycleRenderer {
           && state.isExactlyPostPeakPlus(4)) {
         state.infertilityReasons.add(BasicInstruction.E_3);
       }
-      if (!todayHasMucus && state.isPostPeakPlus(3)) {
+      if (!todayHasMucus && state.isPostPeakPlus(4)) {
         if (state.instructions.isActive(BasicInstruction.E_4)) {
           state.infertilityReasons.add(BasicInstruction.E_4);
         }
@@ -260,7 +260,7 @@ public class CycleRenderer {
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, BasicInstruction.K_1);
       }
-      if (state.isPostPeak()) {
+      if (state.isPostPeakPlus(4)) {
         if (instructions.isActive(BasicInstruction.K_2)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_2);
         }
@@ -309,7 +309,7 @@ public class CycleRenderer {
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, YellowStampInstruction.YS_2_A);
       }
-      if (state.isPostPeakPlus(3)) {
+      if (state.isPostPeakPlus(4)) {
         if (state.instructions.isActive(YellowStampInstruction.YS_2_B)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, YellowStampInstruction.YS_2_B);
         }

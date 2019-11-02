@@ -94,7 +94,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
     @Override
     public boolean onLongClick(View v) {
       new AlertDialog.Builder(mContext)
-          .setTitle("Entry Details")
+          .setTitle("Instruction Summary")
           .setMessage(mBoundEntry.instructionSummary)
           .setPositiveButton("Edit", (dialogInterface, i) -> {
             onClick(v);
