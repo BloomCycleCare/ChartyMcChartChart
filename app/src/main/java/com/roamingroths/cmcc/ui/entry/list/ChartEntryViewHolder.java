@@ -1,27 +1,22 @@
 package com.roamingroths.cmcc.ui.entry.list;
 
+import android.app.AlertDialog;
+import android.content.Context;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.recyclerview.widget.RecyclerView;
-
-import com.google.common.base.Joiner;
-import com.google.common.collect.Collections2;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import timber.log.Timber;
+import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Created by parkeroth on 7/1/17.
  */
 
-public interface ChartEntryViewHolder extends View.OnClickListener {
+public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongClickListener {
 
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;
@@ -36,14 +31,18 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
     private final View mEntryBackgroundView;
     private final View mSeparator;
     private final View mWeekSeparator;
+    private final Context mContext;
 
-    private CycleRenderer.EntryModificationContext mBoundModificationContext;
+    private CycleRenderer.RenderableEntry mBoundEntry;
 
     public Impl(
+        Context context,
         View itemView,
         ChartEntryAdapter.OnClickHandler clickHandler) {
       super(itemView);
+      mContext = context;
       itemView.setOnClickListener(this);
+      itemView.setOnLongClickListener(this);
       mClickHandler = clickHandler;
       mEntryNumTextView = itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
@@ -83,35 +82,28 @@ public interface ChartEntryViewHolder extends View.OnClickListener {
       mWeekSeparator.setVisibility(showTransition ? View.VISIBLE : View.GONE);
       mSeparator.setVisibility(showTransition ? View.GONE : View.VISIBLE);
 
-      mBoundModificationContext = renderableEntry.modificationContext;
-
-      List<String> parts = new ArrayList<>();
-      parts.add(String.format("%s: ", renderableEntry.dateSummary));
-      if (!renderableEntry.infertilityReasons.isEmpty()) {
-        parts.add(String.format("infertility[%s]", Joiner.on(",").join(
-            Collections2.transform(renderableEntry.infertilityReasons, i -> String.format("%s.%s", i.section(), i.subsection())))));
-      }
-      if (!renderableEntry.fertilityReasons.isEmpty()) {
-        parts.add(String.format("fertility[%s]", Joiner.on(",").join(
-            Collections2.transform(renderableEntry.fertilityReasons, i -> String.format("%s.%s", i.section(), i.subsection())))));
-      }
-      if (!renderableEntry.suppressedFertilityReasons.isEmpty()) {
-        parts.add(String.format("suppressed[%s]", Joiner.on(",").join(
-            Collections2.transform(renderableEntry.suppressedFertilityReasons.entrySet(),
-                e -> String.format("%s|%s", e.getKey(), e.getValue())))));
-      }
-      if (!renderableEntry.relaxedInfertilityReasons.isEmpty()) {
-        parts.add(String.format("relaxed[%s]", Joiner.on(",").join(
-            Collections2.transform(renderableEntry.relaxedInfertilityReasons.entrySet(),
-                e -> String.format("%s|%s", e.getKey(), e.getValue())))));
-      }
-      Timber.d(Joiner.on(", ").join(parts));
+      mBoundEntry = renderableEntry;
     }
 
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      mClickHandler.onClick(mBoundModificationContext, index);
+      mClickHandler.onClick(mBoundEntry.modificationContext, index);
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+      new AlertDialog.Builder(mContext)
+          .setTitle("Entry Details")
+          .setMessage(mBoundEntry.instructionSummary)
+          .setPositiveButton("Edit", (dialogInterface, i) -> {
+            onClick(v);
+            dialogInterface.dismiss();
+          })
+          .setNegativeButton("Close", (dialogInterface, i) -> dialogInterface.dismiss())
+          .create()
+          .show();
+      return true;
     }
   }
 }

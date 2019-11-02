@@ -1,10 +1,6 @@
 package com.roamingroths.cmcc.logic.chart;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.core.util.Pair;
-import androidx.core.util.Preconditions;
-
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
@@ -32,7 +28,16 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
+import androidx.core.util.Preconditions;
+import timber.log.Timber;
+
 public class CycleRenderer {
+
+  private static final Joiner ON_NEW_LINE = Joiner.on("\n");
+  private static final Joiner ON_DOUBLE_NEW_LINE = Joiner.on("\n\n");
 
   private final Cycle mCycle;
   private final TreeSet<ChartEntry> mEntries;
@@ -365,6 +370,7 @@ public class CycleRenderer {
     entry.infertilityReasons.addAll(state.infertilityReasons);
     entry.suppressedFertilityReasons.putAll(state.suppressedFertilityReasons);
     entry.relaxedInfertilityReasons.putAll(state.relaxedInfertilityReasons);
+    entry.instructionSummary = getInstructionSummary(state);
 
     EntryModificationContext modificationContext = new EntryModificationContext();
     modificationContext.cycle = state.cycle;
@@ -384,6 +390,49 @@ public class CycleRenderer {
       entries.add(render(state));
     }
     return entries;
+  }
+
+  private static String getInstructionSummary(State state) {
+    List<String> instructionSummaryLines = new ArrayList<>();
+    List<String> subsectionLines = new ArrayList<>();
+    if (!state.fertilityReasons.isEmpty()) {
+      subsectionLines.add("Fertility Reasons:");
+      for (AbstractInstruction i : state.fertilityReasons) {
+        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+      }
+      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+      subsectionLines.clear();
+    }
+    if (!state.infertilityReasons.isEmpty()) {
+      subsectionLines.add("Infertility Reasons:");
+      for (AbstractInstruction i : state.infertilityReasons) {
+        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+      }
+      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+      subsectionLines.clear();
+    }
+    boolean provideYellowStampSummary =
+        state.infertilityReasons.isEmpty() && state.fertilityReasons.isEmpty();
+    if (provideYellowStampSummary && !state.relaxedInfertilityReasons.isEmpty()) {
+      subsectionLines.add("Relaxed Infertility Reasons:");
+      for (AbstractInstruction i : state.relaxedInfertilityReasons.keySet()) {
+        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+      }
+      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+      subsectionLines.clear();
+    }
+    if (provideYellowStampSummary && !state.suppressedFertilityReasons.isEmpty()) {
+      subsectionLines.add("Suppressed Fertility Reasons:");
+      for (AbstractInstruction i : state.suppressedFertilityReasons.keySet()) {
+        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+      }
+      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+      subsectionLines.clear();
+    }
+    if (!subsectionLines.isEmpty()) {
+      Timber.w("Leaking strings!");
+    }
+    return ON_DOUBLE_NEW_LINE.join(instructionSummaryLines);
   }
 
   private static String peakDayText(State state) {
@@ -538,7 +587,6 @@ public class CycleRenderer {
         AbstractInstruction suppressionReason) {
       for (BasicInstruction reason : BasicInstruction.suppressableByPrePeakYellow) {
         if (fertilityReasons.remove(reason)) {
-          infertilityReasons.add(suppressionReason);
           suppressedFertilityReasons.put(reason, suppressionReason);
         }
       }
@@ -550,7 +598,6 @@ public class CycleRenderer {
           suppressedFertilityReasons.put(reason, reasonToRelax);
         }
       }
-      infertilityReasons.add(instructionToRelax);
       relaxedInfertilityReasons.put(instructionToRelax, reasonToRelax);
     }
 
@@ -572,6 +619,7 @@ public class CycleRenderer {
     public int entryNum;
     public String dateSummary;
     public String peakDayText;
+    public String instructionSummary;
     public boolean showBaby;
     public IntercourseTimeOfDay intercourseTimeOfDay;
     public String pocSummary;

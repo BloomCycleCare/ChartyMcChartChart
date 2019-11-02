@@ -29,6 +29,7 @@ public class AppStateImporter {
     for (Instructions i : appState.instructions) {
       actions.add(mInstructionsRepo.insertOrUpdate(i));
     }
+    actions.add(mInstructionsRepo.commit());
     for (AppState.CycleData d : appState.cycles) {
       actions.add(mCycleRepo.insertOrUpdate(d.cycle));
       actions.add(mEntryRepo.insertAll(d.entries));
