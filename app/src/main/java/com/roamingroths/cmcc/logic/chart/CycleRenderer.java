@@ -258,17 +258,17 @@ public class CycleRenderer {
           && state.isPrePeak()
           && (!effectivePointOfChange.isPresent()
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
-        state.suppressBasicInstructions(BasicInstruction.K_1);
+        state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, BasicInstruction.K_1);
       }
       if (state.isPostPeak()) {
         if (instructions.isActive(BasicInstruction.K_2)) {
-          state.relaxBasicInstruction(BasicInstruction.E_4, BasicInstruction.K_2);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_2);
         }
         if (instructions.isActive(BasicInstruction.K_3)) {
-          state.relaxBasicInstruction(BasicInstruction.E_5, BasicInstruction.K_3);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_3);
         }
         if (instructions.isActive(BasicInstruction.K_4)) {
-          state.relaxBasicInstruction(BasicInstruction.E_6, BasicInstruction.K_4);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_4);
         }
       }
 
@@ -307,17 +307,17 @@ public class CycleRenderer {
           && state.isPrePeak()
           && (!effectivePointOfChange.isPresent()
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
-        state.suppressBasicInstructions(YellowStampInstruction.YS_2_A);
+        state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, YellowStampInstruction.YS_2_A);
       }
       if (state.isPostPeakPlus(3)) {
         if (state.instructions.isActive(YellowStampInstruction.YS_2_B)) {
-          state.relaxBasicInstruction(BasicInstruction.E_4, YellowStampInstruction.YS_2_B);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, YellowStampInstruction.YS_2_B);
         }
         if (state.instructions.isActive(YellowStampInstruction.YS_2_C)) {
-          state.relaxBasicInstruction(BasicInstruction.E_5, YellowStampInstruction.YS_2_C);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, YellowStampInstruction.YS_2_C);
         }
         if (state.instructions.isActive(YellowStampInstruction.YS_2_D)) {
-          state.relaxBasicInstruction(BasicInstruction.E_6, YellowStampInstruction.YS_2_D);
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, YellowStampInstruction.YS_2_D);
         }
       }
 
@@ -327,7 +327,7 @@ public class CycleRenderer {
           && state.entry.observationEntry.observation != null
           && state.entry.observationEntry.observation.dischargeSummary.isPeakType()
           && state.entry.observationEntry.isEssentiallyTheSame) {
-        state.suppressBasicInstructions(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
+        state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
       }
 
       outStates.add(state);
@@ -369,7 +369,6 @@ public class CycleRenderer {
     entry.fertilityReasons.addAll(state.fertilityReasons);
     entry.infertilityReasons.addAll(state.infertilityReasons);
     entry.suppressedFertilityReasons.putAll(state.suppressedFertilityReasons);
-    entry.relaxedInfertilityReasons.putAll(state.relaxedInfertilityReasons);
     entry.instructionSummary = getInstructionSummary(state);
 
     EntryModificationContext modificationContext = new EntryModificationContext();
@@ -393,8 +392,13 @@ public class CycleRenderer {
   }
 
   private static String getInstructionSummary(State state) {
+    if (state.entry.observationEntry.observation == null) {
+      return "Please provide an observation by clicking edit below.";
+    }
     List<String> instructionSummaryLines = new ArrayList<>();
     List<String> subsectionLines = new ArrayList<>();
+    instructionSummaryLines.add(String.format("Status: %s",
+        state.fertilityReasons.isEmpty() ? "Infertile" : "Fertile"));
     if (!state.fertilityReasons.isEmpty()) {
       subsectionLines.add("Fertility Reasons:");
       for (AbstractInstruction i : state.fertilityReasons) {
@@ -411,20 +415,11 @@ public class CycleRenderer {
       instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
       subsectionLines.clear();
     }
-    boolean provideYellowStampSummary =
-        state.infertilityReasons.isEmpty() && state.fertilityReasons.isEmpty();
-    if (provideYellowStampSummary && !state.relaxedInfertilityReasons.isEmpty()) {
-      subsectionLines.add("Relaxed Infertility Reasons:");
-      for (AbstractInstruction i : state.relaxedInfertilityReasons.keySet()) {
-        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
-      }
-      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
-      subsectionLines.clear();
-    }
-    if (provideYellowStampSummary && !state.suppressedFertilityReasons.isEmpty()) {
-      subsectionLines.add("Suppressed Fertility Reasons:");
-      for (AbstractInstruction i : state.suppressedFertilityReasons.keySet()) {
-        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+    if (!state.suppressedFertilityReasons.isEmpty()) {
+      subsectionLines.add("Impact of Yellow Stamps:");
+      for (Map.Entry<AbstractInstruction, AbstractInstruction> e : state.suppressedFertilityReasons.entrySet()) {
+        subsectionLines.add(String.format(" - %s inhibited by %s",
+            AbstractInstruction.summary(e.getKey()), AbstractInstruction.summary(e.getValue())));
       }
       instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
       subsectionLines.clear();
@@ -474,21 +469,14 @@ public class CycleRenderer {
     if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
       return StickerColor.RED;
     }
-    if (state.fertilityReasons.isEmpty() && state.suppressedFertilityReasons.isEmpty() && state.relaxedInfertilityReasons.isEmpty()) {
+    if (state.fertilityReasons.isEmpty() && state.suppressedFertilityReasons.isEmpty()) {
       return StickerColor.GREEN;
     }
     // Now it's either white or yellow...
     if (!state.suppressedFertilityReasons.isEmpty()) {
       return StickerColor.YELLOW;
     }
-    if (!state.relaxedInfertilityReasons.isEmpty()) {
-      return StickerColor.YELLOW;
-    }
-    if (!state.fertilityReasons.isEmpty()) {
-      return StickerColor.WHITE;
-    }
-    // TODO: change to WHITE?
-    return StickerColor.GREY;
+    return StickerColor.WHITE;
   }
 
   private static boolean shouldAskEssentialSameness(State state) {
@@ -532,7 +520,6 @@ public class CycleRenderer {
 
     public Set<AbstractInstruction> fertilityReasons = new HashSet<>();
     public Map<AbstractInstruction, AbstractInstruction> suppressedFertilityReasons = new HashMap<>();
-    public Map<AbstractInstruction, AbstractInstruction> relaxedInfertilityReasons = new HashMap<>();
     public Set<AbstractInstruction> infertilityReasons = new HashSet<>();
 
     public Map<AbstractInstruction, CountOfThreeReason> countOfThreeReasons = new HashMap<>();
@@ -583,22 +570,14 @@ public class CycleRenderer {
       return count >= 0 && count < 4;
     }
 
-    public void suppressBasicInstructions(
-        AbstractInstruction suppressionReason) {
-      for (BasicInstruction reason : BasicInstruction.suppressableByPrePeakYellow) {
-        if (fertilityReasons.remove(reason)) {
-          suppressedFertilityReasons.put(reason, suppressionReason);
+    public void suppressBasicInstructions(Collection<BasicInstruction> instructionsToSuppress,
+                                          AbstractInstruction suppressionReason) {
+      for (BasicInstruction instruction : instructionsToSuppress) {
+        if (fertilityReasons.remove(instruction)) {
+          suppressedFertilityReasons.put(instruction, suppressionReason);
         }
       }
-    }
-
-    public void relaxBasicInstruction(BasicInstruction instructionToRelax, AbstractInstruction reasonToRelax) {
-      for (BasicInstruction reason : BasicInstruction.suppressableByPostPeakYellow) {
-        if (fertilityReasons.remove(reason)) {
-          suppressedFertilityReasons.put(reason, reasonToRelax);
-        }
-      }
-      relaxedInfertilityReasons.put(instructionToRelax, reasonToRelax);
+      infertilityReasons.add(suppressionReason);
     }
 
     public void updateCountOfThree(int newCount, AbstractInstruction instruction) {
@@ -626,7 +605,6 @@ public class CycleRenderer {
     public EntryModificationContext modificationContext;
     public Set<AbstractInstruction> fertilityReasons = new HashSet<>();
     public Map<AbstractInstruction, AbstractInstruction> suppressedFertilityReasons = new HashMap<>();
-    public Map<AbstractInstruction, AbstractInstruction> relaxedInfertilityReasons = new HashMap<>();
     public Set<AbstractInstruction> infertilityReasons = new HashSet<>();
 
     private int countOfThreeCount = -1;
