@@ -2,11 +2,6 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.app.Application;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
-
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
@@ -24,6 +19,10 @@ import com.roamingroths.cmcc.utils.ErrorOr;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -164,7 +163,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
               new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
 
           boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
-          if (entryHasBlood && entryContext.expectUnusualBleeding && !observationEntry.unusualBleeding) {
+          if (entryHasBlood && !observationEntry.unusualBleeding && entryContext.expectUnusualBleeding && !observationEntry.firstDay) {
             state.validationIssues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
           }
           /*if (entryRenderContext.shouldAskEssentialSameness && !askedEssentialSameness) {
