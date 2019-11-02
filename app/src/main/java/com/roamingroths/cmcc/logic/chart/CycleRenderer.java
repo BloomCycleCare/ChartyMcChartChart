@@ -2,6 +2,7 @@ package com.roamingroths.cmcc.logic.chart;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
@@ -109,15 +110,16 @@ public class CycleRenderer {
       }
       daysOfIntercourse.put(e.entryDate, e.observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE);
       boolean todayHasMucus = false;
+      boolean todayHasBlood = false;
       Flow todaysFlow = null;
       if (e.observationEntry.observation == null) {
         consecutiveDaysOfMucus = 0;
       } else {
         Observation observation = e.observationEntry.observation;
         todayHasMucus = observation.hasMucus();
+        todayHasBlood = observation.hasBlood();
         if (observation.flow != null) {
           todaysFlow = observation.flow;
-          daysOfFlow.add(e.entryDate);
         }
         if (todayHasMucus) {
           consecutiveDaysOfMucus++;
@@ -131,6 +133,9 @@ public class CycleRenderer {
         } else {
           consecutiveDaysOfMucus = 0;
         }
+      }
+      if (todayHasBlood || todaysFlow != null) {
+        daysOfFlow.add(e.entryDate);
       }
       if (peakDays.isEmpty()) {
         state.firstPeakDay = Optional.absent();
@@ -248,7 +253,7 @@ public class CycleRenderer {
         }
       }
       if (!todayHasMucus && isInMenstrualFlow && (
-          todaysFlow.equals(Flow.L) || todaysFlow.equals(Flow.VL))) { // TODO: B
+          todaysFlow.equals(Flow.L) || todaysFlow.equals(Flow.VL) || todayHasBlood)) {
         state.infertilityReasons.add(BasicInstruction.E_7);
       }
 
@@ -470,6 +475,11 @@ public class CycleRenderer {
       return StickerColor.RED;
     }
     if (state.fertilityReasons.isEmpty() && state.suppressedFertilityReasons.isEmpty()) {
+      // Hack to handle E3 (unqualified always fourth day)...
+      if (state.infertilityReasons.size() == 1
+          && Iterables.getOnlyElement(state.infertilityReasons) == BasicInstruction.E_3) {
+        return StickerColor.YELLOW;
+      }
       return StickerColor.GREEN;
     }
     // Now it's either white or yellow...
