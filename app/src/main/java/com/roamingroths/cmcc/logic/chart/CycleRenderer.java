@@ -223,7 +223,7 @@ public class CycleRenderer {
       }
 
       // Basic Instruction infertility reasons (section E)
-      if (!todayHasMucus && state.isPrePeak()) {
+      if (!todayHasMucus && !state.isInMenstrualFlow && state.isPrePeak()) {
         if (state.instructions.isActive(BasicInstruction.E_1)) {
           state.infertilityReasons.add(BasicInstruction.E_1);
         }
