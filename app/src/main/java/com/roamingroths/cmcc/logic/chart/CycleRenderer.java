@@ -188,8 +188,6 @@ public class CycleRenderer {
       }
       state.instructions = Preconditions.checkNotNull(instructions);
 
-      Pair<Integer, AbstractInstruction> countOfThree = new Pair<>(null, null);
-
       // Basic Instruction fertility reasons (section D)
       if (instructions.isActive(BasicInstruction.D_1)
           && state.isInMenstrualFlow) {
@@ -257,6 +255,7 @@ public class CycleRenderer {
       boolean withinEssentialSamenessPattern = state.isPrePeak() && effectivePointOfChange.isPresent();
       if (instructions.isActive(BasicInstruction.K_1)
           && state.isPrePeak()
+          && !state.isInMenstrualFlow
           && (!effectivePointOfChange.isPresent()
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, BasicInstruction.K_1);
@@ -303,6 +302,7 @@ public class CycleRenderer {
       // Special Instruction Yellow Stamp infertility reasons (section 2)
       if (state.instructions.isActive(YellowStampInstruction.YS_2_A)
           && state.isPrePeak()
+          && !state.isInMenstrualFlow
           && (!effectivePointOfChange.isPresent()
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, YellowStampInstruction.YS_2_A);
@@ -329,9 +329,12 @@ public class CycleRenderer {
       }
 
       for (Map.Entry<AbstractInstruction, CountOfThreeReason> mapEntry : state.countOfThreeReasons.entrySet()) {
-        int count = state.getCount(mapEntry.getValue());
-        if (state.effectiveCountOfThree.first == null || count < state.effectiveCountOfThree.first) {
-          state.effectiveCountOfThree = Pair.create(count, mapEntry.getKey());
+        Optional<Integer> count = state.getCount(mapEntry.getValue());
+        if (!count.isPresent()) {
+          continue;
+        }
+        if (state.effectiveCountOfThree.first == null || count.get() < state.effectiveCountOfThree.first) {
+          state.effectiveCountOfThree = Pair.create(count.get(), mapEntry.getKey());
         }
       }
 
@@ -570,16 +573,13 @@ public class CycleRenderer {
       return mostRecentPointOfChangeAway.isPresent() && mostRecentPointOfChangeAway.get().equals(entryDate);
     }
 
-    public int getCount(CountOfThreeReason reason) {
-      if (!countsOfThree.containsKey(reason)) {
-        return Integer.MAX_VALUE;
-      }
-      return countsOfThree.get(reason);
+    public Optional<Integer> getCount(CountOfThreeReason reason) {
+      return Optional.fromNullable(countsOfThree.get(reason));
     }
 
     public boolean isWithinCountOfThree(CountOfThreeReason reason) {
-      int count = getCount(reason);
-      return count >= 0 && count < 4;
+      Optional<Integer> count = getCount(reason);
+      return count.isPresent() && count.get() < 4;
     }
 
     public void suppressBasicInstructions(Collection<BasicInstruction> instructionsToSuppress,
