@@ -9,19 +9,25 @@ import com.google.common.base.Strings;
  * Created by parkeroth on 4/24/17.
  */
 public enum Flow implements Parcelable {
-  H("Heavy flow"),
-  M("Medium flow"),
-  L("Light flow"),
-  VL("Very light flow");
+  H("Heavy flow", true),
+  M("Medium flow", true),
+  L("Light flow", false),
+  VL("Very light flow", false);
 
   private final String description;
+  private final boolean isLegit;
 
-  Flow(String description) {
+  Flow(String description, boolean isLegit) {
     this.description = description;
+    this.isLegit = isLegit;
   }
 
   public String getDescription() {
     return this.description;
+  }
+
+  public boolean isLegit() {
+    return isLegit;
   }
 
   @Override

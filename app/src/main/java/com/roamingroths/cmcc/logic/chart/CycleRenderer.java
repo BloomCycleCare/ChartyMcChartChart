@@ -2,7 +2,6 @@ package com.roamingroths.cmcc.logic.chart;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
@@ -71,6 +70,7 @@ public class CycleRenderer {
     ChartEntry previousEntry = null;
     boolean yesterdayWasFertile = false;
     boolean countOfThreeStarted = false;
+    boolean hasHadLegitFlow = false;
 
     List<State> outStates = new ArrayList<>(mEntries.size());
     // For every day before the current entry...
@@ -110,16 +110,17 @@ public class CycleRenderer {
       }
       daysOfIntercourse.put(e.entryDate, e.observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE);
       boolean todayHasMucus = false;
-      boolean todayHasBlood = false;
-      Flow todaysFlow = null;
+      state.todayHasBlood = false;
+      state.todaysFlow = null;
       if (e.observationEntry.observation == null) {
         consecutiveDaysOfMucus = 0;
       } else {
         Observation observation = e.observationEntry.observation;
         todayHasMucus = observation.hasMucus();
-        todayHasBlood = observation.hasBlood();
+        state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
         if (observation.flow != null) {
-          todaysFlow = observation.flow;
+          state.todaysFlow = observation.flow;
+          hasHadLegitFlow |= observation.flow.isLegit();
         }
         if (todayHasMucus) {
           consecutiveDaysOfMucus++;
@@ -134,7 +135,8 @@ public class CycleRenderer {
           consecutiveDaysOfMucus = 0;
         }
       }
-      if (todayHasBlood || todaysFlow != null) {
+      state.hasHadLegitFlow = hasHadLegitFlow;
+      if (state.todayHasBlood || state.todaysFlow != null) {
         daysOfFlow.add(e.entryDate);
       }
       if (peakDays.isEmpty()) {
@@ -174,9 +176,7 @@ public class CycleRenderer {
             Days.daysBetween(effectivePointOfChange.get(), e.entryDate).getDays());
       }
 
-      boolean isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
-      boolean hasHadAnyMucus = !daysOfMucus.isEmpty();
-      boolean hadIntercourseYesterday = daysOfIntercourse.containsKey(yesterday) && daysOfIntercourse.get(yesterday);
+      state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
 
       // Step 2: Evaluate fertility reasons
       Instructions instructions = null;
@@ -192,15 +192,14 @@ public class CycleRenderer {
 
       // Basic Instruction fertility reasons (section D)
       if (instructions.isActive(BasicInstruction.D_1)
-          && isInMenstrualFlow) {
+          && state.isInMenstrualFlow) {
         state.fertilityReasons.add(BasicInstruction.D_1);
       }
       if (state.instructions.isActive(BasicInstruction.D_2)
           && state.hasHadAnyMucus
           && !state.isPostPeakPlus(3)) {
         state.fertilityReasons.add(BasicInstruction.D_2);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.PEAK_DAY), BasicInstruction.D_2);
+        state.countOfThreeReasons.put(BasicInstruction.D_2, CountOfThreeReason.PEAK_DAY);
       }
       if (state.instructions.isActive(BasicInstruction.D_3)
           && state.isPrePeak()
@@ -212,20 +211,17 @@ public class CycleRenderer {
           && state.isPrePeak()
           && state.isWithinCountOfThree(CountOfThreeReason.CONSECUTIVE_DAYS_OF_MUCUS)) {
         state.fertilityReasons.add(BasicInstruction.D_4);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.CONSECUTIVE_DAYS_OF_MUCUS), BasicInstruction.D_4);
+        state.countOfThreeReasons.put(BasicInstruction.D_4, CountOfThreeReason.CONSECUTIVE_DAYS_OF_MUCUS);
       }
       if (state.instructions.isActive(BasicInstruction.D_5)
           && state.isWithinCountOfThree(CountOfThreeReason.PEAK_TYPE_MUCUS)) {
         state.fertilityReasons.add(BasicInstruction.D_5);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.PEAK_TYPE_MUCUS), BasicInstruction.D_5);
+        state.countOfThreeReasons.put(BasicInstruction.D_5, CountOfThreeReason.PEAK_TYPE_MUCUS);
       }
       if (state.instructions.isActive(BasicInstruction.D_6)
           && state.isWithinCountOfThree(CountOfThreeReason.UNUSUAL_BLEEDING)) {
         state.fertilityReasons.add(BasicInstruction.D_6);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.UNUSUAL_BLEEDING), BasicInstruction.D_6);
+        state.countOfThreeReasons.put(BasicInstruction.D_6, CountOfThreeReason.UNUSUAL_BLEEDING);
       }
 
       // Basic Instruction infertility reasons (section E)
@@ -252,8 +248,8 @@ public class CycleRenderer {
           state.infertilityReasons.add(BasicInstruction.E_6);
         }
       }
-      if (!todayHasMucus && isInMenstrualFlow && (
-          todaysFlow.equals(Flow.L) || todaysFlow.equals(Flow.VL) || todayHasBlood)) {
+      if (!todayHasMucus && state.isInMenstrualFlow && (
+          (state.todaysFlow != null && !state.todaysFlow.isLegit()) || state.todayHasBlood)) {
         state.infertilityReasons.add(BasicInstruction.E_7);
       }
 
@@ -279,7 +275,7 @@ public class CycleRenderer {
 
       // Special Instruction Yellow Stamp fertility reasons (section 1)
       if (state.instructions.isActive(YellowStampInstruction.YS_1_A)
-          && isInMenstrualFlow) {
+          && state.isInMenstrualFlow) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_A);
       }
       if (state.instructions.isActive(YellowStampInstruction.YS_1_B)
@@ -290,21 +286,18 @@ public class CycleRenderer {
           && !state.entryDate.isBefore(effectivePointOfChange.get())
           && state.isPrePeak())) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_B);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.PEAK_DAY), YellowStampInstruction.YS_1_B);
+        state.countOfThreeReasons.put(YellowStampInstruction.YS_1_B, CountOfThreeReason.PEAK_DAY);
       }
       if (state.instructions.isActive(YellowStampInstruction.YS_1_C)
           && effectivePointOfChange.isPresent()
           && !state.entryDate.isAfter(effectivePointOfChange.get().plusDays(3))) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_C);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.POINT_OF_CHANGE), YellowStampInstruction.YS_1_C);
+        state.countOfThreeReasons.put(YellowStampInstruction.YS_1_C, CountOfThreeReason.POINT_OF_CHANGE);
       }
       if (state.instructions.isActive(YellowStampInstruction.YS_1_D)
           && state.isWithinCountOfThree(CountOfThreeReason.UNUSUAL_BLEEDING)) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_D);
-        state.updateCountOfThree(
-            state.getCount(CountOfThreeReason.UNUSUAL_BLEEDING), YellowStampInstruction.YS_1_D);
+        state.countOfThreeReasons.put(YellowStampInstruction.YS_1_D, CountOfThreeReason.UNUSUAL_BLEEDING);
       }
 
       // Special Instruction Yellow Stamp infertility reasons (section 2)
@@ -333,6 +326,13 @@ public class CycleRenderer {
           && state.entry.observationEntry.observation.dischargeSummary.isPeakType()
           && state.entry.observationEntry.isEssentiallyTheSame) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
+      }
+
+      for (Map.Entry<AbstractInstruction, CountOfThreeReason> mapEntry : state.countOfThreeReasons.entrySet()) {
+        int count = state.getCount(mapEntry.getValue());
+        if (state.effectiveCountOfThree.first == null || count < state.effectiveCountOfThree.first) {
+          state.effectiveCountOfThree = Pair.create(count, mapEntry.getKey());
+        }
       }
 
       outStates.add(state);
@@ -375,6 +375,11 @@ public class CycleRenderer {
     entry.infertilityReasons.addAll(state.infertilityReasons);
     entry.suppressedFertilityReasons.putAll(state.suppressedFertilityReasons);
     entry.instructionSummary = getInstructionSummary(state);
+    if (state.entry.observationEntry.observation != null && shouldAskEssentialSameness(state)) {
+      entry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
+    } else {
+      entry.essentialSamenessSummary = "";
+    }
 
     EntryModificationContext modificationContext = new EntryModificationContext();
     modificationContext.cycle = state.cycle;
@@ -474,16 +479,14 @@ public class CycleRenderer {
     if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
       return StickerColor.RED;
     }
-    if (state.fertilityReasons.isEmpty() && state.suppressedFertilityReasons.isEmpty()) {
-      // Hack to handle E3 (unqualified always fourth day)...
-      if (state.infertilityReasons.size() == 1
-          && Iterables.getOnlyElement(state.infertilityReasons) == BasicInstruction.E_3) {
-        return StickerColor.YELLOW;
-      }
+    if (!observation.hasMucus()) {
       return StickerColor.GREEN;
     }
-    // Now it's either white or yellow...
-    if (!state.suppressedFertilityReasons.isEmpty()) {
+    // All entries have mucus at this point
+    if (!state.infertilityReasons.isEmpty()) {
+      return StickerColor.YELLOW;
+    }
+    if (state.instructions.isActive(BasicInstruction.K_2) && state.isPostPeak() && !state.isPostPeakPlus(4)) {
       return StickerColor.YELLOW;
     }
     return StickerColor.WHITE;
@@ -495,7 +498,8 @@ public class CycleRenderer {
     }
     boolean askForSpecialInstruction = state.instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
         && Optional.fromNullable(state.previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
-    boolean askForPrePeakYellow = state.instructions.isActive(BasicInstruction.K_1) && state.isPrePeak();
+    boolean askForPrePeakYellow = state.instructions.isActive(BasicInstruction.K_1) && state.isPrePeak() && (
+        !state.isInMenstrualFlow || (state.todayHasBlood || (state.todaysFlow != null && !state.todaysFlow.isLegit())) && state.hasHadLegitFlow);
     return askForPrePeakYellow || askForSpecialInstruction;
   }
 
@@ -519,13 +523,15 @@ public class CycleRenderer {
     public Optional<LocalDate> firstPeakDay;
     public Optional<LocalDate> mostRecentPeakDay;
     public boolean isInMenstrualFlow;
+    public boolean hasHadLegitFlow;
+    public Flow todaysFlow;
+    public boolean todayHasBlood;
     public Optional<LocalDate> firstPointOfChangeToward;
     public Optional<LocalDate> mostRecentPointOfChangeToward;
     public Optional<LocalDate> mostRecentPointOfChangeAway;
     public boolean hasHadAnyMucus;
     public int consecutiveDaysOfMucus;
     public boolean hadIntercourseYesterday;
-    public Optional<LocalDate> mostRecentDayOfThreeOrMoreConsecutiveDaysOfMucus;
     public Map<CountOfThreeReason, Integer> countsOfThree = new HashMap<>();
 
     public Set<AbstractInstruction> fertilityReasons = new HashSet<>();
@@ -566,11 +572,7 @@ public class CycleRenderer {
 
     public int getCount(CountOfThreeReason reason) {
       if (!countsOfThree.containsKey(reason)) {
-        return -1;
-      }
-      if (reason == CountOfThreeReason.POINT_OF_CHANGE) {
-        // We don't number this case
-        return -1;
+        return Integer.MAX_VALUE;
       }
       return countsOfThree.get(reason);
     }
@@ -584,17 +586,11 @@ public class CycleRenderer {
                                           AbstractInstruction suppressionReason) {
       for (BasicInstruction instruction : instructionsToSuppress) {
         if (fertilityReasons.remove(instruction)) {
+          countOfThreeReasons.remove(instruction);
           suppressedFertilityReasons.put(instruction, suppressionReason);
         }
       }
       infertilityReasons.add(suppressionReason);
-    }
-
-    public void updateCountOfThree(int newCount, AbstractInstruction instruction) {
-      if (newCount >= 0 && (
-          effectiveCountOfThree == null || effectiveCountOfThree.first == null || newCount < effectiveCountOfThree.first)) {
-        effectiveCountOfThree = Pair.create(newCount, instruction);
-      }
     }
   }
 
@@ -609,6 +605,7 @@ public class CycleRenderer {
     public String dateSummary;
     public String peakDayText;
     public String instructionSummary;
+    public String essentialSamenessSummary;
     public boolean showBaby;
     public IntercourseTimeOfDay intercourseTimeOfDay;
     public String pocSummary;

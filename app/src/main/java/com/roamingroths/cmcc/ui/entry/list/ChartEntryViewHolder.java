@@ -67,7 +67,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
       mPocSummaryTextView.setText(renderableEntry.pocSummary);
 
       ChartEntry entry = renderableEntry.modificationContext.entry;
-      mSymptomGoalSummaryView.setText(String.format("S: %d", entry.symptomEntry.getNumSymptoms()));
+      mSymptomGoalSummaryView.setText(renderableEntry.essentialSamenessSummary);
 
       boolean showOverlay = entry.wellnessEntry.hasItem(null) || entry.symptomEntry.hasItem(null);
       if (showOverlay) {

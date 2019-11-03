@@ -166,9 +166,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
           if (entryHasBlood && !observationEntry.unusualBleeding && entryContext.expectUnusualBleeding && !observationEntry.firstDay) {
             state.validationIssues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
           }
-          /*if (entryRenderContext.shouldAskEssentialSameness && !askedEssentialSameness) {
-            issues.add(new ValidationIssue("Essentially the same?", "Is today essentially the same?"));
-          }*/
+          if (entryContext.shouldAskEssentialSameness && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
+            state.validationIssues.add(new ValidationIssue("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
+          }
 
           return state;
         })
