@@ -194,7 +194,7 @@ public class CycleRenderer {
         state.fertilityReasons.add(BasicInstruction.D_1);
       }
       if (state.instructions.isActive(BasicInstruction.D_2)
-          && state.hasHadAnyMucus
+          && todayHasMucus
           && !state.isPostPeakPlus(3)) {
         state.fertilityReasons.add(BasicInstruction.D_2);
         state.countOfThreeReasons.put(BasicInstruction.D_2, CountOfThreeReason.PEAK_DAY);
@@ -461,7 +461,7 @@ public class CycleRenderer {
 
   private static boolean shouldShowBaby(@NonNull State state) {
     if (state.fertilityReasons.isEmpty()) {
-      return false;
+      return state.infertilityReasons.isEmpty();
     }
     if (state.entry.observationEntry.hasBlood()) {
       return false;
