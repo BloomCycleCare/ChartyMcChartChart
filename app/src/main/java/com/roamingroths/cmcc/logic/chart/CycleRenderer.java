@@ -29,7 +29,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
 import androidx.core.util.Preconditions;
 import timber.log.Timber;
@@ -55,7 +54,7 @@ public class CycleRenderer {
     return render(getStates());
   }
 
-  public List<State> getStates() {
+  private List<State> getStates() {
     List<ChartEntry> entriesEvaluated = new ArrayList<>();
     Set<LocalDate> daysOfFlow = new HashSet<>();
     Set<LocalDate> daysOfMucus = new HashSet<>();
@@ -68,8 +67,6 @@ public class CycleRenderer {
     LocalDate lastDayOfThreeOrMoreDaysOfMucus = null;
     int consecutiveDaysOfMucus = 0;
     ChartEntry previousEntry = null;
-    boolean yesterdayWasFertile = false;
-    boolean countOfThreeStarted = false;
     boolean hasHadLegitFlow = false;
 
     List<State> outStates = new ArrayList<>(mEntries.size());
@@ -126,7 +123,6 @@ public class CycleRenderer {
           consecutiveDaysOfMucus++;
           if (consecutiveDaysOfMucus >= 3) {
             lastDayOfThreeOrMoreDaysOfMucus = e.entryDate;
-          } else {
           }
           if (observation.dischargeSummary.isPeakType()) {
             mostRecentPeakTypeMucus = e.entryDate;
@@ -338,10 +334,7 @@ public class CycleRenderer {
       }
 
       outStates.add(state);
-
       previousEntry = e;
-      yesterdayWasFertile = !state.fertilityReasons.isEmpty();
-      countOfThreeStarted = !state.countOfThreeReasons.isEmpty();
     }
 
     return outStates;
@@ -360,9 +353,9 @@ public class CycleRenderer {
     entry.entryNum = state.entryNum;
     entry.dateSummary = DateUtil.toNewUiStr(state.entry.entryDate);
     entry.entrySummary = state.entry.observationEntry.getListUiText();
-    entry.backgroundColor = getBackgroundColor(state.entry.observationEntry.observation, state);
-    entry.showBaby = shouldShowBaby(state);
-    entry.peakDayText = peakDayText(state);
+    entry.backgroundColor = state.getBackgroundColor();
+    entry.showBaby = state.shouldShowBaby();
+    entry.peakDayText = state.peakDayText();
     entry.intercourseTimeOfDay = state.entry.observationEntry.intercourseTimeOfDay;
     if (state.isPocTowardFertility()) {
       entry.pocSummary = "POC↑";
@@ -371,26 +364,13 @@ public class CycleRenderer {
     } else {
       entry.pocSummary = "";
     }
-    entry.countOfThreeCount = Optional.fromNullable(state.effectiveCountOfThree.first).or(-1);
-    entry.countOfThreeInstruction = state.effectiveCountOfThree.second;
-    entry.fertilityReasons.addAll(state.fertilityReasons);
-    entry.infertilityReasons.addAll(state.infertilityReasons);
-    entry.suppressedFertilityReasons.putAll(state.suppressedFertilityReasons);
-    entry.instructionSummary = getInstructionSummary(state);
-    if (state.entry.observationEntry.observation != null && shouldAskEssentialSameness(state)) {
+    entry.instructionSummary = state.getInstructionSummary();
+    if (state.entry.observationEntry.observation != null && state.shouldAskEssentialSameness()) {
       entry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
     } else {
       entry.essentialSamenessSummary = "";
     }
-
-    EntryModificationContext modificationContext = new EntryModificationContext();
-    modificationContext.cycle = state.cycle;
-    modificationContext.entry = state.entry;
-    modificationContext.hasPreviousCycle = false;
-    modificationContext.expectUnusualBleeding = expectUnusualBleeding(state);
-    modificationContext.isFirstEntry = state.entryNum == 1;
-    modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness(state);
-    entry.modificationContext = modificationContext;
+    entry.modificationContext = state.entryModificationContext();
 
     return entry;
   }
@@ -401,119 +381,6 @@ public class CycleRenderer {
       entries.add(render(state));
     }
     return entries;
-  }
-
-  private static String getInstructionSummary(State state) {
-    if (state.entry.observationEntry.observation == null) {
-      return "Please provide an observation by clicking edit below.";
-    }
-    List<String> instructionSummaryLines = new ArrayList<>();
-    List<String> subsectionLines = new ArrayList<>();
-    instructionSummaryLines.add(String.format("Status: %s",
-        state.fertilityReasons.isEmpty() ? "Infertile" : "Fertile"));
-    if (!state.fertilityReasons.isEmpty()) {
-      subsectionLines.add("Fertility Reasons:");
-      for (AbstractInstruction i : state.fertilityReasons) {
-        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
-      }
-      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
-      subsectionLines.clear();
-    }
-    if (!state.infertilityReasons.isEmpty()) {
-      subsectionLines.add("Infertility Reasons:");
-      for (AbstractInstruction i : state.infertilityReasons) {
-        subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
-      }
-      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
-      subsectionLines.clear();
-    }
-    if (!state.suppressedFertilityReasons.isEmpty()) {
-      subsectionLines.add("Impact of Yellow Stamps:");
-      for (Map.Entry<AbstractInstruction, AbstractInstruction> e : state.suppressedFertilityReasons.entrySet()) {
-        subsectionLines.add(String.format(" - %s inhibited by %s",
-            AbstractInstruction.summary(e.getKey()), AbstractInstruction.summary(e.getValue())));
-      }
-      instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
-      subsectionLines.clear();
-    }
-    if (!subsectionLines.isEmpty()) {
-      Timber.w("Leaking strings!");
-    }
-    return ON_DOUBLE_NEW_LINE.join(instructionSummaryLines);
-  }
-
-  private static String peakDayText(State state) {
-    if (state.isPeakDay()) {
-      return "P";
-    }
-    if (state.fertilityReasons.isEmpty()) {
-      return "";
-    }
-    if (state.effectiveCountOfThree.first == null || state.effectiveCountOfThree.first == 0) {
-      return "";
-    }
-    if (state.effectiveCountOfThree.first > 0) {
-      return String.valueOf(state.effectiveCountOfThree.first);
-    }
-    return "";
-  }
-
-  private static boolean shouldShowBaby(@NonNull State state) {
-    if (state.fertilityReasons.isEmpty()) {
-      return state.infertilityReasons.isEmpty();
-    }
-    if (state.entry.observationEntry.hasBlood()) {
-      return false;
-    }
-    return true;
-  }
-
-  private static StickerColor getBackgroundColor(@Nullable Observation observation, @NonNull State state) {
-    if (state.instructions == null) {
-      return StickerColor.GREY;
-    }
-    if (observation == null) {
-      return StickerColor.GREY;
-    }
-    if (observation.flow != null) {
-      return StickerColor.RED;
-    }
-    if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
-      return StickerColor.RED;
-    }
-    if (!observation.hasMucus()) {
-      return StickerColor.GREEN;
-    }
-    // All entries have mucus at this point
-    if (!state.infertilityReasons.isEmpty()) {
-      return StickerColor.YELLOW;
-    }
-    if (state.instructions.isActive(BasicInstruction.K_2) && state.isPostPeak() && !state.isPostPeakPlus(4)) {
-      return StickerColor.YELLOW;
-    }
-    return StickerColor.WHITE;
-  }
-
-  private static boolean shouldAskEssentialSameness(State state) {
-    if (state.instructions == null) {
-      return false;
-    }
-    boolean askForSpecialInstruction = state.instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
-        && Optional.fromNullable(state.previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
-    boolean askForPrePeakYellow = state.instructions.isActive(BasicInstruction.K_1) && state.isPrePeak() && (
-        !state.isInMenstrualFlow || (state.todayHasBlood || (state.todaysFlow != null && !state.todaysFlow.isLegit())) && state.hasHadLegitFlow);
-    return askForPrePeakYellow || askForSpecialInstruction;
-  }
-
-  private static boolean expectUnusualBleeding(State state) {
-    if (state.previousEntry == null) {
-      return false;
-    }
-    if (state.previousEntry.observationEntry.unusualBleeding) {
-      return true;
-    }
-    return state.previousEntry.observationEntry.observation == null
-        || !state.previousEntry.observationEntry.observation.hasBlood();
   }
 
   public static class State {
@@ -544,7 +411,7 @@ public class CycleRenderer {
     public Pair<Integer, AbstractInstruction> effectiveCountOfThree = Pair.create(null, null);
     public ChartEntry previousEntry;
 
-    public boolean isPrePeak() {
+    boolean isPrePeak() {
       return !firstPeakDay.isPresent() || entryDate.isBefore(firstPeakDay.get());
     }
 
@@ -552,23 +419,23 @@ public class CycleRenderer {
       return mostRecentPeakDay.isPresent() && mostRecentPeakDay.get().equals(entryDate);
     }
 
-    public boolean isPostPeak() {
+    boolean isPostPeak() {
       return isPostPeakPlus(0);
     }
 
-    public boolean isPostPeakPlus(int numDays) {
+    boolean isPostPeakPlus(int numDays) {
       return mostRecentPeakDay.isPresent() && entryDate.isAfter(mostRecentPeakDay.get().plusDays(numDays));
     }
 
-    public boolean isExactlyPostPeakPlus(int numDays) {
+    boolean isExactlyPostPeakPlus(int numDays) {
       return mostRecentPeakDay.isPresent() && entryDate.equals(mostRecentPeakDay.get().plusDays(numDays));
     }
 
-    public boolean isPocTowardFertility() {
+    boolean isPocTowardFertility() {
       return mostRecentPointOfChangeToward.isPresent() && mostRecentPointOfChangeToward.get().equals(entryDate);
     }
 
-    public boolean isPocAwayFromFertility() {
+    boolean isPocAwayFromFertility() {
       return mostRecentPointOfChangeAway.isPresent() && mostRecentPointOfChangeAway.get().equals(entryDate);
     }
 
@@ -576,12 +443,12 @@ public class CycleRenderer {
       return Optional.fromNullable(countsOfThree.get(reason));
     }
 
-    public boolean isWithinCountOfThree(CountOfThreeReason reason) {
+    boolean isWithinCountOfThree(CountOfThreeReason reason) {
       Optional<Integer> count = getCount(reason);
       return count.isPresent() && count.get() < 4;
     }
 
-    public void suppressBasicInstructions(Collection<BasicInstruction> instructionsToSuppress,
+    void suppressBasicInstructions(Collection<BasicInstruction> instructionsToSuppress,
                                           AbstractInstruction suppressionReason) {
       for (BasicInstruction instruction : instructionsToSuppress) {
         if (fertilityReasons.remove(instruction)) {
@@ -590,6 +457,128 @@ public class CycleRenderer {
         }
       }
       infertilityReasons.add(suppressionReason);
+    }
+
+    String peakDayText() {
+      if (isPeakDay()) {
+        return "P";
+      }
+      if (fertilityReasons.isEmpty()) {
+        return "";
+      }
+      if (effectiveCountOfThree.first == null || effectiveCountOfThree.first == 0) {
+        return "";
+      }
+      if (effectiveCountOfThree.first > 0) {
+        return String.valueOf(effectiveCountOfThree.first);
+      }
+      return "";
+    }
+
+    String getInstructionSummary() {
+      if (entry.observationEntry.observation == null) {
+        return "Please provide an observation by clicking edit below.";
+      }
+      List<String> instructionSummaryLines = new ArrayList<>();
+      List<String> subsectionLines = new ArrayList<>();
+      instructionSummaryLines.add(String.format("Status: %s",
+          fertilityReasons.isEmpty() ? "Infertile" : "Fertile"));
+      if (!fertilityReasons.isEmpty()) {
+        subsectionLines.add("Fertility Reasons:");
+        for (AbstractInstruction i : fertilityReasons) {
+          subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+        }
+        instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+        subsectionLines.clear();
+      }
+      if (!infertilityReasons.isEmpty()) {
+        subsectionLines.add("Infertility Reasons:");
+        for (AbstractInstruction i : infertilityReasons) {
+          subsectionLines.add(String.format(" - %s", AbstractInstruction.summary(i)));
+        }
+        instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+        subsectionLines.clear();
+      }
+      if (!suppressedFertilityReasons.isEmpty()) {
+        subsectionLines.add("Impact of Yellow Stamps:");
+        for (Map.Entry<AbstractInstruction, AbstractInstruction> e : suppressedFertilityReasons.entrySet()) {
+          subsectionLines.add(String.format(" - %s inhibited by %s",
+              AbstractInstruction.summary(e.getKey()), AbstractInstruction.summary(e.getValue())));
+        }
+        instructionSummaryLines.add(ON_NEW_LINE.join(subsectionLines));
+        subsectionLines.clear();
+      }
+      if (!subsectionLines.isEmpty()) {
+        Timber.w("Leaking strings!");
+      }
+      return ON_DOUBLE_NEW_LINE.join(instructionSummaryLines);
+    }
+
+    StickerColor getBackgroundColor() {
+      if (instructions == null) {
+        return StickerColor.GREY;
+      }
+      Observation observation = entry.observationEntry.observation;
+      if (observation == null) {
+        return StickerColor.GREY;
+      }
+      if (observation.flow != null) {
+        return StickerColor.RED;
+      }
+      if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
+        return StickerColor.RED;
+      }
+      if (!observation.hasMucus()) {
+        return StickerColor.GREEN;
+      }
+      // All entries have mucus at this point
+      if (!infertilityReasons.isEmpty()) {
+        return StickerColor.YELLOW;
+      }
+      if (instructions.isActive(BasicInstruction.K_2) && isPostPeak() && !isPostPeakPlus(4)) {
+        return StickerColor.YELLOW;
+      }
+      return StickerColor.WHITE;
+    }
+
+    boolean shouldAskEssentialSameness() {
+      if (instructions == null) {
+        return false;
+      }
+      boolean askForSpecialInstruction = instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
+          && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
+      boolean askForPrePeakYellow = instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (
+          !isInMenstrualFlow || (todayHasBlood || (todaysFlow != null && !todaysFlow.isLegit())) && hasHadLegitFlow);
+      return askForPrePeakYellow || askForSpecialInstruction;
+    }
+
+    boolean expectUnusualBleeding() {
+      if (previousEntry == null) {
+        return false;
+      }
+      if (previousEntry.observationEntry.unusualBleeding) {
+        return true;
+      }
+      return previousEntry.observationEntry.observation == null
+          || !previousEntry.observationEntry.observation.hasBlood();
+    }
+
+    boolean shouldShowBaby() {
+      if (fertilityReasons.isEmpty()) {
+        return infertilityReasons.isEmpty();
+      }
+      return !entry.observationEntry.hasBlood();
+    }
+
+    EntryModificationContext entryModificationContext() {
+      EntryModificationContext modificationContext = new EntryModificationContext();
+      modificationContext.cycle = cycle;
+      modificationContext.entry = entry;
+      modificationContext.hasPreviousCycle = false;
+      modificationContext.expectUnusualBleeding = expectUnusualBleeding();
+      modificationContext.isFirstEntry = entryNum == 1;
+      modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();
+      return modificationContext;
     }
   }
 
@@ -609,12 +598,6 @@ public class CycleRenderer {
     public IntercourseTimeOfDay intercourseTimeOfDay;
     public String pocSummary;
     public EntryModificationContext modificationContext;
-    public Set<AbstractInstruction> fertilityReasons = new HashSet<>();
-    public Map<AbstractInstruction, AbstractInstruction> suppressedFertilityReasons = new HashMap<>();
-    public Set<AbstractInstruction> infertilityReasons = new HashSet<>();
-
-    private int countOfThreeCount = -1;
-    private AbstractInstruction countOfThreeInstruction = null;
 
     @NonNull
     @Override
