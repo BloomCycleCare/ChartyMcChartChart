@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.renderer;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
+import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
 import com.roamingroths.cmcc.data.entities.Instructions;
 
 import org.junit.Test;
@@ -47,6 +48,47 @@ public class PrePeakYellowStampRendererTest extends BaseRendererTest {
         ImmutableList.<BasicInstruction>builder().addAll(BASIC_INSTRUCTIONS.activeItems).add(BasicInstruction.K_1).build(), ImmutableList.of(), ImmutableList.of());
     runTest(entries.build(), instructions);
   }
+
+
+  // From Book 2, figure 6-3: The use of pre-Peak yellow stamps in a women who is breastfeeding
+
+  @Test
+  public void testYellowPrePeakBreastFeeding() throws Exception {
+    ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6gcx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8gyx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+
+    // TODO: populate days 8-14
+
+    entries.put(Entry.forText("8gyx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8kx2").pointOfChange(), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx1").pointOfChange(), Expectations.yellowSticker().withBaby().withPeakText("1"));
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker().withBaby().withPeakText("2"));
+    entries.put(Entry.forText("8cx1"), Expectations.yellowSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
+
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("10kad").pointOfChange(), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx2").pointOfChange(), Expectations.yellowSticker().withBaby().withPeakText("1"));
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker().withBaby().withPeakText("2"));
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
+
+    // TODO: populate days 29-rest
+
+    Instructions instructions = createInstructions(
+        ImmutableList.<BasicInstruction>builder().addAll(BASIC_INSTRUCTIONS.activeItems).add(BasicInstruction.K_1).build(), ImmutableList.of(), ImmutableList.of(
+            YellowStampInstruction.YS_1_A, YellowStampInstruction.YS_1_B, YellowStampInstruction.YS_1_C, YellowStampInstruction.YS_1_D));
+    runTest(entries.build(), instructions);
+  }
+
 
 
 }

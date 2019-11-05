@@ -61,8 +61,8 @@ public class CycleRenderer {
     Set<LocalDate> daysOfMucus = new HashSet<>();
     TreeSet<LocalDate> daysOfUnusualBleeding = new TreeSet<>();
     TreeSet<LocalDate> peakDays = new TreeSet<>();
-    List<LocalDate> pointsOfChangeToward = new ArrayList<>();
-    List<LocalDate> pointsOfChangeAway = new ArrayList<>();
+    TreeSet<LocalDate> pointsOfChangeToward = new TreeSet<>();
+    TreeSet<LocalDate> pointsOfChangeAway = new TreeSet<>();
     Map<LocalDate, Boolean> daysOfIntercourse = new HashMap<>();
     LocalDate mostRecentPeakTypeMucus = null;
     LocalDate lastDayOfThreeOrMoreDaysOfMucus = null;
@@ -97,11 +97,11 @@ public class CycleRenderer {
         }
       }
       state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.absent()
-          : Optional.of(pointsOfChangeToward.get(0));
+          : Optional.of(pointsOfChangeToward.first());
       state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.absent()
-          : Optional.of(pointsOfChangeToward.get(pointsOfChangeToward.size() - 1));
+          : Optional.of(pointsOfChangeToward.last());
       state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.absent()
-          : Optional.of(pointsOfChangeAway.get(pointsOfChangeAway.size() - 1));
+          : Optional.of(pointsOfChangeAway.last());
       if (e.observationEntry.unusualBleeding) {
         daysOfUnusualBleeding.add(e.entryDate);
       }
@@ -169,11 +169,10 @@ public class CycleRenderer {
             CountOfThreeReason.UNUSUAL_BLEEDING,
             Days.daysBetween(daysOfUnusualBleeding.last(), e.entryDate).getDays());
       }
-      Optional<LocalDate> effectivePointOfChange = effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway);
-      if (effectivePointOfChange.isPresent()) {
+      if (!pointsOfChangeToward.isEmpty()) {
         state.countsOfThree.put(
             CountOfThreeReason.POINT_OF_CHANGE,
-            Days.daysBetween(effectivePointOfChange.get(), e.entryDate).getDays());
+            Days.daysBetween(pointsOfChangeToward.last(), e.entryDate).getDays());
       }
 
       state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
@@ -252,7 +251,7 @@ public class CycleRenderer {
       }
 
       // Basic Instruction yellow stamp reasons (section K)
-      boolean withinEssentialSamenessPattern = state.isPrePeak() && effectivePointOfChange.isPresent();
+      Optional<LocalDate> effectivePointOfChange = effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway);
       if (instructions.isActive(BasicInstruction.K_1)
           && state.isPrePeak()
           && !state.isInMenstrualFlow
@@ -288,8 +287,8 @@ public class CycleRenderer {
         state.countOfThreeReasons.put(YellowStampInstruction.YS_1_B, CountOfThreeReason.PEAK_DAY);
       }
       if (state.instructions.isActive(YellowStampInstruction.YS_1_C)
-          && effectivePointOfChange.isPresent()
-          && !state.entryDate.isAfter(effectivePointOfChange.get().plusDays(3))) {
+          && !pointsOfChangeToward.isEmpty()
+          && !state.entryDate.isAfter(pointsOfChangeToward.last().plusDays(3))) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_C);
         state.countOfThreeReasons.put(YellowStampInstruction.YS_1_C, CountOfThreeReason.POINT_OF_CHANGE);
       }
@@ -348,11 +347,11 @@ public class CycleRenderer {
     return outStates;
   }
 
-  private static Optional<LocalDate> effectivePointOfChange(List<LocalDate> toward, List<LocalDate> away) {
+  private static Optional<LocalDate> effectivePointOfChange(TreeSet<LocalDate> toward, TreeSet<LocalDate> away) {
     if (toward.isEmpty() || toward.size() == away.size()) {
       return Optional.absent();
     }
-    return Optional.of(toward.get(toward.size() - 1));
+    return Optional.of(toward.last());
   }
 
   private static RenderableEntry render(State state) {
