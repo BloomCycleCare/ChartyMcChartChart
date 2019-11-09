@@ -1,5 +1,9 @@
 package com.roamingroths.cmcc.logic.chart;
 
+import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
+import androidx.core.util.Preconditions;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
@@ -28,9 +32,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.Pair;
-import androidx.core.util.Preconditions;
 import timber.log.Timber;
 
 public class CycleRenderer {
@@ -548,7 +549,7 @@ public class CycleRenderer {
       boolean askForSpecialInstruction = instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
           && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
       boolean askForPrePeakYellow = instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (
-          !isInMenstrualFlow || (todayHasBlood || (todaysFlow != null && !todaysFlow.isLegit())) && hasHadLegitFlow);
+          !isInMenstrualFlow || (hasHadLegitFlow && entry.observationEntry.hasMucus()));
       return askForPrePeakYellow || askForSpecialInstruction;
     }
 
