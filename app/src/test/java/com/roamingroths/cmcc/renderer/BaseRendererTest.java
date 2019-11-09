@@ -156,7 +156,7 @@ public abstract class BaseRendererTest {
     Cycle cycle = new Cycle("", CYCLE_START_DATE, null);
 
     List<CycleRenderer.RenderableEntry> renderableEntries =
-        new CycleRenderer(cycle, chartEntries, Arrays.asList(instructions)).render();
+        new CycleRenderer(cycle, chartEntries, Arrays.asList(instructions)).render().entries;
 
     Preconditions.checkState(renderableEntries.size() == numEntries);
     for (int i=0; i<numEntries; i++) {

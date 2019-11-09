@@ -51,11 +51,7 @@ public class CycleRenderer {
     mInstructions.addAll(allInstructions);
   }
 
-  public List<RenderableEntry> render() {
-    return render(getStates());
-  }
-
-  private List<State> getStates() {
+  public RenderableCycle render() {
     List<ChartEntry> entriesEvaluated = new ArrayList<>();
     Set<LocalDate> daysOfFlow = new HashSet<>();
     Set<LocalDate> daysOfMucus = new HashSet<>();
@@ -70,7 +66,8 @@ public class CycleRenderer {
     ChartEntry previousEntry = null;
     boolean hasHadLegitFlow = false;
 
-    List<State> outStates = new ArrayList<>(mEntries.size());
+    RenderableCycle renderableCycle = new RenderableCycle(mCycle);
+
     // For every day before the current entry...
     for (ChartEntry e : mEntries) {
       entriesEvaluated.add(e);
@@ -333,12 +330,19 @@ public class CycleRenderer {
           state.effectiveCountOfThree = Pair.create(count.get(), mapEntry.getKey());
         }
       }
-
-      outStates.add(state);
+      renderableCycle.entries.add(RenderableEntry.fromState(state));
       previousEntry = e;
     }
 
-    return outStates;
+    renderableCycle.stats.mcs = MccScorer.getScore(mEntries, peakDays.isEmpty() ?
+        Optional.absent() : Optional.of(peakDays.last()));
+    if (!peakDays.isEmpty()) {
+      renderableCycle.stats.daysPrePeak = Days.daysBetween(mCycle.startDate, peakDays.last()).getDays() + 1;
+      if (mCycle.endDate != null) {
+        renderableCycle.stats.daysPostPeak = Days.daysBetween(peakDays.last(), mCycle.endDate).getDays();
+      }
+    }
+    return renderableCycle;
   }
 
   private static Optional<LocalDate> effectivePointOfChange(TreeSet<LocalDate> toward, TreeSet<LocalDate> away) {
@@ -346,42 +350,6 @@ public class CycleRenderer {
       return Optional.absent();
     }
     return Optional.of(toward.last());
-  }
-
-  private static RenderableEntry render(State state) {
-    RenderableEntry entry = new RenderableEntry();
-
-    entry.entryNum = state.entryNum;
-    entry.dateSummary = DateUtil.toNewUiStr(state.entry.entryDate);
-    entry.entrySummary = state.entry.observationEntry.getListUiText();
-    entry.backgroundColor = state.getBackgroundColor();
-    entry.showBaby = state.shouldShowBaby();
-    entry.peakDayText = state.peakDayText();
-    entry.intercourseTimeOfDay = state.entry.observationEntry.intercourseTimeOfDay;
-    if (state.isPocTowardFertility()) {
-      entry.pocSummary = "POC↑";
-    } else if (state.isPocAwayFromFertility()) {
-      entry.pocSummary = "POC↓";
-    } else {
-      entry.pocSummary = "";
-    }
-    entry.instructionSummary = state.getInstructionSummary();
-    if (state.entry.observationEntry.observation != null && state.shouldAskEssentialSameness()) {
-      entry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
-    } else {
-      entry.essentialSamenessSummary = "";
-    }
-    entry.modificationContext = state.entryModificationContext();
-
-    return entry;
-  }
-
-  private static List<RenderableEntry> render(List<State> states) {
-    List<RenderableEntry> entries = new ArrayList<>(states.size());
-    for (State state : states) {
-      entries.add(render(state));
-    }
-    return entries;
   }
 
   public static class State {
@@ -587,6 +555,26 @@ public class CycleRenderer {
     UNUSUAL_BLEEDING, PEAK_DAY, CONSECUTIVE_DAYS_OF_MUCUS, PEAK_TYPE_MUCUS, POINT_OF_CHANGE;
   }
 
+  public static class RenderableCycle {
+    public final List<RenderableEntry> entries = new ArrayList<>();
+    public final CycleStats stats;
+
+    public RenderableCycle(Cycle cycle) {
+      stats = new CycleStats(cycle.startDate);
+    }
+  }
+
+  public static class CycleStats {
+    public final LocalDate cycleStartDate;
+    public Float mcs = null;
+    public Integer daysPrePeak = null;
+    public Integer daysPostPeak = null;
+
+    CycleStats(LocalDate cycleStartDate) {
+      this.cycleStartDate = cycleStartDate;
+    }
+  }
+
   public static class RenderableEntry {
     public String entrySummary;
     public StickerColor backgroundColor;
@@ -599,6 +587,34 @@ public class CycleRenderer {
     public IntercourseTimeOfDay intercourseTimeOfDay;
     public String pocSummary;
     public EntryModificationContext modificationContext;
+
+    public static RenderableEntry fromState(State state) {
+      RenderableEntry renderableEntry = new RenderableEntry();
+
+      renderableEntry.entryNum = state.entryNum;
+      renderableEntry.dateSummary = DateUtil.toNewUiStr(state.entry.entryDate);
+      renderableEntry.entrySummary = state.entry.observationEntry.getListUiText();
+      renderableEntry.backgroundColor = state.getBackgroundColor();
+      renderableEntry.showBaby = state.shouldShowBaby();
+      renderableEntry.peakDayText = state.peakDayText();
+      renderableEntry.intercourseTimeOfDay = state.entry.observationEntry.intercourseTimeOfDay;
+      if (state.isPocTowardFertility()) {
+        renderableEntry.pocSummary = "POC↑";
+      } else if (state.isPocAwayFromFertility()) {
+        renderableEntry.pocSummary = "POC↓";
+      } else {
+        renderableEntry.pocSummary = "";
+      }
+      renderableEntry.instructionSummary = state.getInstructionSummary();
+      if (state.entry.observationEntry.observation != null && state.shouldAskEssentialSameness()) {
+        renderableEntry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
+      } else {
+        renderableEntry.essentialSamenessSummary = "";
+      }
+      renderableEntry.modificationContext = state.entryModificationContext();
+
+      return renderableEntry;
+    }
 
     @NonNull
     @Override

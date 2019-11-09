@@ -56,7 +56,7 @@ public class PageRenderer {
 
   private static Function<CycleRenderer, ObservableSource<String>> createCycleRows() {
     return (Function<CycleRenderer, ObservableSource<String>>) renderer -> {
-      List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render();
+      List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render().entries;
       List<String> rows = new ArrayList<>();
       int numFullRows = numFullRows(renderableEntries.size());
       boolean hasPartialRow = hasPartialRow(renderableEntries.size());

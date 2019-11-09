@@ -12,6 +12,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.SortedSet;
 
 import static com.roamingroths.cmcc.data.domain.DischargeSummary.DischargeType;
 import static com.roamingroths.cmcc.data.domain.DischargeSummary.MucusModifier;
@@ -20,9 +21,9 @@ public class MccScorer {
 
   private static final int EVALUATION_INTERVAL_DAYS = 6;
 
-  public static float getScore(List<ChartEntry> unfilteredEntries, Optional<LocalDate> peakDay) {
+  public static Float getScore(SortedSet<ChartEntry> unfilteredEntries, Optional<LocalDate> peakDay) {
     if (!peakDay.isPresent()) {
-      return 0;
+      return null;
     }
     LocalDate firstDate = peakDay.get().minusDays(EVALUATION_INTERVAL_DAYS - 1);
     List<ChartEntry> entries = new ArrayList<>();

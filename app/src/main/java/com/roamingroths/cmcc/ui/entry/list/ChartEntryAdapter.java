@@ -6,6 +6,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.entry.detail.EntryDetailActivity;
@@ -15,8 +18,6 @@ import org.parceler.Parcels;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.disposables.CompositeDisposable;
 
 /**
@@ -52,8 +53,8 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     notifyDataSetChanged();
   }
 
-  void updateRenderer(CycleRenderer renderer) {
-    mRenderableEntries = renderer.render();
+  void updateCycle(CycleRenderer.RenderableCycle renderableCycle) {
+    mRenderableEntries = renderableCycle.entries;
     notifyDataSetChanged();
   }
 

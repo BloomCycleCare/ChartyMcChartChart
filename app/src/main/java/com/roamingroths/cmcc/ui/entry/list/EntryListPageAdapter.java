@@ -5,11 +5,13 @@ import android.util.Log;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
 import androidx.fragment.app.FragmentManager;
 import androidx.recyclerview.widget.SortedList;
 
 import com.google.common.base.Preconditions;
 import com.roamingroths.cmcc.data.entities.Cycle;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
@@ -21,6 +23,8 @@ import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.Nullable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 /**
@@ -33,6 +37,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
 
   private final SortedList<Cycle> mCycles;
+  private final Subject<Pair<Integer, CycleRenderer.CycleStats>> mStats = BehaviorSubject.create();
 
   public EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
@@ -78,6 +83,10 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     ArrayList<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
     mCycles.add(cycleToShow);
     notifyDataSetChanged();*/
+  }
+
+  public Subject<Pair<Integer, CycleRenderer.CycleStats>> stats() {
+    return mStats;
   }
 
   public Disposable attach(Flowable<List<Cycle>> cycleStream) {
@@ -136,6 +145,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
     EntryListFragment fragment = new EntryListFragment();
     fragment.setArguments(args);
+    fragment.stats().map(s -> Pair.create(position, s)).subscribe(mStats);
 
     maybeUpdateFragments(fragment, position);
 

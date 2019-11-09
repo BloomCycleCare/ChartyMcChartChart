@@ -8,6 +8,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.google.common.collect.Maps;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -22,11 +28,6 @@ import java.lang.ref.WeakReference;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -48,6 +49,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   public static String IS_LAST_CYCLE = "IS_LAST_CYCLE";
 
   private final Subject<ScrollState> mScrollState;
+  private final BehaviorSubject<CycleRenderer.CycleStats> mCycleStats;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private RecyclerView mRecyclerView;
@@ -63,6 +65,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   public EntryListFragment() {
     if (DEBUG) Log.v(TAG, "Construct");
+    mCycleStats = BehaviorSubject.create();
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
@@ -181,7 +184,11 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
         (instructions, entries) -> new CycleRenderer(mCycle, entries, instructions))
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(newRenderer -> mChartEntryAdapter.updateRenderer(newRenderer)));
+        .subscribe(newRenderer -> {
+          CycleRenderer.RenderableCycle renderableCycle = newRenderer.render();
+          mChartEntryAdapter.updateCycle(renderableCycle);
+          mCycleStats.onNext(renderableCycle.stats);
+        }));
 
     mRecyclerView.setAdapter(mChartEntryAdapter);
     mChartEntryAdapter.notifyDataSetChanged();
@@ -223,6 +230,10 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     if (mChartEntryAdapter != null) {
       // mChartEntryAdapter.shutdown();
     }
+  }
+
+  public Subject<CycleRenderer.CycleStats> stats() {
+    return mCycleStats;
   }
 
   @Override

@@ -7,13 +7,9 @@ package com.roamingroths.cmcc.ui.entry.list;
 public interface EntryListView {
   void setTitle(String message);
 
-  void showProgress();
-
-  void showError(String message);
+  void setSubtitle(String message);
 
   void showList();
 
   void setOverlay(String key);
-
-  void clearOverlay();
 }
