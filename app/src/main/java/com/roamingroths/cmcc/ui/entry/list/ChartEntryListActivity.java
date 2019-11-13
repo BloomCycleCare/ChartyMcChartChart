@@ -21,19 +21,18 @@ import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.viewpager.widget.ViewPager;
 
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.common.base.Charsets;
-import com.google.common.base.Optional;
 import com.google.common.io.Files;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
-import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.instructions.InstructionsListActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
@@ -48,7 +47,6 @@ import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
 import java.io.File;
-import java.util.HashMap;
 
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
@@ -76,7 +74,8 @@ public class ChartEntryListActivity extends AppCompatActivity
   private CycleRepo mCycleRepo;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  private final Subject<Integer> mActivePage = BehaviorSubject.create();
+  private EntryListViewModel mViewModel;
+
   private final Subject<String> mLayerSubject = BehaviorSubject.create();
   private EntryListPageAdapter mPageAdapter;
 
@@ -118,7 +117,20 @@ public class ChartEntryListActivity extends AppCompatActivity
     drawerTitleView.setText("TODO: name");
 
     mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
-    mDisposables.add(mPageAdapter.attach(mCycleRepo.getStream()));
+
+    mViewModel = ViewModelProviders.of(this).get(EntryListViewModel.class);
+    mViewModel.viewStates().observe(this, viewState -> {
+      setTitle(viewState.title);
+      setSubtitle(viewState.subtitle);
+      mPageAdapter.update(viewState.cycles);
+      mPageAdapter.onPageActive(viewState.currentCycleIndex);
+
+      if (viewState.showFab) {
+        showFab();
+      } else {
+        hideFab();
+      }
+    });
 
     mViewPager.setAdapter(mPageAdapter);
     mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
@@ -127,54 +139,13 @@ public class ChartEntryListActivity extends AppCompatActivity
 
       @Override
       public void onPageSelected(int position) {
-        boolean viewingFirstCycle = position == mPageAdapter.getCount() - 1;
-        if (viewingFirstCycle) {
-          showFab();
-        } else {
-          hideFab();
-        }
-
-        String title;
-        if (position == 0) {
-          title = "Current Cycle";
-        } else {
-          title = position + " Cycles Ago";
-        }
-        setTitle(title);
-
-        mPageAdapter.onPageActive(position);
-        mActivePage.onNext(position);
+        mViewModel.currentPageUpdates.onNext(position);
       }
 
       @Override
       public void onPageScrollStateChanged(int state) {}
     });
-    mActivePage.onNext(0);
     showList();
-
-    mDisposables.add(Observable.combineLatest(
-        mActivePage
-            .distinctUntilChanged(),
-        mPageAdapter
-            .stats()
-            .scan(new HashMap<Integer, CycleRenderer.CycleStats>(), (m, p) -> {
-              m.put(p.first, p.second);
-              return m;
-            })
-            .skip(1) // Skip the empty map from scan initialization
-            .distinctUntilChanged(),
-        (activePage, stats) -> Optional.fromNullable(stats.get(activePage)))
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .subscribe(stats -> {
-          if (stats.daysPrePeak == null) {
-            setSubtitle("In prepeak phase");
-          } else {
-            String pre = String.format("%d", stats.daysPrePeak);
-            String post = stats.daysPostPeak == null ? "n/a" : String.format("%d", stats.daysPostPeak);
-            setSubtitle(String.format("Pre: %s Post: %s", pre, post));
-          }
-        }));
 
     mNewCycleFab = findViewById(R.id.fab_new_cycle);
     mNewCycleFab.setOnClickListener(__ -> {

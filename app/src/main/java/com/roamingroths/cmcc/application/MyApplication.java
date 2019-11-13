@@ -14,6 +14,8 @@ import com.roamingroths.cmcc.BuildConfig;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.db.AppDatabase;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
+import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 import com.roamingroths.cmcc.notifications.ChartingReceiver;
 import com.roamingroths.cmcc.utils.GsonUtil;
@@ -23,6 +25,7 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import java.io.File;
 import java.security.Security;
 
+import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
 /**
@@ -33,8 +36,12 @@ public class MyApplication extends Application {
 
   private static ViewModelFactory mViewModelFactory;
 
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
+
   private AppDatabase mDB;
   private InstructionsRepo mInstructionsRepo;
+  private CycleRepo mCycleRepo;
+  private ChartEntryRepo mChartEntryRepo;
 
   @Override
   public void onCreate() {
@@ -56,6 +63,8 @@ public class MyApplication extends Application {
         .build();
 
     mInstructionsRepo = new InstructionsRepo(this);
+    mChartEntryRepo = new ChartEntryRepo(mDB);
+    mCycleRepo = new CycleRepo(mDB);
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -64,7 +73,7 @@ public class MyApplication extends Application {
     sendBroadcast(restartIntent);
 
     AppStateExporter exporter = new AppStateExporter(this);
-    exporter
+    mDisposables.add(exporter
         .export()
         .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
         .subscribe(json -> {
@@ -75,7 +84,8 @@ public class MyApplication extends Application {
           File file = new File(path, "cmcc_export.chart");
 
           Files.write(json, file, Charsets.UTF_8);
-        });
+        }));
+
   }
 
   @Deprecated
@@ -85,6 +95,14 @@ public class MyApplication extends Application {
 
   public InstructionsRepo instructionsRepo() {
     return mInstructionsRepo;
+  }
+
+  public CycleRepo cycleRepo() {
+    return mCycleRepo;
+  }
+
+  public ChartEntryRepo entryRepo() {
+    return mChartEntryRepo;
   }
 
   public static MyApplication cast(Application app) {

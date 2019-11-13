@@ -7,25 +7,20 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.core.util.Pair;
 import androidx.fragment.app.FragmentManager;
-import androidx.recyclerview.widget.SortedList;
 
-import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
-import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.utils.SmartFragmentStatePagerAdapter;
 
 import org.parceler.Parcels;
 
+import java.util.ArrayList;
 import java.util.List;
 
-import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/16/17.
@@ -36,87 +31,19 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
 
-  private final SortedList<Cycle> mCycles;
+  private final List<Cycle> mCycles = new ArrayList<>();
   private final Subject<Pair<Integer, CycleRenderer.CycleStats>> mStats = BehaviorSubject.create();
 
   public EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
-    mCycles = new SortedList<>(Cycle.class, new SortedList.Callback<Cycle>() {
-      @Override
-      public int compare(Cycle o1, Cycle o2) {
-        return o2.startDate.compareTo(o1.startDate);
-      }
-
-      @Override
-      public boolean areContentsTheSame(Cycle oldItem, Cycle newItem) {
-        return oldItem.equals(newItem);
-      }
-
-      @Override
-      public boolean areItemsTheSame(Cycle item1, Cycle item2) {
-        return item1.id.equals(item2.id);
-      }
-
-      @Override
-      public void onChanged(int position, int count) {
-        notifyDataSetChanged();
-      }
-
-      @Override
-      public void onInserted(int position, int count) {
-        notifyDataSetChanged();
-      }
-
-      @Override
-      public void onRemoved(int position, int count) {
-        notifyDataSetChanged();
-      }
-
-      @Override
-      public void onMoved(int fromPosition, int toPosition) {
-        notifyDataSetChanged();
-      }
-    });
-
-    /*Cycle cycleToShow = intent.getParcelableExtra(Cycle.class.getName());
-    if (DEBUG) Log.v(TAG, "Initial cycleToShow: " + cycleToShow.id);
-    ArrayList<ChartEntry> containers = intent.getParcelableArrayListExtra(ChartEntry.class.getName());
-    mCycles.add(cycleToShow);
-    notifyDataSetChanged();*/
   }
 
-  public Subject<Pair<Integer, CycleRenderer.CycleStats>> stats() {
-    return mStats;
-  }
-
-  public Disposable attach(Flowable<List<Cycle>> cycleStream) {
-    return cycleStream.observeOn(AndroidSchedulers.mainThread()).subscribe(cycles -> {
-      Timber.v("Updating adapter with %d cycles", cycles.size());
-      // TODO: make this incremental
-      mCycles.beginBatchedUpdates();
+  public void update(List<Cycle> cycles) {
+    if (!Iterables.elementsEqual(mCycles, cycles)) {
       mCycles.clear();
       mCycles.addAll(cycles);
-      mCycles.endBatchedUpdates();
-    }, Timber::e);
-  }
-
-  public int onResult(EntrySaveResult result) {
-    for (Cycle cycle : result.droppedCycles) {
-      if (DEBUG) Log.v(TAG, "Dropping cycleToShow: " + cycle);
-      mCycles.remove(cycle);
+      notifyDataSetChanged();
     }
-    for (Cycle cycle : result.newCycles) {
-      if (DEBUG) Log.v(TAG, "Adding cycleToShow: " + cycle);
-      mCycles.add(cycle);
-    }
-    for (Cycle cycle : result.changedCycles) {
-      if (DEBUG) Log.v(TAG, "Updating cycleToShow: " + cycle);
-      mCycles.updateItemAt(mCycles.indexOf(cycle), cycle);
-    }
-    notifyDataSetChanged();
-    int index = mCycles.indexOf(result.cycleToShow);
-    Preconditions.checkState(index >= 0);
-    return index;
   }
 
   @Override
@@ -145,7 +72,6 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
     EntryListFragment fragment = new EntryListFragment();
     fragment.setArguments(args);
-    fragment.stats().map(s -> Pair.create(position, s)).subscribe(mStats);
 
     maybeUpdateFragments(fragment, position);
 

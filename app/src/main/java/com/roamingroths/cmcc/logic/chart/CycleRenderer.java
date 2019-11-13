@@ -2,10 +2,10 @@ package com.roamingroths.cmcc.logic.chart;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Pair;
-import androidx.core.util.Preconditions;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
 import com.roamingroths.cmcc.data.domain.DischargeSummary;
@@ -179,10 +179,10 @@ public class CycleRenderer {
           break;
         }
       }
-      state.instructions = Preconditions.checkNotNull(instructions);
+      state.instructions = Optional.fromNullable(instructions).or(new Instructions(e.entryDate, ImmutableList.of(), ImmutableList.of(), ImmutableList.of()));
 
       // Basic Instruction fertility reasons (section D)
-      if (instructions.isActive(BasicInstruction.D_1)
+      if (state.instructions.isActive(BasicInstruction.D_1)
           && state.isInMenstrualFlow) {
         state.fertilityReasons.add(BasicInstruction.D_1);
       }
@@ -246,7 +246,7 @@ public class CycleRenderer {
 
       // Basic Instruction yellow stamp reasons (section K)
       Optional<LocalDate> effectivePointOfChange = effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway);
-      if (instructions.isActive(BasicInstruction.K_1)
+      if (state.instructions.isActive(BasicInstruction.K_1)
           && state.isPrePeak()
           && !state.isInMenstrualFlow
           && (!effectivePointOfChange.isPresent()
@@ -254,13 +254,13 @@ public class CycleRenderer {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, BasicInstruction.K_1);
       }
       if (state.isPostPeakPlus(4)) {
-        if (instructions.isActive(BasicInstruction.K_2)) {
+        if (state.instructions.isActive(BasicInstruction.K_2)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_2);
         }
-        if (instructions.isActive(BasicInstruction.K_3)) {
+        if (state.instructions.isActive(BasicInstruction.K_3)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_3);
         }
-        if (instructions.isActive(BasicInstruction.K_4)) {
+        if (state.instructions.isActive(BasicInstruction.K_4)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_4);
         }
       }

@@ -2,6 +2,11 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
@@ -19,10 +24,6 @@ import com.roamingroths.cmcc.utils.ErrorOr;
 import java.util.ArrayList;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -62,8 +63,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     super(application);
 
     MyApplication myApp = MyApplication.cast(application);
-    mEntryRepo = new ChartEntryRepo(myApp.db());
-    mCycleRepo = new CycleRepo(myApp.db());
+    mEntryRepo = myApp.entryRepo();
+    mCycleRepo = myApp.cycleRepo();
 
     mDisposables.add(intercourseUpdates.subscribe(value -> {
       if (value) {
