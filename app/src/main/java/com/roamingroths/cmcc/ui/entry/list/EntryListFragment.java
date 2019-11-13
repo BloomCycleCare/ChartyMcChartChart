@@ -43,19 +43,16 @@ import timber.log.Timber;
 
 public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnClickHandler {
 
-  private static boolean DEBUG = false;
   private static String TAG = EntryListFragment.class.getSimpleName();
   private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 200;
   public static String IS_LAST_CYCLE = "IS_LAST_CYCLE";
 
   private final Subject<ScrollState> mScrollState;
-  private final BehaviorSubject<CycleRenderer.CycleStats> mCycleStats;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private RecyclerView mRecyclerView;
   private ProgressBar mProgressView;
   private ChartEntryAdapter mChartEntryAdapter;
-  private EntryListView mView;
   private Cycle mCycle;
   private Map<Neighbor, WeakReference<EntryListFragment>> mNeighbors;
 
@@ -64,8 +61,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public EntryListFragment() {
-    if (DEBUG) Log.v(TAG, "Construct");
-    mCycleStats = BehaviorSubject.create();
     mNeighbors = Maps.newConcurrentMap();
     mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
@@ -77,7 +72,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
           @Override
           public void accept(ScrollState scrollState) throws Exception {
             if (!getUserVisibleHint()) {
-              if (DEBUG) Log.v(TAG, "Not scrolling from " + mCycle.startDateStr);
+              Timber.d("Not scrolling from %s", mCycle.startDateStr);
               return;
             }
             onScrollStateUpdate(scrollState);
@@ -92,8 +87,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   @Override
   public void onAttach(Context context) {
     super.onAttach(context);
-
-    mView = (ChartEntryListActivity) getActivity();
   }
 
   @Override
@@ -113,7 +106,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public void setScrollState(ScrollState scrollState) {
-    if (DEBUG) Log.v(TAG, "Scroll to: "+ scrollState);
+    Timber.d(TAG, "Scroll to: %s", scrollState);
     if (mRecyclerView == null) {
       Log.w(EntryListFragment.class.getSimpleName(), "RecyclerView null!");
       return;
@@ -130,7 +123,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
       EntryListFragment neighbor = entry.getValue().get();
       if (neighbor != null) {
-        if (DEBUG) Log.v(TAG, "Scrolling " + entry.getKey().name() + " for " + mCycle.startDateStr);
+        Timber.d("Scrolling %s for %s", entry.getKey().name(), mCycle.startDateStr);
         neighbor.setScrollState(state);
       }
     }
@@ -187,7 +180,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
         .subscribe(newRenderer -> {
           CycleRenderer.RenderableCycle renderableCycle = newRenderer.render();
           mChartEntryAdapter.updateCycle(renderableCycle);
-          mCycleStats.onNext(renderableCycle.stats);
         }));
 
     mRecyclerView.setAdapter(mChartEntryAdapter);
@@ -205,10 +197,9 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
           for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
             EntryListFragment neighbor = ref.get();
             if (neighbor != null) {
-              if (DEBUG) Log.v(TAG, "Cycle starting " + mCycle.startDateStr + " has neighbor starting " + neighbor.mCycle.startDateStr);
+              Timber.v("Cycle starting %s has neighbor starting %s", mCycle.startDateStr, neighbor.mCycle.startDateStr);
               ScrollState scrollState = neighbor.getScrollState();
               if (scrollState != null) {
-                if (DEBUG) Log.v(TAG, "ScrollState: " + scrollState);
                 setScrollState(scrollState);
               }
             }
@@ -230,10 +221,6 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     if (mChartEntryAdapter != null) {
       // mChartEntryAdapter.shutdown();
     }
-  }
-
-  public Subject<CycleRenderer.CycleStats> stats() {
-    return mCycleStats;
   }
 
   @Override

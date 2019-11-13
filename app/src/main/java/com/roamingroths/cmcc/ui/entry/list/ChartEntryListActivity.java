@@ -140,11 +140,13 @@ public class ChartEntryListActivity extends AppCompatActivity
       @Override
       public void onPageSelected(int position) {
         mViewModel.currentPageUpdates.onNext(position);
+        mPageAdapter.onPageActive(position);
       }
 
       @Override
       public void onPageScrollStateChanged(int state) {}
     });
+    mViewPager.setOffscreenPageLimit(4);
     showList();
 
     mNewCycleFab = findViewById(R.id.fab_new_cycle);
