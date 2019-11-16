@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 
+import com.google.common.base.Optional;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
@@ -20,6 +21,7 @@ import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.ErrorOr;
+import com.roamingroths.cmcc.utils.RxUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +50,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> unusualBleedingUpdates = BehaviorSubject.create();
   final Subject<Boolean> isEssentiallyTheSameUpdates = BehaviorSubject.create();
   final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.create();
+  final Subject<String> noteUpdates = BehaviorSubject.create();
 
   final Subject<BoolMapping> symptomUpdates = BehaviorSubject.create();
   final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.create();
@@ -85,44 +88,30 @@ public class EntryDetailViewModel extends AndroidViewModel {
           }
         });
 
-    Flowable<ObservationEntry> observationEntryStream = Flowable.combineLatest(
-        mEntryContext.toFlowable()
-            .distinctUntilChanged()
-            .map(context -> context.entry.entryDate)
-            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
-        errorOrObservationStream
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New errorOrObservation update")),
-        peakDayUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New peakDay update")),
-        intercourseUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New intercourse update")),
-        firstDayOfCycleUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New firstDay update")),
-        pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New pointOfChange update")),
-        unusualBleedingUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New unusualBleeding update")),
-        isEssentiallyTheSameUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New essentialSameness update")),
-        timeOfDayUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New timeOfDay update")),
-        (entryDate, errorOrObservation, isPeakDay, hasHadIntercourse, isFirstDayOfCycle, isPointOfChange, isUnusualBleeding, isEssentaillyTheSame, timeOfDay) -> {
-          Observation observation = null;
-          if (!errorOrObservation.hasError()) {
-            observation = errorOrObservation.get();
-          }
-          return new ObservationEntry(
-              entryDate, observation, isPeakDay, hasHadIntercourse, isFirstDayOfCycle,
-              isPointOfChange, isUnusualBleeding, timeOfDay, isEssentaillyTheSame);
-        });
+    Flowable<ObservationEntry> observationEntryStream = mEntryContext
+        .toFlowable().distinctUntilChanged()
+        .map(context -> ObservationEntry.emptyEntry(context.entry.entryDate))
+        .compose(RxUtil.update(errorOrObservationStream,
+            (e, v) -> e.observation = v.or(null), "observation"))
+        .compose(RxUtil.update(peakDayUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.peakDay = v, "peakDay"))
+        .compose(RxUtil.update(intercourseUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.intercourse = v, "intercourse"))
+        .compose(RxUtil.update(firstDayOfCycleUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.firstDay = v, "firstDay"))
+        .compose(RxUtil.update(pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.pointOfChange = v, "pointOfChage"))
+        .compose(RxUtil.update(unusualBleedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.unusualBleeding = v, "unusualBleeding"))
+        .compose(RxUtil.update(isEssentiallyTheSameUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.isEssentiallyTheSame = v, "essentiallySame"))
+        .compose(RxUtil.update(timeOfDayUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.intercourseTimeOfDay = v, "timeOfDay"))
+        .compose(RxUtil.update(noteUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.note = v, "notes"))
+        .doOnNext(v -> Timber.i("New v"))
+        ;
+
 
     Flowable<SymptomEntry> symptomEntryStream = Flowable.combineLatest(
         mEntryContext.toFlowable()
@@ -194,6 +183,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
     isEssentiallyTheSameUpdates.onNext(context.entry.observationEntry.isEssentiallyTheSame);
     timeOfDayUpdates.onNext(context.entry.observationEntry.intercourseTimeOfDay);
+    noteUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.note).or(""));
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
@@ -302,5 +292,11 @@ public class EntryDetailViewModel extends AndroidViewModel {
       this.summary = summary;
       this.details = details;
     }
+  }
+
+  static <T> Flowable<T> toFlowable(Subject<T> s, String sName) {
+    return s.toFlowable(BackpressureStrategy.BUFFER)
+        .distinctUntilChanged()
+        .doOnNext(t -> Timber.i("New %s", sName));
   }
 }

@@ -1,7 +1,5 @@
 package com.roamingroths.cmcc.data.entities;
 
-import android.os.Parcelable;
-
 import androidx.annotation.NonNull;
 import androidx.room.ColumnInfo;
 import androidx.room.PrimaryKey;
@@ -15,7 +13,7 @@ import java.util.List;
 /**
  * Created by parkeroth on 9/20/17.
  */
-public abstract class Entry implements Parcelable {
+public abstract class Entry {
 
   @PrimaryKey
   @NonNull

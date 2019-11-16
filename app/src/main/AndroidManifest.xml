@@ -67,6 +67,7 @@
             android:name=".ui.entry.detail.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
             android:parentActivityName=".ui.entry.list.ChartEntryListActivity"
+            android:windowSoftInputMode="adjustPan"
             android:theme="@style/AppTheme.NoActionBar">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

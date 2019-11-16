@@ -43,6 +43,10 @@ public class ErrorOr<T> {
     return mValue;
   }
 
+  public T or(T defaultValue) {
+    return hasError() ? defaultValue : get();
+  }
+
   public Throwable error() {
     return mError;
   }

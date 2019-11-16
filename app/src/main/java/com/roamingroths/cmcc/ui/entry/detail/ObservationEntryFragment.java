@@ -51,6 +51,8 @@ public class ObservationEntryFragment extends Fragment {
     TextView observationDescriptionTextView =
         view.findViewById(R.id.tv_modify_observation_description);
     EditText observationEditText = view.findViewById(R.id.et_modify_observation_value);
+    TextView noteTextView =
+        view.findViewById(R.id.et_modify_observation_note);
     Switch unusualBleedingSwitch = view.findViewById(R.id.switch_unusual_bleeding);
     Switch peakDaySwitch = view.findViewById(R.id.switch_peak_day);
     Switch intercourseSwitch = view.findViewById(R.id.switch_intercourse);
@@ -98,6 +100,10 @@ public class ObservationEntryFragment extends Fragment {
       RxTextView.afterTextChangeEvents(observationEditText)
           .map(event -> event.view().getText().toString())
           .subscribe(mEntryDetailViewModel.observationUpdates);
+
+      RxTextView.afterTextChangeEvents(noteTextView)
+          .map(event -> event.view().getText().toString())
+          .subscribe(mEntryDetailViewModel.noteUpdates);
     };
 
     final AtomicBoolean uiInitialized = new AtomicBoolean(false);
@@ -158,6 +164,9 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
       maybeUpdate(unusualBleedingSwitch, observationEntry.unusualBleeding);
       maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
+      if (!Strings.isNullOrEmpty(observationEntry.note)) {
+        noteTextView.setText(observationEntry.note);
+      }
 
       pointOfChangeLayout.setVisibility(viewState.entryModificationContext.shouldAskEssentialSameness ? View.VISIBLE : View.GONE);
 

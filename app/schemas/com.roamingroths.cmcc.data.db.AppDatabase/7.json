@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 7,
-    "identityHash": "3b1ab34ea404b2a5adfbe1e0c5ebd8a7",
+    "identityHash": "5aad92a1dbb42ec135456a74f9403567",
     "entities": [
       {
         "tableName": "Cycle",
@@ -76,7 +76,7 @@
       },
       {
         "tableName": "ObservationEntry",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `observation` TEXT, `peakDay` INTEGER NOT NULL, `intercourse` INTEGER NOT NULL, `firstDay` INTEGER NOT NULL, `pointOfChange` INTEGER NOT NULL, `unusualBleeding` INTEGER NOT NULL, `intercourseTimeOfDay` TEXT, `isEssentiallyTheSame` INTEGER NOT NULL, PRIMARY KEY(`entryDate`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `observation` TEXT, `peakDay` INTEGER NOT NULL, `intercourse` INTEGER NOT NULL, `firstDay` INTEGER NOT NULL, `pointOfChange` INTEGER NOT NULL, `unusualBleeding` INTEGER NOT NULL, `intercourseTimeOfDay` TEXT, `isEssentiallyTheSame` INTEGER NOT NULL, `note` TEXT, PRIMARY KEY(`entryDate`))",
         "fields": [
           {
             "fieldPath": "mEntryDate",
@@ -131,6 +131,12 @@
             "columnName": "isEssentiallyTheSame",
             "affinity": "INTEGER",
             "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": false
           }
         ],
         "primaryKey": {
@@ -198,7 +204,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3b1ab34ea404b2a5adfbe1e0c5ebd8a7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5aad92a1dbb42ec135456a74f9403567')"
     ]
   }
 }

@@ -13,6 +13,7 @@ import com.roamingroths.cmcc.data.entities.WellnessEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
+import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,7 +40,7 @@ public class ChartEntry implements Parcelable {
 
   protected ChartEntry(Parcel in) {
     this(DateUtil.fromWireStr(in.readString()),
-        in.readParcelable(ObservationEntry.class.getClassLoader()),
+        Parcels.unwrap(in.readParcelable(ObservationEntry.class.getClassLoader())),
         in.readParcelable(WellnessEntry.class.getClassLoader()),
         in.readParcelable(SymptomEntry.class.getClassLoader()));
   }
@@ -72,7 +73,7 @@ public class ChartEntry implements Parcelable {
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(DateUtil.toWireStr(entryDate));
-    dest.writeParcelable(observationEntry, flags);
+    dest.writeParcelable(Parcels.wrap(observationEntry), flags);
     dest.writeParcelable(wellnessEntry, flags);
     dest.writeParcelable(symptomEntry, flags);
   }

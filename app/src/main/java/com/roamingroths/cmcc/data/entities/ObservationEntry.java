@@ -1,28 +1,25 @@
 package com.roamingroths.cmcc.data.entities;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
 
 import com.google.common.base.Objects;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
-import com.roamingroths.cmcc.utils.DateUtil;
+import com.roamingroths.cmcc.utils.Copyable;
 
 import org.joda.time.LocalDate;
+import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.crypto.SecretKey;
 
 /**
  * Created by parkeroth on 4/22/17.
  */
 @Entity
-public class ObservationEntry extends Entry implements Parcelable {
+@Parcel
+public class ObservationEntry extends Entry implements Copyable<ObservationEntry> {
 
   @Nullable public Observation observation;
   public boolean peakDay;
@@ -32,31 +29,8 @@ public class ObservationEntry extends Entry implements Parcelable {
   public boolean unusualBleeding;
   public IntercourseTimeOfDay intercourseTimeOfDay;
   public boolean isEssentiallyTheSame;
+  public String note;
 
-  public ObservationEntry(
-      LocalDate entryDate,
-      @Nullable Observation observation,
-      boolean peakDay,
-      boolean intercourse,
-      boolean firstDay,
-      boolean pointOfChange,
-      boolean unusualBleeding,
-      IntercourseTimeOfDay intercourseTimeOfDay,
-      boolean isEssentiallyTheSame) {
-    this(
-        entryDate,
-        observation,
-        peakDay,
-        intercourse,
-        firstDay,
-        pointOfChange,
-        unusualBleeding,
-        intercourseTimeOfDay,
-        isEssentiallyTheSame,
-        null);
-  }
-
-  @Deprecated
   public ObservationEntry(
       LocalDate entryDate,
       @Nullable Observation observation,
@@ -67,7 +41,7 @@ public class ObservationEntry extends Entry implements Parcelable {
       boolean unusualBleeding,
       IntercourseTimeOfDay intercourseTimeOfDay,
       boolean isEssentiallyTheSame,
-      SecretKey key) {
+      String note) {
     super(entryDate);
     this.observation = observation;
     this.peakDay = peakDay;
@@ -80,27 +54,15 @@ public class ObservationEntry extends Entry implements Parcelable {
     this.unusualBleeding = unusualBleeding;
     this.intercourseTimeOfDay = intercourseTimeOfDay;
     this.isEssentiallyTheSame = isEssentiallyTheSame;
+    this.note = note;
   }
 
   public ObservationEntry() {
     super();
   }
 
-  public ObservationEntry(Parcel in) {
-    this(
-        DateUtil.fromWireStr(in.readString()),
-        in.<Observation>readParcelable(Observation.class.getClassLoader()),
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        in.readByte() != 0,
-        IntercourseTimeOfDay.valueOf(in.readString()),
-        in.readByte() != 0);
-  }
-
   public static ObservationEntry emptyEntry(LocalDate date) {
-    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false);
+    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, "");
   }
 
   @Override
@@ -128,18 +90,6 @@ public class ObservationEntry extends Entry implements Parcelable {
     }
     return lines;
   }
-
-  public static final Creator<ObservationEntry> CREATOR = new Creator<ObservationEntry>() {
-    @Override
-    public ObservationEntry createFromParcel(Parcel in) {
-      return new ObservationEntry(in);
-    }
-
-    @Override
-    public ObservationEntry[] newArray(int size) {
-      return new ObservationEntry[size];
-    }
-  };
 
   public boolean hasMucus() {
     if (observation == null || observation.dischargeSummary == null) {
@@ -179,25 +129,6 @@ public class ObservationEntry extends Entry implements Parcelable {
     }
     return String.format("%s %s", observation.toString(), intercourse ? "I" : "");
   }
-
-  @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(getDateStr());
-    dest.writeParcelable(observation, flags);
-    dest.writeByte((byte) (peakDay ? 1 : 0));
-    dest.writeByte((byte) (intercourse ? 1 : 0));
-    dest.writeByte((byte) (firstDay ? 1 : 0));
-    dest.writeByte((byte) (pointOfChange ? 1 : 0));
-    dest.writeByte((byte) (unusualBleeding ? 1 : 0));
-    dest.writeString(intercourseTimeOfDay.name());
-    dest.writeByte((byte) (isEssentiallyTheSame ? 1 : 0));
-  }
-
   @Override
   public boolean equals(Object o) {
     if (o instanceof ObservationEntry) {
@@ -210,7 +141,8 @@ public class ObservationEntry extends Entry implements Parcelable {
           this.pointOfChange == that.pointOfChange &&
           this.unusualBleeding == that.unusualBleeding &&
           this.isEssentiallyTheSame == that.isEssentiallyTheSame &&
-          this.intercourseTimeOfDay == that.intercourseTimeOfDay;
+          this.intercourseTimeOfDay == that.intercourseTimeOfDay &&
+          Objects.equal(this.note, that.note);
     }
     return false;
   }
@@ -218,7 +150,12 @@ public class ObservationEntry extends Entry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame);
+        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
   }
 
+  @Override
+  public ObservationEntry copy() {
+    return new ObservationEntry(mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+  }
 }
+
