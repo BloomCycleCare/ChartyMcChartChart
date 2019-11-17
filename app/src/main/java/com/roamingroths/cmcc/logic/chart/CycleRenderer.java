@@ -564,14 +564,19 @@ public class CycleRenderer {
     }
   }
 
-  public static class CycleStats {
+  public static class CycleStats implements Comparable<CycleStats> {
     public final LocalDate cycleStartDate;
     public Float mcs = null;
     public Integer daysPrePeak = null;
     public Integer daysPostPeak = null;
 
-    CycleStats(LocalDate cycleStartDate) {
+    public CycleStats(@NonNull LocalDate cycleStartDate) {
       this.cycleStartDate = cycleStartDate;
+    }
+
+    @Override
+    public int compareTo(CycleStats other) {
+      return cycleStartDate.compareTo(other.cycleStartDate);
     }
   }
 

@@ -60,14 +60,6 @@ public class ObservationTest {
     }
   }
 
-  @Test
-  public void fromString_lightInvalidDischargeType() throws Exception {
-    try {
-      createAndTestToString("L0AD");
-      fail("DischargeType DRY not allowed for for L flow.");
-    } catch (Observation.InvalidObservationException expected) {
-    }
-  }
   /*j@Test
   public void fromString_withModifier() throws Exception {
     for (DischargeType type : DischargeSummary.DischargeType.values()) {

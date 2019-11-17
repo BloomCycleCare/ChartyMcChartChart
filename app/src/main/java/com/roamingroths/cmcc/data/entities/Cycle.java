@@ -17,7 +17,7 @@ import org.parceler.Parcel;
  */
 @Parcel
 @Entity
-public class Cycle {
+public class Cycle implements Comparable<Cycle> {
 
   public String id;
   @PrimaryKey
@@ -64,5 +64,10 @@ public class Cycle {
   @Override
   public String toString() {
     return id;
+  }
+
+  @Override
+  public int compareTo(Cycle cycle) {
+    return this.startDate.compareTo(cycle.startDate);
   }
 }

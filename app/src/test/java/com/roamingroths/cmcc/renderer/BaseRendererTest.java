@@ -75,7 +75,7 @@ public abstract class BaseRendererTest {
 
     public ObservationEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
       Observation observation = Observation.fromString(observationText);
-      return new ObservationEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null, false);
+      return new ObservationEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null, false, "");
     }
   }
 

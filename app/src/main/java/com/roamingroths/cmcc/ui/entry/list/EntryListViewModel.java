@@ -3,6 +3,7 @@ package com.roamingroths.cmcc.ui.entry.list;
 import android.app.Application;
 
 import androidx.annotation.NonNull;
+import androidx.core.util.Supplier;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
@@ -11,9 +12,15 @@ import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.RxUtil;
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
+
 import java.util.List;
+import java.util.Locale;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
@@ -49,21 +56,14 @@ public class EntryListViewModel extends AndroidViewModel {
                 .map(cycle -> myApp.entryRepo()
                     .getStreamForCycle(Flowable.just(cycle))
                     .map(entries -> new CycleRenderer(cycle, entries, instructions).render())
+                    .map(renderableCycle -> renderableCycle.stats)
                 )
                 .sequential()
                 .toList()
                 .toFlowable()
                 .map(RxUtil::combineLatest))))
             .distinctUntilChanged(),
-        (currentPage, renderableCycles) -> {
-          CycleRenderer.CycleStats stats = renderableCycles.get(currentPage).stats;
-          if (stats.daysPrePeak == null) {
-            return "In prepeak phase";
-          }
-          String pre = String.format("%d", stats.daysPrePeak);
-          String post = stats.daysPostPeak == null ? "n/a" : String.format("%d", stats.daysPostPeak);
-          return String.format("Pre: %s Post: %s", pre, post);
-        });
+        (currentPage, stats) -> subtitle(stats, currentPage, LocalDate::now));
 
     Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -78,6 +78,37 @@ public class EntryListViewModel extends AndroidViewModel {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
+  }
+
+  public static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> today) {
+    if (statsList.isEmpty()) {
+      return "No data...";
+    }
+    if (index >= statsList.size()) {
+      return "Invalid index!";
+    }
+    CycleRenderer.CycleStats currentStats = statsList.get(index);
+    if (currentStats.daysPrePeak == null) {
+      return "In prepeak phase";
+    }
+    if (currentStats.daysPostPeak != null) {
+      return String.format(Locale.getDefault(), "Pre: %d Post: %d", currentStats.daysPrePeak, currentStats.daysPostPeak);
+    }
+    SummaryStatistics summaryStats = new SummaryStatistics();
+    for (int i=index+1; i<statsList.size() && i <= 3; i++) {
+      CycleRenderer.CycleStats s = statsList.get(i);
+      if (s.daysPostPeak == null) {
+        continue;
+      }
+      summaryStats.addValue(statsList.get(i).daysPostPeak); }
+    LocalDate peakDay = currentStats.cycleStartDate.plusDays(currentStats.daysPrePeak).plusDays(1);
+    if (summaryStats.getN() < 3 || summaryStats.getStandardDeviation() > 1.0) {
+      int daysPostPeak = Days.daysBetween(peakDay, today.get()).getDays();
+      return String.format(Locale.getDefault(), "%d days postpeak", daysPostPeak);
+    }
+    LocalDate probableEndDate = peakDay.plusDays((int) Math.round(summaryStats.getMean()));
+    double ci95 = 1.960 * summaryStats.getStandardDeviation() / Math.sqrt(summaryStats.getN());
+    return String.format(Locale.getDefault(), "Potential end: %s ±%.1f days", DateUtil.toUiStr(probableEndDate), ci95);
   }
 
   public static class ViewState {
