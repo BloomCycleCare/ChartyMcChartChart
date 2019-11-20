@@ -48,6 +48,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.create();
   final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.create();
   final Subject<Boolean> unusualBleedingUpdates = BehaviorSubject.create();
+  final Subject<Boolean> unusualBuildupUpdates = BehaviorSubject.create();
+  final Subject<Boolean> unusualStressUpdates = BehaviorSubject.create();
   final Subject<Boolean> isEssentiallyTheSameUpdates = BehaviorSubject.create();
   final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.create();
   final Subject<String> noteUpdates = BehaviorSubject.create();
@@ -101,6 +103,10 @@ public class EntryDetailViewModel extends AndroidViewModel {
             (e, v) -> e.firstDay = v, "firstDay"))
         .compose(RxUtil.update(pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             (e, v) -> e.pointOfChange = v, "pointOfChage"))
+        .compose(RxUtil.update(unusualStressUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.unusualStress = v, "unusualStress"))
+        .compose(RxUtil.update(unusualBuildupUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.unusualBuildup = v, "unusualBuildup"))
         .compose(RxUtil.update(unusualBleedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             (e, v) -> e.unusualBleeding = v, "unusualBleeding"))
         .compose(RxUtil.update(isEssentiallyTheSameUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -184,6 +190,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     isEssentiallyTheSameUpdates.onNext(context.entry.observationEntry.isEssentiallyTheSame);
     timeOfDayUpdates.onNext(context.entry.observationEntry.intercourseTimeOfDay);
     noteUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.note).or(""));
+    unusualBuildupUpdates.onNext(context.entry.observationEntry.unusualBuildup);
+    unusualStressUpdates.onNext(context.entry.observationEntry.unusualStress);
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);

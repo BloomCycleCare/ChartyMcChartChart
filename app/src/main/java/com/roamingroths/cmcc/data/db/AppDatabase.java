@@ -25,7 +25,7 @@ import java.util.List;
         SymptomEntry.class,
         WellnessEntry.class,
     },
-    version = 8)
+    version = 9)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -55,6 +55,13 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE ObservationEntry ADD note TEXT");
         }
     };
+    private static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE ObservationEntry ADD unusualBuildup INTEGER NOT NULL DEFAULT (0)");
+            database.execSQL("ALTER TABLE ObservationEntry ADD unusualStress INTEGER NOT NULL DEFAULT (0)");
+        }
+    };
 
-    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8);
+    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9);
 }

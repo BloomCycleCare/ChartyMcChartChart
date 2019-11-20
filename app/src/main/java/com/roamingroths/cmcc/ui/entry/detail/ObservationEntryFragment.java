@@ -59,6 +59,8 @@ public class ObservationEntryFragment extends Fragment {
     Switch essentialSamenessSwitch = view.findViewById(R.id.switch_essential_sameness);
     Switch firstDaySwitch = view.findViewById(R.id.switch_new_cycle);
     Switch pointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
+    Switch unusualBuildupSwitch = view.findViewById(R.id.switch_unusual_buildup);
+    Switch unusualStressSwitch = view.findViewById(R.id.switch_unusual_stress);
     Spinner intercourseSpinner = view.findViewById(R.id.spinner_intercourse);
 
     ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
@@ -71,6 +73,8 @@ public class ObservationEntryFragment extends Fragment {
     View pointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
     View unusualBleedingLayout = view.findViewById(R.id.unusual_bleeding_layout);
     View firstDayLayout = view.findViewById(R.id.layout_new_cycle);
+    View unusualBuildupLayout = view.findViewById(R.id.unusual_buildup_layout);
+    View unusualStressLayout = view.findViewById(R.id.unusual_stress_layout);
 
     Action connectStreams = () -> {
       Timber.d("Connecting RX streams for UI updates");
@@ -92,6 +96,12 @@ public class ObservationEntryFragment extends Fragment {
       RxCompoundButton
           .checkedChanges(pointOfChangeSwitch)
           .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
+      RxCompoundButton
+          .checkedChanges(unusualBuildupSwitch)
+          .subscribe(mEntryDetailViewModel.unusualBuildupUpdates);
+      RxCompoundButton
+          .checkedChanges(unusualStressSwitch)
+          .subscribe(mEntryDetailViewModel.unusualStressUpdates);
 
       RxAdapterView.itemSelections(intercourseSpinner)
           .map(index -> IntercourseTimeOfDay.values()[index])
@@ -149,6 +159,13 @@ public class ObservationEntryFragment extends Fragment {
         } else {
           essentialSamenessLayout.setVisibility(View.GONE);
         }
+        if (viewState.entryModificationContext.shouldAskDoublePeakQuestions) {
+          unusualBuildupLayout.setVisibility(View.VISIBLE);
+          unusualStressLayout.setVisibility(View.VISIBLE);
+        } else {
+          unusualBuildupLayout.setVisibility(View.GONE);
+          unusualStressLayout.setVisibility(View.GONE);
+        }
       }
       if (observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {
         intercourseSpinner.setSelection(observationEntry.intercourseTimeOfDay.ordinal());
@@ -164,6 +181,8 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
       maybeUpdate(unusualBleedingSwitch, observationEntry.unusualBleeding);
       maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
+      maybeUpdate(unusualBuildupSwitch, observationEntry.unusualBuildup);
+      maybeUpdate(unusualStressSwitch, observationEntry.unusualStress);
       if (!Strings.isNullOrEmpty(observationEntry.note)) {
         noteTextView.setText(observationEntry.note);
       }

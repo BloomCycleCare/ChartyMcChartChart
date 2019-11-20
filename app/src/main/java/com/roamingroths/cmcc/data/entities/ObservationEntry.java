@@ -27,6 +27,8 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   public boolean firstDay;
   public boolean pointOfChange;
   public boolean unusualBleeding;
+  public boolean unusualStress;
+  public boolean unusualBuildup;
   public IntercourseTimeOfDay intercourseTimeOfDay;
   public boolean isEssentiallyTheSame;
   public String note;

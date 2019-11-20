@@ -521,6 +521,10 @@ public class CycleRenderer {
       return askForPrePeakYellow || askForSpecialInstruction;
     }
 
+    boolean shouldAskDoublePeakQuestions() {
+      return instructions.isActive(BasicInstruction.G_1) && isExactlyPostPeakPlus(3);
+    }
+
     boolean expectUnusualBleeding() {
       if (previousEntry == null) {
         return false;
@@ -547,6 +551,7 @@ public class CycleRenderer {
       modificationContext.expectUnusualBleeding = expectUnusualBleeding();
       modificationContext.isFirstEntry = entryNum == 1;
       modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();
+      modificationContext.shouldAskDoublePeakQuestions = shouldAskDoublePeakQuestions();
       return modificationContext;
     }
   }
@@ -593,6 +598,8 @@ public class CycleRenderer {
     public String pocSummary;
     public EntryModificationContext modificationContext;
 
+    // TODO: add EoD / any time of day accounting for double peak Q's
+
     public static RenderableEntry fromState(State state) {
       RenderableEntry renderableEntry = new RenderableEntry();
 
@@ -636,5 +643,6 @@ public class CycleRenderer {
     public boolean expectUnusualBleeding;
     public boolean isFirstEntry;
     public boolean shouldAskEssentialSameness;
+    public boolean shouldAskDoublePeakQuestions;
   }
 }
