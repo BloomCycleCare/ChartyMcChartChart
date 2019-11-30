@@ -337,7 +337,7 @@ public class CycleRenderer {
     renderableCycle.stats.mcs = MccScorer.getScore(mEntries, peakDays.isEmpty() ?
         Optional.absent() : Optional.of(peakDays.last()));
     if (!peakDays.isEmpty()) {
-      renderableCycle.stats.daysPrePeak = Days.daysBetween(mCycle.startDate, peakDays.last()).getDays() + 1;
+      renderableCycle.stats.daysPrePeak = Days.daysBetween(mCycle.startDate, peakDays.last()).getDays();
       if (mCycle.endDate != null) {
         renderableCycle.stats.daysPostPeak = Days.daysBetween(peakDays.last(), mCycle.endDate).getDays();
       }

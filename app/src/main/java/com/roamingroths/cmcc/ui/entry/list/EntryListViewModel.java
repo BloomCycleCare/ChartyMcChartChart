@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
-import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.RxUtil;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -101,14 +100,15 @@ public class EntryListViewModel extends AndroidViewModel {
         continue;
       }
       summaryStats.addValue(statsList.get(i).daysPostPeak); }
-    LocalDate peakDay = currentStats.cycleStartDate.plusDays(currentStats.daysPrePeak).plusDays(1);
+    LocalDate peakDay = currentStats.cycleStartDate.plusDays(currentStats.daysPrePeak);
     if (summaryStats.getN() < 3 || summaryStats.getStandardDeviation() > 1.0) {
       int daysPostPeak = Days.daysBetween(peakDay, today.get()).getDays();
       return String.format(Locale.getDefault(), "%d days postpeak", daysPostPeak);
     }
     LocalDate probableEndDate = peakDay.plusDays((int) Math.round(summaryStats.getMean()));
+    int daysUntilPotentialEnd = Days.daysBetween(today.get(), probableEndDate).getDays();
     double ci95 = 1.960 * summaryStats.getStandardDeviation() / Math.sqrt(summaryStats.getN());
-    return String.format(Locale.getDefault(), "Potential end: %s ±%.1f days", DateUtil.toUiStr(probableEndDate), ci95);
+    return String.format(Locale.getDefault(), "Potential end: %d±%.1f days", daysUntilPotentialEnd, ci95);
   }
 
   public static class ViewState {
