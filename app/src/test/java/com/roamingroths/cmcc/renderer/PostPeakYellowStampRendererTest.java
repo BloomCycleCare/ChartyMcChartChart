@@ -10,7 +10,21 @@ import org.junit.Test;
 public class PostPeakYellowStampRendererTest extends BaseRendererTest {
 
   @Test
-  public void testYellowPostPeakExample() throws Exception {
+  public void testYellowPostPeakK2() throws Exception {
+    runPostPeakTest(BasicInstruction.K_2);
+  }
+
+  @Test
+  public void testYellowPostPeakK3() throws Exception {
+    runPostPeakTest(BasicInstruction.K_3);
+  }
+
+  @Test
+  public void testYellowPostPeakK4() throws Exception {
+    runPostPeakTest(BasicInstruction.K_4);
+  }
+
+  private void runPostPeakTest(BasicInstruction postPeakInstruction) throws Exception {
     ImmutableMap.Builder<BaseRendererTest.Entry, BaseRendererTest.Expectations> entries = ImmutableMap.builder();
     entries.put(BaseRendererTest.Entry.forText("M"), BaseRendererTest.Expectations.redSticker());
     entries.put(BaseRendererTest.Entry.forText("H"), BaseRendererTest.Expectations.redSticker());
@@ -44,7 +58,10 @@ public class PostPeakYellowStampRendererTest extends BaseRendererTest {
     entries.put(BaseRendererTest.Entry.forText("6cx1"), BaseRendererTest.Expectations.yellowSticker());
     entries.put(BaseRendererTest.Entry.forText("8cx1"), BaseRendererTest.Expectations.yellowSticker());
     Instructions instructions =
-        createInstructions(ImmutableList.<BasicInstruction>builder().addAll(BASIC_INSTRUCTIONS.activeItems).add(BasicInstruction.K_2).build(), ImmutableList.of(), ImmutableList.of());
+        createInstructions(ImmutableList.<BasicInstruction>builder()
+            .addAll(BASIC_INSTRUCTIONS.activeItems)
+            .add(postPeakInstruction)
+            .build(), ImmutableList.of(), ImmutableList.of());
     runTest(entries.build(), instructions);
   }
 

@@ -504,7 +504,8 @@ public class CycleRenderer {
       if (!infertilityReasons.isEmpty()) {
         return StickerColor.YELLOW;
       }
-      if (instructions.isActive(BasicInstruction.K_2) && isPostPeak() && !isPostPeakPlus(4)) {
+      if (instructions.anyActive(BasicInstruction.K_2, BasicInstruction.K_3, BasicInstruction.K_4)
+          && isPostPeak() && !isPostPeakPlus(4)) {
         return StickerColor.YELLOW;
       }
       return StickerColor.WHITE;
