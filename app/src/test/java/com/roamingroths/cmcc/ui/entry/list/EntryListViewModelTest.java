@@ -1,9 +1,7 @@
-package com.roamingroths.cmcc;
+package com.roamingroths.cmcc.ui.entry.list;
 
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
-import com.roamingroths.cmcc.ui.entry.list.EntryListViewModel;
-import com.roamingroths.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;
 import org.junit.Test;
@@ -15,7 +13,7 @@ import static com.google.common.truth.Truth.assertThat;
 public class EntryListViewModelTest {
 
   private static final LocalDate ONE_WEEK_AGO = LocalDate.now().minusWeeks(1);
-  private static final LocalDate ONE_MONTH_AGO = LocalDate.now().minusMonths(1);
+  private static final LocalDate THIRTY_DAYS_AGO = LocalDate.now().minusDays(30);
 
   @Test
   public void testNoCycles() {
@@ -33,7 +31,7 @@ public class EntryListViewModelTest {
 
   @Test
   public void testPreviousCycle() {
-    CycleRenderer.CycleStats stats = new CycleRenderer.CycleStats(ONE_MONTH_AGO);
+    CycleRenderer.CycleStats stats = new CycleRenderer.CycleStats(THIRTY_DAYS_AGO);
     stats.daysPrePeak = 4;
     stats.daysPostPeak = 12;
     assertThat(EntryListViewModel.subtitle(ImmutableList.of(stats), 0, LocalDate::now))
@@ -61,7 +59,7 @@ public class EntryListViewModelTest {
 
     int typicalPostPeakLength = 12;
 
-    CycleRenderer.CycleStats currentStats = new CycleRenderer.CycleStats(ONE_MONTH_AGO);
+    CycleRenderer.CycleStats currentStats = new CycleRenderer.CycleStats(THIRTY_DAYS_AGO);
     currentStats.daysPrePeak = 20;
     statsBuilder.add(currentStats);
 
@@ -89,17 +87,17 @@ public class EntryListViewModelTest {
     thirdPreviousStats.daysPostPeak = typicalPostPeakLength;
     statsBuilder.add(thirdPreviousStats);
 
-    LocalDate expectedPrediction = ONE_MONTH_AGO.plusDays(20).plusDays(1).plusDays(typicalPostPeakLength);
+    LocalDate expectedPrediction = THIRTY_DAYS_AGO.plusDays(20).plusDays(1).plusDays(typicalPostPeakLength);
 
     assertThat(EntryListViewModel.subtitle(statsBuilder.build(), 0, LocalDate::now))
-        .isEqualTo(String.format("Potential end: %s ±0.7 days", DateUtil.toUiStr(expectedPrediction)));
+        .isEqualTo("Potential end: 2±0.7 days");
   }
 
   @Test
   public void testIrregularPostPeak() {
     ImmutableList.Builder<CycleRenderer.CycleStats> statsBuilder = ImmutableList.builder();
 
-    CycleRenderer.CycleStats currentStats = new CycleRenderer.CycleStats(ONE_MONTH_AGO);
+    CycleRenderer.CycleStats currentStats = new CycleRenderer.CycleStats(THIRTY_DAYS_AGO);
     currentStats.daysPrePeak = 20;
     statsBuilder.add(currentStats);
 
