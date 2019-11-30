@@ -48,7 +48,7 @@ public class EntryListViewModelTest {
   @Test
   public void testPeakDay() {
     CycleRenderer.CycleStats stats = new CycleRenderer.CycleStats(ONE_WEEK_AGO);
-    stats.daysPrePeak = 6;
+    stats.daysPrePeak = 7;
     assertThat(EntryListViewModel.subtitle(ImmutableList.of(stats), 0, LocalDate::now))
         .isEqualTo("0 days postpeak");
   }
