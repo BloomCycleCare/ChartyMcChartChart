@@ -13,6 +13,9 @@ import android.widget.TextView;
 
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
@@ -48,19 +51,23 @@ public class ObservationEntryFragment extends Fragment {
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_chart_entry, container, false);
 
+    View clarifyingQuestionsLayout = view.findViewById(R.id.clarifying_question_layout);
+    RecyclerView clarifyingQuestionsView = view.findViewById(R.id.clarifying_question_recyclerview);
+    clarifyingQuestionsView.setLayoutManager(new LinearLayoutManager(getActivity()));
+    clarifyingQuestionsView.addItemDecoration(new DividerItemDecoration(getContext(), 0));
+
+    ClarifyingQuestionAdapter clarifyingQuestionAdapter = new ClarifyingQuestionAdapter(getContext());
+    clarifyingQuestionsView.setAdapter(clarifyingQuestionAdapter);
+
     TextView observationDescriptionTextView =
         view.findViewById(R.id.tv_modify_observation_description);
     EditText observationEditText = view.findViewById(R.id.et_modify_observation_value);
     TextView noteTextView =
         view.findViewById(R.id.et_modify_observation_note);
-    Switch unusualBleedingSwitch = view.findViewById(R.id.switch_unusual_bleeding);
     Switch peakDaySwitch = view.findViewById(R.id.switch_peak_day);
     Switch intercourseSwitch = view.findViewById(R.id.switch_intercourse);
-    Switch essentialSamenessSwitch = view.findViewById(R.id.switch_essential_sameness);
     Switch firstDaySwitch = view.findViewById(R.id.switch_new_cycle);
     Switch pointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
-    Switch unusualBuildupSwitch = view.findViewById(R.id.switch_unusual_buildup);
-    Switch unusualStressSwitch = view.findViewById(R.id.switch_unusual_stress);
     Spinner intercourseSpinner = view.findViewById(R.id.spinner_intercourse);
 
     ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
@@ -69,18 +76,12 @@ public class ObservationEntryFragment extends Fragment {
     intercourseSpinner.setAdapter(adapter);
     intercourseSpinner.setVisibility(View.GONE);
 
-    View essentialSamenessLayout = view.findViewById(R.id.essential_sameness_layout);
     View pointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
-    View unusualBleedingLayout = view.findViewById(R.id.unusual_bleeding_layout);
     View firstDayLayout = view.findViewById(R.id.layout_new_cycle);
-    View unusualBuildupLayout = view.findViewById(R.id.unusual_buildup_layout);
-    View unusualStressLayout = view.findViewById(R.id.unusual_stress_layout);
 
     Action connectStreams = () -> {
       Timber.d("Connecting RX streams for UI updates");
-      RxCompoundButton
-          .checkedChanges(unusualBleedingSwitch)
-          .subscribe(mEntryDetailViewModel.unusualBleedingUpdates);
+      clarifyingQuestionAdapter.updates().subscribe(mEntryDetailViewModel.clarifyingQuestionUiUpdates);
       RxCompoundButton
           .checkedChanges(peakDaySwitch)
           .subscribe(mEntryDetailViewModel.peakDayUpdates);
@@ -88,20 +89,11 @@ public class ObservationEntryFragment extends Fragment {
           .checkedChanges(intercourseSwitch)
           .subscribe(mEntryDetailViewModel.intercourseUpdates);
       RxCompoundButton
-          .checkedChanges(essentialSamenessSwitch)
-          .subscribe(mEntryDetailViewModel.isEssentiallyTheSameUpdates);
-      RxCompoundButton
           .checkedChanges(firstDaySwitch)
           .subscribe(mEntryDetailViewModel.firstDayOfCycleUpdates);
       RxCompoundButton
           .checkedChanges(pointOfChangeSwitch)
           .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
-      RxCompoundButton
-          .checkedChanges(unusualBuildupSwitch)
-          .subscribe(mEntryDetailViewModel.unusualBuildupUpdates);
-      RxCompoundButton
-          .checkedChanges(unusualStressSwitch)
-          .subscribe(mEntryDetailViewModel.unusualStressUpdates);
 
       RxAdapterView.itemSelections(intercourseSpinner)
           .map(index -> IntercourseTimeOfDay.values()[index])
@@ -122,6 +114,11 @@ public class ObservationEntryFragment extends Fragment {
       if (viewState.entryModificationContext.isFirstEntry && !viewState.entryModificationContext.hasPreviousCycle) {
         firstDayLayout.setVisibility(View.GONE);
       }
+
+      clarifyingQuestionsLayout.setVisibility(
+          viewState.clarifyingQuestionState.isEmpty() ? View.GONE : View.VISIBLE);
+      clarifyingQuestionAdapter.updateQuestions(viewState.clarifyingQuestionState);
+
       ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
       if (!Strings.isNullOrEmpty(viewState.observationErrorText)) {
         Timber.d("Found invalid observation");
@@ -147,25 +144,6 @@ public class ObservationEntryFragment extends Fragment {
           observationEditText.setText(observation.toString());
           observationDescriptionTextView.setText(observation.getDescription());
         }
-        if (observation != null && observation.hasBlood()) {
-          unusualBleedingLayout.setVisibility(View.VISIBLE);
-        } else {
-          unusualBleedingLayout.setVisibility(View.GONE);
-        }
-        if (observation != null
-            && observation.dischargeSummary != null
-            && viewState.entryModificationContext.shouldAskEssentialSameness) {
-          essentialSamenessLayout.setVisibility(View.VISIBLE);
-        } else {
-          essentialSamenessLayout.setVisibility(View.GONE);
-        }
-        if (viewState.entryModificationContext.shouldAskDoublePeakQuestions) {
-          unusualBuildupLayout.setVisibility(View.VISIBLE);
-          unusualStressLayout.setVisibility(View.VISIBLE);
-        } else {
-          unusualBuildupLayout.setVisibility(View.GONE);
-          unusualStressLayout.setVisibility(View.GONE);
-        }
       }
       if (observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {
         intercourseSpinner.setSelection(observationEntry.intercourseTimeOfDay.ordinal());
@@ -179,10 +157,6 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(peakDaySwitch, observationEntry.peakDay);
       maybeUpdate(firstDaySwitch, observationEntry.firstDay);
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
-      maybeUpdate(unusualBleedingSwitch, observationEntry.unusualBleeding);
-      maybeUpdate(essentialSamenessSwitch, observationEntry.isEssentiallyTheSame);
-      maybeUpdate(unusualBuildupSwitch, observationEntry.unusualBuildup);
-      maybeUpdate(unusualStressSwitch, observationEntry.unusualStress);
       if (!Strings.isNullOrEmpty(observationEntry.note)) {
         noteTextView.setText(observationEntry.note);
       }

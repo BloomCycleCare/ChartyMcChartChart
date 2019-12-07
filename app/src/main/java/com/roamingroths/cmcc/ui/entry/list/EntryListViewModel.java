@@ -79,13 +79,14 @@ public class EntryListViewModel extends AndroidViewModel {
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
   }
 
-  public static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> today) {
+  public static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> todaySupplier) {
     if (statsList.isEmpty()) {
       return "No data...";
     }
     if (index >= statsList.size()) {
       return "Invalid index!";
     }
+    LocalDate today = todaySupplier.get();
     CycleRenderer.CycleStats currentStats = statsList.get(index);
     if (currentStats.daysPrePeak == null) {
       return "In prepeak phase";
@@ -102,11 +103,11 @@ public class EntryListViewModel extends AndroidViewModel {
       summaryStats.addValue(statsList.get(i).daysPostPeak); }
     LocalDate peakDay = currentStats.cycleStartDate.plusDays(currentStats.daysPrePeak);
     if (summaryStats.getN() < 3 || summaryStats.getStandardDeviation() > 1.0) {
-      int daysPostPeak = Days.daysBetween(peakDay, today.get()).getDays();
+      int daysPostPeak = Days.daysBetween(peakDay, today).getDays();
       return String.format(Locale.getDefault(), "%d days postpeak", daysPostPeak);
     }
     LocalDate probableEndDate = peakDay.plusDays((int) Math.round(summaryStats.getMean()));
-    int daysUntilPotentialEnd = Days.daysBetween(today.get(), probableEndDate).getDays();
+    int daysUntilPotentialEnd = Days.daysBetween(today, probableEndDate).getDays();
     double ci95 = 1.960 * summaryStats.getStandardDeviation() / Math.sqrt(summaryStats.getN());
     return String.format(Locale.getDefault(), "Potential end: %d±%.1f days", daysUntilPotentialEnd, ci95);
   }

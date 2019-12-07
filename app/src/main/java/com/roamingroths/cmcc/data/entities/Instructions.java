@@ -17,7 +17,6 @@ import org.parceler.Parcel;
 import org.parceler.ParcelConstructor;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Parcel
@@ -66,7 +65,7 @@ public class Instructions {
     return yellowStampInstructions.contains(yellowStampInstruction);
   }
 
-  public boolean anyActive(Collection<BasicInstruction> basicInstructions) {
+  public boolean anyActive(BasicInstruction... basicInstructions) {
     for (BasicInstruction i : basicInstructions) {
       if (isActive(i)) {
         return true;

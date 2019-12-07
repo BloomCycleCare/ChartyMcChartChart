@@ -76,7 +76,7 @@ public enum BasicInstruction implements AbstractInstruction {
 
   @Override
   public String toString() {
-    return description;
+    return String.format("%s%s %s", section(), subsection(), description);
   }
 
   public static ImmutableSet<BasicInstruction> postPeakYellowBasicInstructions = ImmutableSet.of(K_2, K_3, K_4);

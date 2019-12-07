@@ -4,6 +4,7 @@ import androidx.annotation.Nullable;
 import androidx.room.Entity;
 
 import com.google.common.base.Objects;
+import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.utils.Copyable;
@@ -91,6 +92,27 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
       lines.add("Essentially the same: yes");
     }
     return lines;
+  }
+
+  public boolean updateClarifyingQuestion(ClarifyingQuestion question, Boolean answer) {
+    if (answer == null) {
+      return false;
+    }
+    switch (question) {
+      case UNUSUAL_BLEEDING:
+        unusualBleeding = answer;
+        return true;
+      case UNUSUAL_BUILDUP:
+        unusualBuildup = answer;
+        return true;
+      case UNUSUAL_STRESS:
+        unusualStress = answer;
+        return true;
+      case ESSENTIAL_SAMENESS:
+        isEssentiallyTheSame = answer;
+        return true;
+    }
+    return false;
   }
 
   public boolean hasMucus() {

@@ -1,16 +1,21 @@
 package com.roamingroths.cmcc.utils;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.FlowableTransformer;
+import io.reactivex.Observable;
 import io.reactivex.functions.BiConsumer;
+import io.reactivex.functions.Function;
 import timber.log.Timber;
 
 public class RxUtil {
@@ -28,7 +33,7 @@ public class RxUtil {
     });
   }
 
-  public static <T> Flowable<List<T>> combineLatest(Collection<Flowable<T>> in) {
+  public static <T> Flowable<List<T>> combineLatest(Collection<? extends Flowable<T>> in) {
     if (in.isEmpty()) {
       return Flowable.just(ImmutableList.of());
     }
@@ -39,6 +44,20 @@ public class RxUtil {
       }
       return out;
     });
+  }
+
+  public static <K, V> Flowable<List<V>> aggregateLatest(Flowable<V> upstream, Function<V, K> keyExtractor) {
+    return upstream
+        .scan(ImmutableMap.<K, V>of(), (m, v) -> {
+          Map<K, V> b = new HashMap<>(m);
+          b.put(keyExtractor.apply(v), v);
+          return ImmutableMap.copyOf(b);
+        })
+        .flatMap(m -> Observable
+            .fromIterable(m.entrySet())
+            .map(Map.Entry::getValue)
+            .toList()
+            .toFlowable());
   }
 
   public static <T> List<T> filterEmpty(Collection<Optional<T>> in) {
@@ -68,7 +87,7 @@ public class RxUtil {
 
   public static <T> Flowable<T> stallWarning(Flowable<T> source, String name) {
     return source
-        .timeout(Flowable.empty().delay(10, TimeUnit.SECONDS), x -> Flowable.never())
+        .timeout(Flowable.empty().delay(30, TimeUnit.SECONDS), x -> Flowable.never())
         .doOnError(t -> Timber.w("Stall warning %s", name))
         .onErrorResumeNext(source);
   }

@@ -45,6 +45,11 @@ public class ChartEntry implements Parcelable {
         in.readParcelable(SymptomEntry.class.getClassLoader()));
   }
 
+  public static ChartEntry emptyEntry(LocalDate entryDate) {
+    return new ChartEntry(
+        LocalDate.now(), ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate));
+  }
+
   @NonNull
   @Override
   public String toString() {
