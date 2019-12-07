@@ -515,6 +515,9 @@ public class CycleRenderer {
       if (instructions == null) {
         return false;
       }
+      if (entry.observationEntry.observation == null) {
+        return false;
+      }
       boolean askForSpecialInstruction = instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
           && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
       boolean askForPrePeakYellow = instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (

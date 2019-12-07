@@ -29,7 +29,7 @@ import static com.google.common.truth.Truth.assertWithMessage;
 
 public abstract class BaseRendererTest {
 
-  private static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
+  static final LocalDate CYCLE_START_DATE = LocalDate.parse("2017-01-01");
 
   static final Instructions BASIC_INSTRUCTIONS = createInstructions(
       ImmutableList.of(
