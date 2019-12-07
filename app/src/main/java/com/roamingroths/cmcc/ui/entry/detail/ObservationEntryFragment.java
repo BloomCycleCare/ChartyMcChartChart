@@ -157,7 +157,8 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(peakDaySwitch, observationEntry.peakDay);
       maybeUpdate(firstDaySwitch, observationEntry.firstDay);
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
-      if (!Strings.isNullOrEmpty(observationEntry.note)) {
+      if (!Strings.isNullOrEmpty(observationEntry.note)
+          && !observationEntry.note.equals(noteTextView.getText().toString())) {
         noteTextView.setText(observationEntry.note);
       }
 
