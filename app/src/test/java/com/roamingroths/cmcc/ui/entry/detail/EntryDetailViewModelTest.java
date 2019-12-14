@@ -1,9 +1,9 @@
 package com.roamingroths.cmcc.ui.entry.detail;
 
 
-import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
+import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
@@ -57,8 +57,10 @@ public class EntryDetailViewModelTest {
   }
 
   @Test
-  public void testAskEssentialSamenessQuestion() {
-    mContext.shouldAskEssentialSameness = true;
+  public void testAskEssentialSamenessQuestion() throws Exception {
+    mContext.shouldAskEssentialSamenessIfMucus = true;
+    mContext.entry.observationEntry.observation = Observation.fromString("6CX1");
+    assertThat(mContext.entry.observationEntry.hasMucus()).isTrue();
     initModel();
 
     EntryDetailViewModel.ViewState state = mViewModel.viewStatesRx().blockingFirst();
@@ -116,7 +118,6 @@ public class EntryDetailViewModelTest {
   }
 
   private void toggleClarifyingQuestion(ClarifyingQuestion question, boolean answer) {
-    mViewModel.clarifyingQuestionUiUpdates.onNext(
-        ImmutableList.of(new ClarifyingQuestionUpdate(question, answer)));
+    mViewModel.clarifyingQuestionUpdates.onNext(new ClarifyingQuestionUpdate(question, answer));
   }
 }

@@ -30,8 +30,8 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
   public void essentialSamenessQuestion() throws Exception {
     ImmutableMap.Builder<Entry, Boolean> entries = ImmutableMap.builder();
     entries.put(Entry.forText("8BCX1"), false);
-    entries.put(Entry.forText("H"), false);
-    entries.put(Entry.forText("M"), false);
+    entries.put(Entry.forText("H"), true);
+    entries.put(Entry.forText("M"), true);
     entries.put(Entry.forText("L6x1"), true);
     entries.put(Entry.forText("2x1"), true);
     entries.put(Entry.forText("0AD"), true);
@@ -56,7 +56,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
             .addAll(BASIC_INSTRUCTIONS.activeItems)
             .add(BasicInstruction.K_1)
             .build(), ImmutableList.of(), ImmutableList.of());
-    run(entries.build(), (re) -> re.modificationContext.shouldAskEssentialSameness, instructions);
+    run(entries.build(), (re) -> re.modificationContext.shouldAskEssentialSamenessIfMucus, instructions);
   }
 
   @Test
