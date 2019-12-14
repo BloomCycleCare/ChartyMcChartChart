@@ -163,10 +163,10 @@ public class CycleRenderer {
             CountOfThreeReason.UNUSUAL_BLEEDING,
             Days.daysBetween(daysOfUnusualBleeding.last(), e.entryDate).getDays());
       }
-      if (!pointsOfChangeToward.isEmpty()) {
+      if (!pointsOfChangeAway.isEmpty()) {
         state.countsOfThree.put(
             CountOfThreeReason.POINT_OF_CHANGE,
-            Days.daysBetween(pointsOfChangeToward.last(), e.entryDate).getDays());
+            Days.daysBetween(pointsOfChangeAway.last().minusDays(1), e.entryDate).getDays());
       }
 
       state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
@@ -283,8 +283,9 @@ public class CycleRenderer {
         state.countOfThreeReasons.put(YellowStampInstruction.YS_1_B, CountOfThreeReason.PEAK_DAY);
       }
       if (state.instructions.isActive(YellowStampInstruction.YS_1_C)
-          && !pointsOfChangeToward.isEmpty()
-          && !state.entryDate.isAfter(pointsOfChangeToward.last().plusDays(3))) {
+          && !pointsOfChangeAway.isEmpty()
+          // This last condition should check for +3 days but count starts on the Poc...?
+          && !state.entryDate.isAfter(pointsOfChangeAway.last().plusDays(2))) {
         state.fertilityReasons.add(YellowStampInstruction.YS_1_C);
         state.countOfThreeReasons.put(YellowStampInstruction.YS_1_C, CountOfThreeReason.POINT_OF_CHANGE);
       }

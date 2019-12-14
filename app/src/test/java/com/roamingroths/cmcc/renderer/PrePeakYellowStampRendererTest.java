@@ -63,8 +63,16 @@ public class PrePeakYellowStampRendererTest extends BaseRendererTest {
     entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
     entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
 
-    // TODO: populate days 8-14
+    // Starting at 8
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cad"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("0ad"), Expectations.greenSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
 
+    // Starting at 15
     entries.put(Entry.forText("8gyx2"), Expectations.yellowSticker());
     entries.put(Entry.forText("8kx2").pointOfChange(), Expectations.whiteSticker().withBaby());
     entries.put(Entry.forText("6cx1").pointOfChange(), Expectations.yellowSticker().withBaby().withPeakText("1"));
@@ -73,6 +81,7 @@ public class PrePeakYellowStampRendererTest extends BaseRendererTest {
     entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
     entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
 
+    // Starting at 22
     entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
     entries.put(Entry.forText("10kad").pointOfChange(), Expectations.whiteSticker().withBaby());
     entries.put(Entry.forText("6cx2").pointOfChange(), Expectations.yellowSticker().withBaby().withPeakText("1"));
@@ -81,7 +90,34 @@ public class PrePeakYellowStampRendererTest extends BaseRendererTest {
     entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
     entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
 
-    // TODO: populate days 29-rest
+    // Starting at 29
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cgx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx1"), Expectations.yellowSticker());
+
+    // Starting at 36
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cad").pointOfChange(), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8kx2"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("8kx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx2").pointOfChange(), Expectations.yellowSticker().withBaby().withPeakText("1"));
+
+    // Starting at 43
+    entries.put(Entry.forText("6cx2"), Expectations.yellowSticker().withBaby().withPeakText("2"));
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker().withBaby().withPeakText("3"));
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("6cx1"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+    entries.put(Entry.forText("8cx2"), Expectations.yellowSticker());
+
+    // TODO: populate days 49-rest
 
     Instructions instructions = createInstructions(
         ImmutableList.<BasicInstruction>builder().addAll(BASIC_INSTRUCTIONS.activeItems).add(BasicInstruction.K_1).build(), ImmutableList.of(), ImmutableList.of(
