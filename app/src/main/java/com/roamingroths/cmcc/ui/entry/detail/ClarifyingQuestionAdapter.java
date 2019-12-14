@@ -10,26 +10,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
-import com.roamingroths.cmcc.utils.RxUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import io.reactivex.BackpressureStrategy;
-import io.reactivex.Observable;
-import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
 class ClarifyingQuestionAdapter extends RecyclerView.Adapter<ClarifyingQuestionViewHolder> {
 
   private final Context mContext;
   private final List<ClarifyingQuestionUpdate> mInitialValues = new ArrayList<>();
-  private final Subject<ClarifyingQuestionUpdate> mUpdateStream = PublishSubject.create();
+  private final Subject<ClarifyingQuestionUpdate> mUpdateStream;
 
-  ClarifyingQuestionAdapter(Context mContext) {
+  ClarifyingQuestionAdapter(Context mContext, Subject<ClarifyingQuestionUpdate> updateStream) {
     this.mContext = mContext;
+    this.mUpdateStream = updateStream;
   }
 
   void updateQuestions(List<ClarifyingQuestionUpdate> updatedValues) {
@@ -47,12 +44,6 @@ class ClarifyingQuestionAdapter extends RecyclerView.Adapter<ClarifyingQuestionV
     mInitialValues.clear();
     mInitialValues.addAll(updatedValues);
     notifyDataSetChanged();
-  }
-
-  public Observable<List<ClarifyingQuestionUpdate>> updates() {
-    return RxUtil
-        .aggregateLatest(mUpdateStream.toFlowable(BackpressureStrategy.BUFFER), u -> u.question)
-        .toObservable();
   }
 
   @NonNull

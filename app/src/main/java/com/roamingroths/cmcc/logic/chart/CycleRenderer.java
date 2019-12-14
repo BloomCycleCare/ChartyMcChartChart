@@ -52,8 +52,8 @@ public class CycleRenderer {
   }
 
   public RenderableCycle render() {
-    List<ChartEntry> entriesEvaluated = new ArrayList<>();
-    Set<LocalDate> daysOfFlow = new HashSet<>();
+    TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();
+    TreeSet<LocalDate> daysOfFlow = new TreeSet<>();
     Set<LocalDate> daysOfMucus = new HashSet<>();
     TreeSet<LocalDate> daysOfUnusualBleeding = new TreeSet<>();
     TreeSet<LocalDate> peakDays = new TreeSet<>();
@@ -70,7 +70,7 @@ public class CycleRenderer {
 
     // For every day before the current entry...
     for (ChartEntry e : mEntries) {
-      entriesEvaluated.add(e);
+      entriesEvaluated.add(e.entryDate);
       LocalDate yesterday = e.entryDate.minusDays(1);
 
       State state = new State();
@@ -170,6 +170,8 @@ public class CycleRenderer {
       }
 
       state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
+      state.allPreviousDaysHaveHadBlood =
+          entriesEvaluated.headSet(yesterday).size() == daysOfFlow.headSet(yesterday).size();
 
       // Step 2: Evaluate fertility reasons
       Instructions instructions = null;
@@ -362,6 +364,7 @@ public class CycleRenderer {
     public Optional<LocalDate> mostRecentPeakDay;
     public boolean isInMenstrualFlow;
     public boolean hasHadLegitFlow;
+    public boolean allPreviousDaysHaveHadBlood;
     public Flow todaysFlow;
     public boolean todayHasBlood;
     public Optional<LocalDate> firstPointOfChangeToward;
@@ -515,29 +518,18 @@ public class CycleRenderer {
       if (instructions == null) {
         return false;
       }
-      if (entry.observationEntry.observation == null) {
-        return false;
+      if (instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
+          && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false)) {
+        return true;
       }
-      boolean askForSpecialInstruction = instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
-          && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false);
-      boolean askForPrePeakYellow = instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (
-          !isInMenstrualFlow || (hasHadLegitFlow && entry.observationEntry.hasMucus()));
-      return askForPrePeakYellow || askForSpecialInstruction;
+      if (instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
+        return true;
+      }
+      return false;
     }
 
     boolean shouldAskDoublePeakQuestions() {
       return instructions.isActive(BasicInstruction.G_1) && isExactlyPostPeakPlus(3);
-    }
-
-    boolean expectUnusualBleeding() {
-      if (previousEntry == null) {
-        return false;
-      }
-      if (previousEntry.observationEntry.unusualBleeding) {
-        return true;
-      }
-      return previousEntry.observationEntry.observation == null
-          || !previousEntry.observationEntry.observation.hasBlood();
     }
 
     boolean shouldShowBaby() {
@@ -552,9 +544,9 @@ public class CycleRenderer {
       modificationContext.cycle = cycle;
       modificationContext.entry = entry;
       modificationContext.hasPreviousCycle = false;
-      modificationContext.expectUnusualBleeding = expectUnusualBleeding();
+      modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
       modificationContext.isFirstEntry = entryNum == 1;
-      modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();
+      modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
       modificationContext.shouldAskDoublePeakQuestions = shouldAskDoublePeakQuestions();
       return modificationContext;
     }
@@ -622,12 +614,13 @@ public class CycleRenderer {
         renderableEntry.pocSummary = "";
       }
       renderableEntry.instructionSummary = state.getInstructionSummary();
-      if (state.entry.observationEntry.observation != null && state.shouldAskEssentialSameness()) {
+      renderableEntry.modificationContext = state.entryModificationContext();
+      if (renderableEntry.modificationContext.shouldAskEssentialSamenessIfMucus
+          && state.entry.observationEntry.hasMucus()) {
         renderableEntry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
       } else {
         renderableEntry.essentialSamenessSummary = "";
       }
-      renderableEntry.modificationContext = state.entryModificationContext();
 
       return renderableEntry;
     }
@@ -644,9 +637,9 @@ public class CycleRenderer {
     public Cycle cycle;
     public ChartEntry entry;
     public boolean hasPreviousCycle;
-    public boolean expectUnusualBleeding;
     public boolean isFirstEntry;
-    public boolean shouldAskEssentialSameness;
     public boolean shouldAskDoublePeakQuestions;
+    public boolean allPreviousDaysHaveHadBlood;
+    public boolean shouldAskEssentialSamenessIfMucus;
   }
 }

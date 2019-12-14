@@ -26,7 +26,9 @@ import com.roamingroths.cmcc.utils.ErrorOr;
 import com.roamingroths.cmcc.utils.RxUtil;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
@@ -35,9 +37,11 @@ import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
@@ -51,7 +55,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
   final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
   final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
-  final Subject<List<ClarifyingQuestionUpdate>> clarifyingQuestionUiUpdates = BehaviorSubject.createDefault(ImmutableList.of());
+  final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
 
   final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
   final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
@@ -89,6 +93,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
           }
         });
 
+    Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionUpdateList = RxUtil
+        .aggregateLatest(clarifyingQuestionUpdates.toFlowable(BackpressureStrategy.BUFFER), u -> u.question);
+
     Flowable<ObservationEntry> observationEntryStream = mEntryContext
         .toFlowable().distinctUntilChanged()
         .map(context -> context.entry.observationEntry)
@@ -102,7 +109,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
             (e, v) -> e.firstDay = v, "firstDay"))
         .compose(RxUtil.update(pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             (e, v) -> e.pointOfChange = v, "pointOfChage"))
-        .compose(RxUtil.update(clarifyingQuestionUiUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        .compose(RxUtil.update(clarifyingQuestionUpdateList.distinctUntilChanged(),
             (e, v) -> {
               for (ClarifyingQuestionUpdate u : v) {
                 e.updateClarifyingQuestion(u.question, u.answer);
@@ -115,7 +122,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .doOnNext(v -> Timber.i("New v"))
         ;
 
-    Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuesitonRenderUpdates = Flowable.combineLatest(
+    Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionRenderUpdates = Flowable.combineLatest(
         mEntryContext.toFlowable(), observationEntryStream, (entryContext, observationEntry) -> {
           ImmutableList.Builder<ClarifyingQuestionUpdate> builder = ImmutableList.builder();
           if (entryContext.shouldAskDoublePeakQuestions) {
@@ -124,11 +131,11 @@ public class EntryDetailViewModel extends AndroidViewModel {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
           }
-          if (entryContext.shouldAskEssentialSameness) {
+          if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
           }
-          if (observationEntry.hasBlood()) {
+          if (observationEntry.hasBlood() && !entryContext.allPreviousDaysHaveHadBlood) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
           }
@@ -170,24 +177,45 @@ public class EntryDetailViewModel extends AndroidViewModel {
         wellnessEntryStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New wellness entry")),
-        clarifyingQuesitonRenderUpdates,
+        clarifyingQuestionRenderUpdates,
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(entryContext,
               new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
 
-          boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
-          if (entryHasBlood && !observationEntry.unusualBleeding && entryContext.expectUnusualBleeding && !observationEntry.firstDay) {
-            state.validationIssues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
-          }
-          if (entryContext.shouldAskEssentialSameness && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
-            state.validationIssues.add(new ValidationIssue("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
-          }
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
 
           return state;
         })
         .toObservable()
         .subscribe(mViewStates);
+  }
+
+  private List<ClarifyingQuestionUpdate> getClarifyingQuestion(ViewState viewState) {
+    ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
+    if (viewState.entryModificationContext.shouldAskDoublePeakQuestions) {
+      return ImmutableList.of(
+          new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BUILDUP, observationEntry.unusualBuildup),
+          new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
+    }
+
+    boolean shouldAskEssentialSameness = viewState.entryModificationContext.shouldAskEssentialSamenessIfMucus
+        && observationEntry.hasMucus();
+
+    if (shouldAskEssentialSameness
+        && viewState.previousPrompts.contains(ClarifyingQuestion.ESSENTIAL_SAMENESS)
+        && !observationEntry.isEssentiallyTheSame) {
+      return ImmutableList.of(
+          new ClarifyingQuestionUpdate(ClarifyingQuestion.POINT_OF_CHANGE, observationEntry.pointOfChange));
+    }
+    if (shouldAskEssentialSameness) {
+      return ImmutableList.of(
+          new ClarifyingQuestionUpdate(ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
+    }
+    if (observationEntry.hasBlood() && !viewState.entryModificationContext.allPreviousDaysHaveHadBlood) {
+      return ImmutableList.of(
+          new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
+    }
+    return ImmutableList.of();
   }
 
   void initialize(CycleRenderer.EntryModificationContext context) {
@@ -225,29 +253,47 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return mViewStates.firstOrError().map(ViewState::isDirty);
   }
 
-  Maybe<List<String>> getSaveSummary() {
+  Maybe<List<String>> getSaveSummary(Function<ClarifyingQuestion, Single<Boolean>> questionResolver) {
     return mViewStates
         .firstOrError()
-        .flatMapMaybe(viewState -> !viewState.isDirty()
-            ? Maybe.empty() : Maybe.just(viewState.chartEntry.getSummaryLines()));
+        .flatMapMaybe(viewState -> !viewState.isDirty() ? Maybe.empty() : Maybe.just(viewState))
+        .flatMap(viewState -> resolveQuestions(viewState, questionResolver, clarifyingQuestionUpdates::onNext)
+            .flatMapMaybe(updatedViewState -> Maybe.just(updatedViewState.chartEntry.getSummaryLines())));
   }
 
   Completable save(Function<ValidationIssue, Single<Boolean>> validationIssueResolver) {
     return mViewStates
         .firstOrError()
-        .flatMapCompletable(viewState -> {
+        .flatMapMaybe(viewState -> {
           if (!viewState.isDirty()) {
-            return Completable.complete();
+            return Maybe.empty();
           }
           return validateEntry(viewState, validationIssueResolver)
-              .observeOn(Schedulers.computation())
-              .andThen(updateRepos(viewState));
-        });
+              .doOnComplete(() -> Timber.d("Entry validated"))
+              .andThen(Maybe.just(viewState));
+        })
+        .observeOn(Schedulers.computation())
+        .flatMapCompletable(this::updateRepos);
   }
 
   private Completable validateEntry(ViewState viewState, Function<ValidationIssue, Single<Boolean>> issueResolver) {
+    ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
+    CycleRenderer.EntryModificationContext entryContext = viewState.entryModificationContext;
+
+    List<ValidationIssue> issues = new ArrayList<>();
+    boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
+    if (entryHasBlood && !observationEntry.unusualBleeding && !entryContext.allPreviousDaysHaveHadBlood && !observationEntry.firstDay) {
+      issues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
+    }
+    if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()
+        && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
+      issues.add(new ValidationIssue("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
+    }
+    if (issues.isEmpty()) {
+      return Completable.complete();
+    }
     return Observable
-        .fromIterable(viewState.validationIssues)
+        .fromIterable(issues)
         .flatMapCompletable(issue -> issueResolver
             .apply(issue)
             .flatMapCompletable(proceed -> {
@@ -258,8 +304,41 @@ public class EntryDetailViewModel extends AndroidViewModel {
             }));
   }
 
+  private Single<ViewState> resolveQuestions(ViewState viewState, Function<ClarifyingQuestion, Single<Boolean>> questionResolver, Consumer<ClarifyingQuestionUpdate> onResolve) {
+    if (!viewState.promptForClarifyingQuestions()) {
+      return Single.just(viewState);
+    }
+    List<ClarifyingQuestionUpdate> questions = getClarifyingQuestion(viewState);
+    if (questions.isEmpty()) {
+      return Single.just(viewState);
+    }
+    return Observable
+        .fromIterable(questions)
+        .map(s -> s.question)
+        .filter(q -> !viewState.previousPrompts.contains(q))
+        .flatMapSingle(question -> questionResolver
+            .apply(question)
+            .map(answer -> new ClarifyingQuestionUpdate(question, answer))
+            .doOnSuccess(onResolve))
+        .toList()
+        .flatMap(answers -> {
+          if (answers.isEmpty()) {
+            return Single.just(viewState);
+          }
+          ViewState newState = new ViewState(viewState);
+          for (ClarifyingQuestionUpdate update : answers) {
+            newState.previousPrompts.add(update.question);
+          }
+          newState.clarifyingQuestionState.clear();
+          newState.clarifyingQuestionState.addAll(answers);
+          newState.applyQuestionUpdates();
+          return resolveQuestions(newState, questionResolver, onResolve);
+        });
+  }
+
   private Completable updateRepos(ViewState viewState) {
     ChartEntry originalEntry = viewState.entryModificationContext.entry;
+    viewState.applyQuestionUpdates();
     ChartEntry updatedEntry = viewState.chartEntry;
     if (updatedEntry.equals(originalEntry)) {
       Timber.w("Trying to save clean entry!");
@@ -293,21 +372,69 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return Completable.merge(actions);
   }
 
-  public static class ViewState {
-    public final CycleRenderer.EntryModificationContext entryModificationContext;
-    public final ChartEntry chartEntry;
-    public final String observationErrorText;
-    public final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
-    public final List<ValidationIssue> validationIssues = new ArrayList<>();
+  static class ViewState {
+    final CycleRenderer.EntryModificationContext entryModificationContext;
+    final ChartEntry chartEntry;
+    final String observationErrorText;
+    final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
+    final List<ValidationIssue> validationIssues = new ArrayList<>();
+    final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
 
-    public ViewState(CycleRenderer.EntryModificationContext entryModificationContext, ChartEntry chartEntry, String observationErrorText) {
+    ViewState(ViewState that) {
+      this.entryModificationContext = that.entryModificationContext;
+      this.chartEntry = that.chartEntry;
+      this.observationErrorText = that.observationErrorText;
+      this.clarifyingQuestionState.addAll(that.clarifyingQuestionState);
+      this.validationIssues.addAll(that.validationIssues);
+      this.previousPrompts.addAll(that.previousPrompts);
+    }
+
+    ViewState(CycleRenderer.EntryModificationContext entryModificationContext, ChartEntry chartEntry, String observationErrorText) {
       this.entryModificationContext = entryModificationContext;
       this.chartEntry = chartEntry;
       this.observationErrorText = observationErrorText;
     }
 
-    public boolean isDirty() {
+    boolean renderClarifyingQuestions() {
+      return entryModificationContext.entry.observationEntry.observation != null;
+    }
+
+    boolean promptForClarifyingQuestions() {
+      return !renderClarifyingQuestions();
+    }
+
+    boolean showPointOfChange() {
+      return renderClarifyingQuestions()
+          && entryModificationContext.shouldAskEssentialSamenessIfMucus
+          && chartEntry.observationEntry.hasMucus();
+    }
+
+    boolean isDirty() {
       return !chartEntry.equals(entryModificationContext.entry);
+    }
+
+    private void applyQuestionUpdates() {
+      for (ClarifyingQuestionUpdate update : clarifyingQuestionState) {
+        switch (update.question) {
+          case POINT_OF_CHANGE:
+            chartEntry.observationEntry.pointOfChange = update.answer;
+            break;
+          case UNUSUAL_BLEEDING:
+            chartEntry.observationEntry.unusualBleeding = update.answer;
+            break;
+          case UNUSUAL_STRESS:
+            chartEntry.observationEntry.unusualStress = update.answer;
+            break;
+          case UNUSUAL_BUILDUP:
+            chartEntry.observationEntry.unusualBuildup = update.answer;
+            break;
+          case ESSENTIAL_SAMENESS:
+            chartEntry.observationEntry.isEssentiallyTheSame = update.answer;
+            break;
+          default:
+            Timber.w("Fall through for ClarifyingQuestion!");
+        }
+      }
     }
   }
 

@@ -56,7 +56,8 @@ public class ObservationEntryFragment extends Fragment {
     clarifyingQuestionsView.setLayoutManager(new LinearLayoutManager(getActivity()));
     clarifyingQuestionsView.addItemDecoration(new DividerItemDecoration(getContext(), 0));
 
-    ClarifyingQuestionAdapter clarifyingQuestionAdapter = new ClarifyingQuestionAdapter(getContext());
+    ClarifyingQuestionAdapter clarifyingQuestionAdapter = new ClarifyingQuestionAdapter(
+        getContext(), mEntryDetailViewModel.clarifyingQuestionUpdates);
     clarifyingQuestionsView.setAdapter(clarifyingQuestionAdapter);
 
     TextView observationDescriptionTextView =
@@ -81,7 +82,6 @@ public class ObservationEntryFragment extends Fragment {
 
     Action connectStreams = () -> {
       Timber.d("Connecting RX streams for UI updates");
-      clarifyingQuestionAdapter.updates().subscribe(mEntryDetailViewModel.clarifyingQuestionUiUpdates);
       RxCompoundButton
           .checkedChanges(peakDaySwitch)
           .subscribe(mEntryDetailViewModel.peakDayUpdates);
@@ -115,8 +115,8 @@ public class ObservationEntryFragment extends Fragment {
         firstDayLayout.setVisibility(View.GONE);
       }
 
-      clarifyingQuestionsLayout.setVisibility(
-          viewState.clarifyingQuestionState.isEmpty() ? View.GONE : View.VISIBLE);
+      boolean showClarifyingQuestions = viewState.renderClarifyingQuestions() && !viewState.clarifyingQuestionState.isEmpty();
+      clarifyingQuestionsLayout.setVisibility(showClarifyingQuestions ? View.VISIBLE : View.GONE);
       clarifyingQuestionAdapter.updateQuestions(viewState.clarifyingQuestionState);
 
       ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
@@ -162,7 +162,7 @@ public class ObservationEntryFragment extends Fragment {
         noteTextView.setText(observationEntry.note);
       }
 
-      pointOfChangeLayout.setVisibility(viewState.entryModificationContext.shouldAskEssentialSameness ? View.VISIBLE : View.GONE);
+      pointOfChangeLayout.setVisibility(viewState.showPointOfChange() ? View.VISIBLE : View.GONE);
 
       if (uiInitialized.compareAndSet(false, true)) {
         try {

@@ -8,7 +8,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AlertDialog;
@@ -25,6 +24,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
 import com.roamingroths.cmcc.R;
+import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.ui.settings.SettingsActivity;
@@ -120,6 +120,23 @@ public class EntryDetailActivity extends AppCompatActivity {
     });
   }
 
+  private Single<Boolean> resolveQuestion(ClarifyingQuestion question) {
+    return Single.create(emitter -> {
+      AlertDialog.Builder builder = new AlertDialog.Builder(EntryDetailActivity.this);
+      builder.setTitle(question.title);
+      builder.setMessage(question.message);
+      builder.setPositiveButton("Yes", (dialog, which) -> {
+        emitter.onSuccess(true);
+        dialog.dismiss();
+      });
+      builder.setNegativeButton("No", (dialog, which) -> {
+        emitter.onSuccess(false);
+        dialog.dismiss();
+      });
+      builder.create().show();
+    });
+  }
+
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle action bar item clicks here. The action bar will
@@ -134,7 +151,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      mDisposables.add(mViewModel.getSaveSummary().subscribe(summaryLines -> {
+      mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion).subscribe(summaryLines -> {
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);
 
@@ -143,11 +160,6 @@ public class EntryDetailActivity extends AppCompatActivity {
         lines.add("Entry Summary\n");
         lines.addAll(summaryLines);
         summary.setText(ON_NEW_LINE.join(lines));
-
-        final ProgressBar progressBar = dialogView.findViewById(R.id.save_progress_bar);
-        progressBar.setVisibility(View.GONE);
-        final TextView progressSummary = dialogView.findViewById(R.id.save_progress_summary);
-        progressSummary.setVisibility(View.GONE);
 
         AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
             //set message, title, and icon
