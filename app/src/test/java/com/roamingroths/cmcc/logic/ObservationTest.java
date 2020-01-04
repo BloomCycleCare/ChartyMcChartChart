@@ -1,13 +1,16 @@
 package com.roamingroths.cmcc.logic;
 
 import com.google.common.collect.ImmutableSet;
-import com.roamingroths.cmcc.data.domain.DischargeSummary;
+import com.roamingroths.cmcc.data.domain.DischargeType;
 import com.roamingroths.cmcc.data.domain.Flow;
+import com.roamingroths.cmcc.data.domain.MucusModifier;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.domain.Occurrences;
+import com.roamingroths.cmcc.logic.chart.ObservationParser;
 
 import org.junit.Test;
 
+import static com.google.common.truth.Truth.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
@@ -21,17 +24,43 @@ public class ObservationTest {
   @Test
   public void fromString_heavy() throws Exception {
     Observation observation = createAndTestToString("H");
-    assertEquals(Flow.H, observation.flow);
-    assertNull(observation.dischargeSummary);
-    assertNull(observation.occurrences);
+    assertThat(observation.flow).isEqualTo(Flow.H);
+    assertThat(observation.occurrences).isNull();
+    assertThat(observation.dischargeSummary).isNull();
+  }
+
+  @Test
+  public void fromString_heavyWithBlackOrBrown() throws Exception {
+    Observation observation = createAndTestToString("HB");
+    assertThat(observation.flow).isEqualTo(Flow.H);
+    assertThat(observation.occurrences).isNull();
+    assertThat(observation.dischargeSummary).isNotNull();
+    assertThat(observation.dischargeSummary.mModifiers).containsExactly(MucusModifier.B);
+  }
+
+  @Test
+  public void fromString_mediumWithBlackOrBrown() throws Exception {
+    Observation observation = createAndTestToString("MB");
+    assertThat(observation.flow).isEqualTo(Flow.M);
+    assertThat(observation.occurrences).isNull();
+    assertThat(observation.dischargeSummary).isNotNull();
+    assertThat(observation.dischargeSummary.mModifiers).containsExactly(MucusModifier.B);
+  }
+
+  @Test
+  public void fromString_heavyWithRedIsInvalid() throws Exception {
+    try {
+      createAndTestToString("HR");
+      fail("Only B can follow H or M");
+    } catch (ObservationParser.InvalidObservationException expected) {}
   }
 
   @Test
   public void fromString_heavyWithMucus() throws Exception {
     try {
-      Observation observation = createAndTestToString("H10CAD");
+      createAndTestToString("H10CAD");
       fail("Heavy flow cannot have a mucus observation");
-    } catch (Observation.InvalidObservationException expected) {
+    } catch (ObservationParser.InvalidObservationException expected) {
     }
   }
 
@@ -46,8 +75,8 @@ public class ObservationTest {
   @Test
   public void fromString_light() throws Exception {
     Observation observation = createAndTestToString("L6AD");
-    assertEquals("6", observation.dischargeSummary.getCode());
-    assertEquals(DischargeSummary.DischargeType.STICKY, observation.dischargeSummary.mType);
+    assertThat(observation.dischargeSummary.getCode()).hasValue("6");
+    assertEquals(DischargeType.STICKY, observation.dischargeSummary.mType);
     assertEquals(Occurrences.AD, observation.occurrences);
   }
 
@@ -56,7 +85,7 @@ public class ObservationTest {
     try {
       createAndTestToString("LAD");
       fail("Missing discharge for L flow not allowed.");
-    } catch (Observation.InvalidObservationException expected) {
+    } catch (ObservationParser.InvalidObservationException expected) {
     }
   }
 
@@ -87,21 +116,21 @@ public class ObservationTest {
   public void fromString_withModifiers() throws Exception {
     Observation observation = createAndTestToString("8CPX3");
     assertEquals(
-        ImmutableSet.of(DischargeSummary.MucusModifier.C, DischargeSummary.MucusModifier.P), observation.dischargeSummary.mModifiers);
+        ImmutableSet.of(MucusModifier.C, MucusModifier.P), observation.dischargeSummary.mModifiers);
   }
 
   @Test
   public void fromString_expectNoInfoAfterFlow() throws Exception {
     String[] validObservations = {"H", "M"};
     for (String observation : validObservations) {
-      Observation.fromString(observation);
+      ObservationParser.parse(observation);
     }
     String[] invalidObservations = {"L", "VL"};
     for (String observation : invalidObservations) {
       try {
-        Observation.fromString(observation);
+        ObservationParser.parse(observation);
         fail();
-      } catch (Observation.InvalidObservationException expected) {
+      } catch (ObservationParser.InvalidObservationException expected) {
       }
     }
   }
@@ -134,7 +163,7 @@ public class ObservationTest {
     try {
       createAndTestToString("HFoo");
       fail("Foo should not be allowed to follow H");
-    } catch (Observation.InvalidObservationException expected) {
+    } catch (ObservationParser.InvalidObservationException expected) {
     }
   }
 
@@ -143,12 +172,12 @@ public class ObservationTest {
     try {
       createAndTestToString("0ADFoo");
       fail("Foo should not be allowed to follow AD");
-    } catch (Observation.InvalidObservationException expected) {
+    } catch (ObservationParser.InvalidObservationException expected) {
     }
   }
 
   private Observation createAndTestToString(String observationStr) throws Exception {
-    Observation observation = Observation.fromString(observationStr);
+    Observation observation = ObservationParser.parse(observationStr).orNull();
     assertEquals(observationStr, observation.toString().replace(" ", ""));
     return observation;
   }

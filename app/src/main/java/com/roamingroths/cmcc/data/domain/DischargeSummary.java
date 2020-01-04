@@ -2,49 +2,56 @@ package com.roamingroths.cmcc.data.domain;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
 import org.parceler.Parcel;
 
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Created by parkeroth on 4/24/17.
  */
 @Parcel
 public class DischargeSummary {
+  @Nullable
   public DischargeType mType;
-  public final Set<MucusModifier> mModifiers = new HashSet<>();
+  public final Set<MucusModifier> mModifiers = new LinkedHashSet<>(); // preserve ordering
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
 
   public DischargeSummary() {}
 
-  public DischargeSummary(DischargeType type) {
-    mType = type;
+  public DischargeSummary(@NonNull DischargeType type) {
+    this(type, ImmutableSet.of());
   }
 
-  public DischargeSummary(DischargeType type, Set<MucusModifier> modifiers) {
-    this(type);
+  public DischargeSummary(@NonNull Collection<MucusModifier> modifiers) {
+    this(null, ImmutableSet.copyOf(modifiers));
+  }
+
+  public DischargeSummary(@Nullable DischargeType type, Set<MucusModifier> modifiers) {
+    mType = type;
     mModifiers.addAll(modifiers);
   }
 
-  public String getCode() {
-    StringBuilder code = new StringBuilder().append(mType.getCode());
-    switch (mType) {
-      case STICKY:
-      case TACKY:
-      case STRETCHY:
-        for (MucusModifier modifier : mModifiers) {
-          code.append(modifier.name());
-        }
-        break;
-
+  public Optional<String> getCode() {
+    StringBuilder code = new StringBuilder();
+    if (mType != null) {
+      code.append(mType.getCode());
     }
-    return code.toString();
+    for (MucusModifier modifier : mModifiers) {
+      code.append(modifier.name());
+    }
+    return code.length() > 0 ? Optional.of(code.toString()) : Optional.absent();
   }
 
   public boolean hasMucus() {
@@ -52,7 +59,7 @@ public class DischargeSummary {
   }
 
   public boolean hasBlood() {
-    return mModifiers.contains(MucusModifier.B);
+    return !Collections.disjoint(mModifiers, MucusModifier.VALUES_INDICATING_BLEEDING);
   }
 
   private static final ImmutableSet<MucusModifier> PEAK_TYPE_MODIFIERS = ImmutableSet.of(
@@ -106,92 +113,4 @@ public class DischargeSummary {
     return Objects.hashCode(mType, mModifiers);
   }
 
-  @Parcel
-  public enum MucusModifier {
-    CK("Cloudy/clear"), // NOTE: this is listed first to match before C or K
-    C("Cloudy (white)"),
-    K("Clear"),
-    B("Brown (or black) bleeding"),
-    G("Gummy (gluey)"),
-    L("Lubricative"),
-    P("Pasty (creamy)"),
-    Y("Yellow (even pale yellow)");
-
-    private String mDescription;
-
-    MucusModifier() {} // Only for @Parcel
-
-    MucusModifier(String description) {
-      mDescription = description;
-    }
-
-    public String getDescription() {
-      return mDescription;
-    }
-  }
-
-  @Parcel
-  public enum DischargeType {
-    DRY("0", false, "Dry"),
-    WET_WO_LUB("2W", false, "Wet without lubrication"),
-    DAMP_WO_LUB("2", false, "Damp without lubrication"),
-    SHINY_WO_LUB("4", false, "Shiny without lubrication"),
-    STICKY("6", true, "Sticky", "1/4 inch", "0.5 cm"),
-    TACKY("8", true, "Tacky", "1/2 - 3/4 inch", "1.0 - 2.0 cm"),
-    DAMP_W_LUB("10DL", true, "Damp with lubrication"),
-    WET_W_LUB("10WL", true, "Wet with lubrication"),
-    SHINY_W_LUB("10SL", true, "Shiny with lubrication"),
-    STRETCHY("10", true, "Stretchy", "1 inch +", "2.5 cm or more");
-
-    private String mCode;
-    private String mDescriptionMetric;
-    private String mDescriptionImperial;
-    private boolean mHasMucus;
-    private boolean mAlwaysPeakType;
-
-    DischargeType() {} // Only for @Parcel
-
-    DischargeType(String code, boolean hasMucus, String description) {
-      this(code, hasMucus, description, "", "");
-    }
-
-    DischargeType(String code, boolean hasMucus, String description, String metricExtraDescription, String imperialExtraDescription) {
-      mCode = code;
-      mHasMucus = hasMucus;
-      if (metricExtraDescription.isEmpty()) {
-        mDescriptionMetric = description;
-      } else {
-        mDescriptionMetric = String.format("%s (%s)", description, metricExtraDescription);
-      }
-      if (imperialExtraDescription.isEmpty()) {
-        mDescriptionImperial = description;
-      } else {
-        mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
-      }
-    }
-
-    public boolean hasMucus() {
-      return mHasMucus;
-    }
-
-    public boolean isLubricative() {
-      return mCode.contains("L");
-    }
-
-    public boolean isStretchy() {
-      return mCode.startsWith("10");
-    }
-
-    public String getCode() {
-      return mCode;
-    }
-
-    public String getImperialDescription() {
-      return mDescriptionImperial;
-    }
-
-    public String getMetricDescription() {
-      return mDescriptionMetric;
-    }
-  }
 }

@@ -1,16 +1,13 @@
 package com.roamingroths.cmcc.logic.chart;
 
-import androidx.annotation.NonNull;
-import androidx.core.util.Pair;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.data.domain.AbstractInstruction;
 import com.roamingroths.cmcc.data.domain.BasicInstruction;
-import com.roamingroths.cmcc.data.domain.DischargeSummary;
 import com.roamingroths.cmcc.data.domain.Flow;
 import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
+import com.roamingroths.cmcc.data.domain.MucusModifier;
 import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.domain.SpecialInstruction;
 import com.roamingroths.cmcc.data.domain.YellowStampInstruction;
@@ -32,6 +29,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+import androidx.annotation.NonNull;
+import androidx.core.util.Pair;
 import timber.log.Timber;
 
 public class CycleRenderer {
@@ -498,7 +497,7 @@ public class CycleRenderer {
       if (observation.flow != null) {
         return StickerColor.RED;
       }
-      if (observation.dischargeSummary.mModifiers.contains(DischargeSummary.MucusModifier.B)) {
+      if (observation.dischargeSummary.mModifiers.contains(MucusModifier.B)) {
         return StickerColor.RED;
       }
       if (!observation.hasMucus()) {

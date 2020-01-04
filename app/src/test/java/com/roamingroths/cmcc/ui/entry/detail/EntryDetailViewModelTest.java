@@ -3,9 +3,9 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
-import com.roamingroths.cmcc.data.domain.Observation;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.logic.chart.ObservationParser;
 
 import org.joda.time.LocalDate;
 import org.junit.Before;
@@ -59,7 +59,7 @@ public class EntryDetailViewModelTest {
   @Test
   public void testAskEssentialSamenessQuestion() throws Exception {
     mContext.shouldAskEssentialSamenessIfMucus = true;
-    mContext.entry.observationEntry.observation = Observation.fromString("6CX1");
+    mContext.entry.observationEntry.observation = ObservationParser.parse("6CX1").orNull();
     assertThat(mContext.entry.observationEntry.hasMucus()).isTrue();
     initModel();
 

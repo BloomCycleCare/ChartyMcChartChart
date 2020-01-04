@@ -13,6 +13,7 @@ import com.roamingroths.cmcc.data.entities.Instructions;
 import com.roamingroths.cmcc.data.entities.ObservationEntry;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.logic.chart.ObservationParser;
 import com.roamingroths.cmcc.logic.chart.StickerColor;
 import com.roamingroths.cmcc.utils.GsonUtil;
 
@@ -73,8 +74,8 @@ public abstract class BaseRendererTest {
       return this;
     }
 
-    public ObservationEntry asChartEntry(LocalDate date) throws Observation.InvalidObservationException {
-      Observation observation = Observation.fromString(observationText);
+    public ObservationEntry asChartEntry(LocalDate date) throws ObservationParser.InvalidObservationException {
+      Observation observation = ObservationParser.parse(observationText).orNull();
       return new ObservationEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null, false, "");
     }
   }

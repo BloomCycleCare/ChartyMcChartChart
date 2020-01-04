@@ -2,11 +2,6 @@ package com.roamingroths.cmcc.ui.entry.detail;
 
 import android.app.Application;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
-
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -21,6 +16,7 @@ import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.logic.chart.ObservationParser;
 import com.roamingroths.cmcc.utils.BoolMapping;
 import com.roamingroths.cmcc.utils.ErrorOr;
 import com.roamingroths.cmcc.utils.RxUtil;
@@ -30,6 +26,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -87,8 +87,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .distinctUntilChanged()
         .map(observationStr -> {
           try {
-            return ErrorOr.forValue(Observation.fromString(observationStr));
-          } catch (Observation.InvalidObservationException ioe) {
+            return ErrorOr.forValue(ObservationParser.parse(observationStr).orNull());
+          } catch (ObservationParser.InvalidObservationException ioe) {
             return ErrorOr.forError(ioe);
           }
         });
