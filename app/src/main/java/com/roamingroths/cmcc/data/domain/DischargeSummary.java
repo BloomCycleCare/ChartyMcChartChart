@@ -1,13 +1,10 @@
 package com.roamingroths.cmcc.data.domain;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
+import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -17,39 +14,23 @@ import java.util.Set;
 /**
  * Created by parkeroth on 4/24/17.
  */
-public class DischargeSummary implements Parcelable {
-  public final DischargeType mType;
-  public final Set<MucusModifier> mModifiers;
+@Parcel
+public class DischargeSummary {
+  public DischargeType mType;
+  public final Set<MucusModifier> mModifiers = new HashSet<>();
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
 
+  public DischargeSummary() {}
+
   public DischargeSummary(DischargeType type) {
-    this(type, new HashSet<MucusModifier>());
+    mType = type;
   }
 
   public DischargeSummary(DischargeType type, Set<MucusModifier> modifiers) {
-    mType = type;
-    mModifiers = modifiers;
+    this(type);
+    mModifiers.addAll(modifiers);
   }
-
-  protected DischargeSummary(Parcel in) {
-    mType = in.readParcelable(DischargeType.class.getClassLoader());
-    List<MucusModifier> modifiers = new ArrayList<>();
-    in.readTypedList(modifiers, MucusModifier.CREATOR);
-    mModifiers = new HashSet<>(modifiers);
-  }
-
-  public static final Creator<DischargeSummary> CREATOR = new Creator<DischargeSummary>() {
-    @Override
-    public DischargeSummary createFromParcel(Parcel in) {
-      return new DischargeSummary(in);
-    }
-
-    @Override
-    public DischargeSummary[] newArray(int size) {
-      return new DischargeSummary[size];
-    }
-  };
 
   public String getCode() {
     StringBuilder code = new StringBuilder().append(mType.getCode());
@@ -86,14 +67,6 @@ public class DischargeSummary implements Parcelable {
       }
     }
     return SPECIAL_PEAK_TYPES.contains(mType);
-  }
-
-  public String getImperialDesciption(Joiner joiner) {
-    return getDescription(joiner, mType.getImperialDescription());
-  }
-
-  public String getMetricDesciption(Joiner joiner) {
-    return getDescription(joiner, mType.getMetricDescription());
   }
 
   public List<String> getSummaryLinesMetric() {
@@ -133,34 +106,8 @@ public class DischargeSummary implements Parcelable {
     return Objects.hashCode(mType, mModifiers);
   }
 
-  private String getDescription(Joiner joiner, String typeDescription) {
-    StringBuilder description = new StringBuilder().append(typeDescription);
-
-    List<String> modifierStrs = new ArrayList<>();
-    switch (mType) {
-      case STICKY:
-      case TACKY:
-      case STRETCHY:
-        for (MucusModifier modifier : mModifiers) {
-          modifierStrs.add(modifier.getDescription());
-        }
-        break;
-    }
-    return joiner.join(typeDescription, ON_SPACE.join(modifierStrs));
-  }
-
-  @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeParcelable(mType, flags);
-    dest.writeTypedList(ImmutableList.copyOf(mModifiers));
-  }
-
-  public enum MucusModifier implements Parcelable {
+  @Parcel
+  public enum MucusModifier {
     CK("Cloudy/clear"), // NOTE: this is listed first to match before C or K
     C("Cloudy (white)"),
     K("Clear"),
@@ -172,42 +119,19 @@ public class DischargeSummary implements Parcelable {
 
     private String mDescription;
 
+    MucusModifier() {} // Only for @Parcel
+
     MucusModifier(String description) {
       mDescription = description;
     }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-      dest.writeString(name());
-    }
-
-    @Override
-    public int describeContents() {
-      return 0;
-    }
-
-    public static final Creator<MucusModifier> CREATOR = new Creator<MucusModifier>() {
-      @Override
-      public MucusModifier createFromParcel(Parcel in) {
-        String name = in.readString();
-        if (Strings.isNullOrEmpty(name)) {
-          return null;
-        }
-        return MucusModifier.valueOf(name);
-      }
-
-      @Override
-      public MucusModifier[] newArray(int size) {
-        return new MucusModifier[size];
-      }
-    };
 
     public String getDescription() {
       return mDescription;
     }
   }
 
-  public enum DischargeType implements Parcelable {
+  @Parcel
+  public enum DischargeType {
     DRY("0", false, "Dry"),
     WET_WO_LUB("2W", false, "Wet without lubrication"),
     DAMP_WO_LUB("2", false, "Damp without lubrication"),
@@ -224,6 +148,8 @@ public class DischargeSummary implements Parcelable {
     private String mDescriptionImperial;
     private boolean mHasMucus;
     private boolean mAlwaysPeakType;
+
+    DischargeType() {} // Only for @Parcel
 
     DischargeType(String code, boolean hasMucus, String description) {
       this(code, hasMucus, description, "", "");
@@ -243,28 +169,6 @@ public class DischargeSummary implements Parcelable {
         mDescriptionImperial = String.format("%s (%s)", description, imperialExtraDescription);
       }
     }
-
-    @Override
-    public void writeToParcel(Parcel dest, int flags) {
-      dest.writeString(name());
-    }
-
-    @Override
-    public int describeContents() {
-      return 0;
-    }
-
-    public static final Creator<DischargeType> CREATOR = new Creator<DischargeType>() {
-      @Override
-      public DischargeType createFromParcel(Parcel in) {
-        return DischargeType.valueOf(in.readString());
-      }
-
-      @Override
-      public DischargeType[] newArray(int size) {
-        return new DischargeType[size];
-      }
-    };
 
     public boolean hasMucus() {
       return mHasMucus;

@@ -1,26 +1,25 @@
 package com.roamingroths.cmcc.data.domain;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
-import androidx.annotation.Nullable;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 import com.roamingroths.cmcc.utils.StringUtil;
 
+import org.parceler.Parcel;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import androidx.annotation.Nullable;
+
 /**
  * Created by parkeroth on 4/20/17.
  */
-
-public class Observation implements Parcelable {
+@Parcel
+public class Observation {
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
   private static final Joiner ON_NEW_LINE = Joiner.on('\n');
@@ -28,20 +27,16 @@ public class Observation implements Parcelable {
   static final Set<DischargeSummary.DischargeType> TYPES_ALLOWING_MODIFIERS =
       ImmutableSet.of(DischargeSummary.DischargeType.STICKY, DischargeSummary.DischargeType.STRETCHY, DischargeSummary.DischargeType.TACKY);
 
-  public final Flow flow;
-  public final DischargeSummary dischargeSummary;
-  public final Occurrences occurrences;
+  public Flow flow;
+  public DischargeSummary dischargeSummary;
+  public Occurrences occurrences;
+
+  public Observation() {}  // Only for @Parcel
 
   public Observation(Flow flow, DischargeSummary dischargeSummary, Occurrences occurrences) {
     this.flow = flow;
     this.dischargeSummary = dischargeSummary;
     this.occurrences = occurrences;
-  }
-
-  protected Observation(Parcel in) {
-    flow = in.readParcelable(Flow.class.getClassLoader());
-    dischargeSummary = in.readParcelable(DischargeSummary.class.getClassLoader());
-    occurrences = in.readParcelable(Occurrences.class.getClassLoader());
   }
 
   public boolean hasBlood() {
@@ -94,18 +89,6 @@ public class Observation implements Parcelable {
   }
 
   @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeParcelable(flow, flags);
-    dest.writeParcelable(dischargeSummary, flags);
-    dest.writeParcelable(occurrences, flags);
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (o instanceof Observation) {
       Observation that = (Observation) o;
@@ -130,18 +113,6 @@ public class Observation implements Parcelable {
       super(reason);
     }
   }
-
-  public static final Creator<Observation> CREATOR = new Creator<Observation>() {
-    @Override
-    public Observation createFromParcel(Parcel in) {
-      return new Observation(in);
-    }
-
-    @Override
-    public Observation[] newArray(int size) {
-      return new Observation[size];
-    }
-  };
 
   @Nullable
   public static Observation fromString(String observation) throws InvalidObservationException {
