@@ -1,26 +1,36 @@
 package com.roamingroths.cmcc.ui.init;
 
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
-import android.util.Log;
+
+import com.google.firebase.analytics.FirebaseAnalytics;
+import com.roamingroths.cmcc.R;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
-
-import com.google.firebase.analytics.FirebaseAnalytics;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.FirebaseUser;
-import com.roamingroths.cmcc.R;
-
-import static com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity.RC_SIGN_IN;
+import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
+import timber.log.Timber;
 
 public class UserInitActivity extends FragmentActivity {
+
+  protected enum RequestCode {
+    GET_BACKUP_LOCATION,
+    FIREBASE
+  }
 
   private static String TAG = UserInitActivity.class.getSimpleName();
 
   private FirebaseAnalytics mFirebaseAnalytics;
   private UserInitializationListener mUserListener;
   private SplashFragment mFragment;
+
+  private PublishSubject<Uri> fileLocations = PublishSubject.create();
+
+  public Observable<Uri> fileLocation() {
+    return fileLocations.hide();
+  }
 
   // - Get FirebaseUser (or create one)
   // - Get try init Crypto and prompt if necessary
@@ -75,9 +85,10 @@ public class UserInitActivity extends FragmentActivity {
 
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    Timber.i("FOOO");
     super.onActivityResult(requestCode, resultCode, data);
-    switch (requestCode) {
-      case RC_SIGN_IN:
+    /*switch (RequestCode.values()[requestCode]) {
+      case FIREBASE:
         final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
         if (user == null) {
           mFragment.showError("Could not create user.");
@@ -86,8 +97,15 @@ public class UserInitActivity extends FragmentActivity {
           mUserListener.onUserInitialized(user);
         }
         break;
+      case GET_BACKUP_LOCATION:
+        if (data != null) {
+          Uri uri = data.getData();
+          if (uri != null) {
+            fileLocations.onNext(uri);
+          }
+        }
       default:
         Log.w(UserInitActivity.class.getName(), "Unknown request code: " + requestCode);
-    }
+    }*/
   }
 }
