@@ -1,8 +1,10 @@
 package com.roamingroths.cmcc.ui.entry.detail;
 
 
+import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.domain.ClarifyingQuestion;
+import com.roamingroths.cmcc.data.domain.IntercourseTimeOfDay;
 import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.logic.chart.ObservationParser;
@@ -54,6 +56,30 @@ public class EntryDetailViewModelTest {
         .awaitCount(1)
         .assertValue(s -> s.chartEntry.observationEntry.note.equals("some note"))
         .dispose();
+  }
+
+  @Test
+  public void testIntercourseTimeOfDay() throws Exception {
+    initModel();
+
+    mViewModel.intercourseUpdates.onNext(true);
+    mViewModel.timeOfDayUpdates.onNext(IntercourseTimeOfDay.END);
+    mViewModel.viewStatesRx()
+        .test()
+        .awaitCount(1)
+        .assertValue(s -> s.chartEntry.observationEntry.intercourseTimeOfDay.equals(IntercourseTimeOfDay.END));
+  }
+
+  @Test
+  public void testIntercourseWithoutTimeOfDay() throws Exception {
+    initModel();
+
+    mViewModel.intercourseUpdates.onNext(true);
+
+    mViewModel.viewStatesRx()
+        .test()
+        .awaitCount(1)
+        .assertValue(s -> Iterables.getOnlyElement(s.validationIssues).action.equals(EntryDetailViewModel.ValidationAction.BLOCK));
   }
 
   @Test

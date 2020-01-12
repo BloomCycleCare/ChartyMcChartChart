@@ -11,12 +11,6 @@ import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 import com.jakewharton.rxbinding2.widget.RxCompoundButton;
@@ -28,6 +22,11 @@ import com.roamingroths.cmcc.data.entities.ObservationEntry;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.functions.Action;
 import timber.log.Timber;
 
@@ -96,7 +95,7 @@ public class ObservationEntryFragment extends Fragment {
           .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
 
       RxAdapterView.itemSelections(intercourseSpinner)
-          .map(index -> IntercourseTimeOfDay.values()[index])
+          .map(ordinal -> IntercourseTimeOfDay.values()[ordinal])
           .subscribe(mEntryDetailViewModel.timeOfDayUpdates);
 
       RxTextView.afterTextChangeEvents(observationEditText)
@@ -145,9 +144,7 @@ public class ObservationEntryFragment extends Fragment {
           observationDescriptionTextView.setText(observation.getDescription());
         }
       }
-      if (observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE) {
-        intercourseSpinner.setSelection(observationEntry.intercourseTimeOfDay.ordinal());
-      }
+      intercourseSpinner.setSelection(observationEntry.intercourseTimeOfDay.ordinal());
       if (observationEntry.intercourse) {
         intercourseSpinner.setVisibility(View.VISIBLE);
       } else {

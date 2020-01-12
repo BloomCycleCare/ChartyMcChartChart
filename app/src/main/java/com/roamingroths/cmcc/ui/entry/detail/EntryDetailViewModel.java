@@ -74,10 +74,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     mEntryRepo = myApp.entryRepo();
     mCycleRepo = myApp.cycleRepo();
 
-    mDisposables.add(intercourseUpdates.subscribe(value -> {
-      if (value) {
-        timeOfDayUpdates.onNext(IntercourseTimeOfDay.ANY);
-      } else {
+    mDisposables.add(intercourseUpdates.distinctUntilChanged().subscribe(value -> {
+      if (!value) {
         timeOfDayUpdates.onNext(IntercourseTimeOfDay.NONE);
       }
     }));
@@ -253,12 +251,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return mViewStates.firstOrError().map(ViewState::isDirty);
   }
 
-  Maybe<List<String>> getSaveSummary(Function<ClarifyingQuestion, Single<Boolean>> questionResolver) {
+  Maybe<List<String>> getSaveSummary(Function<ClarifyingQuestion, Single<Boolean>> questionResolver, Function<ValidationIssue, Single<Boolean>> issueResolver) {
     return mViewStates
         .firstOrError()
         .flatMapMaybe(viewState -> !viewState.isDirty() ? Maybe.empty() : Maybe.just(viewState))
         .flatMap(viewState -> resolveQuestions(viewState, questionResolver, clarifyingQuestionUpdates::onNext)
-            .flatMapMaybe(updatedViewState -> Maybe.just(updatedViewState.chartEntry.getSummaryLines())));
+            .flatMapMaybe(updatedViewstate -> resolveValidationIssues(updatedViewstate, issueResolver)
+                .andThen(Maybe.just(updatedViewstate))
+                .onErrorComplete()
+            .map(vs -> vs.chartEntry.getSummaryLines())));
   }
 
   Completable save(Function<ValidationIssue, Single<Boolean>> validationIssueResolver) {
@@ -268,7 +269,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
           if (!viewState.isDirty()) {
             return Maybe.empty();
           }
-          return validateEntry(viewState, validationIssueResolver)
+          return resolveValidationIssues(viewState, validationIssueResolver)
               .doOnComplete(() -> Timber.d("Entry validated"))
               .andThen(Maybe.just(viewState));
         })
@@ -276,24 +277,12 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .flatMapCompletable(this::updateRepos);
   }
 
-  private Completable validateEntry(ViewState viewState, Function<ValidationIssue, Single<Boolean>> issueResolver) {
-    ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
-    CycleRenderer.EntryModificationContext entryContext = viewState.entryModificationContext;
-
-    List<ValidationIssue> issues = new ArrayList<>();
-    boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
-    if (entryHasBlood && !observationEntry.unusualBleeding && !entryContext.allPreviousDaysHaveHadBlood && !observationEntry.firstDay) {
-      issues.add(new ValidationIssue("Unusual bleeding?", "Are you sure this bleedin is typical?"));
-    }
-    if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()
-        && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
-      issues.add(new ValidationIssue("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
-    }
-    if (issues.isEmpty()) {
+  private Completable resolveValidationIssues(ViewState viewState, Function<ValidationIssue, Single<Boolean>> issueResolver) {
+    if (viewState.validationIssues.isEmpty()) {
       return Completable.complete();
     }
     return Observable
-        .fromIterable(issues)
+        .fromIterable(viewState.validationIssues)
         .flatMapCompletable(issue -> issueResolver
             .apply(issue)
             .flatMapCompletable(proceed -> {
@@ -393,6 +382,27 @@ public class EntryDetailViewModel extends AndroidViewModel {
       this.entryModificationContext = entryModificationContext;
       this.chartEntry = chartEntry;
       this.observationErrorText = observationErrorText;
+      validate();
+    }
+
+    private void validate() {
+      ObservationEntry observationEntry = chartEntry.observationEntry;
+      CycleRenderer.EntryModificationContext entryContext = entryModificationContext;
+
+      boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
+      if (entryHasBlood && !observationEntry.unusualBleeding && !entryContext.allPreviousDaysHaveHadBlood && !observationEntry.firstDay) {
+        validationIssues.add(ValidationIssue.confirm("Unusual bleeding?", "Are you sure this bleedin is typical?"));
+      }
+      if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()
+          && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
+        validationIssues.add(ValidationIssue.confirm("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
+      }
+      if (!observationErrorText.isEmpty()) {
+        validationIssues.add(ValidationIssue.block("Incomplete Observation", "Please complete or clear the observation before saving."));
+      }
+      if (observationEntry.intercourse && observationEntry.intercourseTimeOfDay == IntercourseTimeOfDay.NONE) {
+        validationIssues.add(ValidationIssue.block("Missing Time of Day", "Please select a time of day for reporting intercourse."));
+      }
     }
 
     boolean renderClarifyingQuestions() {
@@ -438,13 +448,27 @@ public class EntryDetailViewModel extends AndroidViewModel {
     }
   }
 
+  enum ValidationAction {
+    CONFIRM, BLOCK
+  }
+
   public static class ValidationIssue {
     public final String summary;
     public final String details;
+    public final ValidationAction action;
 
-    public ValidationIssue(String summary, String details) {
+    private ValidationIssue(String summary, String details, ValidationAction action) {
       this.summary = summary;
       this.details = details;
+      this.action = action;
+    }
+
+    public static ValidationIssue confirm(String summary, String details) {
+      return new ValidationIssue(summary, details, ValidationAction.CONFIRM);
+    }
+
+    public static ValidationIssue block(String summary, String details) {
+      return new ValidationIssue(summary, details, ValidationAction.BLOCK);
     }
   }
 

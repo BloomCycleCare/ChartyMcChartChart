@@ -10,17 +10,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.TextView;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.viewpager.widget.PagerAdapter;
-import androidx.viewpager.widget.ViewPager;
-
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
 import com.roamingroths.cmcc.R;
@@ -36,6 +25,16 @@ import org.parceler.Parcels;
 import java.util.ArrayList;
 import java.util.List;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentPagerAdapter;
+import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.viewpager.widget.PagerAdapter;
+import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -108,14 +107,24 @@ public class EntryDetailActivity extends AppCompatActivity {
       AlertDialog.Builder builder = new AlertDialog.Builder(EntryDetailActivity.this);
       builder.setTitle(issue.summary);
       builder.setMessage(issue.details);
-      builder.setPositiveButton("Yes", (dialog, which) -> {
-        emitter.onSuccess(true);
-        dialog.dismiss();
-      });
-      builder.setNegativeButton("No", (dialog, which) -> {
-        emitter.onSuccess(false);
-        dialog.dismiss();
-      });
+      switch (issue.action) {
+        case CONFIRM:
+          builder.setPositiveButton("Yes", (dialog, which) -> {
+            emitter.onSuccess(true);
+            dialog.dismiss();
+          });
+          builder.setNegativeButton("No", (dialog, which) -> {
+            emitter.onSuccess(false);
+            dialog.dismiss();
+          });
+          break;
+        case BLOCK:
+          builder.setPositiveButton("Ok", (dialog, which) -> {
+            emitter.onSuccess(false);
+            dialog.dismiss();
+          });
+          break;
+      }
       builder.create().show();
     });
   }
@@ -151,7 +160,7 @@ public class EntryDetailActivity extends AppCompatActivity {
     }
 
     if (id == R.id.action_save) {
-      mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion).subscribe(summaryLines -> {
+      mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion, this::addressIssue).subscribe(summaryLines -> {
         LayoutInflater inflater = getLayoutInflater();
         View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);
 
