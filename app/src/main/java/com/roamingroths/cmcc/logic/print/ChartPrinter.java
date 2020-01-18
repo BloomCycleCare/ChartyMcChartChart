@@ -7,8 +7,10 @@ import android.graphics.Canvas;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.CancellationSignal;
+import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.print.PageRange;
+import android.print.PdfPrint;
 import android.print.PrintAttributes;
 import android.print.PrintDocumentAdapter;
 import android.print.PrintDocumentInfo;
@@ -25,9 +27,11 @@ import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
 import org.joda.time.LocalDate;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.SingleSource;
@@ -50,7 +54,11 @@ public class ChartPrinter {
 
   public ChartPrinter(PageRenderer pageRenderer, PrintManager printManager, Context context) {
     mContext = context;
-    mPrintAttributes = new PrintAttributes.Builder().setMinMargins(PrintAttributes.Margins.NO_MARGINS).setMediaSize(PrintAttributes.MediaSize.ISO_A3.asLandscape()).build();
+    mPrintAttributes = new PrintAttributes.Builder()
+        .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+        .setMediaSize(PrintAttributes.MediaSize.ISO_A3.asLandscape())
+        .setResolution(new PrintAttributes.Resolution("pdf", "pdf", 600, 600))
+        .build();
     mPrintManager = printManager;
     mPageRenderer = pageRenderer;
   }
@@ -59,6 +67,19 @@ public class ChartPrinter {
     PrintManager printManager = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
     PageRenderer pageRenderer = new PageRenderer(renderers);
     return new ChartPrinter(pageRenderer, printManager, activity);
+  }
+
+  public Completable savePDF() {
+    WebView.enableSlowWholeDocumentDraw();
+    return mPageRenderer.createPages()
+        .observeOn(AndroidSchedulers.mainThread())
+        .flatMapSingle(this::createWebView)
+        .flatMapCompletable(webView -> {
+          String jobName = String.format("Chart %s", LocalDate.now().toString());
+          File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
+          PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
+          return pdfPrint.print(webView.createPrintDocumentAdapter(jobName), path, "output_" + System.currentTimeMillis() + ".pdf");
+        });
   }
 
   public Observable<PrintJob> print() {

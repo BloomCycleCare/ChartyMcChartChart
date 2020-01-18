@@ -12,18 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.ActionBarDrawerToggle;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.core.app.ShareCompat;
-import androidx.core.content.FileProvider;
-import androidx.core.view.GravityCompat;
-import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.fragment.app.FragmentManager;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.viewpager.widget.ViewPager;
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.common.base.Charsets;
@@ -48,6 +36,17 @@ import org.parceler.Parcels;
 
 import java.io.File;
 
+import androidx.appcompat.app.ActionBarDrawerToggle;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
+import androidx.core.view.GravityCompat;
+import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.FragmentManager;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -103,6 +102,14 @@ public class ChartEntryListActivity extends AppCompatActivity
     setTitle("Current Cycle");
     setSupportActionBar(mToolbar);
     mToolbar.setSubtitle("Stats TBD");
+
+    mToolbar.setOnClickListener(view -> {
+      new AlertDialog.Builder(this)
+          .setTitle("Cycle Stats")
+          .setMessage("Stats can go here.")
+          .setPositiveButton("Close", (dialogInterface, i) -> dialogInterface.dismiss())
+          .show();
+    });
 
     mDrawerLayout = findViewById(R.id.drawer_layout);
     mDrawerToggle = new ActionBarDrawerToggle(
