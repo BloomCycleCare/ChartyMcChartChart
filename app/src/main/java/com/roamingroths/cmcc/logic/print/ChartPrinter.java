@@ -7,7 +7,6 @@ import android.graphics.Canvas;
 import android.graphics.pdf.PdfDocument;
 import android.os.Bundle;
 import android.os.CancellationSignal;
-import android.os.Environment;
 import android.os.ParcelFileDescriptor;
 import android.print.PageRange;
 import android.print.PdfPrint;
@@ -30,11 +29,11 @@ import org.joda.time.LocalDate;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.SingleSource;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -76,10 +75,26 @@ public class ChartPrinter {
         .flatMapSingle(this::createWebView)
         .flatMapCompletable(webView -> {
           String jobName = String.format("Chart %s", LocalDate.now().toString());
-          File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
+          //File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
+          File path = mContext.getCacheDir();
           PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
-          return pdfPrint.print(webView.createPrintDocumentAdapter(jobName), path, "output_" + System.currentTimeMillis() + ".pdf");
+          return pdfPrint.save(webView.createPrintDocumentAdapter(jobName), path, "saved_chart").toCompletable();
         });
+  }
+
+  public Single<List<File>> savePDFs() {
+    WebView.enableSlowWholeDocumentDraw();
+    return mPageRenderer.createPages()
+        .observeOn(AndroidSchedulers.mainThread())
+        .flatMapSingle(this::createWebView)
+        .flatMapSingle(webView -> {
+          String jobName = String.format("Chart %s", LocalDate.now().toString());
+          //File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
+          File path = mContext.getCacheDir();
+          PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
+          return pdfPrint.save(webView.createPrintDocumentAdapter(jobName), path, "saved_chart_" + System.currentTimeMillis());
+        })
+        .toList();
   }
 
   public Observable<PrintJob> print() {
@@ -93,7 +108,7 @@ public class ChartPrinter {
         });
   }
 
-  private SingleSource<WebView> createWebView(String html) {
+  private Single<WebView> createWebView(String html) {
     return Single.create(emitter -> {
       WebView webView = new WebView(mContext);
       webView.setWebViewClient(new WebViewClient() {

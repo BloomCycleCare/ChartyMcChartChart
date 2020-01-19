@@ -1,7 +1,5 @@
 package com.roamingroths.cmcc.ui.print;
 
-import android.Manifest;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.print.PrintJob;
 import android.view.MenuItem;
@@ -20,7 +18,6 @@ import com.roamingroths.cmcc.logic.print.ChartPrinter;
 import java.util.concurrent.TimeUnit;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.ActivityCompat;
 import androidx.core.app.NavUtils;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -31,9 +28,7 @@ import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.Function;
-import io.reactivex.functions.Predicate;
 import io.reactivex.schedulers.Schedulers;
-import timber.log.Timber;
 
 public class PrintChartActivity extends AppCompatActivity {
 
@@ -63,24 +58,6 @@ public class PrintChartActivity extends AppCompatActivity {
     CycleRepo cycleRepo = new CycleRepo(myApp.db());
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
     InstructionsRepo instructionsRepo = new InstructionsRepo(myApp);
-
-    /* Request user permissions in runtime */
-    String[] PERMISSIONS = {
-        Manifest.permission.WRITE_EXTERNAL_STORAGE,
-        Manifest.permission.READ_EXTERNAL_STORAGE,
-    };
-    for (String permission : PERMISSIONS) {
-      if (ActivityCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
-        Timber.w("%s NOT granted", permission);
-      }
-    }
-    ActivityCompat.requestPermissions(this,
-        new String[] {
-            Manifest.permission.READ_EXTERNAL_STORAGE,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
-        },
-        100);
-    /* Request user permissions in runtime */
 
     CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
     if (adapter != null) {
@@ -129,7 +106,7 @@ public class PrintChartActivity extends AppCompatActivity {
                 (entries, instructions) -> new CycleRenderer(cycle, entries, instructions))
                 .toObservable());
 
-        mDisposables.add(ChartPrinter.create(PrintChartActivity.this, renderers)
+        /*mDisposables.add(ChartPrinter.create(PrintChartActivity.this, renderers)
             .print()
             .flatMap(emitPrintJob())
             .filter(new Predicate<PrintJob>() {
@@ -149,7 +126,12 @@ public class PrintChartActivity extends AppCompatActivity {
                 printJobFailed();
                 return;
               }
-            }));
+            }));*/
+        mDisposables.add(ChartPrinter
+            .create(PrintChartActivity.this, renderers)
+            .savePDF()
+            .subscribeOn(Schedulers.computation())
+            .subscribe(() -> printJobComplete()));
       }
     });
   }

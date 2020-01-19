@@ -15,7 +15,6 @@ import java.util.List;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.annotations.Nullable;
-import io.reactivex.functions.Function;
 
 /**
  * Created by parkeroth on 12/23/17.
@@ -35,7 +34,10 @@ public class PageRenderer {
   }
 
   public Observable<String> createPages() {
-    return renderers.flatMap(createCycleRows()).buffer(NUM_ROWS_PER_PAGE).map(createPage());
+    return renderers
+        .flatMap(PageRenderer::createCycleRows)
+        .buffer(NUM_ROWS_PER_PAGE)
+        .map(PageRenderer::createPage);
   }
 
   public static int numRowsPerPage() {
@@ -54,43 +56,36 @@ public class PageRenderer {
     return numEntries % NUM_DAYS_PER_CHART != 0;
   }
 
-  private static Function<CycleRenderer, ObservableSource<String>> createCycleRows() {
-    return (Function<CycleRenderer, ObservableSource<String>>) renderer -> {
-      List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render().entries;
-      List<String> rows = new ArrayList<>();
-      int numFullRows = numFullRows(renderableEntries.size());
-      boolean hasPartialRow = hasPartialRow(renderableEntries.size());
-      for (int i=0; i < numFullRows; i++) {
-        StringBuilder builder = new StringBuilder();
-        int startIndex = i * NUM_DAYS_PER_CHART;
-        int endIndex = startIndex + NUM_DAYS_PER_CHART - 1;
-        appendCycle(builder, renderableEntries, startIndex, endIndex);
-        rows.add(builder.toString());
-      }
-      if (hasPartialRow) {
-        StringBuilder builder = new StringBuilder();
-        int startIndex = numFullRows * NUM_DAYS_PER_CHART;
-        int endIndex = renderableEntries.size() - 1;
-        appendCycle(builder, renderableEntries, startIndex, endIndex);
-        rows.add(builder.toString());
-      }
-      return Observable.fromIterable(rows);
-    };
+  private static ObservableSource<String> createCycleRows(CycleRenderer renderer) {
+    List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render().entries;
+    List<String> rows = new ArrayList<>();
+    int numFullRows = numFullRows(renderableEntries.size());
+    boolean hasPartialRow = hasPartialRow(renderableEntries.size());
+    for (int i=0; i < numFullRows; i++) {
+      StringBuilder builder = new StringBuilder();
+      int startIndex = i * NUM_DAYS_PER_CHART;
+      int endIndex = startIndex + NUM_DAYS_PER_CHART - 1;
+      appendCycle(builder, renderableEntries, startIndex, endIndex);
+      rows.add(builder.toString());
+    }
+    if (hasPartialRow) {
+      StringBuilder builder = new StringBuilder();
+      int startIndex = numFullRows * NUM_DAYS_PER_CHART;
+      int endIndex = renderableEntries.size() - 1;
+      appendCycle(builder, renderableEntries, startIndex, endIndex);
+      rows.add(builder.toString());
+    }
+    return Observable.fromIterable(rows);
   }
 
-  private static Function<List<String>, String> createPage() {
-    return new Function<List<String>, String>() {
-      @Override
-      public String apply(List<String> cycleRows) throws Exception {
-        StringBuilder html = new StringBuilder();
-        html.append("<html>");
-        appendHead(html);
-        appendBody(html, cycleRows);
-        html.append("</html>");
-        String out = html.toString();
-        return html.toString();
-      }
-    };
+  private static String createPage(List<String> cycleRows) {
+    StringBuilder html = new StringBuilder();
+    html.append("<html>");
+    appendHead(html);
+    appendBody(html, cycleRows);
+    html.append("</html>");
+    String out = html.toString();
+    return html.toString();
   }
 
   private static void appendHead(StringBuilder builder) {

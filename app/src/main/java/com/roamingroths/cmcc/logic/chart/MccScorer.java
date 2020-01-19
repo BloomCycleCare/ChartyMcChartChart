@@ -91,7 +91,6 @@ public class MccScorer {
         points += 2;
       }
     }
-    System.out.println(String.format("%s: %d", entry.entryDate, points));
     return points;
   }
 }

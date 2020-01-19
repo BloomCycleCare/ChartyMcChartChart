@@ -21,6 +21,7 @@ import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.backup.AppStateExporter;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
+import com.roamingroths.cmcc.ui.drive.DriveActivity;
 import com.roamingroths.cmcc.ui.entry.EntrySaveResult;
 import com.roamingroths.cmcc.ui.instructions.InstructionsListActivity;
 import com.roamingroths.cmcc.ui.print.PrintChartActivity;
@@ -360,6 +361,8 @@ public class ChartEntryListActivity extends AppCompatActivity
         startActivity(new Intent(this, SettingsActivity.class));
         break;
       case R.id.nav_share:
+        startActivity(new Intent(this, DriveActivity.class));
+        break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:
         Toast.makeText(this, "Work in progress.", Toast.LENGTH_SHORT).show();

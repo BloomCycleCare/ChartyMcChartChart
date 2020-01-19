@@ -3,20 +3,25 @@
     package="com.roamingroths.cmcc">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
+    <uses-permission android:name="android.permission.MANAGE_ACCOUNTS" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".application.MyApplication"
-        android:label="@string/app_name"
-        android:icon="${icon}"
-        android:roundIcon="${roundIcon}"
         android:allowBackup="false"
+        android:icon="${icon}"
+        android:label="@string/app_name"
+        android:roundIcon="${roundIcon}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".ui.drive.DriveActivity"></activity>
 
         <service android:name=".notifications.ChartingService" />
-        <receiver android:name=".notifications.ChartingReceiver"  android:exported="true" />
+
+        <receiver
+            android:name=".notifications.ChartingReceiver"
+            android:exported="true" />
 
         <activity
             android:name=".ui.init.UserInitActivity"
@@ -69,8 +74,8 @@
             android:name=".ui.entry.detail.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
             android:parentActivityName=".ui.entry.list.ChartEntryListActivity"
-            android:windowSoftInputMode="adjustPan"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.NoActionBar"
+            android:windowSoftInputMode="adjustPan">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity" />
@@ -78,12 +83,11 @@
         <activity android:name=".ui.settings.SettingsActivity" />
         <activity
             android:name=".ui.profile.ProfileActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity
             android:name=".ui.instructions.InstructionsListActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"></activity>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="com.roamingroths.cmcc.fileprovider"
@@ -96,8 +100,7 @@
 
         <activity
             android:name=".ui.goals.create.CreateGoalActivity"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
+            android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 
 </manifest>

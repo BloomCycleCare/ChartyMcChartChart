@@ -11,7 +11,6 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.FragmentActivity;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
-import timber.log.Timber;
 
 public class UserInitActivity extends FragmentActivity {
 
@@ -66,46 +65,7 @@ public class UserInitActivity extends FragmentActivity {
 
     mFragment.updateStatus("Initializing");
 
-    /*FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-    if (user == null) {
-      mFragment.updateStatus("Launching login");
-      startActivityForResult(
-          AuthUI.getInstance().createSignInIntentBuilder()
-              .setAvailableProviders(Arrays.asList(
-                  new AuthUI.IdpConfig.Builder(AuthUI.GOOGLE_PROVIDER).build()
-              ))
-              .setIsSmartLockEnabled(false)
-              .build(),
-          RC_SIGN_IN);
-    } else {
-      mUserListener.onUserInitialized(user);
-    }*/
     mUserListener.onUserInitialized(null);
   }
 
-  @Override
-  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-    Timber.i("FOOO");
-    super.onActivityResult(requestCode, resultCode, data);
-    /*switch (RequestCode.values()[requestCode]) {
-      case FIREBASE:
-        final FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
-        if (user == null) {
-          mFragment.showError("Could not create user.");
-        } else {
-          mFragment.updateStatus("Login successful");
-          mUserListener.onUserInitialized(user);
-        }
-        break;
-      case GET_BACKUP_LOCATION:
-        if (data != null) {
-          Uri uri = data.getData();
-          if (uri != null) {
-            fileLocations.onNext(uri);
-          }
-        }
-      default:
-        Log.w(UserInitActivity.class.getName(), "Unknown request code: " + requestCode);
-    }*/
-  }
 }
