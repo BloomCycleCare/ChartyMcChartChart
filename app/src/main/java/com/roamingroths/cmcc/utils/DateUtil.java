@@ -23,6 +23,7 @@ import timber.log.Timber;
 public class DateUtil {
 
   private static final DateTimeFormatter WIRE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter FILE_FORMAT = DateTimeFormat.forPattern("yyyyMMdd");
   private static final DateTimeFormatter UI_FORMAT = DateTimeFormat.forPattern("EEE d MMM");
   private static final DateTimeFormatter NEW_UI_FORMAT = DateTimeFormat.forPattern("d MMM yyyy");
   private static final DateTimeFormatter PRINT_UI_FORMAT = DateTimeFormat.forPattern("d MMM");
@@ -33,6 +34,13 @@ public class DateUtil {
       return null;
     }
     return WIRE_FORMAT.print(date);
+  }
+
+  public static String toFileStr(LocalDate date) {
+    if (date == null) {
+      return null;
+    }
+    return FILE_FORMAT.print(date);
   }
 
   public static String toUiStr(LocalDate date) {

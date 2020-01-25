@@ -5,13 +5,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 import com.roamingroths.cmcc.logic.chart.StickerColor;
 import com.roamingroths.cmcc.utils.DateUtil;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TreeSet;
 
+import androidx.annotation.NonNull;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.annotations.Nullable;
@@ -33,8 +36,9 @@ public class PageRenderer {
     this.renderers = renderers;
   }
 
-  public Observable<String> createPages() {
+  public Observable<RenderedPage> createPages() {
     return renderers
+        .sorted((a, b) -> a.cycle().startDate.compareTo(b.cycle().startDate))
         .flatMap(PageRenderer::createCycleRows)
         .buffer(NUM_ROWS_PER_PAGE)
         .map(PageRenderer::createPage);
@@ -56,9 +60,41 @@ public class PageRenderer {
     return numEntries % NUM_DAYS_PER_CHART != 0;
   }
 
-  private static ObservableSource<String> createCycleRows(CycleRenderer renderer) {
+  private static class RenderedRow {
+    final Cycle cycle;
+    final String html;
+
+    private RenderedRow(Cycle cycle, String html) {
+      this.cycle = cycle;
+      this.html = html;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+      return cycle.startDate.toString();
+    }
+  }
+
+  static class RenderedPage {
+    final TreeSet<Cycle> cycles;
+    final String html;
+
+    private RenderedPage(String html) {
+      this.cycles = new TreeSet<>();
+      this.html = html;
+    }
+
+    @NonNull
+    @Override
+    public String toString() {
+      return cycles.first().startDate.toString();
+    }
+  }
+
+  private static ObservableSource<RenderedRow> createCycleRows(CycleRenderer renderer) {
     List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render().entries;
-    List<String> rows = new ArrayList<>();
+    List<RenderedRow> rows = new ArrayList<>();
     int numFullRows = numFullRows(renderableEntries.size());
     boolean hasPartialRow = hasPartialRow(renderableEntries.size());
     for (int i=0; i < numFullRows; i++) {
@@ -66,26 +102,29 @@ public class PageRenderer {
       int startIndex = i * NUM_DAYS_PER_CHART;
       int endIndex = startIndex + NUM_DAYS_PER_CHART - 1;
       appendCycle(builder, renderableEntries, startIndex, endIndex);
-      rows.add(builder.toString());
+      rows.add(new RenderedRow(renderer.cycle(), builder.toString()));
     }
     if (hasPartialRow) {
       StringBuilder builder = new StringBuilder();
       int startIndex = numFullRows * NUM_DAYS_PER_CHART;
       int endIndex = renderableEntries.size() - 1;
       appendCycle(builder, renderableEntries, startIndex, endIndex);
-      rows.add(builder.toString());
+      rows.add(new RenderedRow(renderer.cycle(), builder.toString()));
     }
     return Observable.fromIterable(rows);
   }
 
-  private static String createPage(List<String> cycleRows) {
+  private static RenderedPage createPage(List<RenderedRow> cycleRows) {
     StringBuilder html = new StringBuilder();
     html.append("<html>");
     appendHead(html);
     appendBody(html, cycleRows);
     html.append("</html>");
-    String out = html.toString();
-    return html.toString();
+    RenderedPage page = new RenderedPage(html.toString());
+    for (RenderedRow row : cycleRows) {
+      page.cycles.add(row.cycle);
+    }
+    return page;
   }
 
   private static void appendHead(StringBuilder builder) {
@@ -109,13 +148,13 @@ public class PageRenderer {
     builder.append("</head>");
   }
 
-  private static void appendBody(StringBuilder builder, List<String> cycleRows) {
+  private static void appendBody(StringBuilder builder, List<RenderedRow> cycleRows) {
     Preconditions.checkArgument(cycleRows.size() <= NUM_ROWS_PER_PAGE);
     builder.append("<div id=\"container\">");
     builder.append("<table class=\"outer\">");
     appendDays(builder);
-    for (String row : cycleRows) {
-      builder.append(row);
+    for (RenderedRow row : cycleRows) {
+      builder.append(row.html);
     }
     for (int i=cycleRows.size(); i < NUM_ROWS_PER_PAGE; i++) {
       appendEmptyCycle(builder);

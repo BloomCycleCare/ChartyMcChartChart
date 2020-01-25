@@ -22,6 +22,7 @@ import android.view.WindowManager;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
+import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
 
 import org.joda.time.LocalDate;
@@ -30,6 +31,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.TreeSet;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -73,27 +75,40 @@ public class ChartPrinter {
     return mPageRenderer.createPages()
         .observeOn(AndroidSchedulers.mainThread())
         .flatMapSingle(this::createWebView)
-        .flatMapCompletable(webView -> {
+        .flatMapCompletable(printedPage -> {
           String jobName = String.format("Chart %s", LocalDate.now().toString());
           //File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
           File path = mContext.getCacheDir();
           PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
-          return pdfPrint.save(webView.createPrintDocumentAdapter(jobName), path, "saved_chart").toCompletable();
+          return pdfPrint.save(printedPage.webView.createPrintDocumentAdapter(jobName), path, "saved_chart").toCompletable();
         });
   }
 
-  public Single<List<File>> savePDFs() {
+  public class SavedChart {
+    public final File file;
+    public final Cycle firstCycle;
+
+    private SavedChart(File file, Cycle firstCycle) {
+      this.file = file;
+      this.firstCycle = firstCycle;
+    }
+  }
+
+  public Single<List<SavedChart>> savePDFs() {
     WebView.enableSlowWholeDocumentDraw();
     return mPageRenderer.createPages()
         .observeOn(AndroidSchedulers.mainThread())
         .flatMapSingle(this::createWebView)
-        .flatMapSingle(webView -> {
+        .flatMapSingle(printedPage -> {
           String jobName = String.format("Chart %s", LocalDate.now().toString());
           //File path = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM + "/PDFTest/");
           File path = mContext.getCacheDir();
           PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
-          return pdfPrint.save(webView.createPrintDocumentAdapter(jobName), path, "saved_chart_" + System.currentTimeMillis());
+          return pdfPrint
+              .save(printedPage.webView.createPrintDocumentAdapter(jobName), path, "saved_chart_" + System.currentTimeMillis())
+              .map(f -> new SavedChart(f, printedPage.cycles.first()));
         })
+        .sorted((a, b) -> a.firstCycle.startDate.compareTo(b.firstCycle.startDate))
         .toList();
   }
 
@@ -102,20 +117,30 @@ public class ChartPrinter {
     return mPageRenderer.createPages()
         .observeOn(AndroidSchedulers.mainThread())
         .flatMapSingle(this::createWebView)
-        .map(webView -> {
+        .map(printedPage -> {
           String jobName = String.format("Chart %s", LocalDate.now().toString());
-          return mPrintManager.print(jobName, webView.createPrintDocumentAdapter(jobName), mPrintAttributes);
+          return mPrintManager.print(jobName, printedPage.webView.createPrintDocumentAdapter(jobName), mPrintAttributes);
         });
   }
 
-  private Single<WebView> createWebView(String html) {
+  private static class PrintedPage {
+    final WebView webView;
+    final TreeSet<Cycle> cycles;
+
+    private PrintedPage(WebView webView, TreeSet<Cycle> cycles) {
+      this.webView = webView;
+      this.cycles = cycles;
+    }
+  }
+
+  private Single<PrintedPage> createWebView(PageRenderer.RenderedPage page) {
     return Single.create(emitter -> {
       WebView webView = new WebView(mContext);
       webView.setWebViewClient(new WebViewClient() {
         private WebView ref = webView;
         @Override
         public void onPageFinished(WebView view, String url) {
-          emitter.onSuccess(view);
+          emitter.onSuccess(new PrintedPage(view, page.cycles));
           ref = null;
         }
       });
@@ -129,7 +154,7 @@ public class ChartPrinter {
       webView.setPadding(0, 100,0, 0);
       Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
       webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());
-      webView.loadDataWithBaseURL("file:///android_asset/", html, "text/HTML", "UTF-8", null);
+      webView.loadDataWithBaseURL("file:///android_asset/", page.html, "text/HTML", "UTF-8", null);
     });
   }
 

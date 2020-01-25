@@ -1,17 +1,176 @@
 package com.roamingroths.cmcc.ui.drive;
 
 import android.app.Application;
+import android.content.Context;
+
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.api.client.extensions.android.http.AndroidHttp;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.http.FileContent;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
+import com.google.api.services.drive.model.File;
+import com.google.common.base.Optional;
+import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
+import com.roamingroths.cmcc.data.repos.ChartRepo;
+import com.roamingroths.cmcc.data.repos.CycleRepo;
+import com.roamingroths.cmcc.data.repos.InstructionsRepo;
+import com.roamingroths.cmcc.logic.chart.CycleRenderer;
+import com.roamingroths.cmcc.logic.print.ChartPrinter;
+import com.roamingroths.cmcc.logic.print.PageRenderer;
+import com.roamingroths.cmcc.utils.DateUtil;
+
+import org.joda.time.Days;
+import org.joda.time.LocalDate;
+
+import java.util.Collections;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.Observable;
+import io.reactivex.Single;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.SingleSubject;
+import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 public class DriveViewModel extends AndroidViewModel {
 
+  private static final String FOLDER_NAME = "My Charts";
+
+  private final Context mContext;
+  private final PublishSubject<ViewState> mViewState = PublishSubject.create();
+  private final SingleSubject<ChartRepo> mChartRepoSubject = SingleSubject.create();
+  private final Subject<Object> mSyncClicks = BehaviorSubject.create();
+
+  private final InstructionsRepo mInstructionRepo;
+  private final CycleRepo mCycleRepo;
+  private final ChartEntryRepo mEntryRepo;
+
   public DriveViewModel(@NonNull Application application) {
     super(application);
+    mContext = application.getApplicationContext();
+
+    MyApplication myApp = MyApplication.cast(application);
+    mInstructionRepo = myApp.instructionsRepo();
+    mCycleRepo = myApp.cycleRepo();
+    mEntryRepo = myApp.entryRepo();
+
+    mChartRepoSubject.flatMapObservable(chartRepo -> {
+      Observable<ViewState> syncResults = mSyncClicks
+          .flatMap(c -> {
+            Timber.d("Sync clicked");
+            Subject<String> updates = PublishSubject.create();
+            Single<ViewState> result = doSync(chartRepo, updates).cache();
+            return updates.map(ViewState::message)
+                .takeUntil(result.toObservable())
+                .concatWith(result.toObservable());
+          });
+      return loadInitialFiles(chartRepo).toObservable().concatWith(syncResults);
+    }).startWith(ViewState.message("Initializing")).subscribe(mViewState);
+  }
+
+  void init(Single<GoogleSignInAccount> accountSubject, Subject<?> syncClicks) {
+    accountSubject
+        .doOnSuccess(a -> Timber.d("Received account"))
+        .map(this::initGoogleDrive)
+        .doOnSuccess(d -> Timber.d("service initialized"))
+        .map(ChartRepo::new)
+        .subscribe(mChartRepoSubject);
+    syncClicks.subscribe(mSyncClicks);
+  }
+
+  LiveData<ViewState> viewState() {
+    return LiveDataReactiveStreams.fromPublisher(mViewState.toFlowable(BackpressureStrategy.BUFFER));
+  }
+
+  private Single<ViewState> loadInitialFiles(ChartRepo repo) {
+    return repo
+        .getOrCreateFolder(FOLDER_NAME)
+        .flatMap(folder -> repo.getFilesInFolder(folder).toList())
+        .map(ViewState::files)
+        ;
+  }
+
+  private Single<ViewState> doSync(ChartRepo repo, Subject<String> updateSubject) {
+    return mInstructionRepo.getAll().firstOrError().map(instructions -> mCycleRepo
+        .getStream()
+        .firstOrError()
+        .doOnSuccess(c -> updateSubject.onNext("Gathering your data"))
+        .flatMapObservable(Observable::fromIterable)
+        .filter(cycle -> {
+          int daysInCycle = Days.daysBetween(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())).getDays();
+          if (PageRenderer.numRows(daysInCycle) >= 6) {
+            Timber.w("Skipping long cycle");
+            return false;
+          }
+          return true;
+        })
+        .sorted((a, b) -> a.startDate.compareTo(b.startDate))
+        .flatMapSingle(cycle -> mEntryRepo
+            .getStreamForCycle(Flowable.just(cycle))
+            .firstOrError()
+            .map(entries -> new CycleRenderer(cycle, entries, instructions))))
+        .map(PageRenderer::new)
+        .map(pageRenderer -> new ChartPrinter(pageRenderer, null, mContext))
+        .doOnSuccess(p -> updateSubject.onNext("Rendering your charts"))
+        .flatMap(ChartPrinter::savePDFs)
+        .doOnSuccess(f -> updateSubject.onNext("Uploading charts to Drive"))
+        .flatMap(savedCharts -> repo.getOrCreateFolder(FOLDER_NAME).flatMap(folder -> repo
+            .clearFolder(folder).andThen(Observable.fromIterable(savedCharts)
+                .flatMap(savedChart -> {
+                  File file = new File();
+                  file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
+                  FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
+                  return repo
+                      .addFileToFolder(folder, file, mediaContent)
+                      .doOnSuccess(f -> savedChart.file.delete())
+                      .toObservable();
+                })
+                .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
+                .toList())))
+        .map(ViewState::files)
+        .doOnSubscribe(d -> updateSubject.onNext("Initiating sync to Drive"))
+        ;
+  }
+
+  private Drive initGoogleDrive(GoogleSignInAccount account) {
+    // Use the authenticated account to sign in to the Drive service.
+    GoogleAccountCredential credential =
+        GoogleAccountCredential.usingOAuth2(
+            mContext, Collections.singleton(DriveScopes.DRIVE_FILE));
+    credential.setSelectedAccount(account.getAccount());
+    return new Drive.Builder(
+        AndroidHttp.newCompatibleTransport(),
+        new GsonFactory(),
+        credential)
+        .setApplicationName("Drive API Migration")
+        .build();
   }
 
   public static class ViewState {
+    public final List<File> files;
+    public final Optional<String> infoMessage;
 
+    private ViewState(List<File> files, Optional<String> infoMessage) {
+      this.files = files;
+      this.infoMessage = infoMessage;
+    }
+
+    static ViewState files(List<File> files) {
+      return new ViewState(files, Optional.absent());
+    }
+
+    static ViewState message(String message) {
+      return new ViewState(Collections.emptyList(), Optional.of(message));
+    }
   }
 }

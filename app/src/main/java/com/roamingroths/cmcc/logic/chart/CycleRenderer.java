@@ -50,6 +50,10 @@ public class CycleRenderer {
     mInstructions.addAll(allInstructions);
   }
 
+  public Cycle cycle() {
+    return mCycle;
+  }
+
   public RenderableCycle render() {
     TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();
     TreeSet<LocalDate> daysOfFlow = new TreeSet<>();
