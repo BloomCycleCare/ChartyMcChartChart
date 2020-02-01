@@ -70,7 +70,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
           @Override
           public void accept(ScrollState scrollState) throws Exception {
             if (!getUserVisibleHint()) {
-              Timber.d("Not scrolling from %s", mCycle.startDateStr);
+              Timber.v("Not scrolling from %s", mCycle.startDateStr);
               return;
             }
             onScrollStateUpdate(scrollState);
@@ -104,7 +104,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
   }
 
   public void setScrollState(ScrollState scrollState) {
-    Timber.d(TAG, "Scroll to: %s", scrollState);
+    Timber.v(TAG, "Scroll to: %s", scrollState);
     if (mRecyclerView == null) {
       Timber.w("RecyclerView null!");
       return;
@@ -121,7 +121,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
       EntryListFragment neighbor = entry.getValue().get();
       if (neighbor != null) {
-        Timber.d("Scrolling %s for %s", entry.getKey().name(), mCycle.startDateStr);
+        Timber.v("Scrolling %s for %s", entry.getKey().name(), mCycle.startDateStr);
         neighbor.setScrollState(state);
       }
     }

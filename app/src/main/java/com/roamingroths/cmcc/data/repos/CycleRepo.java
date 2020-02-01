@@ -1,27 +1,35 @@
 package com.roamingroths.cmcc.data.repos;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.Range;
 import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.data.db.CycleDao;
 import com.roamingroths.cmcc.data.entities.Cycle;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.List;
 
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
-import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
 public class CycleRepo {
 
   private final CycleDao cycleDao;
+  private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
 
   public CycleRepo(AppDatabase db) {
     cycleDao = db.cycleDao();
+  }
+
+  public Flowable<UpdateEvent> updateEvents() {
+    return updates.toFlowable(BackpressureStrategy.BUFFER);
   }
 
   public Flowable<List<Cycle>> getStream() {
@@ -64,16 +72,31 @@ public class CycleRepo {
   }
 
   public Completable delete(Cycle cycle) {
-    return cycleDao.delete(cycle);
+    return cycleDao.delete(cycle)
+        .doOnComplete(() -> updates.onNext(UpdateEvent.forCycle(cycle)));
   }
 
   public Completable insertOrUpdate(Cycle cycle) {
-    return cycleDao.insert(cycle);
+    return cycleDao.insert(cycle)
+        .doOnComplete(() -> updates.onNext(UpdateEvent.forCycle(cycle)));
   }
 
-  public Single<Cycle> startNewCycle(Cycle currentCycle, LocalDate startDate) {
-    return Single
-        .fromCallable(() -> cycleDao.startNewCycle(currentCycle, startDate))
-        .subscribeOn(Schedulers.computation());
+  public Maybe<Cycle> getCycleForDate(LocalDate date) {
+    return cycleDao.getCycleForDate(date);
+  }
+
+  public static class UpdateEvent {
+    public final DateTime updateTime;
+    public final Range<LocalDate> dateRange;
+
+    private UpdateEvent(DateTime updateTime, Range<LocalDate> dateRange) {
+      this.updateTime = updateTime;
+      this.dateRange = dateRange;
+    }
+
+    static UpdateEvent forCycle(Cycle cycle) {
+      return new UpdateEvent(DateTime.now(), Range.closed(
+          cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())));
+    }
   }
 }

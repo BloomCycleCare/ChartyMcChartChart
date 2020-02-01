@@ -9,7 +9,6 @@ import android.widget.TextView;
 
 import com.google.api.services.drive.model.File;
 import com.roamingroths.cmcc.R;
-import com.roamingroths.cmcc.data.repos.ChartRepo;
 import com.roamingroths.cmcc.utils.GoogleAuthActivity;
 import com.roamingroths.cmcc.utils.SimpleArrayAdapter;
 
@@ -26,7 +25,6 @@ public class DriveActivity extends GoogleAuthActivity {
   ListView mFilesView;
   TextView mInfoTextView;
   private final CompositeDisposable d = new CompositeDisposable();
-  private ChartRepo mChartRepo;
   private SimpleArrayAdapter<File, FileViewHolder> fileAdapater;
   private final Subject<Object> mSyncClicks = BehaviorSubject.create();
 
@@ -47,7 +45,7 @@ public class DriveActivity extends GoogleAuthActivity {
     mFilesView.setAdapter(fileAdapater);
 
     DriveViewModel viewModel = ViewModelProviders.of(this).get(DriveViewModel.class);
-    viewModel.init(googleAccount(), mSyncClicks);
+    viewModel.init(mSyncClicks);
     viewModel.viewState().observe(this, viewState -> {
       if (viewState.infoMessage.isPresent()) {
         hideFiles(viewState.infoMessage.get());

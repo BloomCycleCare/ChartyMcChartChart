@@ -18,10 +18,15 @@
         <activity android:name=".ui.drive.DriveActivity"></activity>
 
         <service android:name=".notifications.ChartingService" />
-
         <receiver
             android:name=".notifications.ChartingReceiver"
             android:exported="true" />
+
+        <service android:name=".notifications.SyncService" />
+        <receiver
+            android:name=".notifications.SyncReceiver"
+            android:exported="true" />
+
 
         <activity
             android:name=".ui.init.UserInitActivity"

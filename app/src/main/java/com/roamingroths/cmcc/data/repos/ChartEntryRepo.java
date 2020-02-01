@@ -1,9 +1,6 @@
 package com.roamingroths.cmcc.data.repos;
 
-import androidx.core.util.Pair;
-
 import com.google.common.base.Optional;
-import com.google.common.collect.ForwardingList;
 import com.google.common.collect.Iterables;
 import com.roamingroths.cmcc.data.db.AppDatabase;
 import com.roamingroths.cmcc.data.db.ObservationEntryDao;
@@ -14,6 +11,7 @@ import com.roamingroths.cmcc.data.models.ChartEntry;
 import com.roamingroths.cmcc.utils.DateUtil;
 import com.roamingroths.cmcc.utils.RxUtil;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
@@ -21,16 +19,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import androidx.core.util.Pair;
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.flowables.GroupedFlowable;
+import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
 public class ChartEntryRepo {
 
+  private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
@@ -39,6 +38,10 @@ public class ChartEntryRepo {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
+  }
+
+  public Flowable<UpdateEvent> updateEvents() {
+    return updates.toFlowable(BackpressureStrategy.BUFFER);
   }
 
   @Deprecated
@@ -104,7 +107,8 @@ public class ChartEntryRepo {
     return Completable.mergeArray(
         observationEntryDao.insert(entry.observationEntry),
         wellnessEntryDao.insert(entry.wellnessEntry),
-        symptomEntryDao.insert(entry.symptomEntry));
+        symptomEntryDao.insert(entry.symptomEntry))
+        .doOnComplete(() -> updates.onNext(UpdateEvent.forEntry(entry)));
   }
 
   public Completable deleteAll() {
@@ -120,7 +124,8 @@ public class ChartEntryRepo {
     return Completable.mergeArray(
         observationEntryDao.delete(entry.observationEntry),
         wellnessEntryDao.delete(entry.wellnessEntry),
-        symptomEntryDao.delete(entry.symptomEntry));
+        symptomEntryDao.delete(entry.symptomEntry))
+        .doOnComplete(() -> updates.onNext(UpdateEvent.forEntry(entry)));
   }
 
   private Flowable<ChartEntry> getStream(LocalDate entryDate) {
@@ -138,28 +143,17 @@ public class ChartEntryRepo {
     return endDate.map(lastDay -> DateUtil.daysBetween(cycle.startDate, lastDay, true));
   }
 
+  public static class UpdateEvent {
+    public final DateTime updateTime;
+    public final LocalDate updateTarget;
 
-
-  public static class ChartEntryList extends ForwardingList<ChartEntry> {
-
-    private CompositeDisposable mDisposables = new CompositeDisposable();
-    private List<ChartEntry> mList = new ArrayList<>();
-
-    @Override
-    protected List<ChartEntry> delegate() {
-      return mList;
+    public UpdateEvent(DateTime updateTime, LocalDate updateTarget) {
+      this.updateTime = updateTime;
+      this.updateTarget = updateTarget;
     }
 
-    public Disposable listen(Flowable<GroupedFlowable<LocalDate, ChartEntry>> stream) {
-      return stream
-          .doOnComplete(() -> mDisposables.clear())
-          .subscribe(groupedStream -> {
-            mDisposables.add(groupedStream
-                .lastElement()
-                .subscribe(lastEntry -> mList.remove(lastEntry)));
-            mDisposables.add(groupedStream
-                .subscribe(latestEntry -> mList.add(latestEntry)));
-          });
+    static UpdateEvent forEntry(ChartEntry entry) {
+      return new UpdateEvent(DateTime.now(), entry.entryDate);
     }
   }
 }

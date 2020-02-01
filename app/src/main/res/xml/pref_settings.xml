@@ -3,27 +3,17 @@
                   android:layout_width="match_parent"
                   android:layout_height="match_parent">
 
-    <EditTextPreference
-        android:defaultValue=""
-        android:inputType="text"
-        android:key="@string/pref_practitioner_name_key"
-        android:singleLine="true"
-        android:title="@string/pref_practitioner_name_label" />
     <PreferenceCategory
-        android:title="Charting Options"
-        android:key="pref_key_charting_options">
+        android:title="Backup &amp; Export"
+        android:key="PREF_BACKUP_EXPORT_OPTIONS">
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="enable_pre_peak_yellow_stickers"
-            android:title="Pre-peak Yellow Stickers"/>
+            android:key="ENABLE_BACKUP_TO_DRIVE"
+            android:title="Backup to Google Drive"/>
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="enable_post_peak_yellow_stickers"
-            android:title="Post-peak Yellow Stickers"/>
-        <SwitchPreferenceCompat
-            android:defaultValue="false"
-            android:key="special_sameness_yellow_stickers"
-            android:title="Special Sameness Yellow Stickers"/>
+            android:key="ENABLE_PUBLISH_CHARTS_TO_DRIVE"
+            android:title="Publish charts to Drive"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:title="Wellness"

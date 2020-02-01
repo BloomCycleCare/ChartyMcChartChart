@@ -118,11 +118,8 @@ dependencies {
     def room_version = "2.1.0"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version" // use kapt for Kotlin
-    // optional - RxJava support for Room
     implementation "androidx.room:room-rxjava2:$room_version"
-    // optional - Guava support for Room, including Optional and ListenableFuture
     implementation "androidx.room:room-guava:$room_version"
-    // Test helpers
     testImplementation "androidx.room:room-testing:$room_version"
 
     implementation 'com.jakewharton.timber:timber:4.7.1'
@@ -141,4 +138,8 @@ dependencies {
     implementation('com.google.apis:google-api-services-drive:v3-rev136-1.25.0') {
         exclude group: 'org.apache.httpcomponents'
     }
+
+    def work_version = "2.3.0"
+    implementation "androidx.work:work-runtime:$work_version"
+    implementation "androidx.work:work-rxjava2:$work_version"
 }

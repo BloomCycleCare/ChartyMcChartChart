@@ -3,18 +3,12 @@ package com.roamingroths.cmcc.ui.drive;
 import android.app.Application;
 import android.content.Context;
 
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.api.client.extensions.android.http.AndroidHttp;
-import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
 import com.google.api.client.http.FileContent;
-import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.services.drive.Drive;
-import com.google.api.services.drive.DriveScopes;
 import com.google.api.services.drive.model.File;
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.drive.DriveServiceHelper;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
-import com.roamingroths.cmcc.data.repos.ChartRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
 import com.roamingroths.cmcc.logic.chart.CycleRenderer;
@@ -37,8 +31,8 @@ import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.MaybeSubject;
 import io.reactivex.subjects.PublishSubject;
-import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
@@ -48,7 +42,7 @@ public class DriveViewModel extends AndroidViewModel {
 
   private final Context mContext;
   private final PublishSubject<ViewState> mViewState = PublishSubject.create();
-  private final SingleSubject<ChartRepo> mChartRepoSubject = SingleSubject.create();
+  private final MaybeSubject<DriveServiceHelper> mDriveHelper = MaybeSubject.create();
   private final Subject<Object> mSyncClicks = BehaviorSubject.create();
 
   private final InstructionsRepo mInstructionRepo;
@@ -64,27 +58,24 @@ public class DriveViewModel extends AndroidViewModel {
     mCycleRepo = myApp.cycleRepo();
     mEntryRepo = myApp.entryRepo();
 
-    mChartRepoSubject.flatMapObservable(chartRepo -> {
+    myApp.driveService().filter(Optional::isPresent).map(Optional::get).subscribe(mDriveHelper);
+
+    mDriveHelper.flatMapObservable(driveHelper -> {
       Observable<ViewState> syncResults = mSyncClicks
           .flatMap(c -> {
             Timber.d("Sync clicked");
             Subject<String> updates = PublishSubject.create();
-            Single<ViewState> result = doSync(chartRepo, updates).cache();
+            Single<ViewState> result = doSync(driveHelper, updates).cache();
             return updates.map(ViewState::message)
                 .takeUntil(result.toObservable())
                 .concatWith(result.toObservable());
           });
-      return loadInitialFiles(chartRepo).toObservable().concatWith(syncResults);
+      return loadInitialFiles(driveHelper).toObservable().concatWith(syncResults);
     }).startWith(ViewState.message("Initializing")).subscribe(mViewState);
   }
 
-  void init(Single<GoogleSignInAccount> accountSubject, Subject<?> syncClicks) {
-    accountSubject
-        .doOnSuccess(a -> Timber.d("Received account"))
-        .map(this::initGoogleDrive)
-        .doOnSuccess(d -> Timber.d("service initialized"))
-        .map(ChartRepo::new)
-        .subscribe(mChartRepoSubject);
+
+  void init(Subject<?> syncClicks) {
     syncClicks.subscribe(mSyncClicks);
   }
 
@@ -92,15 +83,15 @@ public class DriveViewModel extends AndroidViewModel {
     return LiveDataReactiveStreams.fromPublisher(mViewState.toFlowable(BackpressureStrategy.BUFFER));
   }
 
-  private Single<ViewState> loadInitialFiles(ChartRepo repo) {
-    return repo
+  private Single<ViewState> loadInitialFiles(DriveServiceHelper driveHelper) {
+    return driveHelper
         .getOrCreateFolder(FOLDER_NAME)
-        .flatMap(folder -> repo.getFilesInFolder(folder).toList())
+        .flatMap(folder -> driveHelper.getFilesInFolder(folder).toList())
         .map(ViewState::files)
         ;
   }
 
-  private Single<ViewState> doSync(ChartRepo repo, Subject<String> updateSubject) {
+  private Single<ViewState> doSync(DriveServiceHelper driveHelper, Subject<String> updateSubject) {
     return mInstructionRepo.getAll().firstOrError().map(instructions -> mCycleRepo
         .getStream()
         .firstOrError()
@@ -124,13 +115,13 @@ public class DriveViewModel extends AndroidViewModel {
         .doOnSuccess(p -> updateSubject.onNext("Rendering your charts"))
         .flatMap(ChartPrinter::savePDFs)
         .doOnSuccess(f -> updateSubject.onNext("Uploading charts to Drive"))
-        .flatMap(savedCharts -> repo.getOrCreateFolder(FOLDER_NAME).flatMap(folder -> repo
+        .flatMap(savedCharts -> driveHelper.getOrCreateFolder(FOLDER_NAME).flatMap(folder -> driveHelper
             .clearFolder(folder).andThen(Observable.fromIterable(savedCharts)
                 .flatMap(savedChart -> {
                   File file = new File();
                   file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
                   FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
-                  return repo
+                  return driveHelper
                       .addFileToFolder(folder, file, mediaContent)
                       .doOnSuccess(f -> savedChart.file.delete())
                       .toObservable();
@@ -140,20 +131,6 @@ public class DriveViewModel extends AndroidViewModel {
         .map(ViewState::files)
         .doOnSubscribe(d -> updateSubject.onNext("Initiating sync to Drive"))
         ;
-  }
-
-  private Drive initGoogleDrive(GoogleSignInAccount account) {
-    // Use the authenticated account to sign in to the Drive service.
-    GoogleAccountCredential credential =
-        GoogleAccountCredential.usingOAuth2(
-            mContext, Collections.singleton(DriveScopes.DRIVE_FILE));
-    credential.setSelectedAccount(account.getAccount());
-    return new Drive.Builder(
-        AndroidHttp.newCompatibleTransport(),
-        new GsonFactory(),
-        credential)
-        .setApplicationName("Drive API Migration")
-        .build();
   }
 
   public static class ViewState {

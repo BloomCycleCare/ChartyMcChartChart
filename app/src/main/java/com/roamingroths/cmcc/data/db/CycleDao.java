@@ -1,5 +1,11 @@
 package com.roamingroths.cmcc.data.db;
 
+import com.roamingroths.cmcc.data.entities.Cycle;
+
+import org.joda.time.LocalDate;
+
+import java.util.List;
+
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -8,13 +14,6 @@ import androidx.room.Query;
 import androidx.room.Transaction;
 import androidx.room.TypeConverters;
 import androidx.room.Update;
-
-import com.roamingroths.cmcc.data.entities.Cycle;
-
-import org.joda.time.LocalDate;
-
-import java.util.List;
-
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -32,6 +31,10 @@ public abstract class CycleDao {
   @TypeConverters(Converters.class)
   @Query("SELECT * FROM Cycle WHERE endDate=:endDate")
   public abstract Maybe<Cycle> getCycleWithEndDate(LocalDate endDate);
+
+  @TypeConverters(Converters.class)
+  @Query("SELECT * FROM Cycle WHERE startDate <= :date AND (endDate IS NULL OR endDate >= :date)")
+  public abstract Maybe<Cycle> getCycleForDate(LocalDate date);
 
   @Delete
   public abstract Completable delete(Cycle cycle);

@@ -117,7 +117,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
             (e, v) -> e.intercourseTimeOfDay = v, "timeOfDay"))
         .compose(RxUtil.update(noteUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             (e, v) -> e.note = v, "notes"))
-        .doOnNext(v -> Timber.i("New v"))
         ;
 
     Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionRenderUpdates = Flowable.combineLatest(
@@ -470,11 +469,5 @@ public class EntryDetailViewModel extends AndroidViewModel {
     public static ValidationIssue block(String summary, String details) {
       return new ValidationIssue(summary, details, ValidationAction.BLOCK);
     }
-  }
-
-  static <T> Flowable<T> toFlowable(Subject<T> s, String sName) {
-    return s.toFlowable(BackpressureStrategy.BUFFER)
-        .distinctUntilChanged()
-        .doOnNext(t -> Timber.i("New %s", sName));
   }
 }
