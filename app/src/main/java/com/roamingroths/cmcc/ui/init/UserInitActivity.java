@@ -6,12 +6,7 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 
-import com.google.android.gms.auth.api.signin.GoogleSignIn;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.android.gms.auth.api.signin.GoogleSignInClient;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.common.api.Scope;
-import com.google.api.services.drive.DriveScopes;
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -121,26 +116,13 @@ public class UserInitActivity extends FragmentActivity {
 
   @Override
   protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-    if (resultCode == RESULT_CANCELED) {
-      mAccountSubject.onComplete();
-    } else {
-      GoogleSignIn.getSignedInAccountFromIntent(data)
-          .addOnSuccessListener(mAccountSubject::onSuccess)
-          .addOnFailureListener(mAccountSubject::onError);
-    }
+    GoogleAuthHelper.handlePromptResponse(resultCode, data, mAccountSubject);
     super.onActivityResult(requestCode, resultCode, data);
   }
 
   private Maybe<GoogleSignInAccount> promptForSignIn(Context context, MaybeSubject<GoogleSignInAccount> accountSubject) {
     Timber.d("Requesting sign-in");
-    GoogleSignInOptions signInOptions =
-        new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-            .requestEmail()
-            .requestScopes(new Scope(DriveScopes.DRIVE_FILE))
-            .build();
-    GoogleSignInClient client = GoogleSignIn.getClient(context, signInOptions);
-    Intent intent = client.getSignInIntent();
-    startActivityForResult(intent, 1);
+    startActivityForResult(GoogleAuthHelper.getPromptIntent(context), 1);
     return accountSubject;
   }
 
