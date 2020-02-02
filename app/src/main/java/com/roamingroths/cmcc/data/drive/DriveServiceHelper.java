@@ -14,7 +14,9 @@ import com.google.api.services.drive.model.FileList;
 import com.google.common.collect.ImmutableList;
 import com.roamingroths.cmcc.utils.GoogleAuthHelper;
 
+import java.io.OutputStream;
 import java.util.Collections;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import io.reactivex.Completable;
@@ -50,7 +52,7 @@ public class DriveServiceHelper {
     return GoogleAuthHelper.googleAccount(context).map(account -> forAccount(account, context));
   }
 
-  private Maybe<File> getFolder(String folderName) {
+  public Maybe<File> getFolder(String folderName) {
     return Single.<FileList>create(e -> e.onSuccess(mDrive.files().list()
         .setQ(String.format("name = '%s' and mimeType = 'application/vnd.google-apps.folder'", folderName))
         .setSpaces("drive")
@@ -65,6 +67,24 @@ public class DriveServiceHelper {
           }
           return Maybe.just(fileList.getFiles().get(0));
         }).subscribeOn(Schedulers.io());
+  }
+
+  public Maybe<List<File>> getFilesInFolder(File folder, String filename) {
+    return query(String.format("name = '%s' and '%s' in parents", filename, folder.getId()))
+        .toList()
+        .flatMapMaybe(files -> {
+          if (files.isEmpty()) {
+            return Maybe.empty();
+          }
+          return Maybe.just(files);
+        });
+  }
+
+  public Single<OutputStream> downloadFile(File file, OutputStream outputStream) {
+    return Single.create(e -> {
+      mDrive.files().get(file.getId()).executeMediaAndDownloadTo(outputStream);
+      e.onSuccess(outputStream);
+    });
   }
 
   public Single<File> getOrCreateFolder(String folderName) {
@@ -88,7 +108,8 @@ public class DriveServiceHelper {
   }
 
   public Completable deleteFileFromFolder(@NonNull File folder, String filename) {
-    return query(String.format("name = '%s' and '%s' in parents", filename, folder.getId()))
+    return getFilesInFolder(folder, filename)
+        .flatMapObservable(Observable::fromIterable)
         .flatMapCompletable(file -> Completable.fromAction(() -> {
           mDrive.files().delete(file.getId()).execute();
         }).doOnComplete(() -> Timber.d("Deleted file")))

@@ -4,7 +4,6 @@ import android.app.Application;
 import android.content.Intent;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 import com.roamingroths.cmcc.BuildConfig;
@@ -152,7 +151,7 @@ public class MyApplication extends Application {
         }, Timber::e));
 
     mDisposables.add(batchedTriggers
-        .startWith(ImmutableList.<UpdateTrigger>of())
+        //.startWith(ImmutableList.<UpdateTrigger>of())
         .compose(RxUtil.onceAvailable(driveService()))
         .map(trigger -> new OneTimeWorkRequest.Builder(BackupWorker.class).build())
         .compose(RxUtil.takeWhile(mPreferenceRepo.summaries(), PreferenceRepo.PreferenceSummary::backupEnabled))
@@ -188,6 +187,10 @@ public class MyApplication extends Application {
 
   public ChartEntryRepo entryRepo() {
     return mChartEntryRepo;
+  }
+
+  public PreferenceRepo preferenceRepo() {
+    return mPreferenceRepo;
   }
 
   public static MyApplication cast(Application app) {

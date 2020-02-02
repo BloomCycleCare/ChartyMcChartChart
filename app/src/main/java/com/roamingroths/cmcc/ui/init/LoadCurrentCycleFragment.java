@@ -7,8 +7,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 
+import com.google.api.services.drive.model.File;
 import com.google.firebase.auth.FirebaseUser;
 import com.roamingroths.cmcc.application.MyApplication;
+import com.roamingroths.cmcc.data.backup.AppStateImporter;
+import com.roamingroths.cmcc.data.backup.AppStateParser;
 import com.roamingroths.cmcc.data.entities.Cycle;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity;
@@ -16,6 +19,8 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.LocalDate;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
 
 import io.reactivex.Maybe;
@@ -62,7 +67,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     mDisposables.add(mCycleRepo.getCurrentCycle()
         .compose(tryUseLatestAsCurrent())
         .observeOn(AndroidSchedulers.mainThread())
-        //.compose(bootstrap())
+        .compose(tryRestoreFromDrive())
         .compose(initFirstCycle())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribeOn(Schedulers.computation())
@@ -91,6 +96,57 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                 })));
   }
 
+  private MaybeTransformer<Cycle, Cycle> tryRestoreFromDrive() {
+    return upstream -> upstream.switchIfEmpty(
+        MyApplication.getInstance().preferenceRepo().summaries().firstOrError()
+            .flatMapMaybe(summary -> {
+              if (!summary.backupEnabled()) {
+                Timber.i("Not restoring from Drive, backup disabled");
+                return Maybe.empty();
+              }
+              return MyApplication.getInstance().driveService()
+                  .flatMapMaybe(driveHelper -> {
+                    if (!driveHelper.isPresent()) {
+                      Timber.i("Not restoring from Drive, service not available");
+                      return Maybe.empty();
+                    }
+                    return Maybe.just(driveHelper.get());
+                  })
+                  .flatMap(driveService -> driveService.getFolder("My Charts")
+                      .flatMap(folder -> driveService.getFilesInFolder(folder, "backup.chart"))
+                      .observeOn(AndroidSchedulers.mainThread())
+                      .flatMap(files -> {
+                        if (files.size() > 1) {
+                          Timber.w("Found several files! Bailing out of restore flow.");
+                          return Maybe.empty();
+                        }
+                        File backupFile = files.get(0);
+                        Timber.d("Prompting for restore");
+                        return promptRestoreFromDrive(backupFile).observeOn(Schedulers.io()).flatMapMaybe(doRestore -> {
+                          if (!doRestore) {
+                            return Maybe.empty();
+                          }
+                          Timber.d("Reading backup files from Drive");
+                          ByteArrayOutputStream out = new ByteArrayOutputStream();
+                          return driveService.downloadFile(files.get(0), out)
+                              .map(outputStream -> out.toByteArray())
+                              .toMaybe();
+                        });
+                      }))
+                  .observeOn(Schedulers.computation())
+                  .flatMap(bytes -> {
+                    Timber.d("Parsing backup file");
+                    ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+                    return AppStateParser.parse(() -> in).toMaybe();
+                  })
+                  .flatMap(appState -> {
+                    Timber.d("Importing app state");
+                    AppStateImporter importer = new AppStateImporter(MyApplication.getInstance());
+                    return importer.importAppState(appState).andThen(mCycleRepo.getCurrentCycle());
+                  });
+            }).doOnSubscribe(d -> Timber.d("Trying restore from Drive")));
+  }
+
   private MaybeTransformer<Cycle, Cycle> initFirstCycle() {
     return upstream -> upstream
         .switchIfEmpty(promptForStart()
@@ -108,6 +164,28 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
           //set message, title, and icon
           .setTitle("Use latest cycle?")
           .setMessage("Would you like to use the latest cycle as the current? Probably recovering from an error...")
+          .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+              e.onSuccess(true);
+              dialog.dismiss();
+            }
+          })
+          .setNegativeButton("No", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int which) {
+              e.onSuccess(false);
+              dialog.dismiss();
+            }
+          })
+          .create().show();
+    });
+  }
+
+  private Single<Boolean> promptRestoreFromDrive(File file) {
+    return Single.create(e -> {
+      new AlertDialog.Builder(getActivity())
+          //set message, title, and icon
+          .setTitle("Restore from Drive?")
+          .setMessage(String.format("Would you like to restore your data from Google Drive? Last backup was taken on %s", file.getModifiedTime()))
           .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
               e.onSuccess(true);
