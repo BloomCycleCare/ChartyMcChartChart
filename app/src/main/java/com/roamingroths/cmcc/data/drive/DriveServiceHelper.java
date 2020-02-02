@@ -87,6 +87,15 @@ public class DriveServiceHelper {
         .subscribeOn(Schedulers.io());
   }
 
+  public Completable deleteFileFromFolder(@NonNull File folder, String filename) {
+    return query(String.format("name = '%s' and '%s' in parents", filename, folder.getId()))
+        .flatMapCompletable(file -> Completable.fromAction(() -> {
+          mDrive.files().delete(file.getId()).execute();
+        }).doOnComplete(() -> Timber.d("Deleted file")))
+        .doOnSubscribe(d -> Timber.d("Looking for %s in %s", filename, folder.getName()))
+        ;
+  }
+
   public Single<File> addFileToFolder(@NonNull File folder, File fileMetadata, FileContent fileContent) {
     Timber.d("Adding file to %s", folder.getName());
     fileMetadata.setParents(ImmutableList.of(folder.getId()));
@@ -107,6 +116,7 @@ public class DriveServiceHelper {
   }
 
   private Observable<File> query(@NonNull String query) {
+    Timber.v("Query: %s", query);
     return Observable.create(e -> {
       String pageToken = null;
       do {

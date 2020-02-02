@@ -21,6 +21,9 @@ import timber.log.Timber;
 
 public class BackupWorker extends RxWorker {
 
+  private static final String BACKUP_FILE_NAME_IN_DRIVE = "backup.chart";
+  private static final String LOCAL_BACKUP_FILE_NAME = "local_backup.chart";
+
   private final Context mContext;
   private final MyApplication mApp;
 
@@ -50,7 +53,7 @@ public class BackupWorker extends RxWorker {
           if (!path.exists()) {
             path.mkdir();
           }
-          File file = new File(path, "cmcc_export.chart");
+          File file = new File(path, LOCAL_BACKUP_FILE_NAME);
           Files.write(json, file, Charsets.UTF_8);
           return file;
         })
@@ -63,8 +66,10 @@ public class BackupWorker extends RxWorker {
               driveFile.setName("backup.chart");
               FileContent mediaContent = new FileContent("application/json", file);
               return driveService
-                  .addFileToFolder(folder, driveFile, mediaContent);
+                  .deleteFileFromFolder(folder, BACKUP_FILE_NAME_IN_DRIVE)
+                  .andThen(Single.defer(() -> driveService.addFileToFolder(folder, driveFile, mediaContent)));
             })
+            .doOnSuccess(driveFile -> file.delete())
             .ignoreElement())
         .toSingleDefault(Result.success());
   }
