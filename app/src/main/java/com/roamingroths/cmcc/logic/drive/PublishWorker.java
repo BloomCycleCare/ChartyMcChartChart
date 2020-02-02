@@ -14,7 +14,7 @@ import androidx.work.WorkerParameters;
 import timber.log.Timber;
 
 
-public class SyncWorker extends Worker {
+public class PublishWorker extends Worker {
 
   private enum Params {
     START_DATE,
@@ -31,7 +31,7 @@ public class SyncWorker extends Worker {
         .build();
   }
 
-  public SyncWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
+  public PublishWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
     super(context, workerParams);
   }
 

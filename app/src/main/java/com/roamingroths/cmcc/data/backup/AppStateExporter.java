@@ -16,6 +16,10 @@ public class AppStateExporter {
   private final ChartEntryRepo mEntryRepo;
   private final InstructionsRepo mInstructionsRepo;
 
+  public static AppStateExporter forApp(MyApplication myApp) {
+    return new AppStateExporter(myApp);
+  }
+
   public AppStateExporter(MyApplication myApp) {
     mCycleRepo = new CycleRepo(myApp.db());
     mEntryRepo = new ChartEntryRepo(myApp.db());
