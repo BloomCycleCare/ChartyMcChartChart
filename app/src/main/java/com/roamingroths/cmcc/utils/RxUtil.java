@@ -1,5 +1,6 @@
 package com.roamingroths.cmcc.utils;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -8,14 +9,16 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import androidx.core.util.Pair;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableTransformer;
 import io.reactivex.Observable;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Function;
+import io.reactivex.functions.Predicate;
+import io.reactivex.subjects.SingleSubject;
 import timber.log.Timber;
 
 public class RxUtil {
@@ -63,7 +66,9 @@ public class RxUtil {
   public static <T> List<T> filterEmpty(Collection<Optional<T>> in) {
     List<T> out = new ArrayList<>();
     for (Optional<T> item : in) {
-      item.ifPresent(out::add);
+      if (item.isPresent()) {
+        out.add(item.get());
+      }
     }
     return out;
   }
@@ -90,6 +95,18 @@ public class RxUtil {
         .timeout(Flowable.empty().delay(30, TimeUnit.SECONDS), x -> Flowable.never())
         .doOnError(t -> Timber.w("Stall warning %s", name))
         .onErrorResumeNext(source);
+  }
+
+  public static <T, X> FlowableTransformer<T, T> takeWhile(Flowable<X> filterStream, Predicate<X> filterPredicate) {
+    return upstream -> Flowable
+        .combineLatest(upstream, filterStream, Pair::create)
+        .filter(p -> filterPredicate.test(p.second))
+        .map(p -> p.first);
+  }
+
+  public static <T, X> FlowableTransformer<T, T> onceAvailable(SingleSubject<? extends Optional<?>> resource) {
+    return upstream -> Flowable
+        .combineLatest(upstream, resource.toFlowable().filter(Optional::isPresent), (item, r) -> item);
   }
 
 }

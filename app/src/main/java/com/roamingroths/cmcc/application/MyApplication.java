@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Intent;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 import com.roamingroths.cmcc.BuildConfig;
@@ -13,10 +14,12 @@ import com.roamingroths.cmcc.data.drive.DriveServiceHelper;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
+import com.roamingroths.cmcc.logic.PreferenceRepo;
 import com.roamingroths.cmcc.logic.drive.BackupWorker;
 import com.roamingroths.cmcc.logic.drive.PublishWorker;
 import com.roamingroths.cmcc.logic.drive.UpdateTrigger;
 import com.roamingroths.cmcc.notifications.ChartingReceiver;
+import com.roamingroths.cmcc.utils.RxUtil;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.joda.time.LocalDate;
@@ -53,6 +56,7 @@ public class MyApplication extends Application {
   private InstructionsRepo mInstructionsRepo;
   private CycleRepo mCycleRepo;
   private ChartEntryRepo mChartEntryRepo;
+  private PreferenceRepo mPreferenceRepo;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -84,6 +88,7 @@ public class MyApplication extends Application {
     mInstructionsRepo = new InstructionsRepo(this);
     mChartEntryRepo = new ChartEntryRepo(mDB);
     mCycleRepo = new CycleRepo(mDB);
+    mPreferenceRepo = PreferenceRepo.create(this);
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -136,6 +141,7 @@ public class MyApplication extends Application {
         });
 
     mDisposables.add(mergedTrigger
+        .compose(RxUtil.takeWhile(mPreferenceRepo.summaries(), PreferenceRepo.PreferenceSummary::backupEnabled))
         .map(dateRange -> new OneTimeWorkRequest.Builder(PublishWorker.class)
             .setInputData(PublishWorker.createInputData(dateRange))
             .build())
@@ -145,15 +151,20 @@ public class MyApplication extends Application {
           WorkManager.getInstance(getApplicationContext()).enqueue(request);
         }, Timber::e));
 
-    mDisposables.add(Flowable.combineLatest(
-        batchedTriggers,
-        driveService().toFlowable().filter(Optional::isPresent).map(Optional::get),
-        (triggers, driveService) -> new OneTimeWorkRequest.Builder(BackupWorker.class).build())
+    mDisposables.add(batchedTriggers
+        .startWith(ImmutableList.<UpdateTrigger>of())
+        .compose(RxUtil.onceAvailable(driveService()))
+        .map(trigger -> new OneTimeWorkRequest.Builder(BackupWorker.class).build())
+        .compose(RxUtil.takeWhile(mPreferenceRepo.summaries(), PreferenceRepo.PreferenceSummary::backupEnabled))
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(request -> {
           Timber.d("Received work request for backup");
           WorkManager.getInstance(getApplicationContext()).enqueue(request);
         }, Timber::e));
+
+    mDisposables.add(mDriveSubject.subscribe(
+        s -> Timber.d("DriveServiceHelper initialized."),
+        t -> Timber.e(t, "Error initializing DriveServiceHelper")));
 
     INSTANCE = this;
   }

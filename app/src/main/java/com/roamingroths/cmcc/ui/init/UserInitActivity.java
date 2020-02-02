@@ -11,6 +11,7 @@ import com.google.common.base.Optional;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.application.MyApplication;
 import com.roamingroths.cmcc.data.drive.DriveServiceHelper;
+import com.roamingroths.cmcc.logic.PreferenceRepo;
 import com.roamingroths.cmcc.utils.GoogleAuthHelper;
 
 import java.util.concurrent.Callable;
@@ -68,7 +69,7 @@ public class UserInitActivity extends FragmentActivity {
     getSupportFragmentManager().executePendingTransactions();
     mFragment = (SplashFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-    PreferenceManager prefManager = PreferenceManager.create(this);
+    PreferenceRepo prefManager = PreferenceRepo.create(this);
 
     CompositeDisposable disposables = new CompositeDisposable();
     disposables.add(prefManager
@@ -101,16 +102,16 @@ public class UserInitActivity extends FragmentActivity {
     super.onStart();
   }
 
-  private Single<Optional<DriveServiceHelper>> tryInitDrive(Callable<Single<Boolean>> promptForDisable, PreferenceManager preferenceManager) {
+  private Single<Optional<DriveServiceHelper>> tryInitDrive(Callable<Single<Boolean>> promptForDisable, PreferenceRepo preferenceRepo) {
     return GoogleAuthHelper.googleAccount(this)
         .switchIfEmpty(Maybe.defer(() -> promptForSignIn(this, mAccountSubject)))
         .map(account -> Optional.of(DriveServiceHelper.forAccount(account, this)))
         .switchIfEmpty(Single.defer(promptForDisable).flatMap(disable -> {
           if (disable) {
-            preferenceManager.disableAllTheThings();
+            preferenceRepo.disableAllTheThings();
             return Single.just(Optional.absent());
           }
-          return tryInitDrive(promptForDisable, preferenceManager);
+          return tryInitDrive(promptForDisable, preferenceRepo);
         }));
   }
 

@@ -1,4 +1,4 @@
-package com.roamingroths.cmcc.ui.init;
+package com.roamingroths.cmcc.logic;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -11,7 +11,7 @@ import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import timber.log.Timber;
 
-public class PreferenceManager {
+public class PreferenceRepo {
 
   private enum Key {
     PROMPTED_FOR_BACKUP,
@@ -23,11 +23,11 @@ public class PreferenceManager {
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
   private final SharedPreferences preferences;
 
-  public static PreferenceManager create(Context context) {
-    return new PreferenceManager(context);
+  public static PreferenceRepo create(Context context) {
+    return new PreferenceRepo(context);
   }
 
-  private PreferenceManager(Context context) {
+  private PreferenceRepo(Context context) {
     preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context);
     preferences.registerOnSharedPreferenceChangeListener((sharedPreferences, s) -> {
       for (Key key : Key.values()) {
@@ -57,8 +57,16 @@ public class PreferenceManager {
       this.mPrefs = mPrefs;
     }
 
+    public boolean backupEnabled() {
+      return mPrefs.getBoolean(Key.ENABLE_BACKUP_TO_DRIVE.name(), false);
+    }
+
     public Single<Boolean> backupEnabled(Callable<Single<Boolean>> promptSupplier) {
       return doTheStuff(Key.ENABLE_BACKUP_TO_DRIVE, Key.PROMPTED_FOR_BACKUP, promptSupplier);
+    }
+
+    public boolean publishEnabled() {
+      return mPrefs.getBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE.name(), false);
     }
 
     public Single<Boolean> publishEnabled(Callable<Single<Boolean>> promptSupplier) {
