@@ -3,7 +3,6 @@ package com.roamingroths.cmcc.ui.drive;
 import android.app.Application;
 import android.content.Context;
 
-import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.model.File;
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.application.MyApplication;
@@ -11,13 +10,6 @@ import com.roamingroths.cmcc.data.drive.DriveServiceHelper;
 import com.roamingroths.cmcc.data.repos.ChartEntryRepo;
 import com.roamingroths.cmcc.data.repos.CycleRepo;
 import com.roamingroths.cmcc.data.repos.InstructionsRepo;
-import com.roamingroths.cmcc.logic.chart.CycleRenderer;
-import com.roamingroths.cmcc.logic.print.ChartPrinter;
-import com.roamingroths.cmcc.logic.print.PageRenderer;
-import com.roamingroths.cmcc.utils.DateUtil;
-
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
 
 import java.util.Collections;
 import java.util.List;
@@ -27,7 +19,6 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
-import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
@@ -65,7 +56,7 @@ public class DriveViewModel extends AndroidViewModel {
           .flatMap(c -> {
             Timber.d("Sync clicked");
             Subject<String> updates = PublishSubject.create();
-            Single<ViewState> result = doSync(driveHelper, updates).cache();
+            Single<ViewState> result = Single.error(new UnsupportedOperationException()); //doSync(driveHelper, updates).cache();
             return updates.map(ViewState::message)
                 .takeUntil(result.toObservable())
                 .concatWith(result.toObservable());
@@ -91,7 +82,7 @@ public class DriveViewModel extends AndroidViewModel {
         ;
   }
 
-  private Single<ViewState> doSync(DriveServiceHelper driveHelper, Subject<String> updateSubject) {
+  /*private Single<ViewState> doSync(DriveServiceHelper driveHelper, Subject<String> updateSubject) {
     return mInstructionRepo.getAll().firstOrError().map(instructions -> mCycleRepo
         .getStream()
         .firstOrError()
@@ -109,14 +100,15 @@ public class DriveViewModel extends AndroidViewModel {
         .flatMapSingle(cycle -> mEntryRepo
             .getStreamForCycle(Flowable.just(cycle))
             .firstOrError()
-            .map(entries -> new CycleRenderer(cycle, entries, instructions))))
+            .flatMap(entries -> Single.just(new CycleRenderer(cycle, entries, instructions))))
+        .toList()
         .map(PageRenderer::new)
         .map(pageRenderer -> new ChartPrinter(pageRenderer, null, mContext))
         .doOnSuccess(p -> updateSubject.onNext("Rendering your charts"))
         .flatMap(ChartPrinter::savePDFs)
         .doOnSuccess(f -> updateSubject.onNext("Uploading charts to Drive"))
         .flatMap(savedCharts -> driveHelper.getOrCreateFolder(FOLDER_NAME).flatMap(folder -> driveHelper
-            .clearFolder(folder).andThen(Observable.fromIterable(savedCharts)
+            .clearFolder(folder, "pdf").andThen(Observable.fromIterable(savedCharts)
                 .flatMap(savedChart -> {
                   File file = new File();
                   file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
@@ -131,7 +123,7 @@ public class DriveViewModel extends AndroidViewModel {
         .map(ViewState::files)
         .doOnSubscribe(d -> updateSubject.onNext("Initiating sync to Drive"))
         ;
-  }
+  }*/
 
   public static class ViewState {
     public final List<File> files;

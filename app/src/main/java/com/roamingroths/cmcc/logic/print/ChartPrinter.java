@@ -39,8 +39,10 @@ import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/26/17.
@@ -64,7 +66,7 @@ public class ChartPrinter {
     mPageRenderer = pageRenderer;
   }
 
-  public static ChartPrinter create(Activity activity, Observable<CycleRenderer> renderers) {
+  public static ChartPrinter create(Activity activity, List<CycleRenderer> renderers) {
     PrintManager printManager = (PrintManager) activity.getSystemService(Context.PRINT_SERVICE);
     PageRenderer pageRenderer = new PageRenderer(renderers);
     return new ChartPrinter(pageRenderer, printManager, activity);
@@ -106,10 +108,14 @@ public class ChartPrinter {
           PdfPrint pdfPrint = new PdfPrint(mPrintAttributes);
           return pdfPrint
               .save(printedPage.webView.createPrintDocumentAdapter(jobName), path, "saved_chart_" + System.currentTimeMillis())
-              .map(f -> new SavedChart(f, printedPage.cycles.first()));
+              .map(f -> new SavedChart(f, printedPage.cycles.first()))
+              .doOnSuccess(f -> Timber.d("Done saving file %s", f.file.getAbsolutePath()));
         })
+        .observeOn(Schedulers.computation())
         .sorted((a, b) -> a.firstCycle.startDate.compareTo(b.firstCycle.startDate))
-        .toList();
+        .toList()
+        .doOnSuccess(charts -> Timber.d("Saved %d charts", charts.size()))
+        ;
   }
 
   public Observable<PrintJob> print() {

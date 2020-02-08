@@ -97,13 +97,13 @@ public class MyApplication extends Application {
 
 
     Flowable<UpdateTrigger> triggerStream = Flowable.merge(
-        cycleRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)),
+        cycleRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New cycle update")) ,
         entryRepo().updateEvents().flatMap(e -> cycleRepo()
             .getCycleForDate(e.updateTarget).toSingle()
             .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
             .map(range -> new UpdateTrigger(e.updateTime, range))
-            .toFlowable()),
-        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)))
+            .toFlowable()).doOnNext(t -> Timber.v("New entry update")),
+        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")))
         .share();
 
     Flowable<List<UpdateTrigger>> batchedTriggers = triggerStream
