@@ -17,7 +17,7 @@ public class PdfPrint {
   }
 
   public Single<File> save(PrintDocumentAdapter printAdapter, final File path, final String fileName) {
-    return Single.create(e -> {
+    return Single.<File>create(e -> {
       printAdapter.onLayout(null, printAttributes, null, new PrintDocumentAdapter.LayoutResultCallback() {
         @Override
         public void onLayoutFinished(PrintDocumentInfo info, boolean changed) {
@@ -38,7 +38,7 @@ public class PdfPrint {
           }
         }
       }, null);
-    });
+    }).doOnSuccess(f -> Timber.d("Done saving file"));
   }
 
   private File getOutputFile(File path, String fileName) throws Exception {

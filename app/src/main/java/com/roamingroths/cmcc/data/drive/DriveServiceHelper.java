@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
@@ -127,13 +128,19 @@ public class DriveServiceHelper {
         .subscribeOn(Schedulers.io());
   }
 
-  public Completable clearFolder(@NonNull File folder) {
+  public Completable clearFolder(@NonNull File folder, @Nullable String fileExtension) {
     Timber.d("Clearing contents of %s", folder.getName());
     return getFilesInFolder(folder)
-        .flatMapCompletable(file -> Completable.create(e -> {
-          mDrive.files().delete(file.getId()).execute();
-          e.onComplete();
-        }));
+        .flatMapCompletable(file -> {
+          if (fileExtension != null && !file.getName().endsWith(fileExtension)) {
+            Timber.v("Skipping over %s", file.getName());
+            return Completable.complete();
+          }
+          return Completable.create(e -> {
+            mDrive.files().delete(file.getId()).execute();
+            e.onComplete();
+          });
+        });
   }
 
   private Observable<File> query(@NonNull String query) {

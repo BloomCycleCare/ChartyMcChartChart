@@ -30,14 +30,14 @@ public class PageRenderer {
   private static final Joiner ON_SPACE = Joiner.on(" ");
   private static final Joiner ON_BR = Joiner.on("<br>");
 
-  private final Observable<CycleRenderer> renderers;
+  private final List<CycleRenderer> renderers;
 
-  public PageRenderer(Observable<CycleRenderer> renderers) {
+  public PageRenderer(List<CycleRenderer> renderers) {
     this.renderers = renderers;
   }
 
   public Observable<RenderedPage> createPages() {
-    return renderers
+    return Observable.fromIterable(renderers)
         .sorted((a, b) -> a.cycle().startDate.compareTo(b.cycle().startDate))
         .flatMap(PageRenderer::createCycleRows)
         .buffer(NUM_ROWS_PER_PAGE)

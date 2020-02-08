@@ -127,9 +127,9 @@ public class PrintChartActivity extends AppCompatActivity {
                 return;
               }
             }));*/
-        mDisposables.add(ChartPrinter
-            .create(PrintChartActivity.this, renderers)
-            .savePDF()
+        mDisposables.add(renderers.toList()
+            .map(r -> ChartPrinter.create(PrintChartActivity.this, r))
+            .flatMapCompletable(ChartPrinter::savePDF)
             .subscribeOn(Schedulers.computation())
             .subscribe(() -> printJobComplete()));
       }
