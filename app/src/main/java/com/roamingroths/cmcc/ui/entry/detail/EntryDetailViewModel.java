@@ -392,8 +392,10 @@ public class EntryDetailViewModel extends AndroidViewModel {
       if (entryHasBlood && !observationEntry.unusualBleeding && !entryContext.allPreviousDaysHaveHadBlood && !observationEntry.firstDay) {
         validationIssues.add(ValidationIssue.confirm("Unusual bleeding?", "Are you sure this bleedin is typical?"));
       }
-      if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()
-          && !observationEntry.isEssentiallyTheSame && !observationEntry.pointOfChange) {
+      boolean shouldBePocOrSame = entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus();
+      boolean isPocOrSame = observationEntry.isEssentiallyTheSame || observationEntry.pointOfChange;
+      boolean hasAskedPocAndSame = previousPrompts.contains(ClarifyingQuestion.ESSENTIAL_SAMENESS) && previousPrompts.contains(ClarifyingQuestion.POINT_OF_CHANGE);
+      if (shouldBePocOrSame && !isPocOrSame && hasAskedPocAndSame) {
         validationIssues.add(ValidationIssue.confirm("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
       }
       if (!observationErrorText.isEmpty()) {
