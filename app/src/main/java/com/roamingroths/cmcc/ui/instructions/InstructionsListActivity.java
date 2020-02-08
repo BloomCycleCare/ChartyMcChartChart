@@ -5,16 +5,6 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.viewpager.widget.ViewPager;
-
 import com.google.common.base.Optional;
 import com.roamingroths.cmcc.R;
 import com.roamingroths.cmcc.data.entities.Instructions;
@@ -26,10 +16,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.fragment.app.Fragment;
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentStatePagerAdapter;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.viewpager.widget.ViewPager;
+import io.reactivex.Completable;
+import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
 public class InstructionsListActivity extends AppCompatActivity {
 
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
   private SectionsPagerAdapter mPagerAdapter;
   private ViewPager mViewPager;
   private InstructionsListViewModel mViewModel;
@@ -70,20 +74,24 @@ public class InstructionsListActivity extends AppCompatActivity {
       mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
         @Override
         public void onPageSelected(int position) {
-          if (position == 0) {
+          int adjustedPosition = position;
+          if (!mPagerAdapter.extraAtFront()) {
+            adjustedPosition++;
+          }
+          if (adjustedPosition == 0) {
             toolbar.setTitle("New Instructions");
             if (!viewState.hasStartedNewInstructions && dialogActive.compareAndSet(false, true)) {
               new AlertDialog.Builder(InstructionsListActivity.this)
                   .setTitle("New Instructions?")
                   .setMessage("Would you like to start a new set of instructions?")
                   .setPositiveButton("Yes", (dialogInterface, i) -> {
-                    mViewModel
+                    mDisposables.add(mViewModel
                         .createNewInstructions(LocalDate.now())
                         .subscribe(() -> {
                           Timber.i("New instructions started");
                           dialogInterface.dismiss();
                           dialogActive.set(false);
-                        });
+                        }));
                   })
                   .setNegativeButton("No", (dialogInterface, i) -> {
                     mViewPager.setCurrentItem(1);
@@ -93,11 +101,11 @@ public class InstructionsListActivity extends AppCompatActivity {
                   .setCancelable(false)
                   .show();
             }
-          } else if (position == 1) {
+          } else if (adjustedPosition == 1) {
             toolbar.setTitle("Current Instructions");
           } else {
             toolbar.setTitle("Previous Instructions");
-            if (position == mPagerAdapter.getCount() - 1 && dialogActive.compareAndSet(false, true)) {
+            if (adjustedPosition == mPagerAdapter.getCount() - 1 && dialogActive.compareAndSet(false, true)) {
               new AlertDialog.Builder(InstructionsListActivity.this)
                   .setTitle("New Instructions?")
                   .setMessage("Would you like to add a previous set of instructions?")
@@ -129,8 +137,9 @@ public class InstructionsListActivity extends AppCompatActivity {
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
       });
       if (initialLoad.compareAndSet(false, true)) {
-        Timber.i("Defaulting to current page (index 1)");
-        mViewPager.setCurrentItem(1);
+        int initialIndex = mPagerAdapter.extraAtFront() ? 1 : 0;
+        Timber.d("Defaulting to current page (index %d)", initialIndex);
+        mViewPager.setCurrentItem(initialIndex);
       }
     });
   }
@@ -144,40 +153,54 @@ public class InstructionsListActivity extends AppCompatActivity {
 
   @Override
   protected void onStop() {
-    mViewModel.isDirty().subscribe(isDirty -> {
+    mDisposables.add(mViewModel.isDirty().subscribe(isDirty -> {
       if (isDirty) {
         Timber.w("Repo is dirty!");
       }
-    });
+    }));
     super.onStop();
+  }
+
+  @Override
+  public void onBackPressed() {
+    mDisposables.add(mViewModel.isDirty()
+        .flatMapCompletable(isDirty -> {
+          if (!isDirty) {
+            return Completable.complete();
+          }
+          return promptSaveChanges().flatMapCompletable(saveChanges -> {
+            if (saveChanges) {
+              return mViewModel.save();
+            } else {
+              return mViewModel.clearPending();
+            }
+          });
+        })
+        .observeOn(AndroidSchedulers.mainThread()).subscribe(super::onBackPressed));
+  }
+
+  private Single<Boolean> promptSaveChanges() {
+    return Single.create(e -> {
+      new AlertDialog.Builder(this)
+          .setTitle("Save Changes?")
+          .setMessage("Would you like to save your changes?")
+          .setPositiveButton("Yes", (d, i) -> {
+            e.onSuccess(true);
+            d.dismiss();
+          })
+          .setNegativeButton("No", (d, i) -> {
+            e.onSuccess(false);
+            d.dismiss();
+          })
+          .show();
+    });
   }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     int id = item.getItemId();
     if (id == android.R.id.home) {
-      mViewModel.isDirty().subscribe(isDirty -> {
-        if (isDirty) {
-          new AlertDialog.Builder(this)
-              .setTitle("Save Changes?")
-              .setMessage("Would you like to save your changes?")
-              .setPositiveButton("Yes", (d, i) -> {
-                mViewModel.save().subscribe(() -> {
-                  onBackPressed();
-                });
-                d.dismiss();
-              })
-              .setNegativeButton("No", (d, i) -> {
-                mViewModel.clearPending().subscribe(() -> {
-                  onBackPressed();
-                });
-                d.dismiss();
-              })
-              .show();
-        } else {
-          onBackPressed();
-        }
-      });
+      onBackPressed();
       return true;
     }
     if (id == R.id.action_delete) {
@@ -214,13 +237,13 @@ public class InstructionsListActivity extends AppCompatActivity {
       return true;
     }
     if (id == R.id.action_save) {
-      mViewModel
+      mDisposables.add(mViewModel
           .save()
           .doOnSubscribe(s -> Timber.i("Saving instructions"))
           .subscribe(() -> {
             Timber.i("Done saving instructions");
             finish();
-          });
+          }));
       return true;
     }
 
@@ -234,6 +257,10 @@ public class InstructionsListActivity extends AppCompatActivity {
 
     SectionsPagerAdapter(FragmentManager fm) {
       super(fm);
+    }
+
+    public boolean extraAtFront() {
+      return mExtraAtFront;
     }
 
     void updateInstructions(List<Instructions> instructions) {
