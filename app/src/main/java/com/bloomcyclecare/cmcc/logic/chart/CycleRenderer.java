@@ -436,6 +436,9 @@ public class CycleRenderer {
     }
 
     String peakDayText() {
+      if (!entry.hasObservation()) {
+        return "";
+      }
       if (isPeakDay()) {
         return "P";
       }
@@ -537,6 +540,9 @@ public class CycleRenderer {
     }
 
     boolean shouldShowBaby() {
+      if (!entry.hasObservation()) {
+        return false;
+      }
       if (fertilityReasons.isEmpty()) {
         return infertilityReasons.isEmpty();
       }

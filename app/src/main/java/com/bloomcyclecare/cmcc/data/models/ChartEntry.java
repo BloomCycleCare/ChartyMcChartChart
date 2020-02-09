@@ -75,6 +75,10 @@ public class ChartEntry implements Parcelable {
     return lines;
   }
 
+  public boolean hasObservation() {
+    return observationEntry.observation != null;
+  }
+
   @Override
   public void writeToParcel(Parcel dest, int flags) {
     dest.writeString(DateUtil.toWireStr(entryDate));

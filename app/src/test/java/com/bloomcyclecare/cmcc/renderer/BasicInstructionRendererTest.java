@@ -278,4 +278,24 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
 
   // TODO: B7B - "Missed Period" form of "Double Peak"
 
+  @Test
+  public void testNoBabiesOrNumbersIfEmpty() throws Exception {
+    ImmutableMap.Builder<Entry, Expectations> entries = ImmutableMap.builder();
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("H"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("M"), Expectations.redSticker());
+    entries.put(Entry.forText("L2AD"), Expectations.redSticker());
+    entries.put(Entry.forText("2AD").intercourse(), Expectations.greenSticker().withIntercourse());
+    entries.put(Entry.forText("2AD"), Expectations.greenSticker());
+
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText("6cx1"), Expectations.whiteSticker().withBaby());
+    entries.put(Entry.forText(""), Expectations.greySticker());
+    entries.put(Entry.forText(""), Expectations.greySticker());
+    entries.put(Entry.forText(""), Expectations.greySticker());
+    entries.put(Entry.forText(""), Expectations.greySticker());
+    runTest(entries.build(), BASIC_INSTRUCTIONS);
+  }
 }

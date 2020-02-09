@@ -107,6 +107,10 @@ public abstract class BaseRendererTest {
       return new Expectations(StickerColor.WHITE);
     }
 
+    public static Expectations greySticker() {
+      return new Expectations(StickerColor.GREY);
+    }
+
     public Expectations withPeakText(String text) {
       peakText = text;
       return this;
