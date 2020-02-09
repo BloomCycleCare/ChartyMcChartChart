@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.roamingroths.cmcc">
+    package="com.bloomcyclecare.cmcc">
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.GET_ACCOUNTS" />
@@ -8,28 +8,28 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name=".application.MyApplication"
+        android:name="com.bloomcyclecare.cmcc.application.MyApplication"
         android:allowBackup="false"
         android:icon="${icon}"
         android:label="@string/app_name"
         android:roundIcon="${roundIcon}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ui.drive.DriveActivity"></activity>
+        <activity android:name="com.bloomcyclecare.cmcc.ui.drive.DriveActivity"></activity>
 
-        <service android:name=".notifications.ChartingService" />
+        <service android:name="com.bloomcyclecare.cmcc.notifications.ChartingService" />
         <receiver
-            android:name=".notifications.ChartingReceiver"
+            android:name="com.bloomcyclecare.cmcc.notifications.ChartingReceiver"
             android:exported="true" />
 
-        <service android:name=".notifications.SyncService" />
+        <service android:name="com.bloomcyclecare.cmcc.notifications.SyncService" />
         <receiver
-            android:name=".notifications.SyncReceiver"
+            android:name="com.bloomcyclecare.cmcc.notifications.SyncReceiver"
             android:exported="true" />
 
 
         <activity
-            android:name=".ui.init.UserInitActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.init.UserInitActivity"
             android:noHistory="true"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -62,40 +62,40 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.entry.list.ChartEntryListActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity"
             android:label="@string/app_name"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".ui.print.PrintChartActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartActivity"
             android:label="@string/title_activity_cycle_list"
             android:launchMode="singleTop"
-            android:parentActivityName=".ui.entry.list.ChartEntryListActivity">
+            android:parentActivityName="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity" />
+                android:value="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity" />
         </activity>
         <activity
-            android:name=".ui.entry.detail.EntryDetailActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
-            android:parentActivityName=".ui.entry.list.ChartEntryListActivity"
+            android:parentActivityName="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustPan">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="com.roamingroths.cmcc.ui.entry.list.ChartEntryListActivity" />
+                android:value="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity" />
         </activity>
-        <activity android:name=".ui.settings.SettingsActivity" />
+        <activity android:name="com.bloomcyclecare.cmcc.ui.settings.SettingsActivity" />
         <activity
-            android:name=".ui.profile.ProfileActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
             android:theme="@style/AppTheme.NoActionBar"></activity>
         <activity
-            android:name=".ui.instructions.InstructionsListActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity"
             android:theme="@style/AppTheme.NoActionBar"></activity>
 
         <provider
             android:name="androidx.core.content.FileProvider"
-            android:authorities="com.roamingroths.cmcc.fileprovider"
+            android:authorities="com.bloomcyclecare.cmcc.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data
@@ -104,7 +104,7 @@
         </provider>
 
         <activity
-            android:name=".ui.goals.create.CreateGoalActivity"
+            android:name="com.bloomcyclecare.cmcc.ui.goals.create.CreateGoalActivity"
             android:theme="@style/AppTheme.NoActionBar"></activity>
     </application>
 

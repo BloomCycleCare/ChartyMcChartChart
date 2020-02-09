@@ -5,7 +5,7 @@
     android:id="@+id/goal_detail_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.roamingroths.cmcc.ui.goals.create.CreateGoalActivity">
+    tools:context="com.bloomcyclecare.cmcc.ui.goals.create.CreateGoalActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/appbar"
