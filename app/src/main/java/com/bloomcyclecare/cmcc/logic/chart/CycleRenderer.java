@@ -55,6 +55,7 @@ public class CycleRenderer {
   }
 
   public RenderableCycle render() {
+    Set<LocalDate> daysWithAnObservation = new HashSet<>();
     TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();
     TreeSet<LocalDate> daysOfFlow = new TreeSet<>();
     Set<LocalDate> daysOfMucus = new HashSet<>();
@@ -113,6 +114,7 @@ public class CycleRenderer {
       if (e.observationEntry.observation == null) {
         consecutiveDaysOfMucus = 0;
       } else {
+        daysWithAnObservation.add(e.entryDate);
         Observation observation = e.observationEntry.observation;
         todayHasMucus = observation.hasMucus();
         state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
@@ -340,6 +342,7 @@ public class CycleRenderer {
       previousEntry = e;
     }
 
+    renderableCycle.stats.daysWithAnObservation = daysWithAnObservation.size();
     renderableCycle.stats.mcs = MccScorer.getScore(mEntries, peakDays.isEmpty() ?
         Optional.absent() : Optional.of(peakDays.last()));
     if (!peakDays.isEmpty()) {
@@ -580,6 +583,7 @@ public class CycleRenderer {
     public Float mcs = null;
     public Integer daysPrePeak = null;
     public Integer daysPostPeak = null;
+    public Integer daysWithAnObservation = null;
 
     public CycleStats(@NonNull LocalDate cycleStartDate) {
       this.cycleStartDate = cycleStartDate;

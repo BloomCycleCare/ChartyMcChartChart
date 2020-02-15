@@ -17,6 +17,7 @@ import com.bloomcyclecare.cmcc.logic.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.notifications.ChartingReceiver;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 
@@ -111,13 +112,12 @@ public class MyApplication extends Application {
             .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
             .map(range -> new UpdateTrigger(e.updateTime, range))
             .toFlowable()).doOnNext(t -> Timber.v("New entry update")),
-        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")),
-        mManualSyncTriggers.map(b -> new UpdateTrigger(DateTime.now(), Range.singleton(LocalDate.now()))).toFlowable(BackpressureStrategy.BUFFER))
+        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")))
         .share();
 
-    Flowable<List<UpdateTrigger>> batchedTriggers = triggerStream
-        .doOnNext(t -> Timber.v("New update event"))
-        .buffer(Flowable.combineLatest(
+    Flowable<List<UpdateTrigger>> batchedTriggers = Flowable.merge(
+        triggerStream.doOnNext(t -> Timber.v("New update event"))
+            .buffer(Flowable.combineLatest(
             // Watch the trigger stream
             triggerStream,
             // And a rebroadcast of the stream
@@ -127,7 +127,8 @@ public class MyApplication extends Application {
             .doOnNext(b -> Timber.v("Separator update: %b", b))
             // Filter for only these cases
             .filter(v -> v))
-        .doOnNext(t -> Timber.v("New update batch"))
+            .doOnNext(t -> Timber.v("New update batch")),
+        mManualSyncTriggers.map(b -> ImmutableList.of(new UpdateTrigger(DateTime.now(), Range.singleton(LocalDate.now())))).toFlowable(BackpressureStrategy.BUFFER))
         .share();
 
     Flowable<Range<LocalDate>> mergedTrigger = batchedTriggers

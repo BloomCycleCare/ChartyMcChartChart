@@ -93,7 +93,11 @@ public class PageRenderer {
   }
 
   private static ObservableSource<RenderedRow> createCycleRows(CycleRenderer renderer) {
-    List<CycleRenderer.RenderableEntry> renderableEntries = renderer.render().entries;
+    CycleRenderer.RenderableCycle renderableCycle = renderer.render();
+    if (renderableCycle.stats.daysWithAnObservation == 0) {
+      return Observable.empty();
+    }
+    List<CycleRenderer.RenderableEntry> renderableEntries = renderableCycle.entries;
     List<RenderedRow> rows = new ArrayList<>();
     int numFullRows = numFullRows(renderableEntries.size());
     boolean hasPartialRow = hasPartialRow(renderableEntries.size());
