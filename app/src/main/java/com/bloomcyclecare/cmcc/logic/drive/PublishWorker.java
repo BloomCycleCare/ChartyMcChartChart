@@ -10,10 +10,8 @@ import com.bloomcyclecare.cmcc.logic.print.PageRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.model.File;
-import com.google.common.base.Optional;
 import com.google.common.collect.Range;
 
-import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import androidx.annotation.NonNull;
@@ -57,14 +55,14 @@ public class PublishWorker extends RxWorker {
         myApp.instructionsRepo().getAll().firstOrError(),
         myApp.cycleRepo().getStream().firstOrError(),
         (instructions, cycles) -> Observable.fromIterable(cycles)
-            .filter(cycle -> {
+            /*.filter(cycle -> {
               int daysInCycle = Days.daysBetween(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())).getDays();
               if (PageRenderer.numRows(daysInCycle) >= 6) {
                 Timber.w("Skipping long cycle");
                 return false;
               }
               return true;
-            })
+            })*/
             .sorted((a, b) -> a.startDate.compareTo(b.startDate))
             .flatMapSingle(cycle -> myApp.entryRepo()
                 .getStreamForCycle(Flowable.just(cycle))

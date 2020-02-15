@@ -84,9 +84,11 @@ public class UserInitActivity extends FragmentActivity {
               if (!needsDrive) {
                 return Single.just(Optional.absent());
               }
+              mFragment.updateStatus("Initializing Drive");
               return tryInitDrive(this::promptForDisablePublish, prefManager);
             })))
         .subscribe(optionalDriveService -> {
+          mFragment.updateStatus("Drive initialized");
           MyApplication.cast(getApplication()).registerDriveService(optionalDriveService);
           mUserListener.onUserInitialized(null);
         }, Timber::e));

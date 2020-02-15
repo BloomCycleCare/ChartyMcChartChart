@@ -311,6 +311,11 @@ public class ChartEntryListActivity extends AppCompatActivity
           }));
     }
 
+    if (id == R.id.action_trigger_sync) {
+      MyApplication.cast(getApplication()).triggerSync();
+      return true;
+    }
+
     return super.onOptionsItemSelected(item);
   }
 

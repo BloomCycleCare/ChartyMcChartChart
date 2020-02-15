@@ -21,6 +21,7 @@ import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.security.Security;
@@ -32,9 +33,11 @@ import androidx.room.Room;
 import androidx.room.migration.Migration;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkManager;
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.SingleSubject;
 import timber.log.Timber;
 
@@ -50,6 +53,7 @@ public class MyApplication extends Application {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final SingleSubject<Optional<DriveServiceHelper>> mDriveSubject = SingleSubject.create();
+  private final PublishSubject<Boolean> mManualSyncTriggers = PublishSubject.create();
 
   private AppDatabase mDB;
   private InstructionsRepo mInstructionsRepo;
@@ -64,6 +68,10 @@ public class MyApplication extends Application {
   public static MyApplication getInstance() {
     return INSTANCE;
   };
+
+  public void triggerSync() {
+    mManualSyncTriggers.onNext(true);
+  }
 
   @Override
   public void onCreate() {
@@ -103,7 +111,8 @@ public class MyApplication extends Application {
             .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
             .map(range -> new UpdateTrigger(e.updateTime, range))
             .toFlowable()).doOnNext(t -> Timber.v("New entry update")),
-        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")))
+        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")),
+        mManualSyncTriggers.map(b -> new UpdateTrigger(DateTime.now(), Range.singleton(LocalDate.now()))).toFlowable(BackpressureStrategy.BUFFER))
         .share();
 
     Flowable<List<UpdateTrigger>> batchedTriggers = triggerStream
