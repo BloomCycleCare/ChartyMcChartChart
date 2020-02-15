@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
@@ -22,6 +23,7 @@ import org.joda.time.LocalDate;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
+import java.util.Map;
 
 import io.reactivex.Maybe;
 import io.reactivex.MaybeTransformer;
@@ -181,22 +183,28 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   }
 
   private Single<Boolean> promptRestoreFromDrive(File file) {
+    StringBuilder content = new StringBuilder();
+    content.append("Would you like to restore your data from Google Drive?<br/><br/>");
+    content.append(String.format("<b>Last backup was taken on:</b> %s", file.getModifiedTime()));
+    if (file.getProperties() != null) {
+      content.append("<br/><br/>");
+      content.append("<b>Properties:</b>");
+      for (Map.Entry<String, String> entry : file.getProperties().entrySet()) {
+        content.append(String.format("<br/>%s: %s", entry.getKey(), entry.getValue()));
+      }
+    }
     return Single.create(e -> {
       new AlertDialog.Builder(getActivity())
           //set message, title, and icon
           .setTitle("Restore from Drive?")
-          .setMessage(String.format("Would you like to restore your data from Google Drive? Last backup was taken on %s", file.getModifiedTime()))
-          .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int whichButton) {
-              e.onSuccess(true);
-              dialog.dismiss();
-            }
+          .setMessage(Html.fromHtml(content.toString()))
+          .setPositiveButton("Yes", (dialog, whichButton) -> {
+            e.onSuccess(true);
+            dialog.dismiss();
           })
-          .setNegativeButton("No", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-              e.onSuccess(false);
-              dialog.dismiss();
-            }
+          .setNegativeButton("No", (dialog, which) -> {
+            e.onSuccess(false);
+            dialog.dismiss();
           })
           .create().show();
     });

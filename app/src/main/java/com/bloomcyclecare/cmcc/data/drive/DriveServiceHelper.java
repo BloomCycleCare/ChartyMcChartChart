@@ -151,7 +151,7 @@ public class DriveServiceHelper {
         FileList result = mDrive.files().list()
             .setQ(query)
             .setSpaces("drive")
-            .setFields("nextPageToken, files(id, name)")
+            .setFields("nextPageToken, files(id, name, modifiedTime, properties)")
             .setPageToken(pageToken)
             .execute();
         for (File file : result.getFiles()) {

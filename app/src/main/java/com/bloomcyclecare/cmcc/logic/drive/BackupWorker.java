@@ -46,8 +46,8 @@ public class BackupWorker extends RxWorker {
     DriveServiceHelper driveService = mApp.driveService().getValue().get();
 
     return AppStateExporter.forApp(mApp).export()
-        .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
-        .map(json -> {
+        .flatMapCompletable(appState -> {
+          String json = GsonUtil.getGsonInstance().toJson(appState);
           Timber.v("Writing local file");
           File path = new File(mContext.getFilesDir(), "backup/");
           if (!path.exists()) {
@@ -55,22 +55,22 @@ public class BackupWorker extends RxWorker {
           }
           File file = new File(path, LOCAL_BACKUP_FILE_NAME);
           Files.write(json, file, Charsets.UTF_8);
-          return file;
+          return driveService
+              .getOrCreateFolder("My Charts")
+              .flatMap(folder -> {
+                Timber.v("Uploading file to Drive");
+                com.google.api.services.drive.model.File driveFile =
+                    new com.google.api.services.drive.model.File();
+                driveFile.setName("backup.chart");
+                driveFile.setProperties(appState.properties());
+                FileContent mediaContent = new FileContent("application/json", file);
+                return driveService
+                    .deleteFileFromFolder(folder, BACKUP_FILE_NAME_IN_DRIVE)
+                    .andThen(Single.defer(() -> driveService.addFileToFolder(folder, driveFile, mediaContent)));
+              })
+              .doOnSuccess(driveFile -> file.delete())
+              .ignoreElement();
         })
-        .flatMapCompletable(file -> driveService
-            .getOrCreateFolder("My Charts")
-            .flatMap(folder -> {
-              Timber.v("Uploading file to Drive");
-              com.google.api.services.drive.model.File driveFile =
-                  new com.google.api.services.drive.model.File();
-              driveFile.setName("backup.chart");
-              FileContent mediaContent = new FileContent("application/json", file);
-              return driveService
-                  .deleteFileFromFolder(folder, BACKUP_FILE_NAME_IN_DRIVE)
-                  .andThen(Single.defer(() -> driveService.addFileToFolder(folder, driveFile, mediaContent)));
-            })
-            .doOnSuccess(driveFile -> file.delete())
-            .ignoreElement())
         .toSingleDefault(Result.success());
   }
 }
