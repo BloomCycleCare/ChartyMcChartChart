@@ -29,6 +29,7 @@ public class GsonUtil {
 
   private static Gson createInstance() {
     return new GsonBuilder()
+        .setPrettyPrinting()
         .registerTypeAdapter(LocalDate.class, new LocalDateSerializer())
         .registerTypeAdapter(Entry.class, new InterfaceAdapter<Entry>())
         .create();
