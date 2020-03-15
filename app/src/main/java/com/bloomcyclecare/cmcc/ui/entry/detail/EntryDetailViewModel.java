@@ -21,6 +21,8 @@ import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -337,28 +339,52 @@ public class EntryDetailViewModel extends AndroidViewModel {
       return Completable.complete();
     }
     List<Completable> actions = new ArrayList<>();
-    if (!originalEntry.observationEntry.firstDay && updatedEntry.observationEntry.firstDay) {
+    boolean splitForNewCycle =
+        updatedEntry.observationEntry.firstDay && !originalEntry.observationEntry.firstDay;
+    boolean splitForPositivePregnancyTest =
+        updatedEntry.observationEntry.positivePregnancyTest && !originalEntry.observationEntry.positivePregnancyTest;
+    if (splitForNewCycle || splitForPositivePregnancyTest) {
       // We need to split the current cycle...
+      LocalDate startDate;
+      if (splitForNewCycle) {
+        startDate = updatedEntry.entryDate;
+      } else {
+        startDate = updatedEntry.entryDate.plusDays(1);
+      }
       Cycle currentCycle = viewState.entryModificationContext.cycle;
-      Cycle newCycle = new Cycle("asdf", updatedEntry.entryDate, currentCycle.endDate);
+      Cycle newCycle = new Cycle("asdf", startDate, currentCycle.endDate);
       actions.add(mCycleRepo.insertOrUpdate(newCycle));
 
-      currentCycle.endDate = updatedEntry.entryDate.minusDays(1);
+      currentCycle.endDate = startDate.minusDays(1);
       actions.add(mCycleRepo.insertOrUpdate(currentCycle));
     }
-    if (originalEntry.observationEntry.firstDay && !updatedEntry.observationEntry.firstDay) {
+    boolean joinForNewCycle =
+        !updatedEntry.observationEntry.firstDay && originalEntry.observationEntry.firstDay;
+    boolean joinForPregnancyTest =
+        !updatedEntry.observationEntry.positivePregnancyTest && originalEntry.observationEntry.positivePregnancyTest;
+    if (joinForNewCycle || joinForPregnancyTest) {
       // We need to join the current cycle with the previous...
       if (!viewState.entryModificationContext.hasPreviousCycle) {
         throw new IllegalStateException("No previous cycle to join");
       }
       Cycle currentCycle = viewState.entryModificationContext.cycle;
-      actions.add(mCycleRepo
-          .getPreviousCycle(currentCycle)
-          .toSingle()
-          .flatMapCompletable(previousCycle -> {
-            previousCycle.endDate = currentCycle.endDate;
-            return mCycleRepo.insertOrUpdate(previousCycle).andThen(mCycleRepo.delete(currentCycle));
-          }));
+      if (joinForNewCycle) {
+        actions.add(mCycleRepo
+            .getPreviousCycle(currentCycle)
+            .toSingle()
+            .flatMapCompletable(previousCycle -> {
+              previousCycle.endDate = currentCycle.endDate;
+              return mCycleRepo.insertOrUpdate(previousCycle).andThen(mCycleRepo.delete(currentCycle));
+            }));
+      } else {
+        actions.add(mCycleRepo
+            .getNextCycle(currentCycle)
+            .toSingle()
+            .flatMapCompletable(nextCycle -> {
+              nextCycle.startDate = currentCycle.startDate;
+              return mCycleRepo.insertOrUpdate(nextCycle).andThen(mCycleRepo.delete(currentCycle));
+            }));
+      }
     }
     actions.add(mEntryRepo.insert(updatedEntry));
     return Completable.merge(actions);
