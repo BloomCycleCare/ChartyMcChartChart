@@ -296,7 +296,8 @@ public class ChartEntryListActivity extends AppCompatActivity
 
             Files.write(json, file, Charsets.UTF_8);
 
-            Uri uri = FileProvider.getUriForFile(activity, "com.roamingroths.cmcc.fileprovider", file);
+            Uri uri = FileProvider.getUriForFile(
+                activity, String.format("%s.fileprovider", getApplicationContext().getPackageName()), file);
 
             Intent shareIntent = ShareCompat.IntentBuilder.from(activity)
                 .setSubject("CMCC Export")
