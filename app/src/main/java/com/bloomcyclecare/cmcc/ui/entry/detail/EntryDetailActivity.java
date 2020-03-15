@@ -14,7 +14,6 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.ui.settings.SettingsActivity;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
@@ -151,101 +150,78 @@ public class EntryDetailActivity extends AppCompatActivity {
     // Handle action bar item clicks here. The action bar will
     // automatically handle clicks on the Home/Up button, so long
     // as you specify a parent activity in AndroidManifest.xml.
-    int id = item.getItemId();
+    switch (item.getItemId()) {
+      case R.id.action_pregnancy_test:
+        mViewModel.positivePregnancyTestUpdates.onNext(true);
+        return true;
 
-    if (id == R.id.action_settings) {
-      Intent startSettingsActivity = new Intent(this, SettingsActivity.class);
-      startActivity(startSettingsActivity);
-      return true;
-    }
+      case R.id.action_save:
+        mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion, this::addressIssue).subscribe(summaryLines -> {
+          LayoutInflater inflater = getLayoutInflater();
+          View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);
 
-    if (id == R.id.action_save) {
-      mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion, this::addressIssue).subscribe(summaryLines -> {
-        LayoutInflater inflater = getLayoutInflater();
-        View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);
+          final TextView summary = dialogView.findViewById(R.id.save_summary);
+          List<String> lines = new ArrayList<>();
+          lines.add("Entry Summary\n");
+          lines.addAll(summaryLines);
+          summary.setText(ON_NEW_LINE.join(lines));
 
-        final TextView summary = dialogView.findViewById(R.id.save_summary);
-        List<String> lines = new ArrayList<>();
-        lines.add("Entry Summary\n");
-        lines.addAll(summaryLines);
-        summary.setText(ON_NEW_LINE.join(lines));
-
-        AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
-            //set message, title, and icon
-            .setTitle("Save Entry?")
-            .setIcon(R.drawable.ic_assignment_black_24dp)
-            .setPositiveButton("Save", (dialogInterface, i) -> {
-              mDisposables.add(mViewModel
-                  .save(this::addressIssue)
-                  .observeOn(AndroidSchedulers.mainThread())
-                  .subscribe(() -> {
-                Intent returnIntent = new Intent();
-                //returnIntent.putExtra(EntrySaveResult.class.getName(), Parcels.wrap(result));
-                //returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
-                setResult(OK_RESPONSE, returnIntent);
-                dialogInterface.dismiss();
-                finish();
-              }, (throwable) -> {
-                Timber.e(throwable);
-                dialogInterface.dismiss();
-              }));
-               // TODO:save
-            })
-            .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
-        dialogBuilder.setView(dialogView);
-        final AlertDialog dialog = dialogBuilder.create();
-        dialog.show();
-      }));
-      return true;
-    }
-    if (id == R.id.action_delete) {
-      new AlertDialog.Builder(this)
-          //set message, title, and icon
-          .setTitle("Delete")
-          .setMessage("Do you want to permanently delete this entry?")
-          .setIcon(R.drawable.ic_delete_forever_black_24dp)
-          .setPositiveButton("Delete", new DialogInterface.OnClickListener() {
-            public void onClick(final DialogInterface dialog, int whichButton) {
-              dialog.dismiss();
-              //chartEntryFragment.onDelete();
-            }
-          })
-          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.dismiss();
-            }
-          })
-          .create().show();
-    }
-
-    if (id == android.R.id.home) {
-      mDisposables.add(mViewModel.isDirty().subscribe(isDirty -> {
-        if (isDirty) {
-          new AlertDialog.Builder(this)
+          AlertDialog.Builder dialogBuilder = new AlertDialog.Builder(this)
               //set message, title, and icon
-              .setTitle("Discard Changes")
-              .setMessage("Some of your changes have not been saved. Do you wish to discard them?")
-              .setPositiveButton("Discard", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int whichButton) {
-                  //your deleting code
-                  setResult(0, null);
-                  onBackPressed();
-                  dialog.dismiss();
-                  finish();
-                }
+              .setTitle("Save Entry?")
+              .setIcon(R.drawable.ic_assignment_black_24dp)
+              .setPositiveButton("Save", (dialogInterface, i) -> {
+                mDisposables.add(mViewModel
+                    .save(this::addressIssue)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(() -> {
+                      Intent returnIntent = new Intent();
+                      //returnIntent.putExtra(EntrySaveResult.class.getName(), Parcels.wrap(result));
+                      //returnIntent.putExtra(ChartEntry.class.getName(), getChartEntry());
+                      setResult(OK_RESPONSE, returnIntent);
+                      dialogInterface.dismiss();
+                      finish();
+                    }, (throwable) -> {
+                      Timber.e(throwable);
+                      dialogInterface.dismiss();
+                    }));
+                // TODO:save
               })
-              .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                public void onClick(DialogInterface dialog, int which) {
-                  dialog.dismiss();
-                }
-              })
-              .create().show();
-        } else {
-          setResult(0, null);
-          onBackPressed();
-        }
-      }));
-      return true;
+              .setNegativeButton("Cancel", (dialog, which) -> dialog.dismiss());
+          dialogBuilder.setView(dialogView);
+          final AlertDialog dialog = dialogBuilder.create();
+          dialog.show();
+        }));
+        return true;
+
+      case android.R.id.home:
+        mDisposables.add(mViewModel.isDirty().subscribe(isDirty -> {
+          if (isDirty) {
+            new AlertDialog.Builder(this)
+                //set message, title, and icon
+                .setTitle("Discard Changes")
+                .setMessage("Some of your changes have not been saved. Do you wish to discard them?")
+                .setPositiveButton("Discard", new DialogInterface.OnClickListener() {
+                  public void onClick(DialogInterface dialog, int whichButton) {
+                    //your deleting code
+                    setResult(0, null);
+                    onBackPressed();
+                    dialog.dismiss();
+                    finish();
+                  }
+                })
+                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                  public void onClick(DialogInterface dialog, int which) {
+                    dialog.dismiss();
+                  }
+                })
+                .create().show();
+          } else {
+            setResult(0, null);
+            onBackPressed();
+          }
+        }));
+        return true;
     }
     return super.onOptionsItemSelected(item);
   }

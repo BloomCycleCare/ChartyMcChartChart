@@ -79,6 +79,7 @@ public class ObservationEntryFragment extends Fragment {
 
     View pointOfChangeLayout = view.findViewById(R.id.point_of_change_layout);
     View firstDayLayout = view.findViewById(R.id.layout_new_cycle);
+    View pregnancyTestLayout = view.findViewById(R.id.layout_pregancy_test);
 
     Action connectStreams = () -> {
       Timber.d("Connecting RX streams for UI updates");
@@ -154,10 +155,14 @@ public class ObservationEntryFragment extends Fragment {
       } else {
         intercourseSpinner.setVisibility(View.GONE);
       }
+      if (maybeUpdate(pregnancyTestSwitch, observationEntry.positivePregnancyTest)) {
+        pregnancyTestLayout.setVisibility(View.VISIBLE);
+      } else {
+        pregnancyTestLayout.setVisibility(View.GONE);
+      }
       maybeUpdate(intercourseSwitch, observationEntry.intercourse);
       maybeUpdate(peakDaySwitch, observationEntry.peakDay);
       maybeUpdate(firstDaySwitch, observationEntry.firstDay);
-      maybeUpdate(pregnancyTestSwitch, observationEntry.positivePregnancyTest);
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
       if (!Strings.isNullOrEmpty(observationEntry.note)
           && !observationEntry.note.equals(noteTextView.getText().toString())) {
@@ -178,10 +183,11 @@ public class ObservationEntryFragment extends Fragment {
     return view;
   }
 
-  private static void maybeUpdate(Switch view, boolean value) {
+  private static boolean maybeUpdate(Switch view, boolean value) {
     if (view.isChecked() != value) {
       Timber.d("Updating %s", view.getResources().getResourceEntryName(view.getId()));
       view.setChecked(value);
     }
+    return value;
   }
 }
