@@ -381,8 +381,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .getNextCycle(currentCycle)
             .toSingle()
             .flatMapCompletable(nextCycle -> {
-              nextCycle.startDate = currentCycle.startDate;
-              return mCycleRepo.insertOrUpdate(nextCycle).andThen(mCycleRepo.delete(currentCycle));
+              currentCycle.endDate = nextCycle.endDate;
+              return mCycleRepo.insertOrUpdate(currentCycle).andThen(mCycleRepo.delete(nextCycle));
             }));
       }
     }

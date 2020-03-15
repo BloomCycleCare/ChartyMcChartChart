@@ -12,6 +12,7 @@ import org.joda.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import androidx.arch.core.util.Function;
 import androidx.room.Dao;
@@ -25,6 +26,7 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
+import io.reactivex.Single;
 
 @Dao
 public abstract class BaseEntryDao<E extends Entry> {
@@ -42,6 +44,20 @@ public abstract class BaseEntryDao<E extends Entry> {
         "SELECT * FROM %s WHERE entryDate = \"%s\"",
         mTableName,
         DateUtil.toWireStr(entryDate))));
+  }
+
+  public Single<TreeMap<LocalDate, E>> getAllEntries() {
+    return doFlowableList(new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s ORDER BY entryDate ASC ",
+        mTableName)))
+        .firstOrError()
+        .map(entries -> {
+          TreeMap<LocalDate, E> out = new TreeMap<>();
+          for (E e : entries) {
+            out.put(e.getDate(), e);
+          }
+          return out;
+        });
   }
 
   public Flowable<E> getStream(LocalDate entryDate) {

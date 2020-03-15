@@ -6,8 +6,6 @@ import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 
-import io.reactivex.Flowable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 
 public class AppStateExporter {
@@ -28,16 +26,8 @@ public class AppStateExporter {
 
   public Single<AppState> export() {
     return Single.zip(
-        mCycleRepo.getStream()
-            .firstOrError()
-            .flatMapObservable(Observable::fromIterable)
-            .flatMapSingle(cycle -> mEntryRepo
-                .getStream(Flowable.just(cycle))
-                .firstOrError()
-                .map(entries -> new AppState.CycleData(cycle, entries))
-            )
-            .toList(),
-        mInstructionsRepo.getAll()
-            .firstOrError(),
-        (cycleDatas, instructions) -> new AppState(cycleDatas, null, instructions));
+        mCycleRepo.getStream().firstOrError(),
+        mEntryRepo.getAllEntries(),
+        mInstructionsRepo.getAll().firstOrError(),
+        (cycles, entries, instructions) -> new AppState(cycles, entries,  null, instructions));
   }}

@@ -5,6 +5,7 @@ import com.bloomcyclecare.cmcc.data.db.ObservationEntryDao;
 import com.bloomcyclecare.cmcc.data.db.SymptomEntryDao;
 import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -24,6 +25,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
@@ -52,6 +54,21 @@ public class ChartEntryRepo {
         .distinctUntilChanged()
         .switchMap(this::entriesForDates)
         .doOnSubscribe(s -> Timber.v("Fetching entries"));
+  }
+
+  public Single<List<ChartEntry>> getAllEntries() {
+    return Single.zip(
+        observationEntryDao.getAllEntries(),
+        wellnessEntryDao.getAllEntries(),
+        symptomEntryDao.getAllEntries(),
+        (observationEntries, wellnessEntries, symptomEntries) -> {
+          List<ChartEntry> out = new ArrayList<>(observationEntries.size());
+          for (ObservationEntry observationEntry : observationEntries.values()) {
+            LocalDate date = observationEntry.getDate();
+            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date)));
+          }
+          return out;
+        });
   }
 
   public Flowable<List<ChartEntry>> getLatestN(int n) {

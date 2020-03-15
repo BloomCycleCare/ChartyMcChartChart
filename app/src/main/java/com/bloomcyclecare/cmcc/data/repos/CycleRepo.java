@@ -42,6 +42,13 @@ public class CycleRepo {
     return cycleDao.getCycleWithEndDate(cycle.startDate.minusDays(1));
   }
 
+  public Maybe<Cycle> getNextCycle(Cycle cycle) {
+    if (cycle.endDate == null) {
+      return Maybe.error(new IllegalArgumentException("Cycle has no endDate"));
+    }
+    return cycleDao.getCycleForDate(cycle.endDate.plusDays(1));
+  }
+
   public Maybe<Cycle> getCurrentCycle() {
     return cycleDao.getCurrentCycle();
   }
