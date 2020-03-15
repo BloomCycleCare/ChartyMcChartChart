@@ -25,7 +25,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         SymptomEntry.class,
         WellnessEntry.class,
     },
-    version = 9)
+    version = 10)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -62,6 +62,12 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE ObservationEntry ADD unusualStress INTEGER NOT NULL DEFAULT (0)");
         }
     };
+    private static final Migration MIGRATION_9_10 = new Migration(9, 10) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE ObservationEntry ADD positivePregnancyTest INTEGER NOT NULL DEFAULT (0)");
+        }
+    };
 
-    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9);
+    public static List<Migration> MIGRATIONS = ImmutableList.of(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10);
 }

@@ -68,6 +68,7 @@ public class ObservationEntryFragment extends Fragment {
     Switch intercourseSwitch = view.findViewById(R.id.switch_intercourse);
     Switch firstDaySwitch = view.findViewById(R.id.switch_new_cycle);
     Switch pointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
+    Switch pregnancyTestSwitch = view.findViewById(R.id.switch_pregancy_test);
     Spinner intercourseSpinner = view.findViewById(R.id.spinner_intercourse);
 
     ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(getActivity(),
@@ -90,6 +91,9 @@ public class ObservationEntryFragment extends Fragment {
       RxCompoundButton
           .checkedChanges(firstDaySwitch)
           .subscribe(mEntryDetailViewModel.firstDayOfCycleUpdates);
+      RxCompoundButton
+          .checkedChanges(pregnancyTestSwitch)
+          .subscribe(mEntryDetailViewModel.positivePregnancyTestUpdates);
       RxCompoundButton
           .checkedChanges(pointOfChangeSwitch)
           .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
@@ -153,6 +157,7 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(intercourseSwitch, observationEntry.intercourse);
       maybeUpdate(peakDaySwitch, observationEntry.peakDay);
       maybeUpdate(firstDaySwitch, observationEntry.firstDay);
+      maybeUpdate(pregnancyTestSwitch, observationEntry.positivePregnancyTest);
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
       if (!Strings.isNullOrEmpty(observationEntry.note)
           && !observationEntry.note.equals(noteTextView.getText().toString())) {

@@ -52,6 +52,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
   final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
   final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
+  final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
   final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
   final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
   final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
@@ -105,8 +106,10 @@ public class EntryDetailViewModel extends AndroidViewModel {
             (e, v) -> e.intercourse = v, "intercourse"))
         .compose(RxUtil.update(firstDayOfCycleUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             (e, v) -> e.firstDay = v, "firstDay"))
+        .compose(RxUtil.update(positivePregnancyTestUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (e, v) -> e.positivePregnancyTest = v, "positivePregnancyTest"))
         .compose(RxUtil.update(pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.pointOfChange = v, "pointOfChage"))
+            (e, v) -> e.pointOfChange = v, "pointOfChange"))
         .compose(RxUtil.update(clarifyingQuestionUpdateList.distinctUntilChanged(),
             (e, v) -> {
               for (ClarifyingQuestionUpdate u : v) {
@@ -228,6 +231,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     peakDayUpdates.onNext(context.entry.observationEntry.peakDay);
     intercourseUpdates.onNext(context.entry.observationEntry.intercourse);
     firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
+    positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
     pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
     timeOfDayUpdates.onNext(context.entry.observationEntry.intercourseTimeOfDay);
     noteUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.note).or(""));

@@ -26,6 +26,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   public boolean peakDay;
   public boolean intercourse;
   public boolean firstDay;
+  public boolean positivePregnancyTest;
   public boolean pointOfChange;
   public boolean unusualBleeding;
   public boolean unusualStress;
@@ -40,6 +41,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
       boolean peakDay,
       boolean intercourse,
       boolean firstDay,
+      boolean positivePregnancyTest,
       boolean pointOfChange,
       boolean unusualBleeding,
       IntercourseTimeOfDay intercourseTimeOfDay,
@@ -50,6 +52,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     this.peakDay = peakDay;
     this.intercourse = intercourse;
     this.firstDay = firstDay;
+    this.positivePregnancyTest = positivePregnancyTest;
     this.pointOfChange = pointOfChange;
     if (unusualBleeding && (observation == null || !observation.hasBlood())) {
       throw new IllegalArgumentException();
@@ -65,7 +68,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   }
 
   public static ObservationEntry emptyEntry(LocalDate date) {
-    return new ObservationEntry(date, null, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, "");
+    return new ObservationEntry(date, null, false, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, "");
   }
 
   @Override
@@ -90,6 +93,9 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     }
     if (isEssentiallyTheSame) {
       lines.add("Essentially the same: yes");
+    }
+    if (positivePregnancyTest) {
+      lines.add("Positive pregnancy test: yes");
     }
     return lines;
   }
@@ -162,6 +168,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
           this.firstDay == that.firstDay &&
+          this.positivePregnancyTest == that.positivePregnancyTest &&
           this.pointOfChange == that.pointOfChange &&
           this.unusualBleeding == that.unusualBleeding &&
           this.isEssentiallyTheSame == that.isEssentiallyTheSame &&
@@ -174,12 +181,12 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+        observation, peakDay, intercourse, getDate(), firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
   }
 
   @Override
   public ObservationEntry copy() {
-    return new ObservationEntry(mEntryDate, observation, peakDay, intercourse, firstDay, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+    return new ObservationEntry(mEntryDate, observation, peakDay, intercourse, firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
   }
 }
 
