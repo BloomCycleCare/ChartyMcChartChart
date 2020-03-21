@@ -80,4 +80,8 @@ public class Cycle implements Comparable<Cycle> {
   public int compareTo(Cycle cycle) {
     return this.startDate.compareTo(cycle.startDate);
   }
+
+  public boolean isPregnancy() {
+    return pregnancyId != null;
+  }
 }

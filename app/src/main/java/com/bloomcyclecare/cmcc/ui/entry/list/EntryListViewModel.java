@@ -87,6 +87,9 @@ public class EntryListViewModel extends AndroidViewModel {
     }
     LocalDate today = todaySupplier.get();
     CycleRenderer.CycleStats currentStats = statsList.get(index);
+    if (currentStats.isPregnancy) {
+      return "Pregnant";
+    }
     if (currentStats.daysPrePeak == null) {
       return "In prepeak phase";
     }

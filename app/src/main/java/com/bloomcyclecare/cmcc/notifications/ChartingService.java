@@ -13,14 +13,17 @@ import android.os.IBinder;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 
 import org.joda.time.DateTime;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import io.reactivex.Flowable;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
@@ -40,8 +43,9 @@ public class ChartingService extends Service {
     initNotificationChannel(this);
 
     ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
+    CycleRepo cycleRepo = myApp.cycleRepo();
     NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    mDisposables.add(entryRepo
+    Flowable<Boolean> stopStream = entryRepo
         .getLatestN(2)
         .map(entries -> {
           if (entries.size() != 2) {
@@ -50,8 +54,18 @@ public class ChartingService extends Service {
           ChartEntry entryForYesterday = entries.get(0);
           return entryForYesterday.observationEntry.observation != null;
         })
+        .flatMap(yesterdayHadObservation -> {
+          if (yesterdayHadObservation) {
+            return Flowable.just(true);
+          }
+          return cycleRepo.getCurrentCycle()
+              .map(Cycle::isPregnancy)
+              .toSingle(false)
+              .toFlowable();
+        });
+    mDisposables.add(stopStream
         .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
-        .takeUntil(yesterdayHasObservation -> yesterdayHasObservation)
+        .takeUntil(shouldStop -> shouldStop)
         .distinctUntilChanged()
         .doOnComplete(() -> clearNotificationAndTerminate(manager))
         .subscribe(yesterdayHasObservation -> {

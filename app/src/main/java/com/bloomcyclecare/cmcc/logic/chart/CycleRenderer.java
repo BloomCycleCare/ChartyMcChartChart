@@ -342,6 +342,7 @@ public class CycleRenderer {
       previousEntry = e;
     }
 
+    renderableCycle.stats.isPregnancy = mCycle.isPregnancy();
     renderableCycle.stats.daysWithAnObservation = daysWithAnObservation.size();
     renderableCycle.stats.mcs = MccScorer.getScore(mEntries, peakDays.isEmpty() ?
         Optional.absent() : Optional.of(peakDays.last()));
@@ -584,6 +585,7 @@ public class CycleRenderer {
     public Integer daysPrePeak = null;
     public Integer daysPostPeak = null;
     public Integer daysWithAnObservation = null;
+    public boolean isPregnancy = false;
 
     public CycleStats(@NonNull LocalDate cycleStartDate) {
       this.cycleStartDate = cycleStartDate;
