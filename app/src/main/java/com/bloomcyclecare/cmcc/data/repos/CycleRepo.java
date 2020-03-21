@@ -11,11 +11,13 @@ import org.joda.time.LocalDate;
 
 import java.util.List;
 
+import androidx.core.util.Consumer;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
@@ -67,6 +69,64 @@ public class CycleRepo {
       return Maybe.just(latestCycle);
     });
   }
+
+  public static class SplitResult {
+    public final Cycle newCycle;
+    public final Cycle previousCycle;
+
+    SplitResult(Cycle newCycle, Cycle previousCycle) {
+      this.newCycle = newCycle;
+      this.previousCycle = previousCycle;
+    }
+  }
+
+  public Single<SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle) {
+    return splitCycle(cycleToSplit, firstDayOfNewCycle, newCycle -> {});
+  }
+
+  public Single<SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle, Consumer<Cycle> fieldUpdater) {
+    Cycle newCycle = new Cycle("asdf", firstDayOfNewCycle, cycleToSplit.endDate, null);
+    fieldUpdater.accept(newCycle);
+    Cycle copyOfCycleToSplit = new Cycle(cycleToSplit);
+    copyOfCycleToSplit.endDate = firstDayOfNewCycle.minusDays(1);
+    return insertOrUpdate(newCycle)
+        .andThen(insertOrUpdate(copyOfCycleToSplit))
+        .andThen(Single.just(new SplitResult(newCycle, copyOfCycleToSplit)));
+  }
+
+  public enum JoinType {
+    WITH_PREVIOUS, WITH_NEXT;
+  }
+
+  public Single<Cycle> joinCycle(Cycle cycleToJoin, JoinType joinType) {
+    switch (joinType) {
+      case WITH_NEXT:
+        return getNextCycle(cycleToJoin)
+            .toSingle()
+            .flatMap(nextCycle -> {
+              Cycle copyOfCycleToJoin = new Cycle(cycleToJoin);
+              copyOfCycleToJoin.endDate = nextCycle.endDate;
+              copyOfCycleToJoin.pregnancyId = nextCycle.pregnancyId;
+              return insertOrUpdate(copyOfCycleToJoin)
+                  .andThen(delete(nextCycle))
+                  .andThen(Single.just(copyOfCycleToJoin));
+            });
+      case WITH_PREVIOUS:
+        return getPreviousCycle(cycleToJoin)
+            .toSingle()
+            .flatMap(previousCycle -> {
+              Cycle copyOfPreviousCycle = new Cycle(previousCycle);
+              copyOfPreviousCycle.endDate = cycleToJoin.endDate;
+              copyOfPreviousCycle.pregnancyId = cycleToJoin.pregnancyId;
+              return insertOrUpdate(copyOfPreviousCycle)
+                  .andThen(delete(cycleToJoin))
+                  .andThen(Single.just(copyOfPreviousCycle));
+            });
+      default:
+        throw new IllegalStateException();
+    }
+  }
+
 
   public Completable deleteAll() {
     return getStream()

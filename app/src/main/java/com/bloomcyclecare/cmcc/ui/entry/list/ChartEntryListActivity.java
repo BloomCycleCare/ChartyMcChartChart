@@ -49,7 +49,9 @@ import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
@@ -173,7 +175,7 @@ public class ChartEntryListActivity extends AppCompatActivity
                 DateUtil.toPrintUiStr(startDate),
                 Days.daysBetween(startDate, endDate).getDays()));
             builder.setPositiveButton("Create", (dialog, which) -> {
-              Cycle newCycle = new Cycle("baz", startDate, endDate);
+              Cycle newCycle = new Cycle("baz", startDate, endDate, null);
               mDisposables.add(mCycleRepo
                   .insertOrUpdate(newCycle)
                   .doOnSubscribe(s -> dialog.dismiss())
@@ -287,6 +289,8 @@ public class ChartEntryListActivity extends AppCompatActivity
       AppStateExporter exporter = new AppStateExporter(MyApplication.cast(getApplication()));
       mDisposables.add(exporter.export()
           .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
+          .observeOn(AndroidSchedulers.mainThread())
+          .subscribeOn(Schedulers.computation())
           .subscribe(json -> {
             File path = new File(activity.getFilesDir(), "tmp/");
             if (!path.exists()) {
@@ -309,9 +313,16 @@ public class ChartEntryListActivity extends AppCompatActivity
             shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
             startActivity(shareIntent);
+          }, t -> {
+            Timber.e(t, "Error exporting data");
+            new AlertDialog.Builder(this)
+                .setTitle("Error exporting data!")
+                .setMessage(t.getMessage())
+                .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+                .create()
+                .show();
           }));
     }
-
     if (id == R.id.action_trigger_sync) {
       MyApplication.cast(getApplication()).triggerSync();
       return true;

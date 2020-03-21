@@ -8,7 +8,9 @@ import org.joda.time.LocalDate;
 import org.parceler.Parcel;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
+import androidx.room.ForeignKey;
 import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
@@ -16,7 +18,11 @@ import androidx.room.PrimaryKey;
  * Created by parkeroth on 4/30/17.
  */
 @Parcel
-@Entity
+@Entity(foreignKeys = @ForeignKey(
+    entity = Pregnancy.class,
+    onDelete = ForeignKey.CASCADE,
+    parentColumns = "id",
+    childColumns = "pregnancyId"))
 public class Cycle implements Comparable<Cycle> {
 
   public String id;
@@ -26,16 +32,18 @@ public class Cycle implements Comparable<Cycle> {
   public LocalDate endDate;
   @Ignore
   public String startDateStr;
+  public Long pregnancyId;
 
   @Ignore
   public Cycle() {}
 
-  public Cycle(String id, LocalDate startDate, LocalDate endDate) {
+  public Cycle(String id, @NonNull LocalDate startDate, @Nullable LocalDate endDate, @Nullable Long pregnancyId) {
     Preconditions.checkNotNull(startDate);
     this.id = id;
     this.startDate = startDate;
     this.startDateStr = DateUtil.toWireStr(this.startDate);
     this.endDate = endDate;
+    this.pregnancyId = pregnancyId;
   }
 
   public Cycle(Cycle other) {
@@ -43,6 +51,7 @@ public class Cycle implements Comparable<Cycle> {
     this.startDate = other.startDate;
     this.startDateStr = other.startDateStr;
     this.endDate = other.endDate;
+    this.pregnancyId = other.pregnancyId;
   }
 
   @Override
@@ -50,6 +59,7 @@ public class Cycle implements Comparable<Cycle> {
     if (o instanceof Cycle) {
       Cycle that = (Cycle) o;
       return Objects.equal(this.id, that.id) &&
+          Objects.equal(this.pregnancyId, that.pregnancyId) &&
           Objects.equal(this.startDate, that.startDate) &&
           Objects.equal(this.endDate, that.endDate);
     }
@@ -58,7 +68,7 @@ public class Cycle implements Comparable<Cycle> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(id, startDate, endDate);
+    return Objects.hashCode(id, startDate, endDate, pregnancyId);
   }
 
   @Override

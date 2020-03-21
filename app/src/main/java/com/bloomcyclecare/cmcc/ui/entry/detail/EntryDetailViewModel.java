@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
@@ -20,8 +21,6 @@ import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-
-import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -69,6 +68,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   private final ChartEntryRepo mEntryRepo;
   private final CycleRepo mCycleRepo;
+  private final PregnancyRepo mPregnancyRepo;
 
   public EntryDetailViewModel(@NonNull Application application) {
     super(application);
@@ -76,6 +76,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     MyApplication myApp = MyApplication.cast(application);
     mEntryRepo = myApp.entryRepo();
     mCycleRepo = myApp.cycleRepo();
+    mPregnancyRepo = myApp.pregnancyRepo();
 
     mDisposables.add(intercourseUpdates.distinctUntilChanged().subscribe(value -> {
       if (!value) {
@@ -339,52 +340,19 @@ public class EntryDetailViewModel extends AndroidViewModel {
       return Completable.complete();
     }
     List<Completable> actions = new ArrayList<>();
-    boolean splitForNewCycle =
-        updatedEntry.observationEntry.firstDay && !originalEntry.observationEntry.firstDay;
-    boolean splitForPositivePregnancyTest =
-        updatedEntry.observationEntry.positivePregnancyTest && !originalEntry.observationEntry.positivePregnancyTest;
-    if (splitForNewCycle || splitForPositivePregnancyTest) {
-      // We need to split the current cycle...
-      LocalDate startDate;
-      if (splitForNewCycle) {
-        startDate = updatedEntry.entryDate;
-      } else {
-        startDate = updatedEntry.entryDate.plusDays(1);
-      }
-      Cycle currentCycle = viewState.entryModificationContext.cycle;
-      Cycle newCycle = new Cycle("asdf", startDate, currentCycle.endDate);
-      actions.add(mCycleRepo.insertOrUpdate(newCycle));
-
-      currentCycle.endDate = startDate.minusDays(1);
-      actions.add(mCycleRepo.insertOrUpdate(currentCycle));
-    }
-    boolean joinForNewCycle =
-        !updatedEntry.observationEntry.firstDay && originalEntry.observationEntry.firstDay;
-    boolean joinForPregnancyTest =
-        !updatedEntry.observationEntry.positivePregnancyTest && originalEntry.observationEntry.positivePregnancyTest;
-    if (joinForNewCycle || joinForPregnancyTest) {
-      // We need to join the current cycle with the previous...
-      if (!viewState.entryModificationContext.hasPreviousCycle) {
-        throw new IllegalStateException("No previous cycle to join");
-      }
-      Cycle currentCycle = viewState.entryModificationContext.cycle;
-      if (joinForNewCycle) {
-        actions.add(mCycleRepo
-            .getPreviousCycle(currentCycle)
-            .toSingle()
-            .flatMapCompletable(previousCycle -> {
-              previousCycle.endDate = currentCycle.endDate;
-              return mCycleRepo.insertOrUpdate(previousCycle).andThen(mCycleRepo.delete(currentCycle));
-            }));
-      } else {
-        actions.add(mCycleRepo
-            .getNextCycle(currentCycle)
-            .toSingle()
-            .flatMapCompletable(nextCycle -> {
-              currentCycle.endDate = nextCycle.endDate;
-              return mCycleRepo.insertOrUpdate(currentCycle).andThen(mCycleRepo.delete(nextCycle));
-            }));
-      }
+    Cycle currentCycle = viewState.entryModificationContext.cycle;
+    if (updatedEntry.observationEntry.firstDay && !originalEntry.observationEntry.firstDay) {
+      // Split for new cycle
+      actions.add(mCycleRepo.splitCycle(currentCycle, updatedEntry.entryDate).ignoreElement());
+    } else if (updatedEntry.observationEntry.positivePregnancyTest&& !originalEntry.observationEntry.positivePregnancyTest) {
+      // Split for positive pregnancy test
+      actions.add(mPregnancyRepo.startPregnancy(updatedEntry.entryDate));
+    } else if (!updatedEntry.observationEntry.firstDay && originalEntry.observationEntry.firstDay) {
+      // Join for new cycle
+      actions.add(mCycleRepo.joinCycle(currentCycle, CycleRepo.JoinType.WITH_PREVIOUS).ignoreElement());
+    } else if (!updatedEntry.observationEntry.positivePregnancyTest && originalEntry.observationEntry.positivePregnancyTest) {
+      // Join for pregnancy test
+      actions.add(mPregnancyRepo.revertPregnancy(updatedEntry.entryDate));
     }
     actions.add(mEntryRepo.insert(updatedEntry));
     return Completable.merge(actions);

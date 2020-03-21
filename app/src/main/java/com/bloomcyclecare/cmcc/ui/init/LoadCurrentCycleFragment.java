@@ -154,7 +154,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .switchIfEmpty(promptForStart()
             .observeOn(Schedulers.computation())
             .flatMap(startDate -> {
-              Cycle cycle = new Cycle("foo", LocalDate.now(), null);
+              Cycle cycle = new Cycle("foo", LocalDate.now(), null, null);
               return mCycleRepo.insertOrUpdate(cycle).andThen(Single.just(cycle));
             }))
         .toMaybe();

@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.models;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.logic.profile.Profile;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.collect.ImmutableMap;
@@ -20,6 +21,7 @@ public class AppState {
   public final List<ChartEntry> entries;
   public final Profile profile;
   public final List<Instructions> instructions;
+  public final List<Pregnancy> pregnancies;
 
   private enum Property {
     NUM_ENTRIES,
@@ -29,11 +31,12 @@ public class AppState {
     LAST_INSTRUCTION_START,
   }
 
-  public AppState(List<Cycle> cycles, List<ChartEntry> entries, Profile profile, List<Instructions> instructions) {
+  public AppState(List<Cycle> cycles, List<ChartEntry> entries, Profile profile, List<Instructions> instructions, List<Pregnancy> pregnancies) {
     this.cycles = cycles;
     this.entries = entries;
     this.profile = profile;
     this.instructions = instructions;
+    this.pregnancies = pregnancies;
   }
 
   public Map<String, String> properties() {

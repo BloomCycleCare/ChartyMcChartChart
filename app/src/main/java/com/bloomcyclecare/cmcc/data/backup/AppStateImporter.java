@@ -8,6 +8,7 @@ import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,15 +24,18 @@ public class AppStateImporter {
   private final CycleRepo mCycleRepo;
   private final ChartEntryRepo mEntryRepo;
   private final InstructionsRepo mInstructionsRepo;
+  private final PregnancyRepo mPregnancyRepo;
 
   public AppStateImporter(MyApplication myApp) {
     mCycleRepo = new CycleRepo(myApp.db());
     mEntryRepo = new ChartEntryRepo(myApp.db());
     mInstructionsRepo = myApp.instructionsRepo();
+    mPregnancyRepo = myApp.pregnancyRepo();
   }
 
   public Completable importAppState(AppState appState) {
     Set<Completable> actions = new HashSet<>();
+    actions.add(mPregnancyRepo.insertAll(appState.pregnancies));
     for (Instructions i : appState.instructions) {
       actions.add(mInstructionsRepo.insertOrUpdate(i));
     }
@@ -52,6 +56,6 @@ public class AppStateImporter {
     for (ChartEntry e : appState.entries) {
       actions.add(mEntryRepo.insert(e));
     }
-    return Completable.merge(actions);
+    return Completable.concat(actions);
   }
 }

@@ -47,7 +47,7 @@ public abstract class CycleDao {
 
   @Transaction
   public Cycle startNewCycle(Cycle currentCycle, LocalDate startDate) {
-    Cycle newCycle = new Cycle("fooo", startDate, null);
+    Cycle newCycle = new Cycle("fooo", startDate, null, null);
     Cycle copyOfCurrent = new Cycle(currentCycle);
     copyOfCurrent.endDate = startDate.minusDays(1);
     return Completable

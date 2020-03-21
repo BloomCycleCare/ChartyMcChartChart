@@ -10,6 +10,7 @@ import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -61,6 +62,7 @@ public class MyApplication extends Application {
   private CycleRepo mCycleRepo;
   private ChartEntryRepo mChartEntryRepo;
   private PreferenceRepo mPreferenceRepo;
+  private PregnancyRepo mPregnancyRepo;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -97,6 +99,7 @@ public class MyApplication extends Application {
     mChartEntryRepo = new ChartEntryRepo(mDB);
     mCycleRepo = new CycleRepo(mDB);
     mPreferenceRepo = PreferenceRepo.create(this);
+    mPregnancyRepo = new PregnancyRepo(mDB, mCycleRepo);
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -201,6 +204,10 @@ public class MyApplication extends Application {
 
   public PreferenceRepo preferenceRepo() {
     return mPreferenceRepo;
+  }
+
+  public PregnancyRepo pregnancyRepo() {
+    return mPregnancyRepo;
   }
 
   public static MyApplication cast(Application app) {
