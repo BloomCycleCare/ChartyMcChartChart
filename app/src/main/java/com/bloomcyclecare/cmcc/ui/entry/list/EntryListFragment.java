@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
@@ -170,9 +171,10 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     InstructionsRepo instructionsRepo = new InstructionsRepo(MyApplication.cast(getActivity().getApplication()));
 
     mDisposables.add(Flowable.combineLatest(
+        myApp.cycleRepo().getPreviousCycle(mCycle).map(Optional::of).defaultIfEmpty(Optional.absent()).toFlowable(),
         instructionsRepo.getAll(),
         entryRepo.getStream(Flowable.just(mCycle)),
-        (instructions, entries) -> new CycleRenderer(mCycle, entries, instructions))
+        (previousCycle, instructions, entries) -> new CycleRenderer(mCycle, previousCycle, entries, instructions))
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(newRenderer -> {

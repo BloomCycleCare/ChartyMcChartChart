@@ -115,7 +115,9 @@ public class ObservationEntryFragment extends Fragment {
     final AtomicBoolean uiInitialized = new AtomicBoolean(false);
     mEntryDetailViewModel.viewStates().observe(this, (viewState -> {
       Timber.d("Updating ViewState");
-      if (viewState.entryModificationContext.isFirstEntry && !viewState.entryModificationContext.hasPreviousCycle) {
+      boolean hideOnFirstEntry = viewState.entryModificationContext.isFirstEntry && (
+          !viewState.entryModificationContext.hasPreviousCycle || viewState.entryModificationContext.previousCycleIsPregnancy);
+      if (hideOnFirstEntry || viewState.chartEntry.observationEntry.positivePregnancyTest) {
         firstDayLayout.setVisibility(View.GONE);
       }
 

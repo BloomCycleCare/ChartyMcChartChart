@@ -39,11 +39,13 @@ public class CycleRenderer {
   private static final Joiner ON_DOUBLE_NEW_LINE = Joiner.on("\n\n");
 
   private final Cycle mCycle;
+  private final Optional<Cycle> mPreviousCycle;
   private final TreeSet<ChartEntry> mEntries;
   private final TreeSet<Instructions> mInstructions;
 
-  public CycleRenderer(Cycle cycle, Collection<ChartEntry> entries, Collection<Instructions> allInstructions) {
+  public CycleRenderer(Cycle cycle, Optional<Cycle> previousCycle, Collection<ChartEntry> entries, Collection<Instructions> allInstructions) {
     mCycle = cycle;
+    mPreviousCycle = previousCycle;
     mEntries = new TreeSet<>((a, b) -> a.entryDate.compareTo(b.entryDate));
     mEntries.addAll(entries);
     mInstructions = new TreeSet<>((a, b) -> a.startDate.compareTo(b.startDate));
@@ -79,6 +81,7 @@ public class CycleRenderer {
 
       State state = new State();
       state.cycle = mCycle;
+      state.previousCycle = mPreviousCycle;
       state.entry = e;
       state.entryDate = e.entryDate;
       state.entryNum = Days.daysBetween(mCycle.startDate, e.entryDate).getDays() + 1;
@@ -364,6 +367,7 @@ public class CycleRenderer {
 
   public static class State {
     public Cycle cycle;
+    public Optional<Cycle> previousCycle;
     public ChartEntry entry;
     public LocalDate entryDate;
     public Instructions instructions;
@@ -558,6 +562,7 @@ public class CycleRenderer {
       modificationContext.cycle = cycle;
       modificationContext.entry = entry;
       modificationContext.hasPreviousCycle = false;
+      modificationContext.previousCycleIsPregnancy = previousCycle.transform(Cycle::isPregnancy).or(false);
       modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
       modificationContext.isFirstEntry = entryNum == 1;
       modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
@@ -653,6 +658,7 @@ public class CycleRenderer {
     public Cycle cycle;
     public ChartEntry entry;
     public boolean hasPreviousCycle;
+    public boolean previousCycleIsPregnancy;
     public boolean isFirstEntry;
     public boolean shouldAskDoublePeakQuestions;
     public boolean allPreviousDaysHaveHadBlood;

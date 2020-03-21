@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -51,9 +52,12 @@ public class EntryListViewModel extends AndroidViewModel {
                 .fromIterable(cycles)
                 .observeOn(Schedulers.computation())
                 .parallel()
-                .map(cycle -> myApp.entryRepo()
-                    .getStreamForCycle(Flowable.just(cycle))
-                    .map(entries -> new CycleRenderer(cycle, entries, instructions).render())
+                .map(cycle -> Flowable.combineLatest(
+                    myApp.entryRepo().getStreamForCycle(Flowable.just(cycle)),
+                    myApp.cycleRepo().getPreviousCycle(cycle)
+                        .map(Optional::of).defaultIfEmpty(Optional.absent())
+                        .toFlowable(),
+                    (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
                     .map(renderableCycle -> renderableCycle.stats)
                 )
                 .sequential()
