@@ -76,6 +76,9 @@ public class ChartingService extends Service {
           } else {
             manager.notify(R.string.charting_reminder, notification);
           }
+          if (yesterdayHasObservation) {
+            clearNotificationAndTerminate(manager);
+          }
         }, t -> {
           Timber.e(t);
           clearNotificationAndTerminate(manager);
