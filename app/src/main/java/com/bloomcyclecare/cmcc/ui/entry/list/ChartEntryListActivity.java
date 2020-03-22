@@ -18,7 +18,6 @@ import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
-import com.bloomcyclecare.cmcc.ui.entry.EntrySaveResult;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.bloomcyclecare.cmcc.ui.pregnancy.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
@@ -34,7 +33,6 @@ import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
-import org.parceler.Parcels;
 
 import java.io.File;
 
@@ -60,10 +58,13 @@ import timber.log.Timber;
 public class ChartEntryListActivity extends AppCompatActivity
     implements EntryListView, NavigationView.OnNavigationItemSelectedListener {
 
-  private static final boolean DEBUG = true;
-  private static final String TAG = ChartEntryListActivity.class.getSimpleName();
+  public enum Extras {
+    CYCLE_DESC_INDEX
+  }
 
-  public static final int RC_SIGN_IN = 1;
+  private enum RequestCode {
+    PREGNANCY_LIST
+  }
 
   private NavigationView mNavView;
   private Toolbar mToolbar;
@@ -135,6 +136,9 @@ public class ChartEntryListActivity extends AppCompatActivity
       setSubtitle(viewState.subtitle);
       mPageAdapter.update(viewState.cycles);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
+      if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
+        mViewPager.setCurrentItem(viewState.currentCycleIndex);
+      }
 
       if (viewState.showFab) {
         showFab();
@@ -212,10 +216,22 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
     super.onActivityResult(requestCode, resultCode, data);
-    if (data != null) {
-      final EntrySaveResult result = Parcels.unwrap(data.getParcelableExtra(EntrySaveResult.class.getName()));
-      //if (DEBUG) Log.v(TAG, "Received cycleToShow:" + result.cycleToShow + " in result");
-      //mViewPager.setCurrentItem(mPageAdapter.onResult(result));
+    if (requestCode < 0 || requestCode > RequestCode.values().length) {
+      Timber.e("Invalid request code: %d", requestCode);
+      return;
+    }
+    switch (RequestCode.values()[requestCode]) {
+      case PREGNANCY_LIST:
+        if (data != null && data.hasExtra(Extras.CYCLE_DESC_INDEX.name())) {
+          int cycleIndex = data.getIntExtra(Extras.CYCLE_DESC_INDEX.name(), -1);
+          if (cycleIndex >= 0) {
+            Timber.d("Updating current cycle based on pregnancy click");
+            mViewModel.currentPageUpdates.onNext(cycleIndex);
+          }
+        }
+        break;
+      default:
+        Timber.w("Fall through for code: %d", requestCode);
     }
   }
 
@@ -342,7 +358,6 @@ public class ChartEntryListActivity extends AppCompatActivity
   @Override
   public void setOverlay(String key) {
     mLayerSubject.onNext(key);
-    Log.i(TAG, "Overlay: " + key);
   }
 
   @Override
@@ -382,7 +397,7 @@ public class ChartEntryListActivity extends AppCompatActivity
         startActivity(new Intent(this, DriveActivity.class));
         break;
       case R.id.nav_pregnancies:
-        startActivity(new Intent(this, PregnancyListActivity.class));
+        startActivityForResult(new Intent(this, PregnancyListActivity.class), RequestCode.PREGNANCY_LIST.ordinal());
         break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:
