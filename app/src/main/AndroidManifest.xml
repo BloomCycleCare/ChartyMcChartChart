@@ -8,28 +8,29 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:name="com.bloomcyclecare.cmcc.application.MyApplication"
+        android:name=".application.MyApplication"
         android:allowBackup="false"
         android:icon="${icon}"
         android:label="@string/app_name"
         android:roundIcon="${roundIcon}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name="com.bloomcyclecare.cmcc.ui.drive.DriveActivity"></activity>
+        <activity android:name=".ui.drive.DriveActivity" />
 
-        <service android:name="com.bloomcyclecare.cmcc.notifications.ChartingService" />
+        <service android:name=".notifications.ChartingService" />
+
         <receiver
-            android:name="com.bloomcyclecare.cmcc.notifications.ChartingReceiver"
+            android:name=".notifications.ChartingReceiver"
             android:exported="true" />
 
-        <service android:name="com.bloomcyclecare.cmcc.notifications.SyncService" />
-        <receiver
-            android:name="com.bloomcyclecare.cmcc.notifications.SyncReceiver"
-            android:exported="true" />
+        <service android:name=".notifications.SyncService" />
 
+        <receiver
+            android:name=".notifications.SyncReceiver"
+            android:exported="true" />
 
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.init.UserInitActivity"
+            android:name=".ui.init.UserInitActivity"
             android:noHistory="true"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
@@ -62,36 +63,39 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity"
+            android:name=".ui.entry.list.ChartEntryListActivity"
             android:label="@string/app_name"
             android:launchMode="singleTop"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartActivity"
+            android:name=".ui.print.PrintChartActivity"
             android:label="@string/title_activity_cycle_list"
             android:launchMode="singleTop"
-            android:parentActivityName="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity">
+            android:parentActivityName=".ui.entry.list.ChartEntryListActivity">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity" />
         </activity>
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity"
+            android:name=".ui.entry.detail.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
-            android:parentActivityName="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity"
+            android:parentActivityName=".ui.entry.list.ChartEntryListActivity"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustPan">
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity" />
         </activity>
-        <activity android:name="com.bloomcyclecare.cmcc.ui.settings.SettingsActivity" />
+        <activity android:name=".ui.settings.SettingsActivity" />
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:name=".ui.profile.ProfileActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:name=".ui.instructions.InstructionsListActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
+        <activity
+            android:name=".ui.pregnancy.PregnancyListActivity"
+            android:label="@string/title_activity_pregnancy_list" />
 
         <provider
             android:name="androidx.core.content.FileProvider"
@@ -104,8 +108,8 @@
         </provider>
 
         <activity
-            android:name="com.bloomcyclecare.cmcc.ui.goals.create.CreateGoalActivity"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:name=".ui.goals.create.CreateGoalActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
     </application>
 
 </manifest>

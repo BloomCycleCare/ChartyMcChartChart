@@ -32,7 +32,7 @@ public class AppStateExporter {
         mCycleRepo.getStream().firstOrError(),
         mEntryRepo.getAllEntries(),
         mInstructionsRepo.getAll().firstOrError(),
-        mPregnancyRepo.getAll(),
+        mPregnancyRepo.getAll().firstOrError(),
         (cycles, entries, instructions, pregnancies) -> new AppState(
             cycles, entries,  null, instructions, pregnancies));
   }}

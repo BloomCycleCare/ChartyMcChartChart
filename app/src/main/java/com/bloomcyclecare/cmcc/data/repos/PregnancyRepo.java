@@ -10,6 +10,7 @@ import org.joda.time.LocalDate;
 import java.util.List;
 
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Single;
 import timber.log.Timber;
 
@@ -23,8 +24,8 @@ public class PregnancyRepo {
     this.mPregnancyDao = database.pregnancyDao();
   }
 
-  public Single<List<Pregnancy>> getAll() {
-    return mPregnancyDao.getAll();
+  public Flowable<List<Pregnancy>> getAll() {
+    return mPregnancyDao.getAll().distinctUntilChanged();
   }
 
   public Completable insertAll(List<Pregnancy> pregnancies) {

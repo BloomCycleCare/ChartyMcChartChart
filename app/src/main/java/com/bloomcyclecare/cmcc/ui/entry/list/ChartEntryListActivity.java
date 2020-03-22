@@ -20,6 +20,7 @@ import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
 import com.bloomcyclecare.cmcc.ui.entry.EntrySaveResult;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
+import com.bloomcyclecare.cmcc.ui.pregnancy.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
 import com.bloomcyclecare.cmcc.ui.profile.ProfileActivity;
 import com.bloomcyclecare.cmcc.ui.settings.SettingsActivity;
@@ -379,6 +380,9 @@ public class ChartEntryListActivity extends AppCompatActivity
         break;
       case R.id.nav_share:
         startActivity(new Intent(this, DriveActivity.class));
+        break;
+      case R.id.nav_pregnancies:
+        startActivity(new Intent(this, PregnancyListActivity.class));
         break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:

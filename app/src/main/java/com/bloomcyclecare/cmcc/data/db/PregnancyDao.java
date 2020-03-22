@@ -10,6 +10,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import io.reactivex.Completable;
+import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 
@@ -20,7 +21,7 @@ public abstract class PregnancyDao {
   public abstract Maybe<Pregnancy> getById(Long id);
 
   @Query("SELECT * FROM Pregnancy")
-  public abstract Single<List<Pregnancy>> getAll();
+  public abstract Flowable<List<Pregnancy>> getAll();
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   public abstract Single<Long> insert(Pregnancy pregnancy);
