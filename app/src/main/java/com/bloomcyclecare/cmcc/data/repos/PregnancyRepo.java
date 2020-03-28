@@ -32,6 +32,10 @@ public class PregnancyRepo {
     return mPregnancyDao.insert(pregnancies);
   }
 
+  public Completable delete(Pregnancy pregnancy) {
+    return mPregnancyDao.delete(pregnancy);
+  }
+
   public Completable startPregnancy(LocalDate dateOfTest) {
     return Single.merge(Single.zip(
         createPregnancy(dateOfTest),
@@ -53,7 +57,7 @@ public class PregnancyRepo {
 
   private Completable dropPregnancy(Long id) {
     Preconditions.checkNotNull(id);
-    return mPregnancyDao.getById(id).toSingle().flatMapCompletable(mPregnancyDao::delete);
+    return mPregnancyDao.getById(id).toSingle().flatMapCompletable(this::delete);
   }
 
   private Single<Pregnancy> createPregnancy(LocalDate dateOfTest) {

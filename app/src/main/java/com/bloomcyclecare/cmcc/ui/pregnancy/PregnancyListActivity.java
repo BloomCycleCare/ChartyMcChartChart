@@ -8,15 +8,18 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.bloomcyclecare.cmcc.utils.RxPrompt;
 import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.ViewModelProviders;
+import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
 public class PregnancyListActivity extends AppCompatActivity {
 
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
   private SimpleArrayAdapter<PregnancyListViewModel.PregnancyViewModel, ViewHolder> mAdapter;
 
   @Override
@@ -38,6 +41,9 @@ public class PregnancyListActivity extends AppCompatActivity {
   }
 
   private void render(PregnancyListViewModel.ViewState viewState) {
+    for (RxPrompt prompt : viewState.prompts) {
+      mDisposables.add(prompt.doPrompt(this));
+    }
     mAdapter.updateData(viewState.viewModels);
   }
 
