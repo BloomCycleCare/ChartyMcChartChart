@@ -362,6 +362,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     final CycleRenderer.EntryModificationContext entryModificationContext;
     final ChartEntry chartEntry;
     final String observationErrorText;
+    final boolean isInPregnancy;
     final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
     final List<ValidationIssue> validationIssues = new ArrayList<>();
     final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
@@ -373,12 +374,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
       this.clarifyingQuestionState.addAll(that.clarifyingQuestionState);
       this.validationIssues.addAll(that.validationIssues);
       this.previousPrompts.addAll(that.previousPrompts);
+      this.isInPregnancy = that.isInPregnancy;
     }
 
     ViewState(CycleRenderer.EntryModificationContext entryModificationContext, ChartEntry chartEntry, String observationErrorText) {
       this.entryModificationContext = entryModificationContext;
       this.chartEntry = chartEntry;
       this.observationErrorText = observationErrorText;
+      this.isInPregnancy = entryModificationContext.cycle.isPregnancy();
       validate();
     }
 

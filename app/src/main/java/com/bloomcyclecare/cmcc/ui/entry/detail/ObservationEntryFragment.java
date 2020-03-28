@@ -116,7 +116,7 @@ public class ObservationEntryFragment extends Fragment {
     mEntryDetailViewModel.viewStates().observe(this, (viewState -> {
       Timber.d("Updating ViewState");
       boolean hideOnFirstEntry = viewState.entryModificationContext.isFirstEntry && (
-          !viewState.entryModificationContext.hasPreviousCycle || viewState.entryModificationContext.previousCycleIsPregnancy);
+          !viewState.entryModificationContext.hasPreviousCycle || viewState.isInPregnancy);
       if (hideOnFirstEntry || viewState.chartEntry.observationEntry.positivePregnancyTest) {
         firstDayLayout.setVisibility(View.GONE);
       }
