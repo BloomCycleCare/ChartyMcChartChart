@@ -17,4 +17,7 @@ public class Pregnancy {
 
   @Nullable
   public LocalDate dueDate;
+
+  @Nullable
+  public LocalDate deliveryDate;
 }

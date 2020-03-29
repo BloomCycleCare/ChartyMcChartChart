@@ -8,8 +8,6 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.bloomcyclecare.cmcc.ui.pregnancy.detail.PregnancyDetailActivity;
 import com.bloomcyclecare.cmcc.utils.RxPrompt;
 import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
@@ -20,7 +18,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.util.Consumer;
 import androidx.lifecycle.ViewModelProviders;
 import io.reactivex.disposables.CompositeDisposable;
-import timber.log.Timber;
 
 public class PregnancyListActivity extends AppCompatActivity {
 
@@ -62,32 +59,22 @@ public class PregnancyListActivity extends AppCompatActivity {
     mAdapter.updateData(viewState.viewModels);
   }
 
-  private void viewDetails(Pregnancy pregnancy) {
+  private void viewDetails(PregnancyListViewModel.PregnancyViewModel model) {
     Intent intent = new Intent(this, PregnancyDetailActivity.class);
-    intent.putExtra(Pregnancy.class.getCanonicalName(), Parcels.wrap(pregnancy));
+    intent.putExtra(PregnancyDetailActivity.Extras.PREGNANCY.name(), Parcels.wrap(model.pregnancy));
+    intent.putExtra(PregnancyDetailActivity.Extras.CYCLE_INDEX.name(), model.cycleAscIndex);
     startActivity(intent);
-  }
-
-  private void navigateToPregnancy(int cycleIndex) {
-    if (cycleIndex < 0) {
-      Timber.w("Invalid cycle index");
-      return;
-    }
-    Intent data = new Intent();
-    data.putExtra(ChartEntryListActivity.Extras.CYCLE_DESC_INDEX.name(), cycleIndex);
-    setResult(RESULT_OK, data);
-    finish();
   }
 
   private static class ViewHolder extends SimpleArrayAdapter.SimpleViewHolder<PregnancyListViewModel.PregnancyViewModel> {
 
     final TextView infoTextView;
 
-    ViewHolder(View view, Consumer<Pregnancy> onClick) {
+    ViewHolder(View view, Consumer<PregnancyListViewModel.PregnancyViewModel> onClick) {
       super(view);
       infoTextView = view.findViewById(R.id.tv_pregnancy_info);
       infoTextView.setOnClickListener(v -> {
-        onClick.accept(getCurrent().pregnancy);
+        onClick.accept(getCurrent());
       });
     }
 

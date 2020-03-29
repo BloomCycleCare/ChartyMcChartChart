@@ -7,4 +7,9 @@
         android:orderInCategory="1"
         app:showAsAction="always"
         android:title="Save"/>
+    <item
+        android:id="@+id/action_view_cycle"
+        android:orderInCategory="10"
+        app:showAsAction="never"
+        android:title="View Cycle"/>
 </menu>

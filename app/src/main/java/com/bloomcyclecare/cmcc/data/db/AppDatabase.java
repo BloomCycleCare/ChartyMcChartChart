@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         WellnessEntry.class,
         Pregnancy.class,
     },
-    version = 12)
+    version = 13)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -90,7 +90,13 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("ALTER TABLE Pregnancy ADD dueDate TEXT");
         }
     };
+    private static final Migration MIGRATION_12_13 = new Migration(12, 13) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE Pregnancy ADD deliveryDate TEXT");
+        }
+    };
 
     public static List<Migration> MIGRATIONS = ImmutableList.of(
-        MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12);
+        MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13);
 }

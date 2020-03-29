@@ -20,17 +20,18 @@ tools:context=".ui.pregnancy.detail.PregnancyDetailActivity">
         />
 
     <ImageView
-        android:id="@+id/iv_dates"
+        android:id="@+id/iv_test_date"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:paddingEnd="10dp"
+        android:paddingBottom="16dp"
         app:layout_constraintEnd_toStartOf="@+id/tv_test_date"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_pregnancy_summary_header"
-        app:srcCompat="@drawable/ic_date_range_black_24dp"
+        app:srcCompat="@drawable/ic_check_circle_black_24dp"
         tools:ignore="ContentDescription"/>
 
     <TextView
@@ -40,11 +41,10 @@ tools:context=".ui.pregnancy.detail.PregnancyDetailActivity">
         android:layout_gravity="center_vertical"
         android:text="Test Date: "
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        android:paddingBottom="16dp"
-        app:layout_constraintHorizontal_bias="0.5"
-        app:layout_constraintTop_toTopOf="@id/iv_dates"
-        app:layout_constraintTop_toBottomOf="@id/iv_dates"
-        app:layout_constraintStart_toEndOf="@+id/iv_dates"/>
+        app:layout_constraintBottom_toBottomOf="@id/iv_test_date"
+        app:layout_constraintStart_toEndOf="@+id/iv_test_date"
+        app:layout_constraintTop_toTopOf="@id/iv_test_date"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/tv_test_value"
@@ -58,16 +58,31 @@ tools:context=".ui.pregnancy.detail.PregnancyDetailActivity">
         app:layout_constraintTop_toTopOf="@id/tv_test_date"
         app:layout_constraintVertical_bias="0.0" />
 
+    <ImageView
+        android:id="@+id/iv_due_date"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingEnd="10dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintEnd_toStartOf="@+id/tv_test_date"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_test_date"
+        app:srcCompat="@drawable/ic_date_range_black_24dp"
+        tools:ignore="ContentDescription"/>
+
     <TextView
         android:id="@+id/tv_due_date"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:paddingBottom="16dp"
         android:text="Due Date: "
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        app:layout_constraintStart_toStartOf="@id/tv_test_date"
-        app:layout_constraintTop_toBottomOf="@id/tv_test_date" />
+        app:layout_constraintBottom_toBottomOf="@id/iv_due_date"
+        app:layout_constraintStart_toEndOf="@id/iv_due_date"
+        app:layout_constraintTop_toTopOf="@id/iv_due_date"
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/tv_due_date_value"
@@ -78,7 +93,43 @@ tools:context=".ui.pregnancy.detail.PregnancyDetailActivity">
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintBottom_toBottomOf="@id/tv_due_date"
         app:layout_constraintStart_toEndOf="@id/tv_due_date"
-        app:layout_constraintTop_toTopOf="@id/tv_due_date"
+        app:layout_constraintTop_toTopOf="@id/tv_due_date"/>
+
+    <ImageView
+        android:id="@+id/iv_delivery_date"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingEnd="10dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintEnd_toStartOf="@+id/tv_test_date"
+        app:layout_constraintHorizontal_chainStyle="packed"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/iv_due_date"
+        app:srcCompat="@drawable/ic_child_friendly_black_24dp"
+        tools:ignore="ContentDescription"/>
+
+    <TextView
+        android:id="@+id/tv_delivery_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text="Delivery Date: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintBottom_toBottomOf="@id/iv_delivery_date"
+        app:layout_constraintStart_toEndOf="@id/iv_delivery_date"
+        app:layout_constraintTop_toTopOf="@id/iv_delivery_date"
         app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/tv_delivery_date_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text="a date here"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintBottom_toBottomOf="@id/tv_delivery_date"
+        app:layout_constraintStart_toEndOf="@id/tv_delivery_date"
+        app:layout_constraintTop_toTopOf="@id/tv_delivery_date"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

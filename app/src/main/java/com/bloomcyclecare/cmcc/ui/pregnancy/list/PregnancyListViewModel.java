@@ -99,7 +99,7 @@ public class PregnancyListViewModel extends AndroidViewModel {
     }
 
     public String getInfo() {
-      return String.format("#%d test date %s", pregnancyNum, DateUtil.toUiStr(pregnancy.positiveTestDate));
+      return String.format("#%d test date %s", pregnancyNum, DateUtil.toNewUiStr(pregnancy.positiveTestDate));
     }
   }
 }

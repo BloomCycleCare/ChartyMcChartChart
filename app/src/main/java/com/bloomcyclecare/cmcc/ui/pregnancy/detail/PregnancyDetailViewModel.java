@@ -28,6 +28,7 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   private final PregnancyRepo mPregnancyRepo;
   private final SingleSubject<Pregnancy> mPregnancy = SingleSubject.create();
   private final Subject<Optional<LocalDate>> mDueDateUpdates = BehaviorSubject.create();
+  private final Subject<Optional<LocalDate>> mDeliveryDateUpdates = BehaviorSubject.create();
   private final Subject<ViewState> mState = BehaviorSubject.create();
 
   public PregnancyDetailViewModel(@NonNull Application application) {
@@ -39,11 +40,16 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   public void init(Pregnancy pregnancy) {
     Timber.v("Initializing with %s", pregnancy);
     mDueDateUpdates.onNext(Optional.fromNullable(pregnancy.dueDate));
+    mDeliveryDateUpdates.onNext(Optional.fromNullable(pregnancy.deliveryDate));
     mPregnancy.onSuccess(pregnancy);
   }
 
-  void onNewDueDate(LocalDate dueDate) {
-    mDueDateUpdates.onNext(Optional.of(dueDate));
+  void onNewDueDate(LocalDate date) {
+    mDueDateUpdates.onNext(Optional.of(date));
+  }
+
+  void onNewDeliveryDate(LocalDate date) {
+    mDeliveryDateUpdates.onNext(Optional.of(date));
   }
 
   Completable onSave() {
@@ -75,8 +81,10 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     return Flowable.combineLatest(
         mPregnancy.toFlowable().distinctUntilChanged(),
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (pregnancy, dueDate) -> {
+        mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        (pregnancy, dueDate, deliveryDate) -> {
           pregnancy.dueDate = dueDate.orNull();
+          pregnancy.deliveryDate = deliveryDate.orNull();
           return new ViewState(pregnancy);
         })
         .toObservable();
