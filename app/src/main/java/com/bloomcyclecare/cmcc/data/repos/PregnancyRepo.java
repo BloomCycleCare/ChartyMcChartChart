@@ -11,6 +11,7 @@ import java.util.List;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Maybe;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import timber.log.Timber;
@@ -29,6 +30,10 @@ public class PregnancyRepo {
     return mPregnancyDao.getAll()
         .distinctUntilChanged()
         .subscribeOn(Schedulers.computation());
+  }
+
+  public Maybe<Pregnancy> get(Long id) {
+    return mPregnancyDao.getById(id);
   }
 
   public Completable insertAll(List<Pregnancy> pregnancies) {
