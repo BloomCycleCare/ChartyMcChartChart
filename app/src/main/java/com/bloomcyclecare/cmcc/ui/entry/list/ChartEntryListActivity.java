@@ -195,6 +195,13 @@ public class ChartEntryListActivity extends AppCompatActivity
       datePickerDialog.show(getFragmentManager(), "datepickerdialog");
     });
     hideFab();
+    maybeUpdateCurrentPage(getIntent());
+  }
+
+  @Override
+  protected void onNewIntent(Intent intent) {
+    maybeUpdateCurrentPage(intent);
+    super.onNewIntent(intent);
   }
 
   @Override
@@ -222,16 +229,20 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
     switch (RequestCode.values()[requestCode]) {
       case PREGNANCY_LIST:
-        if (data != null && data.hasExtra(Extras.CYCLE_DESC_INDEX.name())) {
-          int cycleIndex = data.getIntExtra(Extras.CYCLE_DESC_INDEX.name(), -1);
-          if (cycleIndex >= 0) {
-            Timber.d("Updating current cycle based on pregnancy click");
-            mViewModel.currentPageUpdates.onNext(cycleIndex);
-          }
-        }
+        maybeUpdateCurrentPage(data);
         break;
       default:
         Timber.w("Fall through for code: %d", requestCode);
+    }
+  }
+
+  private void maybeUpdateCurrentPage(Intent intent) {
+    if (intent != null && intent.hasExtra(Extras.CYCLE_DESC_INDEX.name())) {
+      int cycleIndex = intent.getIntExtra(Extras.CYCLE_DESC_INDEX.name(), -1);
+      if (cycleIndex >= 0) {
+        Timber.d("Updating current cycle based on pregnancy click");
+        mViewModel.currentPageUpdates.onNext(cycleIndex);
+      }
     }
   }
 
