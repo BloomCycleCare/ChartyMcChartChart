@@ -19,7 +19,7 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
-import com.bloomcyclecare.cmcc.ui.pregnancy.PregnancyListActivity;
+import com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
 import com.bloomcyclecare.cmcc.ui.profile.ProfileActivity;
 import com.bloomcyclecare.cmcc.ui.settings.SettingsActivity;

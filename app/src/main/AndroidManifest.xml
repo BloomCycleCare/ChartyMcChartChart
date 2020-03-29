@@ -94,8 +94,11 @@
             android:name=".ui.instructions.InstructionsListActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".ui.pregnancy.PregnancyListActivity"
+            android:name=".ui.pregnancy.list.PregnancyListActivity"
             android:label="@string/title_activity_pregnancy_list" />
+        <activity
+            android:name=".ui.pregnancy.detail.PregnancyDetailActivity"
+            android:label="@string/title_activity_pregnancy_detail" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

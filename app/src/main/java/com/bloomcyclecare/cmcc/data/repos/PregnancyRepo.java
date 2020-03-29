@@ -12,6 +12,7 @@ import java.util.List;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import timber.log.Timber;
 
 public class PregnancyRepo {
@@ -25,15 +26,24 @@ public class PregnancyRepo {
   }
 
   public Flowable<List<Pregnancy>> getAll() {
-    return mPregnancyDao.getAll().distinctUntilChanged();
+    return mPregnancyDao.getAll()
+        .distinctUntilChanged()
+        .subscribeOn(Schedulers.computation());
   }
 
   public Completable insertAll(List<Pregnancy> pregnancies) {
-    return mPregnancyDao.insert(pregnancies);
+    return mPregnancyDao.insert(pregnancies)
+        .subscribeOn(Schedulers.computation());
+  }
+
+  public Completable update(Pregnancy pregnancy) {
+    return mPregnancyDao.update(pregnancy)
+        .subscribeOn(Schedulers.computation());
   }
 
   public Completable delete(Pregnancy pregnancy) {
-    return mPregnancyDao.delete(pregnancy);
+    return mPregnancyDao.delete(pregnancy)
+        .subscribeOn(Schedulers.computation());
   }
 
   public Completable startPregnancy(LocalDate dateOfTest) {
@@ -41,7 +51,8 @@ public class PregnancyRepo {
         createPregnancy(dateOfTest),
         mCycleRepo.getCycleForDate(dateOfTest).toSingle(),
         ((pregnancy, currentCycle) -> mCycleRepo.splitCycle(currentCycle, dateOfTest.plusDays(1), newCycle -> newCycle.pregnancyId = pregnancy.id))))
-        .ignoreElement();
+        .ignoreElement()
+        .subscribeOn(Schedulers.computation());
   }
 
   public Completable revertPregnancy(LocalDate dateOfTest) {
@@ -52,7 +63,8 @@ public class PregnancyRepo {
             .ignoreElement()
             .andThen(Completable.defer(() -> dropPregnancy(currentCycle.pregnancyId))
                 .doOnError(t -> Timber.e("Could not delete pregnancy"))
-                .onErrorComplete()));
+                .onErrorComplete()))
+        .subscribeOn(Schedulers.computation());
   }
 
   private Completable dropPregnancy(Long id) {

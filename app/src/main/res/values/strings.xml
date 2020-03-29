@@ -170,6 +170,7 @@
     <string name="title_activity_foo">FooActivity</string>
     <string name="charting_reminder">Charting Reminder</string>
     <string name="title_activity_pregnancy_list">PregnancyListActivity</string>
+    <string name="title_activity_pregnancy_detail">PregnancyDetailActivity</string>
     <!-- Strings used for fragments for navigation -->
     <string name="first_fragment_label">First Fragment</string>
     <string name="second_fragment_label">Second Fragment</string>

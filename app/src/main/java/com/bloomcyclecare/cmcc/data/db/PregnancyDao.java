@@ -9,6 +9,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
+import androidx.room.Update;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -31,4 +32,7 @@ public abstract class PregnancyDao {
 
   @Delete
   public abstract Completable delete(Pregnancy pregnancy);
+
+  @Update
+  public abstract Completable update(Pregnancy pregnancy);
 }

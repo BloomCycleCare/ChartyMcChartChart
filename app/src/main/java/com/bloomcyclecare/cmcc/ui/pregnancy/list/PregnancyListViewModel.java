@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.pregnancy;
+package com.bloomcyclecare.cmcc.ui.pregnancy.list;
 
 import android.app.Application;
 import android.util.SparseIntArray;

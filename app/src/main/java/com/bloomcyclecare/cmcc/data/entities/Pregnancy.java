@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.entities;
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
 
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -13,4 +14,7 @@ public class Pregnancy {
   public long id;
 
   public LocalDate positiveTestDate;
+
+  @Nullable
+  public LocalDate dueDate;
 }
