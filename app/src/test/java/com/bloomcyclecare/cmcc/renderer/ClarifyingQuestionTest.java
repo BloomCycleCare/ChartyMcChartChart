@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -138,10 +139,10 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
         return true;
       });
     }
-    Cycle cycle = new Cycle("", CYCLE_START_DATE, null);
+    Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 
     List<CycleRenderer.RenderableEntry> renderableEntries =
-        new CycleRenderer(cycle, chartEntries, Arrays.asList(instructions)).render().entries;
+        new CycleRenderer(cycle, Optional.absent(), chartEntries, Arrays.asList(instructions)).render().entries;
 
     Preconditions.checkState(renderableEntries.size() == numEntries);
     for (int i = 0; i < numEntries; i++) {

@@ -12,6 +12,7 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -76,7 +77,7 @@ public abstract class BaseRendererTest {
 
     public ObservationEntry asChartEntry(LocalDate date) throws ObservationParser.InvalidObservationException {
       Observation observation = ObservationParser.parse(observationText).orNull();
-      return new ObservationEntry(date, observation, peakDay, intercourse, false, pointOfChange, unusualBleeding, null, false, "");
+      return new ObservationEntry(date, observation, peakDay, intercourse, false, false, pointOfChange, unusualBleeding, null, false, "");
     }
   }
 
@@ -158,10 +159,11 @@ public abstract class BaseRendererTest {
         return true;
       });
     }
-    Cycle cycle = new Cycle("", CYCLE_START_DATE, null);
+    Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 
+    Optional<Cycle> previousCycle = Optional.absent();
     List<CycleRenderer.RenderableEntry> renderableEntries =
-        new CycleRenderer(cycle, chartEntries, Arrays.asList(instructions)).render().entries;
+        new CycleRenderer(cycle, previousCycle, chartEntries, Arrays.asList(instructions)).render().entries;
 
     Preconditions.checkState(renderableEntries.size() == numEntries);
     for (int i=0; i<numEntries; i++) {
