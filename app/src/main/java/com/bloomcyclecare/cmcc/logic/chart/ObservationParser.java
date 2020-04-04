@@ -12,6 +12,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -23,6 +25,8 @@ public class ObservationParser {
   private static final String VALID_OCCURRENCES_STR = ON_SPACE.join(Occurrences.values());
   private static final Set<DischargeType> TYPES_ALLOWING_MODIFIERS =
       ImmutableSet.of(DischargeType.STICKY, DischargeType.STRETCHY, DischargeType.TACKY);
+  private static final Set<MucusModifier> MODIFIERS_NOT_REQUIRING_DISCHARGE_TYPE =
+      ImmutableSet.of(MucusModifier.P);
 
   @NonNull
   public static Optional<Observation> parse(String input) throws InvalidObservationException {
@@ -64,21 +68,35 @@ public class ObservationParser {
         break;
       }
     }
-    if (dischargeType == null) {
-      throw new InvalidObservationException("Could not determine DischargeType for: " + input);
+    String observationWithoutDischargeType = observationWithoutFlow;
+    if (dischargeType != null) {
+      observationWithoutDischargeType =
+          StringUtil.consumePrefix(observationWithoutFlow, dischargeType.getCode());
     }
-    String observationWithoutDischargeType =
-        StringUtil.consumePrefix(observationWithoutFlow, dischargeType.getCode());
-
     Set<MucusModifier> mucusModifiers = new LinkedHashSet<>();
     String observationWithoutModifiers = StringUtil.consumeEnum(
         observationWithoutDischargeType, mucusModifiers, MucusModifier.class);
-    if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
-      throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
+
+    Set<MucusModifier> modifiersRequiringColor = new HashSet<>(mucusModifiers);
+    modifiersRequiringColor.retainAll(MucusModifier.VALUES_REQUIRING_COLOR);
+    boolean hasColorModifier = !Collections.disjoint(mucusModifiers, MucusModifier.COLOR_VALUES);
+    for (MucusModifier m : modifiersRequiringColor) {
+      if (!hasColorModifier) {
+        throw new InvalidObservationException(m.name() + " must be followed by a color: " + input);
+      }
     }
-    // Add "implicit" modifiers
-    if (dischargeType.isLubricative()) {
-      mucusModifiers.add(MucusModifier.L);
+
+    if (dischargeType == null && !mucusModifiers.contains(MucusModifier.P)) {
+      throw new InvalidObservationException("Could not determine DischargeType for: " + input);
+    }
+    if (dischargeType != null) {
+      if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
+        throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
+      }
+      // Add "implicit" modifiers
+      if (dischargeType.isLubricative()) {
+        mucusModifiers.add(MucusModifier.L);
+      }
     }
     DischargeSummary mucusSummary = new DischargeSummary(dischargeType, mucusModifiers);
 

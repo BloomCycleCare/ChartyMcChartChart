@@ -19,6 +19,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
+import org.parceler.ParcelConstructor;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -558,9 +559,7 @@ public class CycleRenderer {
     }
 
     EntryModificationContext entryModificationContext() {
-      EntryModificationContext modificationContext = new EntryModificationContext();
-      modificationContext.cycle = cycle;
-      modificationContext.entry = entry;
+      EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
       modificationContext.hasPreviousCycle = false;
       modificationContext.previousCycleIsPregnancy = previousCycle.transform(Cycle::isPregnancy).or(false);
       modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
@@ -655,7 +654,9 @@ public class CycleRenderer {
 
   @Parcel
   public static class EntryModificationContext {
+    @NonNull
     public Cycle cycle;
+    @NonNull
     public ChartEntry entry;
     public boolean hasPreviousCycle;
     public boolean previousCycleIsPregnancy;
@@ -663,5 +664,11 @@ public class CycleRenderer {
     public boolean shouldAskDoublePeakQuestions;
     public boolean allPreviousDaysHaveHadBlood;
     public boolean shouldAskEssentialSamenessIfMucus;
+
+    @ParcelConstructor
+    public EntryModificationContext(@NonNull Cycle cycle, @NonNull ChartEntry entry) {
+      this.cycle = cycle;
+      this.entry = entry;
+    }
   }
 }

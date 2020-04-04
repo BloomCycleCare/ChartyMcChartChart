@@ -4,6 +4,7 @@ package com.bloomcyclecare.cmcc.ui.entry.detail;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
@@ -27,8 +28,9 @@ public class EntryDetailViewModelTest {
     MyApplication mockApplication = Mockito.mock(MyApplication.class);
     mViewModel = new EntryDetailViewModel(mockApplication);
 
-    mContext = new CycleRenderer.EntryModificationContext();
-    mContext.entry = ChartEntry.emptyEntry(LocalDate.now());
+    Cycle cycle = new Cycle("test", LocalDate.now(), null, null);
+    mContext = new CycleRenderer.EntryModificationContext(
+        cycle, ChartEntry.emptyEntry(LocalDate.now()));
   }
 
   private void initModel() {

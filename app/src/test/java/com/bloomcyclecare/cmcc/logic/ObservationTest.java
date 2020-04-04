@@ -89,28 +89,33 @@ public class ObservationTest {
     }
   }
 
-  /*j@Test
-  public void fromString_withModifier() throws Exception {
-    for (DischargeType type : DischargeSummary.DischargeType.values()) {
-      boolean modifiersAllowed = Observation.TYPES_ALLOWING_MODIFIERS.contains(type);
-      for (MucusModifier modifier : DischargeSummary.MucusModifier.values()) {
-        try {
-          Observation observation = Observation.fromString(
-              type.getCode() + modifier.name() + "AD");
-          if (modifiersAllowed) {
-            assertEquals(type, observation.dischargeSummary.mType);
-            assertEquals(ImmutableSet.of(modifier), observation.dischargeSummary.mModifiers);
-          } else {
-            fail(type.name() + " should not allow modifiers");
-          }
-        } catch (Observation.InvalidObservationException maybeExpected) {
-          if (modifiersAllowed) {
-            fail();
-          }
-        }
-      }
-    }
-  }*/
+  @Test
+  public void fromString_pastyCloudy() throws Exception {
+    Observation observation = createAndTestToString("PCX1");
+    assertEquals(
+        ImmutableSet.of(MucusModifier.C, MucusModifier.P), observation.dischargeSummary.mModifiers);
+  }
+
+  @Test
+  public void fromString_pastyWithoutColor() throws Exception {
+    try {
+      createAndTestToString("PX1");
+    } catch (ObservationParser.InvalidObservationException expected) {}
+  }
+
+  @Test
+  public void fromString_gummyWithoutDischarge() throws Exception {
+    try {
+      createAndTestToString("GCX1");
+    } catch (ObservationParser.InvalidObservationException expected) {}
+  }
+
+  @Test
+  public void fromString_gummyWithoutColor() throws Exception {
+    try {
+      createAndTestToString("6GX1");
+    } catch (ObservationParser.InvalidObservationException expected) {}
+  }
 
   @Test
   public void fromString_withModifiers() throws Exception {
@@ -134,29 +139,6 @@ public class ObservationTest {
       }
     }
   }
-
-  /*@Test
-  public void fromString_missingOccurrences() throws Exception {
-    try {
-      createAndTestToString("10WL");
-      fail("Missing required occurrences");
-    } catch (Observation.InvalidObservationException expected) {
-      String expectedMessage = "Missing one of: " + Observation.VALID_OCCURRENCES_STR;
-      assertEquals(expectedMessage, expected.getMessage());
-    }
-  }
-
-  @Test
-  public void fromString_invalidOccurrences() throws Exception {
-    try {
-      createAndTestToString("10WLAP");
-      fail("Missing required occurrences");
-    } catch (Observation.InvalidObservationException expected) {
-      String expectedMessage =
-          "Occurrence AP is not one of: " + Observation.VALID_OCCURRENCES_STR;
-      assertEquals(expectedMessage, expected.getMessage());
-    }
-  }*/
 
   @Test
   public void fromString_extraInfoFlow() throws Exception {
