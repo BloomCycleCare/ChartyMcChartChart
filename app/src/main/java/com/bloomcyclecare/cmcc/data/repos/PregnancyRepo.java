@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.PregnancyDao;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.google.common.base.Preconditions;
 
 import org.joda.time.LocalDate;
@@ -18,10 +19,10 @@ import timber.log.Timber;
 
 public class PregnancyRepo {
 
-  private final CycleRepo mCycleRepo;
+  private final RWCycleRepo mCycleRepo;
   private final PregnancyDao mPregnancyDao;
 
-  public PregnancyRepo(AppDatabase database, CycleRepo mCycleRepo) {
+  public PregnancyRepo(AppDatabase database, RWCycleRepo mCycleRepo) {
     this.mCycleRepo = mCycleRepo;
     this.mPregnancyDao = database.pregnancyDao();
   }
@@ -64,7 +65,7 @@ public class PregnancyRepo {
     return mCycleRepo.getCycleForDate(dateOfTest)
         .toSingle()
         .flatMapCompletable(currentCycle -> mCycleRepo
-            .joinCycle(currentCycle, CycleRepo.JoinType.WITH_NEXT)
+            .joinCycle(currentCycle, RWCycleRepo.JoinType.WITH_NEXT)
             .ignoreElement()
             .andThen(Completable.defer(() -> dropPregnancy(currentCycle.pregnancyId))
                 .doOnError(t -> Timber.e("Could not delete pregnancy"))

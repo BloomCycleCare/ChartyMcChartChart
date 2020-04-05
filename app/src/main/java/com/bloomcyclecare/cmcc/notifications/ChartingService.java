@@ -15,8 +15,8 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 
 import org.joda.time.DateTime;
@@ -42,8 +42,8 @@ public class ChartingService extends Service {
 
     initNotificationChannel(this);
 
-    ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
-    CycleRepo cycleRepo = myApp.cycleRepo();
+    RWChartEntryRepo entryRepo = myApp.entryRepo();
+    RWCycleRepo cycleRepo = myApp.cycleRepo();
     NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     Flowable<Boolean> stopStream = entryRepo
         .getLatestN(2)

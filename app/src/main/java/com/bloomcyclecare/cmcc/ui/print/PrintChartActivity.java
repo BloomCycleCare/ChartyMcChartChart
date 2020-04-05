@@ -8,9 +8,9 @@ import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.print.ChartPrinter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
@@ -56,9 +56,9 @@ public class PrintChartActivity extends AppCompatActivity {
     mRecyclerView.setHasFixedSize(false);
 
     MyApplication myApp = MyApplication.cast(getApplication());
-    CycleRepo cycleRepo = new CycleRepo(myApp.db());
-    ChartEntryRepo entryRepo = new ChartEntryRepo(myApp.db());
-    InstructionsRepo instructionsRepo = new InstructionsRepo(myApp);
+    RWCycleRepo cycleRepo = myApp.cycleRepo();
+    RWChartEntryRepo entryRepo = myApp.entryRepo();
+    InstructionsRepo instructionsRepo = myApp.instructionsRepo();
 
     CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
     if (adapter != null) {

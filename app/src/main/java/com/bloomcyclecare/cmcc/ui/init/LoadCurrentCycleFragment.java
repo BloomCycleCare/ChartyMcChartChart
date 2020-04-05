@@ -12,7 +12,7 @@ import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.google.api.services.drive.model.File;
 import com.google.firebase.auth.FirebaseUser;
@@ -41,7 +41,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
 
   private Activity activity;
   private CompositeDisposable mDisposables = new CompositeDisposable();
-  private CycleRepo mCycleRepo;
+  private RWCycleRepo mCycleRepo;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {

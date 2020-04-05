@@ -7,10 +7,12 @@ import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -59,8 +61,8 @@ public class MyApplication extends Application {
 
   private AppDatabase mDB;
   private InstructionsRepo mInstructionsRepo;
-  private CycleRepo mCycleRepo;
-  private ChartEntryRepo mChartEntryRepo;
+  private RWCycleRepo mCycleRepo;
+  private RWChartEntryRepo mChartEntryRepo;
   private PreferenceRepo mPreferenceRepo;
   private PregnancyRepo mPregnancyRepo;
 
@@ -95,9 +97,9 @@ public class MyApplication extends Application {
         //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
-    mInstructionsRepo = new InstructionsRepo(this);
-    mChartEntryRepo = new ChartEntryRepo(mDB);
-    mCycleRepo = new CycleRepo(mDB);
+    mInstructionsRepo = new InstructionsRepo(mDB);
+    mChartEntryRepo = ChartEntryRepos.forRoomDB(mDB);
+    mCycleRepo = CycleRepos.forRoomDB(mDB);
     mPreferenceRepo = PreferenceRepo.create(this);
     mPregnancyRepo = new PregnancyRepo(mDB, mCycleRepo);
 
@@ -185,20 +187,15 @@ public class MyApplication extends Application {
     return mDriveSubject;
   }
 
-  @Deprecated
-  public AppDatabase db() {
-    return mDB;
-  }
-
   public InstructionsRepo instructionsRepo() {
     return mInstructionsRepo;
   }
 
-  public CycleRepo cycleRepo() {
+  public RWCycleRepo cycleRepo() {
     return mCycleRepo;
   }
 
-  public ChartEntryRepo entryRepo() {
+  public RWChartEntryRepo entryRepo() {
     return mChartEntryRepo;
   }
 

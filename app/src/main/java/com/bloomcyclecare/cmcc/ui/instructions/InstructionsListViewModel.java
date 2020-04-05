@@ -4,8 +4,8 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
@@ -33,14 +33,14 @@ public class InstructionsListViewModel extends AndroidViewModel {
   private final BehaviorSubject<Optional<Instructions>> mInstructionsForFocus = BehaviorSubject.createDefault(Optional.absent());
 
   private final InstructionsRepo mInstructionsRepo;
-  private final CycleRepo mCycleRepo;
+  private final RWCycleRepo mCycleRepo;
 
   public InstructionsListViewModel(@NonNull Application application) {
     super(application);
 
     MyApplication myApp = MyApplication.cast(application);
     mInstructionsRepo = myApp.instructionsRepo();
-    mCycleRepo = new CycleRepo(myApp.db());
+    mCycleRepo = myApp.cycleRepo();
   }
 
   Single<Boolean> isDirty() {

@@ -9,8 +9,8 @@ import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -32,16 +32,17 @@ import timber.log.Timber;
 
 public class ImportAppStateFragment extends SplashFragment implements UserInitializationListener {
 
-  private CycleRepo mCycleRepo;
-  private ChartEntryRepo mEntryRepo;
+  private RWCycleRepo mCycleRepo;
+  private RWChartEntryRepo mEntryRepo;
   private CompositeDisposable mDisposables = new CompositeDisposable();
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mCycleRepo = new CycleRepo(MyApplication.cast(getActivity().getApplication()).db());
-    mEntryRepo = new ChartEntryRepo(MyApplication.cast(getActivity().getApplication()).db());
+    MyApplication myApp = MyApplication.cast(getActivity().getApplication());
+    mCycleRepo = myApp.cycleRepo();
+    mEntryRepo = myApp.entryRepo();
   }
 
   @Override

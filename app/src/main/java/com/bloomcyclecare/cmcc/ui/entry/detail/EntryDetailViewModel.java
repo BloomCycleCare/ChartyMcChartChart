@@ -11,9 +11,9 @@ import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
@@ -66,8 +66,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
 
-  private final ChartEntryRepo mEntryRepo;
-  private final CycleRepo mCycleRepo;
+  private final RWChartEntryRepo mEntryRepo;
+  private final RWCycleRepo mCycleRepo;
   private final PregnancyRepo mPregnancyRepo;
 
   public EntryDetailViewModel(@NonNull Application application) {
@@ -349,7 +349,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
       actions.add(mPregnancyRepo.startPregnancy(updatedEntry.entryDate));
     } else if (!updatedEntry.observationEntry.firstDay && originalEntry.observationEntry.firstDay) {
       // Join for new cycle
-      actions.add(mCycleRepo.joinCycle(currentCycle, CycleRepo.JoinType.WITH_PREVIOUS).ignoreElement());
+      actions.add(mCycleRepo.joinCycle(currentCycle, RWCycleRepo.JoinType.WITH_PREVIOUS).ignoreElement());
     } else if (!updatedEntry.observationEntry.positivePregnancyTest && originalEntry.observationEntry.positivePregnancyTest) {
       // Join for pregnancy test
       actions.add(mPregnancyRepo.revertPregnancy(updatedEntry.entryDate));

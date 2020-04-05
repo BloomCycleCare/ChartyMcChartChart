@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.repos;
+package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.ObservationEntryDao;
@@ -12,11 +12,9 @@ import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -24,38 +22,39 @@ import androidx.core.util.Pair;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
-public class ChartEntryRepo {
+class RoomChartEntryRepo implements RWChartEntryRepo {
 
-  private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
+  private final PublishSubject<RWChartEntryRepo.UpdateEvent> updates = PublishSubject.create();
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
 
-  public ChartEntryRepo(AppDatabase db) {
+  RoomChartEntryRepo(AppDatabase db) {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
   }
 
-  public Flowable<UpdateEvent> updateEvents() {
+  @Override
+  public Flowable<RWChartEntryRepo.UpdateEvent> updateEvents() {
     return updates.toFlowable(BackpressureStrategy.BUFFER);
   }
 
-  @Deprecated
+  @Override
   public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
     return cycleStream
-        .switchMap(ChartEntryRepo::datesForCycle)
+        .switchMap(RoomChartEntryRepo::datesForCycle)
         .doOnNext(dates -> Timber.v("Fetching %d entries for cycle", dates.size()))
         .distinctUntilChanged()
         .switchMap(this::entriesForDates)
         .doOnSubscribe(s -> Timber.v("Fetching entries"));
   }
 
+  @Override
   public Single<List<ChartEntry>> getAllEntries() {
     return Single.zip(
         observationEntryDao.getAllEntries(),
@@ -71,6 +70,7 @@ public class ChartEntryRepo {
         });
   }
 
+  @Override
   public Flowable<List<ChartEntry>> getLatestN(int n) {
     return Flowable
         .interval(0, 30, TimeUnit.SECONDS)
@@ -95,6 +95,7 @@ public class ChartEntryRepo {
         .map(RxUtil::combineLatest));
   }
 
+  @Override
   public Flowable<List<ChartEntry>> getStreamForCycle(Flowable<Cycle> cycleStream) {
     return cycleStream
         .distinctUntilChanged()
@@ -114,20 +115,16 @@ public class ChartEntryRepo {
             }));
   }
 
-  public Completable insertAll(Collection<ChartEntry> entries) {
-    return Observable
-        .fromIterable(entries)
-        .flatMapCompletable(this::insert);
-  }
-
+  @Override
   public Completable insert(ChartEntry entry) {
     return Completable.mergeArray(
         observationEntryDao.insert(entry.observationEntry),
         wellnessEntryDao.insert(entry.wellnessEntry),
         symptomEntryDao.insert(entry.symptomEntry))
-        .doOnComplete(() -> updates.onNext(UpdateEvent.forEntry(entry)));
+        .doOnComplete(() -> updates.onNext(RWChartEntryRepo.UpdateEvent.forEntry(entry)));
   }
 
+  @Override
   public Completable deleteAll() {
     return Completable.mergeArray(
         observationEntryDao.deleteAll(),
@@ -137,12 +134,13 @@ public class ChartEntryRepo {
         .doOnComplete(() -> Timber.i("Done deleting all entries"));
   }
 
+  @Override
   public Completable delete(ChartEntry entry) {
     return Completable.mergeArray(
         observationEntryDao.delete(entry.observationEntry),
         wellnessEntryDao.delete(entry.wellnessEntry),
         symptomEntryDao.delete(entry.symptomEntry))
-        .doOnComplete(() -> updates.onNext(UpdateEvent.forEntry(entry)));
+        .doOnComplete(() -> updates.onNext(RWChartEntryRepo.UpdateEvent.forEntry(entry)));
   }
 
   private Flowable<ChartEntry> getStream(LocalDate entryDate) {
@@ -160,17 +158,4 @@ public class ChartEntryRepo {
     return endDate.map(lastDay -> DateUtil.daysBetween(cycle.startDate, lastDay, true));
   }
 
-  public static class UpdateEvent {
-    public final DateTime updateTime;
-    public final LocalDate updateTarget;
-
-    public UpdateEvent(DateTime updateTime, LocalDate updateTarget) {
-      this.updateTime = updateTime;
-      this.updateTarget = updateTarget;
-    }
-
-    static UpdateEvent forEntry(ChartEntry entry) {
-      return new UpdateEvent(DateTime.now(), entry.entryDate);
-    }
-  }
 }

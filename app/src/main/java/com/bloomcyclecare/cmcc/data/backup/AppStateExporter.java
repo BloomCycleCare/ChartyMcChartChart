@@ -2,17 +2,17 @@ package com.bloomcyclecare.cmcc.data.backup;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.models.AppState;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 
 import io.reactivex.Single;
 
 public class AppStateExporter {
 
-  private final CycleRepo mCycleRepo;
-  private final ChartEntryRepo mEntryRepo;
+  private final RWCycleRepo mCycleRepo;
+  private final RWChartEntryRepo mEntryRepo;
   private final InstructionsRepo mInstructionsRepo;
   private final PregnancyRepo mPregnancyRepo;
 
@@ -21,8 +21,8 @@ public class AppStateExporter {
   }
 
   public AppStateExporter(MyApplication myApp) {
-    mCycleRepo = new CycleRepo(myApp.db());
-    mEntryRepo = new ChartEntryRepo(myApp.db());
+    mCycleRepo = myApp.cycleRepo();
+    mEntryRepo = myApp.entryRepo();
     mInstructionsRepo = myApp.instructionsRepo();
     mPregnancyRepo = myApp.pregnancyRepo();
   }

@@ -1,12 +1,9 @@
-package com.bloomcyclecare.cmcc.data.repos;
+package com.bloomcyclecare.cmcc.data.repos.cycle;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.CycleDao;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.google.common.base.Optional;
-import com.google.common.collect.Range;
 
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.List;
@@ -21,29 +18,33 @@ import io.reactivex.Single;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
-public class CycleRepo {
+class RoomCycleRepo implements RWCycleRepo {
 
   private final CycleDao cycleDao;
-  private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
+  private final PublishSubject<RWCycleRepo.UpdateEvent> updates = PublishSubject.create();
 
-  public CycleRepo(AppDatabase db) {
+  RoomCycleRepo(AppDatabase db) {
     cycleDao = db.cycleDao();
   }
 
-  public Flowable<UpdateEvent> updateEvents() {
+  @Override
+  public Flowable<RWCycleRepo.UpdateEvent> updateEvents() {
     return updates.toFlowable(BackpressureStrategy.BUFFER);
   }
 
+  @Override
   public Flowable<List<Cycle>> getStream() {
     return cycleDao
         .getStream()
         .distinctUntilChanged();
   }
 
+  @Override
   public Maybe<Cycle> getPreviousCycle(Cycle cycle) {
     return cycleDao.getCycleWithEndDate(cycle.startDate.minusDays(1));
   }
 
+  @Override
   public Maybe<Cycle> getNextCycle(Cycle cycle) {
     if (cycle.endDate == null) {
       return Maybe.error(new IllegalArgumentException("Cycle has no endDate"));
@@ -51,10 +52,12 @@ public class CycleRepo {
     return cycleDao.getCycleForDate(cycle.endDate.plusDays(1));
   }
 
+  @Override
   public Maybe<Cycle> getCurrentCycle() {
     return cycleDao.getCurrentCycle();
   }
 
+  @Override
   public Maybe<Cycle> getLatestCycle() {
     return getStream().firstOrError().flatMapMaybe(cycles -> {
       if (cycles.isEmpty()) {
@@ -70,35 +73,29 @@ public class CycleRepo {
     });
   }
 
-  public static class SplitResult {
-    public final Cycle newCycle;
-    public final Cycle previousCycle;
-
-    SplitResult(Cycle newCycle, Cycle previousCycle) {
-      this.newCycle = newCycle;
-      this.previousCycle = previousCycle;
-    }
+  @Override
+  public Maybe<Cycle> getCycleForDate(LocalDate date) {
+    return cycleDao.getCycleForDate(date);
   }
 
-  public Single<SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle) {
+  @Override
+  public Single<RWCycleRepo.SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle) {
     return splitCycle(cycleToSplit, firstDayOfNewCycle, newCycle -> {});
   }
 
-  public Single<SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle, Consumer<Cycle> fieldUpdater) {
+  @Override
+  public Single<RWCycleRepo.SplitResult> splitCycle(Cycle cycleToSplit, LocalDate firstDayOfNewCycle, Consumer<Cycle> fieldUpdater) {
     Cycle newCycle = new Cycle("asdf", firstDayOfNewCycle, cycleToSplit.endDate, null);
     fieldUpdater.accept(newCycle);
     Cycle copyOfCycleToSplit = new Cycle(cycleToSplit);
     copyOfCycleToSplit.endDate = firstDayOfNewCycle.minusDays(1);
     return insertOrUpdate(newCycle)
         .andThen(insertOrUpdate(copyOfCycleToSplit))
-        .andThen(Single.just(new SplitResult(newCycle, copyOfCycleToSplit)));
+        .andThen(Single.just(new RWCycleRepo.SplitResult(newCycle, copyOfCycleToSplit)));
   }
 
-  public enum JoinType {
-    WITH_PREVIOUS, WITH_NEXT;
-  }
-
-  public Single<Cycle> joinCycle(Cycle cycleToJoin, JoinType joinType) {
+  @Override
+  public Single<Cycle> joinCycle(Cycle cycleToJoin, RWCycleRepo.JoinType joinType) {
     switch (joinType) {
       case WITH_NEXT:
         return getNextCycle(cycleToJoin)
@@ -127,7 +124,7 @@ public class CycleRepo {
     }
   }
 
-
+  @Override
   public Completable deleteAll() {
     return getStream()
         .firstOrError()
@@ -138,32 +135,15 @@ public class CycleRepo {
         ;
   }
 
+  @Override
   public Completable delete(Cycle cycle) {
     return cycleDao.delete(cycle)
-        .doOnComplete(() -> updates.onNext(UpdateEvent.forCycle(cycle)));
+        .doOnComplete(() -> updates.onNext(RWCycleRepo.UpdateEvent.forCycle(cycle)));
   }
 
+  @Override
   public Completable insertOrUpdate(Cycle cycle) {
     return cycleDao.insert(cycle)
-        .doOnComplete(() -> updates.onNext(UpdateEvent.forCycle(cycle)));
-  }
-
-  public Maybe<Cycle> getCycleForDate(LocalDate date) {
-    return cycleDao.getCycleForDate(date);
-  }
-
-  public static class UpdateEvent {
-    public final DateTime updateTime;
-    public final Range<LocalDate> dateRange;
-
-    private UpdateEvent(DateTime updateTime, Range<LocalDate> dateRange) {
-      this.updateTime = updateTime;
-      this.dateRange = dateRange;
-    }
-
-    static UpdateEvent forCycle(Cycle cycle) {
-      return new UpdateEvent(DateTime.now(), Range.closed(
-          cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())));
-    }
+        .doOnComplete(() -> updates.onNext(RWCycleRepo.UpdateEvent.forCycle(cycle)));
   }
 }

@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos;
 
-import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.InstructionDao;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.utils.TempStore;
@@ -26,8 +26,8 @@ public class InstructionsRepo {
   private final TempStore<Instructions, LocalDate> mTempStore;
   private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
 
-  public InstructionsRepo(MyApplication myApp) {
-    mInstructionDao = myApp.db().instructionDao();
+  public InstructionsRepo(AppDatabase db) {
+    mInstructionDao = db.instructionDao();
     mTempStore = new TempStore<>(mInstructionDao.getStream().toObservable(), instruction -> instruction.startDate);
   }
 

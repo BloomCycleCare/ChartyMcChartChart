@@ -5,9 +5,9 @@ import android.content.Context;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
-import com.bloomcyclecare.cmcc.data.repos.ChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.google.api.services.drive.model.File;
 import com.google.common.base.Optional;
 
@@ -37,8 +37,8 @@ public class DriveViewModel extends AndroidViewModel {
   private final Subject<Object> mSyncClicks = BehaviorSubject.create();
 
   private final InstructionsRepo mInstructionRepo;
-  private final CycleRepo mCycleRepo;
-  private final ChartEntryRepo mEntryRepo;
+  private final RWCycleRepo mCycleRepo;
+  private final RWChartEntryRepo mEntryRepo;
 
   public DriveViewModel(@NonNull Application application) {
     super(application);

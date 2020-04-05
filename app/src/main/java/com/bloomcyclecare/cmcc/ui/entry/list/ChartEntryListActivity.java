@@ -16,7 +16,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.CycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListActivity;
@@ -75,7 +75,7 @@ public class ChartEntryListActivity extends AppCompatActivity
   private ViewPager mViewPager;
   private FloatingActionButton mNewCycleFab;
 
-  private CycleRepo mCycleRepo;
+  private RWCycleRepo mCycleRepo;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private EntryListViewModel mViewModel;
@@ -92,7 +92,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_list);
 
-    mCycleRepo = new CycleRepo(MyApplication.cast(getApplication()).db());
+    mCycleRepo = MyApplication.cast(getApplication()).cycleRepo();
 
     mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
