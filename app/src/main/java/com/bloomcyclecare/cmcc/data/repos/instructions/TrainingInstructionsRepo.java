@@ -1,10 +1,14 @@
 package com.bloomcyclecare.cmcc.data.repos.instructions;
 
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -12,19 +16,45 @@ import io.reactivex.Single;
 import timber.log.Timber;
 
 public class TrainingInstructionsRepo implements RWInstructionsRepo {
+
+  private final List<Instructions> mInstrtionsList;
+
+  TrainingInstructionsRepo(List<TrainingCycle> trainingCycles) {
+    Set<Instructions> instructions = new LinkedHashSet<>();
+    for (TrainingCycle trainingCycle : trainingCycles) {
+      instructions.add(trainingCycle.instructions);
+    }
+    mInstrtionsList = ImmutableList.copyOf(instructions);
+  }
+
   @Override
-  public Flowable<Instructions> get(LocalDate startDate) {
-    return null;
+  public Flowable<Instructions> get(LocalDate date) {
+    Instructions out = null;
+    for (Instructions instructions : mInstrtionsList) {
+      if (date.isBefore(instructions.startDate)) {
+        continue;
+      }
+      if (out == null || instructions.startDate.isAfter(out.startDate)) {
+        out = instructions;
+      }
+    }
+    return out == null ? Flowable.empty() : Flowable.just(out);
   }
 
   @Override
   public Flowable<List<Instructions>> getAll() {
-    return null;
+    return Flowable.just(mInstrtionsList);
   }
 
   @Override
   public Single<Boolean> hasAnyAfter(LocalDate date) {
-    return null;
+    return get(date).map(instructions -> {
+      int index = mInstrtionsList.indexOf(instructions);
+      if (index < 0) {
+        throw new IllegalStateException();
+      }
+      return index < mInstrtionsList.size() - 1;
+    }).first(false);
   }
 
   @Override
