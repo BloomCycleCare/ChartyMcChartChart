@@ -26,6 +26,10 @@
             android:id="@+id/nav_share"
             android:icon="@drawable/ic_menu_share"
             android:title="Sharing" />
+        <item
+            android:id="@+id/nav_training"
+            android:icon="@drawable/ic_school_black_24dp"
+            android:title="Training" />
     </group>
 
     <group
