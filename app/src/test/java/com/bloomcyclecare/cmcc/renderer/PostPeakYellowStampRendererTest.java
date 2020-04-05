@@ -2,6 +2,8 @@ package com.bloomcyclecare.cmcc.renderer;
 
 import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -25,38 +27,38 @@ public class PostPeakYellowStampRendererTest extends BaseRendererTest {
   }
 
   private void runPostPeakTest(BasicInstruction postPeakInstruction) throws Exception {
-    ImmutableMap.Builder<BaseRendererTest.Entry, BaseRendererTest.Expectations> entries = ImmutableMap.builder();
-    entries.put(BaseRendererTest.Entry.forText("M"), BaseRendererTest.Expectations.redSticker());
-    entries.put(BaseRendererTest.Entry.forText("H"), BaseRendererTest.Expectations.redSticker());
-    entries.put(BaseRendererTest.Entry.forText("L2ad"), BaseRendererTest.Expectations.redSticker());
-    entries.put(BaseRendererTest.Entry.forText("VL0ad"), BaseRendererTest.Expectations.redSticker());
-    entries.put(BaseRendererTest.Entry.forText("0ad").intercourse(), BaseRendererTest.Expectations.greenSticker().withIntercourse());
-    entries.put(BaseRendererTest.Entry.forText("0ad"), BaseRendererTest.Expectations.greenSticker());
-    entries.put(BaseRendererTest.Entry.forText("2ad").intercourse(), BaseRendererTest.Expectations.greenSticker().withIntercourse());
+    ImmutableMap.Builder<TrainingEntry, TrainingCycle.StickerExpectations> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
+    entries.put(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
+    entries.put(TrainingEntry.forText("L2ad"), TrainingCycle.StickerExpectations.redSticker());
+    entries.put(TrainingEntry.forText("VL0ad"), TrainingCycle.StickerExpectations.redSticker());
+    entries.put(TrainingEntry.forText("0ad").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
+    entries.put(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
+    entries.put(TrainingEntry.forText("2ad").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
 
-    entries.put(BaseRendererTest.Entry.forText("6cx1"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("8cx1"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("10cgx1"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("10cklx2"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("10klx2"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("10cklad"), BaseRendererTest.Expectations.whiteSticker().withBaby());
-    entries.put(BaseRendererTest.Entry.forText("4x2"), BaseRendererTest.Expectations.greenSticker().withBaby().withPeakText("1"));
+    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("10cgx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("10cklx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("10klx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("10cklad"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
+    entries.put(TrainingEntry.forText("4x2"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("1"));
 
-    entries.put(BaseRendererTest.Entry.forText("10cx1").peakDay(), BaseRendererTest.Expectations.whiteSticker().withBaby().withPeakText("P"));
-    entries.put(BaseRendererTest.Entry.forText("8cx2"), BaseRendererTest.Expectations.yellowSticker().withBaby().withPeakText("1"));
-    entries.put(BaseRendererTest.Entry.forText("8cgx2"), BaseRendererTest.Expectations.yellowSticker().withBaby().withPeakText("2"));
-    entries.put(BaseRendererTest.Entry.forText("8gyx1"), BaseRendererTest.Expectations.yellowSticker().withBaby().withPeakText("3"));
-    entries.put(BaseRendererTest.Entry.forText("8cx1"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("6cx1"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("6cx1"), BaseRendererTest.Expectations.yellowSticker());
+    entries.put(TrainingEntry.forText("10cx1").peakDay(), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("P"));
+    entries.put(TrainingEntry.forText("8cx2"), TrainingCycle.StickerExpectations.yellowSticker().withBaby().withPeakText("1"));
+    entries.put(TrainingEntry.forText("8cgx2"), TrainingCycle.StickerExpectations.yellowSticker().withBaby().withPeakText("2"));
+    entries.put(TrainingEntry.forText("8gyx1"), TrainingCycle.StickerExpectations.yellowSticker().withBaby().withPeakText("3"));
+    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.yellowSticker());
 
-    entries.put(BaseRendererTest.Entry.forText("8cx2"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("8cx2"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("4ad"), BaseRendererTest.Expectations.greenSticker());
-    entries.put(BaseRendererTest.Entry.forText("8cx1"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("0ad"), BaseRendererTest.Expectations.greenSticker());
-    entries.put(BaseRendererTest.Entry.forText("6cx1"), BaseRendererTest.Expectations.yellowSticker());
-    entries.put(BaseRendererTest.Entry.forText("8cx1"), BaseRendererTest.Expectations.yellowSticker());
+    entries.put(TrainingEntry.forText("8cx2"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("8cx2"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("4ad"), TrainingCycle.StickerExpectations.greenSticker());
+    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
+    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.yellowSticker());
+    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.yellowSticker());
     Instructions instructions =
         createInstructions(ImmutableList.<BasicInstruction>builder()
             .addAll(BASIC_INSTRUCTIONS.activeItems)

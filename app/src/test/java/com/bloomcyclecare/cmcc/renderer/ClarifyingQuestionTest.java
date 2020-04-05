@@ -4,6 +4,7 @@ import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.common.base.Optional;
@@ -29,28 +30,28 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
 
   @Test
   public void essentialSamenessQuestion() throws Exception {
-    ImmutableMap.Builder<Entry, Boolean> entries = ImmutableMap.builder();
-    entries.put(Entry.forText("8BCX1"), false);
-    entries.put(Entry.forText("H"), true);
-    entries.put(Entry.forText("M"), true);
-    entries.put(Entry.forText("L6x1"), true);
-    entries.put(Entry.forText("2x1"), true);
-    entries.put(Entry.forText("0AD"), true);
-    entries.put(Entry.forText("0AD"), true);
+    ImmutableMap.Builder<TrainingEntry, Boolean> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("8BCX1"), false);
+    entries.put(TrainingEntry.forText("H"), true);
+    entries.put(TrainingEntry.forText("M"), true);
+    entries.put(TrainingEntry.forText("L6x1"), true);
+    entries.put(TrainingEntry.forText("2x1"), true);
+    entries.put(TrainingEntry.forText("0AD"), true);
+    entries.put(TrainingEntry.forText("0AD"), true);
 
-    entries.put(Entry.forText("0AD"), true);
-    entries.put(Entry.forText("6cx2"), true);
-    entries.put(Entry.forText("8cx2"), true);
-    entries.put(Entry.forText("8kx2"), true);
-    entries.put(Entry.forText("10klAD"), true);
-    entries.put(Entry.forText("10klAD").peakDay(), false);
-    entries.put(Entry.forText("6cx1"), false);
+    entries.put(TrainingEntry.forText("0AD"), true);
+    entries.put(TrainingEntry.forText("6cx2"), true);
+    entries.put(TrainingEntry.forText("8cx2"), true);
+    entries.put(TrainingEntry.forText("8kx2"), true);
+    entries.put(TrainingEntry.forText("10klAD"), true);
+    entries.put(TrainingEntry.forText("10klAD").peakDay(), false);
+    entries.put(TrainingEntry.forText("6cx1"), false);
 
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("4x1"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("2x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("4x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("2x1"), false);
 
     Instructions instructions =
         createInstructions(ImmutableList.<BasicInstruction>builder()
@@ -62,56 +63,56 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
 
   @Test
   public void doublePeakQuestionDisabled() throws Exception {
-    ImmutableMap.Builder<Entry, Boolean> entries = ImmutableMap.builder();
-    entries.put(Entry.forText("8BCX1"), false);
-    entries.put(Entry.forText("H"), false);
-    entries.put(Entry.forText("M"), false);
-    entries.put(Entry.forText("L6x1"), false);
-    entries.put(Entry.forText("2x1"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("0AD"), false);
+    ImmutableMap.Builder<TrainingEntry, Boolean> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("8BCX1"), false);
+    entries.put(TrainingEntry.forText("H"), false);
+    entries.put(TrainingEntry.forText("M"), false);
+    entries.put(TrainingEntry.forText("L6x1"), false);
+    entries.put(TrainingEntry.forText("2x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
 
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("6cx2"), false);
-    entries.put(Entry.forText("8cx2"), false);
-    entries.put(Entry.forText("8kx2"), false);
-    entries.put(Entry.forText("10klAD"), false);
-    entries.put(Entry.forText("10klAD").peakDay(), false);
-    entries.put(Entry.forText("6cx1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("6cx2"), false);
+    entries.put(TrainingEntry.forText("8cx2"), false);
+    entries.put(TrainingEntry.forText("8kx2"), false);
+    entries.put(TrainingEntry.forText("10klAD"), false);
+    entries.put(TrainingEntry.forText("10klAD").peakDay(), false);
+    entries.put(TrainingEntry.forText("6cx1"), false);
 
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("4x1"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("2x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("4x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("2x1"), false);
 
     run(entries.build(), (re) -> re.modificationContext.shouldAskDoublePeakQuestions, BASIC_INSTRUCTIONS);
   }
 
   @Test
   public void doublePeakQuestionEnabled() throws Exception {
-    ImmutableMap.Builder<Entry, Boolean> entries = ImmutableMap.builder();
-    entries.put(Entry.forText("8BCX1"), false);
-    entries.put(Entry.forText("H"), false);
-    entries.put(Entry.forText("M"), false);
-    entries.put(Entry.forText("L6x1"), false);
-    entries.put(Entry.forText("2x1"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("0AD"), false);
+    ImmutableMap.Builder<TrainingEntry, Boolean> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("8BCX1"), false);
+    entries.put(TrainingEntry.forText("H"), false);
+    entries.put(TrainingEntry.forText("M"), false);
+    entries.put(TrainingEntry.forText("L6x1"), false);
+    entries.put(TrainingEntry.forText("2x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
 
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("6cx2"), false);
-    entries.put(Entry.forText("8cx2"), false);
-    entries.put(Entry.forText("8kx2"), false);
-    entries.put(Entry.forText("10klAD"), false);
-    entries.put(Entry.forText("10klAD").peakDay(), false);
-    entries.put(Entry.forText("6cx1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("6cx2"), false);
+    entries.put(TrainingEntry.forText("8cx2"), false);
+    entries.put(TrainingEntry.forText("8kx2"), false);
+    entries.put(TrainingEntry.forText("10klAD"), false);
+    entries.put(TrainingEntry.forText("10klAD").peakDay(), false);
+    entries.put(TrainingEntry.forText("6cx1"), false);
 
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("4x1"), true);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("0AD"), false);
-    entries.put(Entry.forText("2x1"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("4x1"), true);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("0AD"), false);
+    entries.put(TrainingEntry.forText("2x1"), false);
 
     Instructions instructions =
         createInstructions(ImmutableList.<BasicInstruction>builder()
@@ -122,13 +123,13 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
   }
 
   private void run(
-      ImmutableMap<Entry, Boolean> entries,
+      ImmutableMap<TrainingEntry, Boolean> entries,
       Function<CycleRenderer.RenderableEntry, Boolean> valueProvider,
       Instructions... instructions) throws Exception {
     int numEntries = entries.size();
     List<ChartEntry> chartEntries = new ArrayList<>(numEntries);
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
-    for (Map.Entry<Entry, Boolean> anEntry : entries.entrySet()) {
+    for (Map.Entry<TrainingEntry, Boolean> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
       chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
       tests.add(renderableEntry -> {

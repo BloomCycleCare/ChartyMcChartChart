@@ -5,6 +5,7 @@ import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
@@ -22,6 +23,13 @@ import androidx.room.TypeConverters;
 @Parcel
 @Entity
 public class Instructions {
+
+  public static Instructions createBasicInstructions(LocalDate startDate) {
+    return new Instructions(startDate, ImmutableList.of(
+        BasicInstruction.D_1, BasicInstruction.D_2, BasicInstruction.D_3, BasicInstruction.D_4, BasicInstruction.D_5, BasicInstruction.D_6,
+        BasicInstruction.E_1, /*BasicInstruction.E_2,*/ BasicInstruction.E_3, BasicInstruction.E_4, /*BasicInstruction.E_5, BasicInstruction.E_6,*/ BasicInstruction.E_7),
+        ImmutableList.of(), ImmutableList.of());
+  }
 
   @NonNull
   @PrimaryKey
