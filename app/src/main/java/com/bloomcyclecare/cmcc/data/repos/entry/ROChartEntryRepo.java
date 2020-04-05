@@ -10,9 +10,6 @@ import io.reactivex.Single;
 
 public interface ROChartEntryRepo {
 
-  @Deprecated
-  Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream);
-
   Single<List<ChartEntry>> getAllEntries();
 
   Flowable<List<ChartEntry>> getLatestN(int n);

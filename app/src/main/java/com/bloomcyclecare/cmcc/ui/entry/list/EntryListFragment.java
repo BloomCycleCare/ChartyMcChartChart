@@ -173,7 +173,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mDisposables.add(Flowable.combineLatest(
         myApp.cycleRepo().getPreviousCycle(mCycle).map(Optional::of).defaultIfEmpty(Optional.absent()).toFlowable(),
         instructionsRepo.getAll(),
-        entryRepo.getStream(Flowable.just(mCycle)),
+        entryRepo.getStreamForCycle(Flowable.just(mCycle)),
         (previousCycle, instructions, entries) -> new CycleRenderer(mCycle, previousCycle, entries, instructions))
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
@@ -188,7 +188,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mRecyclerView.setVisibility(View.VISIBLE);
 
     mDisposables.add(entryRepo
-        .getStream(Flowable.just(mCycle))
+        .getStreamForCycle(Flowable.just(mCycle))
         .firstOrError()
         .subscribeOn(Schedulers.io())
         .observeOn(AndroidSchedulers.mainThread())

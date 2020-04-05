@@ -2,6 +2,8 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
@@ -11,14 +13,17 @@ import io.reactivex.Single;
 import timber.log.Timber;
 
 public class TrainingChartEntryRepo implements RWChartEntryRepo {
-  @Override
-  public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
-    return null;
+
+  private final ImmutableList<ChartEntry> mEntries;
+
+  TrainingChartEntryRepo(List<TrainingCycle> trainingCycles) {
+    ImmutableList.Builder<ChartEntry> builder = ImmutableList.builder();
+    mEntries = builder.build();
   }
 
   @Override
   public Single<List<ChartEntry>> getAllEntries() {
-    return null;
+    return getStreamForCycle(Flowable.empty()).firstOrError();
   }
 
   @Override

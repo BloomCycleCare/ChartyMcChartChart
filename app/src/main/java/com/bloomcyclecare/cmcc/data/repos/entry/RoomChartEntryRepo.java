@@ -45,16 +45,6 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   }
 
   @Override
-  public Flowable<List<ChartEntry>> getStream(Flowable<Cycle> cycleStream) {
-    return cycleStream
-        .switchMap(RoomChartEntryRepo::datesForCycle)
-        .doOnNext(dates -> Timber.v("Fetching %d entries for cycle", dates.size()))
-        .distinctUntilChanged()
-        .switchMap(this::entriesForDates)
-        .doOnSubscribe(s -> Timber.v("Fetching entries"));
-  }
-
-  @Override
   public Single<List<ChartEntry>> getAllEntries() {
     return Single.zip(
         observationEntryDao.getAllEntries(),

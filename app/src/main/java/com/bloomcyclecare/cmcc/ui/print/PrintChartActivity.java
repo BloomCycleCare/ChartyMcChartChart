@@ -70,7 +70,7 @@ public class PrintChartActivity extends AppCompatActivity {
           .firstOrError()
           .flatMapObservable(Observable::fromIterable)
           .flatMap(cycle -> entryRepo
-              .getStream(Flowable.just(cycle))
+              .getStreamForCycle(Flowable.just(cycle))
               .firstOrError()
               .map(entries -> new CycleAdapter.ViewModel(cycle, entries.size()))
               .toObservable())
@@ -102,7 +102,7 @@ public class PrintChartActivity extends AppCompatActivity {
             .fromIterable(adapter.getSelectedCycles())
             .sorted((c1, c2) -> c1.startDate.compareTo(c2.startDate))
             .flatMap(cycle -> Single.zip(
-                entryRepo.getStream(Flowable.just(cycle)).firstOrError(),
+                entryRepo.getStreamForCycle(Flowable.just(cycle)).firstOrError(),
                 instructionsRepo.getAll().firstOrError(),
                 (entries, instructions) -> new CycleRenderer(cycle, Optional.absent(), entries, instructions))
                 .toObservable());
