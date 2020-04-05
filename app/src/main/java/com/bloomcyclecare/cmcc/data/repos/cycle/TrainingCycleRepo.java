@@ -1,9 +1,15 @@
 package com.bloomcyclecare.cmcc.data.repos.cycle;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 
 import androidx.core.util.Consumer;
@@ -15,34 +21,79 @@ import timber.log.Timber;
 
 public class TrainingCycleRepo implements RWCycleRepo {
 
+  private final ImmutableList<Cycle> mCycles;
+
+  TrainingCycleRepo(List<TrainingCycle> trainingCycles, Supplier<LocalDate> today) {
+    Deque<TrainingCycle> trainingStack = new ArrayDeque<>();
+    for (TrainingCycle trainingCycle : trainingCycles) {
+      trainingStack.push(trainingCycle);
+    }
+
+    Deque<Cycle> cycles = new ArrayDeque<>();
+    Iterator<TrainingCycle> reversedTrainingCycles = trainingStack.iterator();
+    while (reversedTrainingCycles.hasNext()) {
+      TrainingCycle trainingCycle = reversedTrainingCycles.next();
+      if (trainingCycle.entries().isEmpty()) {
+        Timber.w("Skipping empty training cycle");
+        continue;
+      }
+      LocalDate endDate = cycles.size() == 0 ? today.get() : cycles.peek().startDate.minusDays(1);
+      LocalDate startDate = endDate.minusDays(trainingCycle.entries().size() - 1);
+      cycles.push(new Cycle("training", startDate, endDate.equals(today.get()) ? null : endDate, null));
+    }
+    mCycles = ImmutableList.copyOf(cycles.iterator());
+  }
+
   @Override
   public Flowable<List<Cycle>> getStream() {
-    return null;
+    return Flowable.just(mCycles);
   }
 
   @Override
   public Maybe<Cycle> getPreviousCycle(Cycle cycle) {
-    return null;
+    int index = mCycles.indexOf(cycle);
+    if (index <= 0) {
+      return Maybe.empty();
+    }
+    return Maybe.just(mCycles.get(index - 1));
   }
 
   @Override
   public Maybe<Cycle> getNextCycle(Cycle cycle) {
-    return null;
+    int index = mCycles.indexOf(cycle);
+    if (index < 0 || index == mCycles.size() - 1) {
+      return Maybe.empty();
+    }
+    return Maybe.just(mCycles.get(index + 1));
   }
 
   @Override
   public Maybe<Cycle> getCurrentCycle() {
-    return null;
+    if (mCycles.isEmpty()) {
+      return Maybe.empty();
+    }
+    return Maybe.just(mCycles.get(mCycles.size() - 1));
   }
 
   @Override
   public Maybe<Cycle> getLatestCycle() {
-    return null;
+    return getCurrentCycle();
   }
 
   @Override
   public Maybe<Cycle> getCycleForDate(LocalDate date) {
-    return null;
+    for (Cycle cycle : mCycles) {
+      if (cycle.startDate.isAfter(date)) {
+        break;
+      }
+      if (cycle.endDate != null && cycle.endDate.isBefore(date)) {
+        continue;
+      }
+      if (!cycle.startDate.isAfter(date)) {
+        return Maybe.just(cycle);
+      }
+    }
+    return Maybe.empty();
   }
 
   @Override

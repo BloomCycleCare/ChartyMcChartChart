@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
 import com.bloomcyclecare.cmcc.utils.DateUtil;
+import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
@@ -73,7 +74,7 @@ public class Cycle implements Comparable<Cycle> {
 
   @Override
   public String toString() {
-    return id;
+    return GsonUtil.getGsonInstance().toJson(this);
   }
 
   @Override
