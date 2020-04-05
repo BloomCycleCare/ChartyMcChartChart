@@ -82,6 +82,13 @@ public class TrainingCycleRepoTest {
     assertThat(repo.getCycleForDate(date).blockingGet()).isEqualTo(cycles.get(2));
   }
 
+  @Test
+  public void testUpdateEvents() {
+    TrainingCycleRepo repo = new TrainingCycleRepo(trainingCycles(), LocalDate::now);
+
+    repo.updateEvents().test().assertResult().dispose();
+  }
+
   private static List<Cycle> expectedCycles() {
     List<Cycle> cycles = new ArrayList<>();
     cycles.add(new Cycle("training", LocalDate.now().minusDays(5), LocalDate.now().minusDays(3), null));
