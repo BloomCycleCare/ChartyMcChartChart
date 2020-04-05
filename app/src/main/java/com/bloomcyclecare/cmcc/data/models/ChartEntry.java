@@ -23,7 +23,7 @@ import androidx.annotation.NonNull;
  * Created by parkeroth on 9/23/17.
  */
 
-public class ChartEntry implements Parcelable {
+public class ChartEntry implements Parcelable, Comparable<ChartEntry> {
   public final LocalDate entryDate;
   public final ObservationEntry observationEntry;
   public final WellnessEntry wellnessEntry;
@@ -47,7 +47,7 @@ public class ChartEntry implements Parcelable {
 
   public static ChartEntry emptyEntry(LocalDate entryDate) {
     return new ChartEntry(
-        LocalDate.now(), ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate));
+        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate));
   }
 
   @NonNull
@@ -123,5 +123,10 @@ public class ChartEntry implements Parcelable {
   @Override
   public int hashCode() {
     return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry);
+  }
+
+  @Override
+  public int compareTo(ChartEntry o) {
+    return this.entryDate.compareTo(o.entryDate);
   }
 }
