@@ -4,7 +4,7 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.google.common.base.Optional;
 
 import org.joda.time.LocalDate;
@@ -25,7 +25,7 @@ import timber.log.Timber;
 
 public class PregnancyDetailViewModel extends AndroidViewModel {
 
-  private final PregnancyRepo mPregnancyRepo;
+  private final RWPregnancyRepo mPregnancyRepo;
   private final SingleSubject<Pregnancy> mPregnancy = SingleSubject.create();
   private final Subject<Optional<LocalDate>> mDueDateUpdates = BehaviorSubject.create();
   private final Subject<Optional<LocalDate>> mDeliveryDateUpdates = BehaviorSubject.create();

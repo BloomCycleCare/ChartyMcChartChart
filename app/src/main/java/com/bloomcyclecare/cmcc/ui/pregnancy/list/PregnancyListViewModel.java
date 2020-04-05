@@ -6,8 +6,8 @@ import android.util.SparseIntArray;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxPrompt;
 
@@ -26,7 +26,7 @@ import io.reactivex.Flowable;
 
 public class PregnancyListViewModel extends AndroidViewModel {
 
-  private final PregnancyRepo mPregnancyRepo;
+  private final RWPregnancyRepo mPregnancyRepo;
   private final RWCycleRepo mCycleRepo;
 
   public PregnancyListViewModel(@NonNull Application application) {

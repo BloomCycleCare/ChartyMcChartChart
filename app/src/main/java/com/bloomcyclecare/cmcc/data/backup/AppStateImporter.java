@@ -5,10 +5,10 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.AppState;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
-import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,8 +23,8 @@ public class AppStateImporter {
 
   private final RWCycleRepo mCycleRepo;
   private final RWChartEntryRepo mEntryRepo;
-  private final InstructionsRepo mInstructionsRepo;
-  private final PregnancyRepo mPregnancyRepo;
+  private final RWInstructionsRepo mInstructionsRepo;
+  private final RWPregnancyRepo mPregnancyRepo;
 
   public AppStateImporter(MyApplication myApp) {
     mCycleRepo = myApp.cycleRepo();

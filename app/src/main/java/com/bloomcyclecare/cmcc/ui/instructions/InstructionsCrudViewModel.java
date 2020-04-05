@@ -8,7 +8,7 @@ import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
@@ -48,7 +48,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
   private final Map<SpecialInstruction, BehaviorSubject<ToggleState<SpecialInstruction>>> specialInstructionStates = new HashMap<>();
   private final Map<YellowStampInstruction, BehaviorSubject<ToggleState<YellowStampInstruction>>> yellowStampInstructionStates = new HashMap<>();
 
-  private final InstructionsRepo mInstructionsRepo;
+  private final RWInstructionsRepo mInstructionsRepo;
 
   private final BehaviorSubject<ViewState> mViewState = BehaviorSubject.create();
   private final CompositeDisposable mDisposables = new CompositeDisposable();

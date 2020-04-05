@@ -10,8 +10,8 @@ import android.widget.ProgressBar;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
@@ -168,7 +168,7 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
     MyApplication myApp = MyApplication.cast(getActivity().getApplication());
     RWChartEntryRepo entryRepo = myApp.entryRepo();
-    InstructionsRepo instructionsRepo = MyApplication.cast(getActivity().getApplication()).instructionsRepo();
+    RWInstructionsRepo instructionsRepo = MyApplication.cast(getActivity().getApplication()).instructionsRepo();
 
     mDisposables.add(Flowable.combineLatest(
         myApp.cycleRepo().getPreviousCycle(mCycle).map(Optional::of).defaultIfEmpty(Optional.absent()).toFlowable(),

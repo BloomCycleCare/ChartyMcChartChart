@@ -7,12 +7,14 @@ import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
-import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
-import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepos;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepos;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -59,12 +61,11 @@ public class MyApplication extends Application {
   private final SingleSubject<Optional<DriveServiceHelper>> mDriveSubject = SingleSubject.create();
   private final PublishSubject<Boolean> mManualSyncTriggers = PublishSubject.create();
 
-  private AppDatabase mDB;
-  private InstructionsRepo mInstructionsRepo;
+  private RWInstructionsRepo mInstructionsRepo;
   private RWCycleRepo mCycleRepo;
   private RWChartEntryRepo mChartEntryRepo;
   private PreferenceRepo mPreferenceRepo;
-  private PregnancyRepo mPregnancyRepo;
+  private RWPregnancyRepo mPregnancyRepo;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -92,16 +93,17 @@ public class MyApplication extends Application {
 
     Migration[] migrations = new Migration[AppDatabase.MIGRATIONS.size()];
     AppDatabase.MIGRATIONS.toArray(migrations);
-    mDB = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "room-db")
+    //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
+    AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "room-db")
         .addMigrations(migrations)
         //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
-    mInstructionsRepo = new InstructionsRepo(mDB);
-    mChartEntryRepo = ChartEntryRepos.forRoomDB(mDB);
-    mCycleRepo = CycleRepos.forRoomDB(mDB);
+    mInstructionsRepo = InstructionsRepos.forRoomDB(db);
+    mChartEntryRepo = ChartEntryRepos.forRoomDB(db);
+    mCycleRepo = CycleRepos.forRoomDB(db);
     mPreferenceRepo = PreferenceRepo.create(this);
-    mPregnancyRepo = new PregnancyRepo(mDB, mCycleRepo);
+    mPregnancyRepo = PregnancyRepos.forRoomDb(db, mCycleRepo);
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -187,7 +189,7 @@ public class MyApplication extends Application {
     return mDriveSubject;
   }
 
-  public InstructionsRepo instructionsRepo() {
+  public RWInstructionsRepo instructionsRepo() {
     return mInstructionsRepo;
   }
 
@@ -203,7 +205,7 @@ public class MyApplication extends Application {
     return mPreferenceRepo;
   }
 
-  public PregnancyRepo pregnancyRepo() {
+  public RWPregnancyRepo pregnancyRepo() {
     return mPregnancyRepo;
   }
 

@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.repos;
+package com.bloomcyclecare.cmcc.data.repos.pregnancy;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.PregnancyDao;
@@ -17,22 +17,24 @@ import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import timber.log.Timber;
 
-public class PregnancyRepo {
+class RoomPregnancyRepo implements RWPregnancyRepo {
 
   private final RWCycleRepo mCycleRepo;
   private final PregnancyDao mPregnancyDao;
 
-  public PregnancyRepo(AppDatabase database, RWCycleRepo mCycleRepo) {
+  RoomPregnancyRepo(AppDatabase database, RWCycleRepo mCycleRepo) {
     this.mCycleRepo = mCycleRepo;
     this.mPregnancyDao = database.pregnancyDao();
   }
 
+  @Override
   public Flowable<List<Pregnancy>> getAll() {
     return mPregnancyDao.getAll()
         .distinctUntilChanged()
         .subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Maybe<Pregnancy> get(Long id) {
     return mPregnancyDao.getById(id);
   }
@@ -42,16 +44,19 @@ public class PregnancyRepo {
         .subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Completable update(Pregnancy pregnancy) {
     return mPregnancyDao.update(pregnancy)
         .subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Completable delete(Pregnancy pregnancy) {
     return mPregnancyDao.delete(pregnancy)
         .subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Completable startPregnancy(LocalDate dateOfTest) {
     return Single.merge(Single.zip(
         createPregnancy(dateOfTest),
@@ -61,6 +66,7 @@ public class PregnancyRepo {
         .subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Completable revertPregnancy(LocalDate dateOfTest) {
     return mCycleRepo.getCycleForDate(dateOfTest)
         .toSingle()

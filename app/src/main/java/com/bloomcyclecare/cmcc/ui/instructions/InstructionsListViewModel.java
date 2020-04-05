@@ -4,8 +4,8 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.repos.InstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
@@ -32,7 +32,7 @@ public class InstructionsListViewModel extends AndroidViewModel {
   private final BehaviorSubject<Boolean> mHasStartedNewInsructions = BehaviorSubject.createDefault(false);
   private final BehaviorSubject<Optional<Instructions>> mInstructionsForFocus = BehaviorSubject.createDefault(Optional.absent());
 
-  private final InstructionsRepo mInstructionsRepo;
+  private final RWInstructionsRepo mInstructionsRepo;
   private final RWCycleRepo mCycleRepo;
 
   public InstructionsListViewModel(@NonNull Application application) {

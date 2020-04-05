@@ -11,9 +11,9 @@ import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.repos.PregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
@@ -68,7 +68,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
-  private final PregnancyRepo mPregnancyRepo;
+  private final RWPregnancyRepo mPregnancyRepo;
 
   public EntryDetailViewModel(@NonNull Application application) {
     super(application);

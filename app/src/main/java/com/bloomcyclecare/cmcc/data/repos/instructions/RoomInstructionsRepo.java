@@ -1,12 +1,10 @@
-package com.bloomcyclecare.cmcc.data.repos;
+package com.bloomcyclecare.cmcc.data.repos.instructions;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.InstructionDao;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.utils.TempStore;
-import com.google.common.collect.Range;
 
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.List;
@@ -20,43 +18,33 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
-public class InstructionsRepo {
+class RoomInstructionsRepo implements RWInstructionsRepo {
 
   private final InstructionDao mInstructionDao;
   private final TempStore<Instructions, LocalDate> mTempStore;
   private final PublishSubject<UpdateEvent> updates = PublishSubject.create();
 
-  public InstructionsRepo(AppDatabase db) {
+  RoomInstructionsRepo(AppDatabase db) {
     mInstructionDao = db.instructionDao();
     mTempStore = new TempStore<>(mInstructionDao.getStream().toObservable(), instruction -> instruction.startDate);
   }
 
+  @Override
   public Flowable<UpdateEvent> updateEvents() {
     return updates.toFlowable(BackpressureStrategy.BUFFER);
   }
 
+  @Override
   public Flowable<Instructions> get(LocalDate startDate) {
     return mTempStore.get(startDate);
   }
 
+  @Override
   public Flowable<List<Instructions>> getAll() {
     return mTempStore.getStream();
   }
 
-  public Maybe<Instructions> getCurrent() {
-    return mTempStore.getStream()
-        .firstOrError()
-        .flatMapMaybe(instructions -> {
-          Instructions currentInstructions = null;
-          for (Instructions i : instructions) {
-            if (currentInstructions == null || i.startDate.isAfter(currentInstructions.startDate)) {
-              currentInstructions = i;
-            }
-          }
-          return currentInstructions != null ? Maybe.just(currentInstructions) : Maybe.empty();
-        });
-  }
-
+  @Override
   public Single<Boolean> hasAnyAfter(LocalDate date) {
     return getAll()
         .firstOrError()
@@ -70,7 +58,21 @@ public class InstructionsRepo {
         });
   }
 
-  public Maybe<Instructions> getActiveInstructions(LocalDate date) {
+  private Maybe<Instructions> getCurrent() {
+    return mTempStore.getStream()
+        .firstOrError()
+        .flatMapMaybe(instructions -> {
+          Instructions currentInstructions = null;
+          for (Instructions i : instructions) {
+            if (currentInstructions == null || i.startDate.isAfter(currentInstructions.startDate)) {
+              currentInstructions = i;
+            }
+          }
+          return currentInstructions != null ? Maybe.just(currentInstructions) : Maybe.empty();
+        });
+  }
+
+  private Maybe<Instructions> getActiveInstructions(LocalDate date) {
     return getAll()
         .firstOrError()
         .flatMapMaybe(instructionsList -> {
@@ -87,6 +89,7 @@ public class InstructionsRepo {
         });
   }
 
+  @Override
   public Single<Instructions> delete(Instructions instructions) {
     Timber.i("Deleting instructions starting on %s", instructions.startDate);
     return mTempStore
@@ -97,36 +100,24 @@ public class InstructionsRepo {
         .doOnSuccess(i -> updates.onNext(UpdateEvent.forInstructions(instructions)));
   }
 
+  @Override
   public Completable insertOrUpdate(Instructions instructions) {
     return mTempStore.updateOrInsert(instructions)
         .doOnComplete(() -> updates.onNext(UpdateEvent.forInstructions(instructions)));
   }
 
+  @Override
   public Single<Boolean> isDirty() {
     return mTempStore.isDirty();
   }
 
+  @Override
   public Completable commit() {
     return mTempStore.commit(mInstructionDao).subscribeOn(Schedulers.computation());
   }
 
+  @Override
   public Completable clearPending() {
     return mTempStore.clearPending().subscribeOn(Schedulers.computation());
-  }
-
-  public static class UpdateEvent {
-    public final DateTime updateTime;
-    public final Range<LocalDate> dateRange;
-
-    private UpdateEvent(DateTime updateTime, Range<LocalDate> dateRange) {
-      this.updateTime = updateTime;
-      this.dateRange = dateRange;
-    }
-
-    static UpdateEvent forInstructions(Instructions instructions) {
-      // TODO: restrict range to when the instructions were active
-      return new UpdateEvent(DateTime.now(), Range.closed(
-          instructions.startDate, LocalDate.now()));
-    }
   }
 }
