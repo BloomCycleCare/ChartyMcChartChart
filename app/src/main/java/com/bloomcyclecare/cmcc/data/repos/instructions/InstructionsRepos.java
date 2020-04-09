@@ -3,6 +3,8 @@ package com.bloomcyclecare.cmcc.data.repos.instructions;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 
+import org.joda.time.LocalDate;
+
 public class InstructionsRepos {
 
   public static RWInstructionsRepo forRoomDB(AppDatabase db) {
@@ -10,6 +12,6 @@ public class InstructionsRepos {
   }
 
   public static RWInstructionsRepo forTraining() {
-    return new TrainingInstructionsRepo(TrainingCycles.forRepos());
+    return new TrainingInstructionsRepo(TrainingCycles.forRepos(), LocalDate::now);
   }
 }

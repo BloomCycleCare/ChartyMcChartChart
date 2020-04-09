@@ -19,23 +19,26 @@ public class TrainingInstructionsRepoTest {
 
   @Test
   public void testGet() throws Exception {
-    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles());
+    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles(), LocalDate::now);
 
     assertThat(instructionsRepo.get(LocalDate.now()).firstOrError().blockingGet())
-        .isEqualTo(Instructions.createBasicInstructions(LocalDate.now()));
+        .isEqualTo(Instructions.createBasicInstructions(LocalDate.now().minusDays(1)));
   }
 
   @Test
   public void testGetAll() throws Exception {
-    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles());
+    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles(), LocalDate::now);
+
+    Instructions firstExpected = Instructions.createBasicInstructions(LocalDate.now().minusDays(3));
+    Instructions secondExpected = Instructions.createBasicInstructions(LocalDate.now().minusDays(1));
 
     assertThat(instructionsRepo.getAll().blockingFirst())
-        .containsExactly(Instructions.createBasicInstructions(LocalDate.now()));
+        .containsExactly(firstExpected, secondExpected).inOrder();
   }
 
   @Test
   public void testHasAnyAfter() throws Exception {
-    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles());
+    TrainingInstructionsRepo instructionsRepo = new TrainingInstructionsRepo(trainingCycles(), LocalDate::now);
 
     assertThat(instructionsRepo.hasAnyAfter(LocalDate.now().minusDays(1)).blockingGet())
         .isEqualTo(false);

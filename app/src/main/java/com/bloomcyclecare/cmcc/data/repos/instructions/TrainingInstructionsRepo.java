@@ -2,13 +2,15 @@ package com.bloomcyclecare.cmcc.data.repos.instructions;
 
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 
-import java.util.LinkedHashSet;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -19,10 +21,25 @@ public class TrainingInstructionsRepo implements RWInstructionsRepo {
 
   private final List<Instructions> mInstrtionsList;
 
-  TrainingInstructionsRepo(List<TrainingCycle> trainingCycles) {
-    Set<Instructions> instructions = new LinkedHashSet<>();
+  TrainingInstructionsRepo(List<TrainingCycle> trainingCycles, Supplier<LocalDate> today) {
+    Deque<TrainingCycle> trainingStack = new ArrayDeque<>();
     for (TrainingCycle trainingCycle : trainingCycles) {
-      instructions.add(trainingCycle.instructions);
+      trainingStack.push(trainingCycle);
+    }
+
+    Deque<Instructions> instructions = new ArrayDeque<>();
+    Iterator<TrainingCycle> reversedTrainingCycles = trainingStack.iterator();
+    while (reversedTrainingCycles.hasNext()) {
+      TrainingCycle trainingCycle = reversedTrainingCycles.next();
+      if (trainingCycle.entries().isEmpty()) {
+        Timber.w("Skipping empty training cycle");
+        continue;
+      }
+      LocalDate endDate = instructions.size() == 0 ? today.get() : instructions.peek().startDate.minusDays(1);
+      LocalDate startDate = endDate.minusDays(trainingCycle.entries().size() - 1);
+      Instructions i = new Instructions(trainingCycle.instructions);
+      i.startDate = startDate;
+      instructions.push(i);
     }
     mInstrtionsList = ImmutableList.copyOf(instructions);
   }
