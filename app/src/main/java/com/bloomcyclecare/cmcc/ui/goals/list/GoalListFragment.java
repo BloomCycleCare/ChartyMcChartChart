@@ -11,9 +11,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.mvi.MviView;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryAdapter;
 import com.bloomcyclecare.cmcc.ui.goals.create.CreateGoalActivity;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
@@ -32,7 +30,7 @@ import io.reactivex.subjects.PublishSubject;
  * Created by parkeroth on 11/13/17.
  */
 
-public class GoalListFragment extends Fragment implements ChartEntryAdapter.OnClickHandler, MviView<GoalListIntent, GoalListViewState> {
+public class GoalListFragment extends Fragment implements MviView<GoalListIntent, GoalListViewState> {
 
   public static int REQUEST_ADD_GOAL = 1;
 
@@ -119,9 +117,6 @@ public class GoalListFragment extends Fragment implements ChartEntryAdapter.OnCl
     Intent intent = new Intent(getContext(), CreateGoalActivity.class);
     startActivityForResult(intent, REQUEST_ADD_GOAL);
   }
-
-  @Override
-  public void onClick(CycleRenderer.EntryModificationContext context, int index) {}
 
   private void showList() {
     mRecyclerView.setVisibility(View.VISIBLE);

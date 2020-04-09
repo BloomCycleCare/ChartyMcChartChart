@@ -32,12 +32,14 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   private final List<Cycle> mCycles = new ArrayList<>();
   private final Subject<Pair<Integer, CycleRenderer.CycleStats>> mStats = BehaviorSubject.create();
+  private boolean trainingMode = false;
 
   public EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
   }
 
-  public void update(List<Cycle> cycles) {
+  public void update(List<Cycle> cycles, boolean isTrainingMode) {
+    trainingMode = isTrainingMode;
     if (!Iterables.elementsEqual(mCycles, cycles)) {
       mCycles.clear();
       mCycles.addAll(cycles);
@@ -66,8 +68,9 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     if (DEBUG) Log.v(TAG, "getItem() : " + position + " cycleToShow:" + cycle);
 
     Bundle args = new Bundle();
-    args.putParcelable(Cycle.class.getName(), Parcels.wrap(cycle));
-    args.putBoolean(EntryListFragment.IS_LAST_CYCLE, position == mCycles.size() - 1);
+    args.putParcelable(EntryListFragment.Extras.CURRENT_CYCLE.name(), Parcels.wrap(cycle));
+    args.putBoolean(EntryListFragment.Extras.IS_LAST_CYCLE.name(), position == mCycles.size() - 1);
+    args.putBoolean(EntryListFragment.Extras.IS_TRAINING_MODE.name(), trainingMode);
 
     EntryListFragment fragment = new EntryListFragment();
     fragment.setArguments(args);

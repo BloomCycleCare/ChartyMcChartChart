@@ -14,6 +14,6 @@ public class CycleRepos {
   }
 
   public static RWCycleRepo forTraining() {
-    return new TrainingCycleRepo(TrainingCycles.basicTrainingCycles(), LocalDate::now);
+    return new TrainingCycleRepo(TrainingCycles.forRepos(), LocalDate::now);
   }
 }

@@ -8,4 +8,8 @@ public class PregnancyRepos {
   public static RWPregnancyRepo forRoomDb(AppDatabase db, RWCycleRepo cycleRepo) {
     return new RoomPregnancyRepo(db, cycleRepo);
   }
+
+  public static RWPregnancyRepo forTraining() {
+    return new TrainingPregnancyRepo();
+  }
 }

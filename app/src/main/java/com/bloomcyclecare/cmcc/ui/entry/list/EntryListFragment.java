@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.entry.list;
 
-import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -8,52 +8,42 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
 
 import java.lang.ref.WeakReference;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Consumer;
-import io.reactivex.schedulers.Schedulers;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 /**
  * Created by parkeroth on 11/13/17.
  */
 
-public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnClickHandler {
+public class EntryListFragment extends Fragment {
 
-  private static String TAG = EntryListFragment.class.getSimpleName();
-  private static int SCROLL_POSITION_SAMPLING_PERIOD_MS = 200;
-  public static String IS_LAST_CYCLE = "IS_LAST_CYCLE";
+  enum Extras {
+    CURRENT_CYCLE,
+    IS_LAST_CYCLE,
+    IS_TRAINING_MODE
+  }
 
-  private final Subject<ScrollState> mScrollState;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private RecyclerView mRecyclerView;
   private ProgressBar mProgressView;
   private ChartEntryAdapter mChartEntryAdapter;
-  private Cycle mCycle;
   private Map<Neighbor, WeakReference<EntryListFragment>> mNeighbors;
+  private FragmentViewModel mViewModel;
 
   public enum Neighbor {
     LEFT, RIGHT
@@ -61,37 +51,12 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
 
   public EntryListFragment() {
     mNeighbors = Maps.newConcurrentMap();
-    mNeighbors.put(Neighbor.LEFT, new WeakReference<EntryListFragment>(null));
-    mNeighbors.put(Neighbor.RIGHT, new WeakReference<EntryListFragment>(null));
-    mScrollState = BehaviorSubject.create();
-    mDisposables.add(mScrollState
-        .sample(SCROLL_POSITION_SAMPLING_PERIOD_MS, TimeUnit.MILLISECONDS)
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(new Consumer<ScrollState>() {
-          @Override
-          public void accept(ScrollState scrollState) throws Exception {
-            if (!getUserVisibleHint()) {
-              Timber.v("Not scrolling from %s", mCycle.startDateStr);
-              return;
-            }
-            onScrollStateUpdate(scrollState);
-          }
-        }));
+    mNeighbors.put(Neighbor.LEFT, new WeakReference<>(null));
+    mNeighbors.put(Neighbor.RIGHT, new WeakReference<>(null));
   }
 
-  public void setNeighbor(EntryListFragment fragment, Neighbor neighbor) {
+  void setNeighbor(EntryListFragment fragment, Neighbor neighbor) {
     mNeighbors.put(neighbor, new WeakReference<>(fragment));
-  }
-
-  @Override
-  public void onAttach(Context context) {
-    super.onAttach(context);
-  }
-
-  @Override
-  public void onSaveInstanceState(@NonNull Bundle outState) {
-    super.onSaveInstanceState(outState);
-    outState.putParcelable(Cycle.class.getName(), Parcels.wrap(mCycle));
   }
 
   @Override
@@ -99,45 +64,15 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     super.onCreate(savedInstanceState);
 
     Bundle arguments = getArguments();
-    mCycle = Parcels.unwrap(arguments.getParcelable(Cycle.class.getName()));
+    Cycle cycle = Parcels.unwrap(arguments.getParcelable(Extras.CURRENT_CYCLE.name()));
 
-    Timber.v("Created Fragment for cycle starting %s", mCycle.startDateStr);
-  }
+    FragmentViewModel.Factory factory = new FragmentViewModel.Factory(
+        getActivity().getApplication(),
+        arguments.getBoolean(Extras.IS_TRAINING_MODE.name()),
+        cycle);
+    mViewModel = ViewModelProviders.of(this, factory).get(FragmentViewModel.class);
 
-  public void setScrollState(ScrollState scrollState) {
-    Timber.v(TAG, "Scroll to: %s", scrollState);
-    if (mRecyclerView == null) {
-      Timber.w("RecyclerView null!");
-      return;
-    }
-    LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
-    int numDays = mRecyclerView.getAdapter().getItemCount();
-    int firstVisibleDay =
-        (scrollState.firstVisibleDay <= numDays) ? scrollState.firstVisibleDay : numDays;
-    int topIndex = numDays - firstVisibleDay;
-    manager.scrollToPositionWithOffset(topIndex, scrollState.offsetPixels);
-  }
-
-  public void onScrollStateUpdate(ScrollState state) {
-    for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
-      EntryListFragment neighbor = entry.getValue().get();
-      if (neighbor != null) {
-        Timber.v("Scrolling %s for %s", entry.getKey().name(), mCycle.startDateStr);
-        neighbor.setScrollState(state);
-      }
-    }
-  }
-
-  public ScrollState getScrollState() {
-    if (mRecyclerView == null) {
-      return null;
-    }
-    LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
-    int firstPosition = manager.findFirstCompletelyVisibleItemPosition();
-    int firstVisibleDay = mRecyclerView.getAdapter().getItemCount() - firstPosition;
-    View view = manager.findViewByPosition(firstPosition);
-    int offset = (view != null) ? view.getTop() : 0;
-    return new ScrollState(firstVisibleDay, offset);
+    Timber.v("Created Fragment for cycle starting %s", cycle.startDateStr);
   }
 
   @Nullable
@@ -153,74 +88,72 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
       public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
-        mScrollState.onNext(getScrollState());
+        mViewModel.updateScrollState(getScrollState());
       }
     });
 
     mChartEntryAdapter = new ChartEntryAdapter(
         getActivity(),
-        !getArguments().getBoolean(IS_LAST_CYCLE, false),
-        EntryListFragment.this,
-        "");
+        !getArguments().getBoolean(Extras.IS_LAST_CYCLE.name(), false),
+        "",
+        this::navigateToDetailActivity);
     mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()
         .subscribe(mChartEntryAdapter::updateLayerKey));
-
-    MyApplication myApp = MyApplication.cast(getActivity().getApplication());
-    RWChartEntryRepo entryRepo = myApp.entryRepo();
-    RWInstructionsRepo instructionsRepo = MyApplication.cast(getActivity().getApplication()).instructionsRepo();
-
-    mDisposables.add(Flowable.combineLatest(
-        myApp.cycleRepo().getPreviousCycle(mCycle).map(Optional::of).defaultIfEmpty(Optional.absent()).toFlowable(),
-        instructionsRepo.getAll(),
-        entryRepo.getStreamForCycle(Flowable.just(mCycle)),
-        (previousCycle, instructions, entries) -> new CycleRenderer(mCycle, previousCycle, entries, instructions))
-        .subscribeOn(Schedulers.computation())
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(newRenderer -> {
-          CycleRenderer.RenderableCycle renderableCycle = newRenderer.render();
-          mChartEntryAdapter.updateCycle(renderableCycle);
-        }));
 
     mRecyclerView.setAdapter(mChartEntryAdapter);
     mChartEntryAdapter.notifyDataSetChanged();
     mProgressView.setVisibility(View.INVISIBLE);
     mRecyclerView.setVisibility(View.VISIBLE);
 
-    mDisposables.add(entryRepo
-        .getStreamForCycle(Flowable.just(mCycle))
-        .firstOrError()
-        .subscribeOn(Schedulers.io())
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribeOn(Schedulers.computation())
-        .subscribe(chartEntries -> {
-          for (WeakReference<EntryListFragment> ref : mNeighbors.values()) {
-            EntryListFragment neighbor = ref.get();
-            if (neighbor != null) {
-              Timber.v("Cycle starting %s has neighbor starting %s", mCycle.startDateStr, neighbor.mCycle.startDateStr);
-              ScrollState scrollState = neighbor.getScrollState();
-              if (scrollState != null) {
-                setScrollState(scrollState);
-              }
-            }
-          }
-          if (getUserVisibleHint()) {
-            setScrollState(new ScrollState(chartEntries.size(), 0));
-          }
-        }));
+    mViewModel.updateScrollState(getScrollState());
+    mViewModel.viewState().observe(this, this::render);
 
     return view;
   }
 
-  @Override
-  public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
-    startActivityForResult(mChartEntryAdapter.getIntentForModification(modificationContext, index), 0);
+  private void render(FragmentViewModel.ViewState viewState) {
+    mChartEntryAdapter.update(viewState.renderableCycle, viewState.trainingMode);
+    if (getUserVisibleHint()) {
+      onScrollStateUpdate(viewState.scrollState);
+    }
   }
 
-  public void shutdown() {
-    if (mChartEntryAdapter != null) {
-      // mChartEntryAdapter.shutdown();
+  FragmentViewModel.ScrollState getScrollState() {
+    if (mRecyclerView == null) {
+      return null;
     }
+    LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+    int firstPosition = manager.findFirstCompletelyVisibleItemPosition();
+    int firstVisibleDay = mRecyclerView.getAdapter().getItemCount() - firstPosition;
+    View view = manager.findViewByPosition(firstPosition);
+    int offset = (view != null) ? view.getTop() : 0;
+    return FragmentViewModel.ScrollState.create(firstVisibleDay, offset);
+  }
+
+  void onScrollStateUpdate(FragmentViewModel.ScrollState state) {
+    for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
+      EntryListFragment neighbor = entry.getValue().get();
+      if (neighbor != null) {
+        neighbor.setScrollState(state);
+      }
+    }
+  }
+
+  private void setScrollState(FragmentViewModel.ScrollState scrollState) {
+    if (mRecyclerView == null) {
+      Timber.w("RecyclerView null!");
+      return;
+    }
+    LinearLayoutManager manager = (LinearLayoutManager) mRecyclerView.getLayoutManager();
+    int numDays = mRecyclerView.getAdapter().getItemCount();
+    int firstVisibleDay = Math.min(scrollState.firstVisibleDay(), numDays);
+    int topIndex = numDays - firstVisibleDay;
+    manager.scrollToPositionWithOffset(topIndex, scrollState.offsetPixels());
+  }
+
+  private void navigateToDetailActivity(Intent intent) {
+    startActivityForResult(intent, 0);
   }
 
   @Override
@@ -230,24 +163,5 @@ public class EntryListFragment extends Fragment implements ChartEntryAdapter.OnC
     mDisposables.dispose();
 
     super.onDestroy();
-  }
-
-  public Cycle getCycle() {
-    return mCycle;
-  }
-
-  public static class ScrollState {
-    final int firstVisibleDay;
-    final int offsetPixels;
-
-    ScrollState(int firstVisibleDay, int offsetPixels) {
-      this.firstVisibleDay = firstVisibleDay;
-      this.offsetPixels = offsetPixels;
-    }
-
-    @Override
-    public String toString() {
-      return ("First visible: " + firstVisibleDay + " Offset: " + offsetPixels);
-    }
   }
 }

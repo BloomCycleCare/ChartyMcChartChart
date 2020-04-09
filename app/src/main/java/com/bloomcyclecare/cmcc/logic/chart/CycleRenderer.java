@@ -12,8 +12,8 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Days;
@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -73,7 +74,7 @@ public class CycleRenderer {
     ChartEntry previousEntry = null;
     boolean hasHadLegitFlow = false;
 
-    RenderableCycle renderableCycle = new RenderableCycle(mCycle);
+    List<RenderableEntry> renderableEntries = new ArrayList<>(mEntries.size());
 
     // For every day before the current entry...
     for (ChartEntry e : mEntries) {
@@ -99,11 +100,11 @@ public class CycleRenderer {
           pointsOfChangeAway.add(e.entryDate);
         }
       }
-      state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.absent()
+      state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
           : Optional.of(pointsOfChangeToward.first());
-      state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.absent()
+      state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
           : Optional.of(pointsOfChangeToward.last());
-      state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.absent()
+      state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
           : Optional.of(pointsOfChangeAway.last());
       if (e.observationEntry.unusualBleeding) {
         daysOfUnusualBleeding.add(e.entryDate);
@@ -143,8 +144,8 @@ public class CycleRenderer {
         daysOfFlow.add(e.entryDate);
       }
       if (peakDays.isEmpty()) {
-        state.firstPeakDay = Optional.absent();
-        state.mostRecentPeakDay = Optional.absent();
+        state.firstPeakDay = Optional.empty();
+        state.mostRecentPeakDay = Optional.empty();
       } else {
         state.firstPeakDay = Optional.of(peakDays.first());
         state.mostRecentPeakDay = Optional.of(peakDays.last());
@@ -190,7 +191,7 @@ public class CycleRenderer {
           break;
         }
       }
-      state.instructions = Optional.fromNullable(instructions).or(new Instructions(e.entryDate, ImmutableList.of(), ImmutableList.of(), ImmutableList.of()));
+      state.instructions = Optional.ofNullable(instructions).orElse(new Instructions(e.entryDate, ImmutableList.of(), ImmutableList.of(), ImmutableList.of()));
 
       // Basic Instruction fertility reasons (section D)
       if (state.instructions.isActive(BasicInstruction.D_1)
@@ -326,7 +327,7 @@ public class CycleRenderer {
 
       // Super special infertility instructions...
       if (state.instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
-          && Optional.fromNullable(state.previousEntry).transform(pe -> pe.observationEntry.intercourse).or(false)
+          && Optional.ofNullable(state.previousEntry).map(pe -> pe.observationEntry.intercourse).orElse(false)
           && state.entry.observationEntry.observation != null
           && state.entry.observationEntry.observation.dischargeSummary.isPeakType()
           && state.entry.observationEntry.isEssentiallyTheSame) {
@@ -342,26 +343,31 @@ public class CycleRenderer {
           state.effectiveCountOfThree = Pair.create(count.get(), mapEntry.getKey());
         }
       }
-      renderableCycle.entries.add(RenderableEntry.fromState(state));
+      renderableEntries.add(RenderableEntry.fromState(state));
       previousEntry = e;
     }
 
-    renderableCycle.stats.isPregnancy = mCycle.isPregnancy();
-    renderableCycle.stats.daysWithAnObservation = daysWithAnObservation.size();
-    renderableCycle.stats.mcs = MccScorer.getScore(mEntries, peakDays.isEmpty() ?
-        Optional.absent() : Optional.of(peakDays.last()));
+    CycleStats.Builder statsBuilder = CycleStats.builder()
+        .cycleStartDate(mCycle.startDate)
+        .isPregnancy(mCycle.isPregnancy())
+        .daysWithAnObservation(daysWithAnObservation.size())
+        .mcs(MccScorer.getScore(mEntries, peakDays.isEmpty() ? Optional.empty() : Optional.of(peakDays.last())));
     if (!peakDays.isEmpty()) {
-      renderableCycle.stats.daysPrePeak = Days.daysBetween(mCycle.startDate, peakDays.last()).getDays();
+      statsBuilder.daysPrePeak(Optional.of(Days.daysBetween(mCycle.startDate, peakDays.last()).getDays()));
       if (mCycle.endDate != null) {
-        renderableCycle.stats.daysPostPeak = Days.daysBetween(peakDays.last(), mCycle.endDate).getDays();
+        statsBuilder.daysPostPeak(Optional.of(Days.daysBetween(peakDays.last(), mCycle.endDate).getDays()));
       }
     }
-    return renderableCycle;
+
+    return RenderableCycle.builder()
+        .entries(renderableEntries)
+        .stats(statsBuilder.build())
+        .build();
   }
 
   private static Optional<LocalDate> effectivePointOfChange(TreeSet<LocalDate> toward, TreeSet<LocalDate> away) {
     if (toward.isEmpty() || toward.size() == away.size()) {
-      return Optional.absent();
+      return Optional.empty();
     }
     return Optional.of(toward.last());
   }
@@ -425,7 +431,7 @@ public class CycleRenderer {
     }
 
     public Optional<Integer> getCount(CountOfThreeReason reason) {
-      return Optional.fromNullable(countsOfThree.get(reason));
+      return Optional.ofNullable(countsOfThree.get(reason));
     }
 
     boolean isWithinCountOfThree(CountOfThreeReason reason) {
@@ -535,7 +541,7 @@ public class CycleRenderer {
         return false;
       }
       if (instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
-          && Optional.fromNullable(previousEntry).transform(e -> e.observationEntry.intercourse).or(false)) {
+          && Optional.ofNullable(previousEntry).map(e -> e.observationEntry.intercourse).orElse(false)) {
         return true;
       }
       if (instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
@@ -561,7 +567,7 @@ public class CycleRenderer {
     EntryModificationContext entryModificationContext() {
       EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
       modificationContext.hasPreviousCycle = false;
-      modificationContext.previousCycleIsPregnancy = previousCycle.transform(Cycle::isPregnancy).or(false);
+      modificationContext.previousCycleIsPregnancy = previousCycle.map(Cycle::isPregnancy).orElse(false);
       modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
       modificationContext.isFirstEntry = entryNum == 1;
       modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
@@ -574,81 +580,150 @@ public class CycleRenderer {
     UNUSUAL_BLEEDING, PEAK_DAY, CONSECUTIVE_DAYS_OF_MUCUS, PEAK_TYPE_MUCUS, POINT_OF_CHANGE;
   }
 
-  public static class RenderableCycle {
-    public final List<RenderableEntry> entries = new ArrayList<>();
-    public final CycleStats stats;
+  @AutoValue
+  public abstract static class RenderableCycle {
+    public abstract List<RenderableEntry> entries();
+    public abstract CycleStats stats();
 
-    public RenderableCycle(Cycle cycle) {
-      stats = new CycleStats(cycle.startDate);
+    public static Builder builder() {
+      return new AutoValue_CycleRenderer_RenderableCycle.Builder();
+    }
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder entries(List<RenderableEntry> entries);
+
+      public abstract Builder stats(CycleStats stats);
+
+      public abstract RenderableCycle build();
     }
   }
 
-  public static class CycleStats implements Comparable<CycleStats> {
-    public final LocalDate cycleStartDate;
-    public Float mcs = null;
-    public Integer daysPrePeak = null;
-    public Integer daysPostPeak = null;
-    public Integer daysWithAnObservation = null;
-    public boolean isPregnancy = false;
-
-    public CycleStats(@NonNull LocalDate cycleStartDate) {
-      this.cycleStartDate = cycleStartDate;
-    }
+  @AutoValue
+  public abstract static class CycleStats implements Comparable<CycleStats> {
+    public abstract LocalDate cycleStartDate();
+    public abstract Integer daysWithAnObservation();
+    public abstract boolean isPregnancy ();
+    public abstract Optional<Float> mcs();
+    public abstract Optional<Integer> daysPrePeak();
+    public abstract Optional<Integer> daysPostPeak();
 
     @Override
     public int compareTo(CycleStats other) {
-      return cycleStartDate.compareTo(other.cycleStartDate);
+      return cycleStartDate().compareTo(other.cycleStartDate());
+    }
+
+    public static Builder builder() {
+      return new AutoValue_CycleRenderer_CycleStats.Builder()
+          .mcs(Optional.empty())
+          .isPregnancy(false)
+          .daysWithAnObservation(0)
+          .daysPrePeak(Optional.empty())
+          .daysPostPeak(Optional.empty());
+    }
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder cycleStartDate(LocalDate cycleStartDate);
+
+      public abstract Builder daysWithAnObservation(Integer daysWithAnObservation);
+
+      public abstract Builder isPregnancy(boolean isPregnancy);
+
+      public abstract Builder mcs(Optional<Float> mcs);
+
+      public abstract Builder daysPrePeak(Optional<Integer> daysPrePeak);
+
+      public abstract Builder daysPostPeak(Optional<Integer> daysPostPeak);
+
+      public abstract CycleStats build();
     }
   }
 
-  public static class RenderableEntry {
-    public String entrySummary;
-    public StickerColor backgroundColor;
-    public int entryNum;
-    public String dateSummary;
-    public String peakDayText;
-    public String instructionSummary;
-    public String essentialSamenessSummary;
-    public boolean showBaby;
-    public IntercourseTimeOfDay intercourseTimeOfDay;
-    public String pocSummary;
-    public EntryModificationContext modificationContext;
+  @AutoValue
+  public static abstract class RenderableEntry {
+    public abstract String entrySummary();
+    public abstract StickerColor backgroundColor();
+    public abstract int entryNum();
+    public abstract String dateSummary();
+    public abstract String peakDayText();
+    public abstract String instructionSummary();
+    public abstract String essentialSamenessSummary();
+    public abstract boolean showBaby();
+    public abstract IntercourseTimeOfDay intercourseTimeOfDay();
+    public abstract String pocSummary();
+    public abstract EntryModificationContext modificationContext();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
     public static RenderableEntry fromState(State state) {
-      RenderableEntry renderableEntry = new RenderableEntry();
-
-      renderableEntry.entryNum = state.entryNum;
-      renderableEntry.dateSummary = DateUtil.toNewUiStr(state.entry.entryDate);
-      renderableEntry.entrySummary = state.entry.observationEntry.getListUiText();
-      renderableEntry.backgroundColor = state.getBackgroundColor();
-      renderableEntry.showBaby = state.shouldShowBaby();
-      renderableEntry.peakDayText = state.peakDayText();
-      renderableEntry.intercourseTimeOfDay = state.entry.observationEntry.intercourseTimeOfDay;
+      String pocSummary;
       if (state.isPocTowardFertility()) {
-        renderableEntry.pocSummary = "POC↑";
+        pocSummary = "POC↑";
       } else if (state.isPocAwayFromFertility()) {
-        renderableEntry.pocSummary = "POC↓";
+        pocSummary = "POC↓";
       } else {
-        renderableEntry.pocSummary = "";
+        pocSummary = "";
       }
-      renderableEntry.instructionSummary = state.getInstructionSummary();
-      renderableEntry.modificationContext = state.entryModificationContext();
-      if (renderableEntry.modificationContext.shouldAskEssentialSamenessIfMucus
+      String essentialSamenessSummary;
+      if (state.entryModificationContext().shouldAskEssentialSamenessIfMucus
           && state.entry.observationEntry.hasMucus()) {
-        renderableEntry.essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
+        essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
       } else {
-        renderableEntry.essentialSamenessSummary = "";
+        essentialSamenessSummary = "";
       }
-
+      RenderableEntry renderableEntry = builder()
+          .entryNum(state.entryNum)
+          .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
+          .entrySummary(state.entry.observationEntry.getListUiText())
+          .backgroundColor(state.getBackgroundColor())
+          .showBaby(state.shouldShowBaby())
+          .peakDayText(state.peakDayText())
+          .intercourseTimeOfDay(Optional.ofNullable(state.entry.observationEntry.intercourseTimeOfDay)
+              .orElse(IntercourseTimeOfDay.NONE))
+          .pocSummary(pocSummary)
+          .instructionSummary(state.getInstructionSummary())
+          .modificationContext(state.entryModificationContext())
+          .essentialSamenessSummary(essentialSamenessSummary)
+          .build();
       return renderableEntry;
     }
 
     @NonNull
     @Override
     public String toString() {
-      return String.format("%s: %s", dateSummary, entrySummary);
+      return String.format("%s: %s", dateSummary(), entrySummary());
+    }
+
+    public static Builder builder() {
+      return new AutoValue_CycleRenderer_RenderableEntry.Builder();
+    }
+
+    @AutoValue.Builder
+    public abstract static class Builder {
+      public abstract Builder entrySummary(String entrySummary);
+
+      public abstract Builder backgroundColor(StickerColor backgroundColor);
+
+      public abstract Builder entryNum(int entryNum);
+
+      public abstract Builder dateSummary(String dateSummary);
+
+      public abstract Builder peakDayText(String peakDayText);
+
+      public abstract Builder instructionSummary(String instructionSummary);
+
+      public abstract Builder essentialSamenessSummary(String essentialSamenessSummary);
+
+      public abstract Builder showBaby(boolean showBaby);
+
+      public abstract Builder intercourseTimeOfDay(IntercourseTimeOfDay intercourseTimeOfDay);
+
+      public abstract Builder pocSummary(String pocSummary);
+
+      public abstract Builder modificationContext(EntryModificationContext modificationContext);
+
+      public abstract RenderableEntry build();
     }
   }
 

@@ -59,7 +59,8 @@ public class ChartEntryListActivity extends AppCompatActivity
     implements EntryListView, NavigationView.OnNavigationItemSelectedListener {
 
   public enum Extras {
-    CYCLE_DESC_INDEX
+    CYCLE_DESC_INDEX,
+    TRANING_MODE
   }
 
   private enum RequestCode {
@@ -130,17 +131,19 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
 
-    mViewModel = ViewModelProviders.of(this).get(EntryListViewModel.class);
+    EntryListViewModel.Factory factory = new EntryListViewModel.Factory(
+        getApplication(), getIntent().getBooleanExtra(Extras.TRANING_MODE.name(), false));
+    mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
     mViewModel.viewStates().observe(this, viewState -> {
-      setTitle(viewState.title);
-      setSubtitle(viewState.subtitle);
-      mPageAdapter.update(viewState.cycles);
+      setTitle(viewState.trainingMode ? "Training Cycle" : viewState.title);
+      setSubtitle(viewState.trainingMode ? String.format("#%d", viewState.currentCycleIndex + 1) : viewState.subtitle);
+      mPageAdapter.update(viewState.cycles, viewState.trainingMode);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
         mViewPager.setCurrentItem(viewState.currentCycleIndex);
       }
 
-      if (viewState.showFab) {
+      if (!viewState.trainingMode && viewState.showFab) {
         showFab();
       } else {
         hideFab();
@@ -409,6 +412,9 @@ public class ChartEntryListActivity extends AppCompatActivity
         break;
       case R.id.nav_pregnancies:
         startActivityForResult(new Intent(this, PregnancyListActivity.class), RequestCode.PREGNANCY_LIST.ordinal());
+        break;
+      case R.id.nav_training:
+        mViewModel.setTrainingMode(true);
         break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:

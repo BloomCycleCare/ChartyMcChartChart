@@ -94,10 +94,10 @@ public class PageRenderer {
 
   private static ObservableSource<RenderedRow> createCycleRows(CycleRenderer renderer) {
     CycleRenderer.RenderableCycle renderableCycle = renderer.render();
-    if (renderableCycle.stats.daysWithAnObservation == 0) {
+    if (renderableCycle.stats().daysWithAnObservation() == 0) {
       return Observable.empty();
     }
-    List<CycleRenderer.RenderableEntry> renderableEntries = renderableCycle.entries;
+    List<CycleRenderer.RenderableEntry> renderableEntries = renderableCycle.entries();
     List<RenderedRow> rows = new ArrayList<>();
     int numFullRows = numFullRows(renderableEntries.size());
     boolean hasPartialRow = hasPartialRow(renderableEntries.size());
@@ -236,7 +236,7 @@ public class PageRenderer {
           textLines[l] = "";
         }
 
-        switch (entry.intercourseTimeOfDay) {
+        switch (entry.intercourseTimeOfDay()) {
           case ANY:
             textLines[0] = "I";
             break;
@@ -248,11 +248,11 @@ public class PageRenderer {
             break;
         }
 
-        textLines[1] = entry.peakDayText;
+        textLines[1] = entry.peakDayText();
 
         List<String> classes = new ArrayList<>();
-        classes.add(getColorClass(entry.backgroundColor));
-        if (entry.showBaby) {
+        classes.add(getColorClass(entry.backgroundColor()));
+        if (entry.showBaby()) {
           classes.add("baby");
         }
 
@@ -282,14 +282,14 @@ public class PageRenderer {
       for (int i = startIndex; i <= endIndex; i++) {
         CycleRenderer.RenderableEntry entry = renderableEntries.get(i);
         List<String> lines = new ArrayList<>();
-        lines.add(DateUtil.toPrintStr(entry.modificationContext.entry.entryDate));
-        List<String> summaryPieces = Lists.newArrayList(entry.entrySummary.split(" "));
+        lines.add(DateUtil.toPrintStr(entry.modificationContext().entry.entryDate));
+        List<String> summaryPieces = Lists.newArrayList(entry.entrySummary().split(" "));
         if (summaryPieces.size() > 0 && summaryPieces.get(summaryPieces.size() - 1).equals("I")) {
           summaryPieces.remove(summaryPieces.size() - 1);
         }
         lines.addAll(summaryPieces);
-        if (!Strings.isNullOrEmpty(entry.pocSummary)) {
-          lines.add(entry.pocSummary);
+        if (!Strings.isNullOrEmpty(entry.pocSummary())) {
+          lines.add(entry.pocSummary());
         }
         while (lines.size() < 4) {
           lines.add("&nbsp;");

@@ -16,8 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.disposables.CompositeDisposable;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 4/18/17.
@@ -29,22 +31,23 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private static final String TAG = ChartEntryAdapter.class.getSimpleName();
 
   private final Context mContext;
-  private final OnClickHandler mClickHandler;
   private final CompositeDisposable mDisposables;
   private final boolean mHasPreviousCycle;
+  private final Consumer<Intent> mDetailNavigationConsumer;
   private String mLayerKey;
+  private boolean trainingMode;
   private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
 
   ChartEntryAdapter(
       Context context,
       boolean hasPreviousCycle,
-      OnClickHandler clickHandler,
-      String layerKey) {
+      String layerKey,
+      Consumer<Intent> detailNavigationConsumer) {
     mContext = context;
-    mClickHandler = clickHandler;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
     mHasPreviousCycle = hasPreviousCycle;
+    mDetailNavigationConsumer = detailNavigationConsumer;
   }
 
   void updateLayerKey(String key) {
@@ -52,8 +55,9 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     notifyDataSetChanged();
   }
 
-  void updateCycle(CycleRenderer.RenderableCycle renderableCycle) {
-    mRenderableEntries = renderableCycle.entries;
+  void update(CycleRenderer.RenderableCycle renderableCycle, boolean trainingMode) {
+    this.trainingMode = trainingMode;
+    mRenderableEntries = renderableCycle.entries();
     notifyDataSetChanged();
   }
 
@@ -68,7 +72,16 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new ChartEntryViewHolder.Impl(mContext, view, mClickHandler);
+    return new ChartEntryViewHolder.Impl(mContext, view, new OnClickHandler() {
+      @Override
+      public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
+        if (trainingMode) {
+          Timber.d("Not navigating to detail activity while in training mode");
+          return;
+        }
+        mDetailNavigationConsumer.accept(getIntentForModification(modificationContext, index));
+      }
+    });
   }
 
   /**
@@ -91,11 +104,11 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return mRenderableEntries.size();
   }
 
-  public interface OnClickHandler {
+  interface OnClickHandler {
     void onClick(CycleRenderer.EntryModificationContext modificationContext, int index);
   }
 
-  Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext, final int index) {
+  private Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext, final int index) {
     modificationContext.hasPreviousCycle = mHasPreviousCycle;
     Intent intent = new Intent(mContext, EntryDetailActivity.class);
     intent.putExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(modificationContext));

@@ -74,4 +74,8 @@ public class TrainingCycles {
   public static List<TrainingCycle> basicTrainingCycles() {
     return ImmutableList.of(basicB1A(), basicB1B());
   }
+
+  public static List<TrainingCycle> forRepos() {
+    return basicTrainingCycles();
+  }
 }

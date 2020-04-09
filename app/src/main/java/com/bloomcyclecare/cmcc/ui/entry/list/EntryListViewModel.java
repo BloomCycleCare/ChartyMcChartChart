@@ -5,9 +5,17 @@ import android.app.Application;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
+import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
+import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
+import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepos;
+import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepos;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -16,15 +24,19 @@ import org.joda.time.LocalDate;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Supplier;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
@@ -34,31 +46,45 @@ public class EntryListViewModel extends AndroidViewModel {
 
   public Subject<Integer> currentPageUpdates = BehaviorSubject.createDefault(0);
 
+  private final MyApplication mApplication;
+  private final Subject<Boolean> mTrainingMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
+  private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
 
-  public EntryListViewModel(@NonNull Application application) {
+  private EntryListViewModel(@NonNull Application application, boolean trainingMode) {
     super(application);
+    mApplication = MyApplication.cast(application);
+    mTrainingMode.onNext(trainingMode);
+    mTrainingMode.map(this::viewStateStream).subscribe(mViewStateStream);
+    mViewStateStream.switchMap(Flowable::toObservable).subscribe(mViewStates);
+  }
 
-    MyApplication myApp = MyApplication.cast(application);
+  private Flowable<ViewState> viewStateStream(boolean trainingMode) throws ObservationParser.InvalidObservationException {
+    ROInstructionsRepo instructionsRepo = trainingMode ?
+        InstructionsRepos.forTraining() : mApplication.instructionsRepo();
+    ROCycleRepo cycleRepo = trainingMode ?
+        CycleRepos.forTraining() : mApplication.cycleRepo();
+    ROChartEntryRepo entryRepo = trainingMode ?
+        ChartEntryRepos.forTraining() : mApplication.entryRepo();
+    ROPregnancyRepo pregnancyRepo = trainingMode ?
+        PregnancyRepos.forTraining() : mApplication.pregnancyRepo();
 
     Flowable<List<CycleRenderer.CycleStats>> statsStream = Flowable.merge(Flowable.combineLatest(
-        myApp.instructionsRepo()
-            .getAll()
+        instructionsRepo.getAll()
             .distinctUntilChanged(),
-        myApp.cycleRepo()
-            .getStream()
+        cycleRepo.getStream()
             .distinctUntilChanged(),
         (instructions, cycles) -> Flowable.merge(Flowable
             .fromIterable(cycles)
             .observeOn(Schedulers.computation())
             .parallel()
             .map(cycle -> Flowable.combineLatest(
-                myApp.entryRepo().getStreamForCycle(Flowable.just(cycle)),
-                myApp.cycleRepo().getPreviousCycle(cycle)
-                    .map(Optional::of).defaultIfEmpty(Optional.absent())
+                entryRepo.getStreamForCycle(Flowable.just(cycle)),
+                cycleRepo.getPreviousCycle(cycle)
+                    .map(Optional::of).defaultIfEmpty(Optional.empty())
                     .toFlowable(),
                 (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
-                .map(renderableCycle -> renderableCycle.stats)
+                .map(CycleRenderer.RenderableCycle::stats)
             )
             .sequential()
             .toList()
@@ -69,29 +95,34 @@ public class EntryListViewModel extends AndroidViewModel {
     Flowable<String> subtitleStream = Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         statsStream,
-        currentPageUpdates.flatMap(index -> myApp.cycleRepo().getStream()
+        currentPageUpdates.flatMap(index -> cycleRepo.getStream()
             .firstOrError()
             .map(cycles -> cycles.get(index))
-            .map(cycle -> Optional.fromNullable(cycle.pregnancyId))
+            .map(cycle -> Optional.ofNullable(cycle.pregnancyId))
             .flatMap(id -> !id.isPresent()
-                ? Single.just(Optional.<Pregnancy>absent())
-                : myApp.pregnancyRepo().get(id.get()).map(Optional::of).toSingle(Optional.absent()))
+                ? Single.just(Optional.<Pregnancy>empty())
+                : pregnancyRepo.get(id.get()).map(Optional::of).toSingle(Optional.empty()))
             .toObservable())
-        .toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            .toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         (currentPage, stats, pregnancy) -> subtitle(stats, currentPage, LocalDate::now, pregnancy));
 
-    Flowable.combineLatest(
+    return Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         subtitleStream.distinctUntilChanged(),
-        myApp.cycleRepo().getStream(),
-        ViewState::new)
-        .toObservable()
-        .subscribe(mViewStates);
+        cycleRepo.getStream(),
+        (currentPage, subtitle, cycles) -> new ViewState(currentPage, subtitle, cycles, trainingMode));
+  }
+
+  void setTrainingMode(boolean value) {
+    Timber.d("Toggling training mode = %b", value);
+    mTrainingMode.onNext(value);
   }
 
   LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
+        .subscribeOn(Schedulers.computation())
+        .observeOn(AndroidSchedulers.mainThread())
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
   }
 
@@ -116,20 +147,18 @@ public class EntryListViewModel extends AndroidViewModel {
       }
       return "Pregnant, due date TBD";
     }
-    if (currentStats.daysPrePeak == null) {
+    if (!currentStats.daysPrePeak().isPresent()) {
       return "In prepeak phase";
     }
-    if (currentStats.daysPostPeak != null) {
-      return String.format(Locale.getDefault(), "Pre: %d Post: %d", currentStats.daysPrePeak, currentStats.daysPostPeak);
+    if (currentStats.daysPostPeak().isPresent()) {
+      return String.format(Locale.getDefault(), "Pre: %d Post: %d", currentStats.daysPrePeak().orElse(-1), currentStats.daysPostPeak().orElse(-1));
     }
     SummaryStatistics summaryStats = new SummaryStatistics();
     for (int i=index+1; i<statsList.size() && i <= 3; i++) {
       CycleRenderer.CycleStats s = statsList.get(i);
-      if (s.daysPostPeak == null) {
-        continue;
-      }
-      summaryStats.addValue(statsList.get(i).daysPostPeak); }
-    LocalDate peakDay = currentStats.cycleStartDate.plusDays(currentStats.daysPrePeak);
+      summaryStats.addValue(statsList.get(i).daysPostPeak().orElse(0));
+    }
+    LocalDate peakDay = currentStats.cycleStartDate().plusDays(currentStats.daysPrePeak().orElse(0));
     if (summaryStats.getN() < 3 || summaryStats.getStandardDeviation() > 1.0) {
       int daysPostPeak = Days.daysBetween(peakDay, today).getDays();
       return String.format(Locale.getDefault(), "%d days postpeak", daysPostPeak);
@@ -144,17 +173,35 @@ public class EntryListViewModel extends AndroidViewModel {
     final String title;
     final String subtitle;
     final boolean showFab;
+    final boolean trainingMode;
 
     final int currentCycleIndex;
     final ImmutableList<Cycle> cycles;
 
-    ViewState(int currentPage, String subtitle, List<Cycle> cycles) {
+    ViewState(int currentPage, String subtitle, List<Cycle> cycles, boolean trainingMode) {
       this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
       this.subtitle = subtitle;
       this.showFab = currentPage == cycles.size() - 1;
+      this.trainingMode = trainingMode;
 
       this.currentCycleIndex = currentPage;
       this.cycles = ImmutableList.copyOf(cycles);
+    }
+  }
+
+  public static class Factory implements ViewModelProvider.Factory {
+    private final Application mApplication;
+    private final boolean mTrainingMode;
+
+    public Factory(Application application, boolean trainingMode) {
+      mApplication = application;
+      mTrainingMode = trainingMode;
+    }
+
+    @NonNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+      return (T) new EntryListViewModel(mApplication, mTrainingMode);
     }
   }
 }

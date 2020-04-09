@@ -7,12 +7,12 @@ import com.bloomcyclecare.cmcc.data.domain.MucusModifier;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
-import com.google.common.base.Optional;
 
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -20,9 +20,9 @@ public class MccScorer {
 
   private static final int EVALUATION_INTERVAL_DAYS = 6;
 
-  public static Float getScore(SortedSet<ChartEntry> unfilteredEntries, Optional<LocalDate> peakDay) {
+  public static Optional<Float> getScore(SortedSet<ChartEntry> unfilteredEntries, Optional<LocalDate> peakDay) {
     if (!peakDay.isPresent()) {
-      return null;
+      return Optional.empty();
     }
     LocalDate firstDate = peakDay.get().minusDays(EVALUATION_INTERVAL_DAYS - 1);
     List<ChartEntry> entries = new ArrayList<>();
@@ -42,7 +42,7 @@ public class MccScorer {
     for (ChartEntry entry : entries) {
       totalPoints += getScore(entry);
     }
-    return (float) totalPoints / EVALUATION_INTERVAL_DAYS;
+    return Optional.of((float) totalPoints / EVALUATION_INTERVAL_DAYS);
   }
 
   private static int getScore(ChartEntry entry) {

@@ -10,7 +10,6 @@ import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -21,6 +20,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.reactivex.functions.Predicate;
 
@@ -49,31 +49,31 @@ public abstract class BaseRendererTest {
         StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert
             .withMessage("backgroundColor")
-            .that(renderableEntry.backgroundColor)
+            .that(renderableEntry.backgroundColor())
             .isEqualTo(stickerExpectations.backgroundColor);
         baseAssert
             .withMessage("showBaby")
-            .that(renderableEntry.showBaby)
+            .that(renderableEntry.showBaby())
             .isEqualTo(stickerExpectations.shouldHaveBaby);
         baseAssert
             .withMessage("peakDayText")
-            .that(renderableEntry.peakDayText)
+            .that(renderableEntry.peakDayText())
             .isEqualTo(stickerExpectations.peakText);
         if (stickerExpectations.shouldHaveIntercourse) {
           baseAssert
               .withMessage("intercourse")
-              .that(renderableEntry.entrySummary).endsWith("I");
+              .that(renderableEntry.entrySummary()).endsWith("I");
         }
         return true;
       });
     }
     Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 
-    Optional<Cycle> previousCycle = Optional.absent();
+    Optional<Cycle> previousCycle = Optional.empty();
     Instructions copyOfInstructions = new Instructions(instructions);
     copyOfInstructions.startDate = CYCLE_START_DATE;
     List<CycleRenderer.RenderableEntry> renderableEntries = new CycleRenderer(cycle, previousCycle, chartEntries, ImmutableSet.of(copyOfInstructions))
-        .render().entries;
+        .render().entries();
 
     Preconditions.checkState(renderableEntries.size() == numEntries);
     for (int i=0; i<numEntries; i++) {

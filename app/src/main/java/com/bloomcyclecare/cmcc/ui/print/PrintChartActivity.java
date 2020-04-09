@@ -14,8 +14,8 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.print.ChartPrinter;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.common.base.Optional;
 
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -104,7 +104,7 @@ public class PrintChartActivity extends AppCompatActivity {
             .flatMap(cycle -> Single.zip(
                 entryRepo.getStreamForCycle(Flowable.just(cycle)).firstOrError(),
                 instructionsRepo.getAll().firstOrError(),
-                (entries, instructions) -> new CycleRenderer(cycle, Optional.absent(), entries, instructions))
+                (entries, instructions) -> new CycleRenderer(cycle, Optional.empty(), entries, instructions))
                 .toObservable());
 
         /*mDisposables.add(ChartPrinter.create(PrintChartActivity.this, renderers)

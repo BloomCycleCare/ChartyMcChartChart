@@ -58,16 +58,16 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
     }
 
     public void bind(CycleRenderer.RenderableEntry renderableEntry) {
-      mEntryDataTextView.setText(renderableEntry.entrySummary);
-      mEntryBackgroundView.setBackgroundResource(renderableEntry.backgroundColor.resourceId);
-      mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum));
-      mEntryDateTextView.setText(renderableEntry.dateSummary);
-      mEntryPeakTextView.setText(renderableEntry.peakDayText);
-      mBabyImageView.setVisibility(renderableEntry.showBaby ? View.VISIBLE : View.INVISIBLE);
-      mPocSummaryTextView.setText(renderableEntry.pocSummary);
+      mEntryDataTextView.setText(renderableEntry.entrySummary());
+      mEntryBackgroundView.setBackgroundResource(renderableEntry.backgroundColor().resourceId);
+      mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum()));
+      mEntryDateTextView.setText(renderableEntry.dateSummary());
+      mEntryPeakTextView.setText(renderableEntry.peakDayText());
+      mBabyImageView.setVisibility(renderableEntry.showBaby() ? View.VISIBLE : View.INVISIBLE);
+      mPocSummaryTextView.setText(renderableEntry.pocSummary());
 
-      ChartEntry entry = renderableEntry.modificationContext.entry;
-      mSymptomGoalSummaryView.setText(renderableEntry.essentialSamenessSummary);
+      ChartEntry entry = renderableEntry.modificationContext().entry;
+      mSymptomGoalSummaryView.setText(renderableEntry.essentialSamenessSummary());
 
       boolean showOverlay = entry.wellnessEntry.hasItem(null) || entry.symptomEntry.hasItem(null);
       if (showOverlay) {
@@ -88,14 +88,14 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
     @Override
     public void onClick(View v) {
       int index = getAdapterPosition();
-      mClickHandler.onClick(mBoundEntry.modificationContext, index);
+      mClickHandler.onClick(mBoundEntry.modificationContext(), index);
     }
 
     @Override
     public boolean onLongClick(View v) {
       new AlertDialog.Builder(mContext)
           .setTitle("Instruction Summary")
-          .setMessage(mBoundEntry.instructionSummary)
+          .setMessage(mBoundEntry.instructionSummary())
           .setPositiveButton("Edit", (dialogInterface, i) -> {
             onClick(v);
             dialogInterface.dismiss();

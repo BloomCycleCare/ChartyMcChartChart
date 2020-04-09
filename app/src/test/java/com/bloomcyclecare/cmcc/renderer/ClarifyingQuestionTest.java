@@ -7,7 +7,6 @@ import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
-import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -20,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -58,7 +58,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
             .addAll(BASIC_INSTRUCTIONS.activeItems)
             .add(BasicInstruction.K_1)
             .build(), ImmutableList.of(), ImmutableList.of());
-    run(entries.build(), (re) -> re.modificationContext.shouldAskEssentialSamenessIfMucus, instructions);
+    run(entries.build(), (re) -> re.modificationContext().shouldAskEssentialSamenessIfMucus, instructions);
   }
 
   @Test
@@ -86,7 +86,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     entries.put(TrainingEntry.forText("0AD"), false);
     entries.put(TrainingEntry.forText("2x1"), false);
 
-    run(entries.build(), (re) -> re.modificationContext.shouldAskDoublePeakQuestions, BASIC_INSTRUCTIONS);
+    run(entries.build(), (re) -> re.modificationContext().shouldAskDoublePeakQuestions, BASIC_INSTRUCTIONS);
   }
 
   @Test
@@ -119,7 +119,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
             .addAll(BASIC_INSTRUCTIONS.activeItems)
             .add(BasicInstruction.G_1)
             .build(), ImmutableList.of(), ImmutableList.of());
-    run(entries.build(), (re) -> re.modificationContext.shouldAskDoublePeakQuestions, instructions);
+    run(entries.build(), (re) -> re.modificationContext().shouldAskDoublePeakQuestions, instructions);
   }
 
   private void run(
@@ -143,7 +143,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 
     List<CycleRenderer.RenderableEntry> renderableEntries =
-        new CycleRenderer(cycle, Optional.absent(), chartEntries, Arrays.asList(instructions)).render().entries;
+        new CycleRenderer(cycle, Optional.empty(), chartEntries, Arrays.asList(instructions)).render().entries();
 
     Preconditions.checkState(renderableEntries.size() == numEntries);
     for (int i = 0; i < numEntries; i++) {
