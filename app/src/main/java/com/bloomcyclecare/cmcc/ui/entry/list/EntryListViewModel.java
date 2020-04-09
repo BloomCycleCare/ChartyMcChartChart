@@ -118,6 +118,10 @@ public class EntryListViewModel extends AndroidViewModel {
     mTrainingMode.onNext(value);
   }
 
+  boolean isInTrainingMode() {
+    return mTrainingMode.blockingFirst(false);
+  }
+
   LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)

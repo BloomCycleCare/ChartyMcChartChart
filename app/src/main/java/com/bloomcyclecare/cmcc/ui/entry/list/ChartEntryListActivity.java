@@ -36,6 +36,7 @@ import org.joda.time.LocalDate;
 
 import java.io.File;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -199,6 +200,18 @@ public class ChartEntryListActivity extends AppCompatActivity
     });
     hideFab();
     maybeUpdateCurrentPage(getIntent());
+
+    getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+      @Override
+      public void handleOnBackPressed() {
+        if (mViewModel.isInTrainingMode()) {
+          mNavView.getMenu().findItem(R.id.nav_my_chart).setChecked(true);
+          mViewModel.setTrainingMode(false);
+        } else {
+          finish();
+        }
+      }
+    });
   }
 
   @Override
@@ -428,6 +441,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     setNavItem();
     return true;
   }
+
 
   private void showFab() {
     mNewCycleFab.setVisibility(View.VISIBLE);
