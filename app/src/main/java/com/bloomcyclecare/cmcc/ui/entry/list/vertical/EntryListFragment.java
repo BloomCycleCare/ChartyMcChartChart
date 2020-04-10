@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.list;
+package com.bloomcyclecare.cmcc.ui.entry.list.vertical;
 
 import android.content.Intent;
 import android.os.Bundle;
@@ -10,6 +10,7 @@ import android.widget.ProgressBar;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
@@ -32,7 +33,7 @@ import timber.log.Timber;
 
 public class EntryListFragment extends Fragment {
 
-  enum Extras {
+  public enum Extras {
     CURRENT_CYCLE,
     IS_LAST_CYCLE,
     VIEW_MODE
@@ -56,7 +57,7 @@ public class EntryListFragment extends Fragment {
     mNeighbors.put(Neighbor.RIGHT, new WeakReference<>(null));
   }
 
-  void setNeighbor(EntryListFragment fragment, Neighbor neighbor) {
+  public void setNeighbor(EntryListFragment fragment, Neighbor neighbor) {
     mNeighbors.put(neighbor, new WeakReference<>(fragment));
   }
 
@@ -119,7 +120,7 @@ public class EntryListFragment extends Fragment {
     }
   }
 
-  FragmentViewModel.ScrollState getScrollState() {
+  public FragmentViewModel.ScrollState getScrollState() {
     if (mRecyclerView == null) {
       return null;
     }
@@ -131,7 +132,7 @@ public class EntryListFragment extends Fragment {
     return FragmentViewModel.ScrollState.create(firstVisibleDay, offset);
   }
 
-  void onScrollStateUpdate(FragmentViewModel.ScrollState state) {
+  public void onScrollStateUpdate(FragmentViewModel.ScrollState state) {
     for (Map.Entry<Neighbor, WeakReference<EntryListFragment>> entry : mNeighbors.entrySet()) {
       EntryListFragment neighbor = entry.getValue().get();
       if (neighbor != null) {

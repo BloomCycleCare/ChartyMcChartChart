@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.list;
+package com.bloomcyclecare.cmcc.ui.entry.list.vertical;
 
 import android.content.Context;
 import android.content.Intent;

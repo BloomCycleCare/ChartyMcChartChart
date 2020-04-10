@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.entry.list.vertical.EntryListFragment;
 import com.bloomcyclecare.cmcc.utils.SmartFragmentStatePagerAdapter;
 import com.google.common.collect.Iterables;
 
