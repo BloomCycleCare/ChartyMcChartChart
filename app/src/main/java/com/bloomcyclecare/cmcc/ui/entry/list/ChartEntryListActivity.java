@@ -141,10 +141,20 @@ public class ChartEntryListActivity extends AppCompatActivity
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), viewMode);
     mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
     mViewModel.viewStates().observe(this, viewState -> {
-      setTitle(viewState.viewMode == ViewMode.TRAINING
-          ? "Training Cycle" : viewState.title);
-      setSubtitle(viewState.viewMode == ViewMode.TRAINING
-          ? String.format("#%d", viewState.currentCycleIndex + 1) : viewState.subtitle);
+      switch (viewState.viewMode) {
+        case TRAINING:
+          setTitle("Training Cycle");
+          setSubtitle(String.format("#%d", viewState.currentCycleIndex + 1));
+          break;
+        case DEMO:
+          setTitle("Demo Cycle");
+          setSubtitle(String.format("#%d", viewState.currentCycleIndex + 1));
+          break;
+        default:
+          setTitle(viewState.title);
+          setSubtitle(viewState.subtitle);
+          break;
+      }
       mPageAdapter.update(viewState.cycles, viewState.viewMode);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
@@ -351,7 +361,11 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_toggle_demo) {
-      mViewModel.setViewMode(ViewMode.DEMO);
+      if (mViewModel.currentViewMode() == ViewMode.CHARTING) {
+        mViewModel.setViewMode(ViewMode.DEMO);
+      } else {
+        mViewModel.setViewMode(ViewMode.CHARTING);
+      }
       return true;
     }
 

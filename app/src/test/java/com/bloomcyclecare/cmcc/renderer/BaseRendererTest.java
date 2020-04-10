@@ -37,35 +37,37 @@ public abstract class BaseRendererTest {
 
   @Deprecated
   void runTest(
-      ImmutableMap<TrainingEntry, TrainingCycle.StickerExpectations> entries, Instructions instructions) throws Exception {
+      ImmutableMap<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries, Instructions instructions) throws Exception {
     int numEntries = entries.size();
     List<ChartEntry> chartEntries = new ArrayList<>(numEntries);
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
-    for (Map.Entry<TrainingEntry, TrainingCycle.StickerExpectations> anEntry : entries.entrySet()) {
+    for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
       chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
-      TrainingCycle.StickerExpectations stickerExpectations = anEntry.getValue();
-      tests.add(renderableEntry -> {
-        StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
-        baseAssert
-            .withMessage("backgroundColor")
-            .that(renderableEntry.backgroundColor())
-            .isEqualTo(stickerExpectations.backgroundColor);
-        baseAssert
-            .withMessage("showBaby")
-            .that(renderableEntry.showBaby())
-            .isEqualTo(stickerExpectations.shouldHaveBaby);
-        baseAssert
-            .withMessage("peakDayText")
-            .that(renderableEntry.peakDayText())
-            .isEqualTo(stickerExpectations.peakText);
-        if (stickerExpectations.shouldHaveIntercourse) {
+      Optional<TrainingCycle.StickerExpectations> stickerExpectations = anEntry.getValue();
+      if (stickerExpectations.isPresent()) {
+        tests.add(renderableEntry -> {
+          StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
           baseAssert
-              .withMessage("intercourse")
-              .that(renderableEntry.entrySummary()).endsWith("I");
-        }
-        return true;
-      });
+              .withMessage("backgroundColor")
+              .that(renderableEntry.backgroundColor())
+              .isEqualTo(stickerExpectations.get().backgroundColor);
+          baseAssert
+              .withMessage("showBaby")
+              .that(renderableEntry.showBaby())
+              .isEqualTo(stickerExpectations.get().shouldHaveBaby);
+          baseAssert
+              .withMessage("peakDayText")
+              .that(renderableEntry.peakDayText())
+              .isEqualTo(stickerExpectations.get().peakText);
+          if (stickerExpectations.get().shouldHaveIntercourse) {
+            baseAssert
+                .withMessage("intercourse")
+                .that(renderableEntry.entrySummary()).endsWith("I");
+          }
+          return true;
+        });
+      }
     }
     Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 

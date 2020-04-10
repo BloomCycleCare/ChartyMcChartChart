@@ -7,16 +7,15 @@ import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
-import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
+import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
-import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
+import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepos;
+import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
-import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepos;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.logic.drive.UpdateTrigger;
@@ -54,6 +53,8 @@ import timber.log.Timber;
 
 public class MyApplication extends Application {
 
+  private static final ViewMode FALLBACK_VIEW_MODE = ViewMode.CHARTING;
+
   private static MyApplication INSTANCE;
 
   private static ViewModelFactory mViewModelFactory;
@@ -62,11 +63,11 @@ public class MyApplication extends Application {
   private final SingleSubject<Optional<DriveServiceHelper>> mDriveSubject = SingleSubject.create();
   private final PublishSubject<Boolean> mManualSyncTriggers = PublishSubject.create();
 
-  private RWInstructionsRepo mInstructionsRepo;
-  private RWCycleRepo mCycleRepo;
-  private RWChartEntryRepo mChartEntryRepo;
+  private InstructionsRepoFactory mInstructionsRepoFactory;
+  private CycleRepoFactory mCycleRepoFactory;
+  private ChartEntryRepoFactory mChartEntryRepoFactory;
+  private PregnancyRepoFactory mPregnancyRepoFactory;
   private PreferenceRepo mPreferenceRepo;
-  private RWPregnancyRepo mPregnancyRepo;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -100,11 +101,11 @@ public class MyApplication extends Application {
         //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
-    mInstructionsRepo = InstructionsRepos.forRoomDB(db);
-    mChartEntryRepo = ChartEntryRepos.forRoomDB(db);
-    mCycleRepo = CycleRepos.forRoomDB(db);
+    mInstructionsRepoFactory = new InstructionsRepoFactory(db);
+    mChartEntryRepoFactory = new ChartEntryRepoFactory(db);
+    mCycleRepoFactory = new CycleRepoFactory(db);
+    mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory);
     mPreferenceRepo = PreferenceRepo.create(this);
-    mPregnancyRepo = PregnancyRepos.forRoomDb(db, mCycleRepo);
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -191,15 +192,7 @@ public class MyApplication extends Application {
   }
 
   public RWInstructionsRepo instructionsRepo(ViewMode viewMode) {
-    switch (viewMode) {
-      case TRAINING:
-        return InstructionsRepos.forTraining();
-      case CHARTING:
-        return mInstructionsRepo;
-      default:
-        Timber.e("Unknown ViewMode %s, returning charting instruction repo", viewMode.name());
-        return mInstructionsRepo;
-    }
+    return mInstructionsRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
   }
 
   @Deprecated
@@ -208,15 +201,7 @@ public class MyApplication extends Application {
   }
 
   public RWCycleRepo cycleRepo(ViewMode viewMode) {
-    switch (viewMode) {
-      case TRAINING:
-        return CycleRepos.forTraining();
-      case CHARTING:
-        return mCycleRepo;
-      default:
-        Timber.e("Unknown ViewMode %s, returning charting cycle repo", viewMode.name());
-        return mCycleRepo;
-    }
+    return mCycleRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
   }
 
   @Deprecated
@@ -225,19 +210,7 @@ public class MyApplication extends Application {
   }
 
   public RWChartEntryRepo entryRepo(ViewMode viewMode) {
-    switch (viewMode) {
-      case TRAINING:
-        try {
-          return ChartEntryRepos.forTraining();
-        } catch (ObservationParser.InvalidObservationException ioe) {
-          Timber.wtf(ioe, "Exception creating training repo, returning charting repo");
-        }
-      case CHARTING:
-        return mChartEntryRepo;
-      default:
-        Timber.e("Unknown ViewMode %s, returning charting entry repo", viewMode.name());
-        return mChartEntryRepo;
-    }
+    return mChartEntryRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
   }
 
   @Deprecated
@@ -250,15 +223,7 @@ public class MyApplication extends Application {
   }
 
   public RWPregnancyRepo pregnancyRepo(ViewMode viewMode) {
-    switch (viewMode) {
-      case TRAINING:
-        return PregnancyRepos.forTraining();
-      case CHARTING:
-        return mPregnancyRepo;
-      default:
-        Timber.e("Unknown ViewMode %s, returning charting pregnancy repo", viewMode.name());
-        return mPregnancyRepo;
-    }
+    return mPregnancyRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
   }
 
   @Deprecated

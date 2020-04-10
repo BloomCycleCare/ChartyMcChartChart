@@ -9,73 +9,73 @@ import java.util.List;
 
 public class TrainingCycles {
 
-  public static TrainingCycle basicB1A() {
-    TrainingCycle cycle = TrainingCycle.withInstructions(Instructions.createBasicInstructions(LocalDate.now()));
-    cycle.addEntry(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("L 0AD"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("2x1"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker());
+  private static final String REGULAR_CYCLES_TITLE = "Regular Cycles";
 
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("6cx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("8cx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("8kx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("10klAD"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("10klAD").peakDay(), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("P"));
-    cycle.addEntry(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("1"));
+  public static TrainingCycle REGULAR_CYCLES_A = TrainingCycle
+      .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
+      .withTitle(REGULAR_CYCLES_TITLE)
+      .withSubtitle("A")
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("L0AD"))
+      .addEntry(TrainingEntry.forText("L0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("2AD"))
+      .addEntry(TrainingEntry.forText("4X1", "A"));
 
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("2"));
-    cycle.addEntry(TrainingEntry.forText("4x1"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("3"));
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0AD"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("2x1"), TrainingCycle.StickerExpectations.greenSticker());
-    return cycle;
-  }
+  public static TrainingCycle REGULAR_CYCLES_B = TrainingCycle
+      .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
+      .withTitle(REGULAR_CYCLES_TITLE)
+      .withSubtitle("B")
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("L0AD"))
+      .addEntry(TrainingEntry.forText("L0AD"))
+      .addEntry(TrainingEntry.forText("VL0AD"))
+      .addEntry(TrainingEntry.forText("2X1"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("8CX1"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("2X1"))
+      .addEntry(TrainingEntry.forText("2X1"))
+      .addEntry(TrainingEntry.forText("8KX2"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("0AD", "B"));
 
-  public static TrainingCycle basicB1B() {
-    TrainingCycle cycle = TrainingCycle.withInstructions(Instructions.createBasicInstructions(LocalDate.now()));
-    cycle.addEntry(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("L0AD"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("VL2x1"), TrainingCycle.StickerExpectations.redSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
+  public static TrainingCycle REGULAR_CYCLES_C = TrainingCycle
+      .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
+      .withTitle(REGULAR_CYCLES_TITLE)
+      .withSubtitle("C")
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("M"));
 
-    cycle.addEntry(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("6cx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
+  public static TrainingCycle REGULAR_CYCLES_D = TrainingCycle
+      .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
+      .withTitle(REGULAR_CYCLES_TITLE)
+      .withSubtitle("D")
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("H"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("M"))
+      .addEntry(TrainingEntry.forText("L0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("6PCX2"))
+      .addEntry(TrainingEntry.forText("0AD"))
+      .addEntry(TrainingEntry.forText("4X1"))
+      .addEntry(TrainingEntry.forText("8CX1"))
+      .addEntry(TrainingEntry.forText("8CX2"))
+      .addEntry(TrainingEntry.forText("10KLAD"))
+      .addEntry(TrainingEntry.forText("10WLX2"))
+      .addEntry(TrainingEntry.forText("0AD", "D"));
 
-    cycle.addEntry(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("8cx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("8cad"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("10cx2"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("10klad"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    cycle.addEntry(TrainingEntry.forText("10klad").peakDay(), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("P"));
-    cycle.addEntry(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("1"));
-
-    cycle.addEntry(TrainingEntry.forText("4x1"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("2"));
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("3"));
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    cycle.addEntry(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    return  cycle;
-  }
-
-  public static List<TrainingCycle> basicTrainingCycles() {
-    return ImmutableList.of(basicB1A(), basicB1B());
-  }
-
-  public static List<TrainingCycle> forRepos() {
-    return basicTrainingCycles();
-  }
+  public static List<TrainingCycle> REGULAR_CYCLES = ImmutableList.of(
+      REGULAR_CYCLES_A, REGULAR_CYCLES_B, REGULAR_CYCLES_C, REGULAR_CYCLES_D);
 }

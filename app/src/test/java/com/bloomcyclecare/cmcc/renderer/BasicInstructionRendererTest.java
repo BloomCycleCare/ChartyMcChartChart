@@ -2,8 +2,8 @@ package com.bloomcyclecare.cmcc.renderer;
 
 import android.content.Context;
 
+import com.bloomcyclecare.cmcc.data.models.DemoCycles;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.google.common.collect.ImmutableMap;
 
@@ -23,12 +23,12 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
 
   @Test
   public void testB1A() throws Exception {
-    runTest(TrainingCycles.basicB1A());
+    runTest(DemoCycles.basicB1A());
   }
 
   @Test
   public void testB1B() throws Exception {
-    runTest(TrainingCycles.basicB1B());
+    runTest(DemoCycles.basicB1B());
   }
 
   @Test

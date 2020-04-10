@@ -5,11 +5,14 @@ import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.LinkedHashMap;
+import java.util.Optional;
 
 public class TrainingCycle {
 
   public final Instructions instructions;
-  private final LinkedHashMap<TrainingEntry, StickerExpectations> entries = new LinkedHashMap<>();
+  private final LinkedHashMap<TrainingEntry, Optional<StickerExpectations>> entries = new LinkedHashMap<>();
+  private String title = "";
+  private String subtitle = "";
 
   private TrainingCycle(Instructions instructions) {
     this.instructions = instructions;
@@ -19,11 +22,27 @@ public class TrainingCycle {
     return new TrainingCycle(instructions);
   }
 
-  public void addEntry(TrainingEntry entry, StickerExpectations expectations) {
-    entries.put(entry, expectations);
+  public TrainingCycle withTitle(String title) {
+    this.title = title;
+    return this;
   }
 
-  public ImmutableMap<TrainingEntry, StickerExpectations> entries() {
+  public TrainingCycle withSubtitle(String subtitle) {
+    this.subtitle = subtitle;
+    return this;
+  }
+
+  public TrainingCycle addEntry(TrainingEntry entry, StickerExpectations expectations) {
+    entries.put(entry, Optional.of(expectations));
+    return this;
+  }
+
+  public TrainingCycle addEntry(TrainingEntry entry) {
+    entries.put(entry, Optional.empty());
+    return this;
+  }
+
+  public ImmutableMap<TrainingEntry, Optional<StickerExpectations>> entries() {
     return ImmutableMap.copyOf(entries);
   }
 

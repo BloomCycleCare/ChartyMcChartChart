@@ -9,17 +9,23 @@ import org.joda.time.LocalDate;
 public class TrainingEntry {
 
   private final String observationText;
+  private final String marker;
   private boolean peakDay = false;
   private boolean intercourse = false;
   private boolean pointOfChange = false;
   private boolean unusualBleeding = false;
 
-  private TrainingEntry(String observationText) {
+  private TrainingEntry(String observationText, String marker) {
     this.observationText = observationText;
+    this.marker = marker;
   }
 
   public static TrainingEntry forText(String observationText) {
-    return new TrainingEntry(observationText);
+    return forText(observationText, "");
+  }
+
+  public static TrainingEntry forText(String observationText, String marker) {
+    return new TrainingEntry(observationText, marker);
   }
 
   public TrainingEntry peakDay() {

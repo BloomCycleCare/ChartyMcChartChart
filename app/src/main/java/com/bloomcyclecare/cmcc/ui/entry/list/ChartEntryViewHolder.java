@@ -7,6 +7,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 
@@ -57,14 +58,19 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
       mWeekSeparator = itemView.findViewById(R.id.week_separator);
     }
 
-    public void bind(CycleRenderer.RenderableEntry renderableEntry) {
+    public void bind(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
       mEntryDataTextView.setText(renderableEntry.entrySummary());
-      mEntryBackgroundView.setBackgroundResource(renderableEntry.backgroundColor().resourceId);
       mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum()));
       mEntryDateTextView.setText(renderableEntry.dateSummary());
-      mEntryPeakTextView.setText(renderableEntry.peakDayText());
-      mBabyImageView.setVisibility(renderableEntry.showBaby() ? View.VISIBLE : View.INVISIBLE);
-      mPocSummaryTextView.setText(renderableEntry.pocSummary());
+
+      mEntryBackgroundView.setBackgroundResource(viewMode == ViewMode.TRAINING
+          ? R.color.entryGrey : renderableEntry.backgroundColor().resourceId);
+      mEntryPeakTextView.setText(viewMode == ViewMode.TRAINING
+          ? "" : renderableEntry.peakDayText());
+      mBabyImageView.setVisibility(viewMode == ViewMode.TRAINING
+          ? View.INVISIBLE : renderableEntry.showBaby() ? View.VISIBLE : View.INVISIBLE);
+      mPocSummaryTextView.setText(viewMode == ViewMode.TRAINING
+          ? "" : renderableEntry.pocSummary());
 
       ChartEntry entry = renderableEntry.modificationContext().entry;
       mSymptomGoalSummaryView.setText(renderableEntry.essentialSamenessSummary());
