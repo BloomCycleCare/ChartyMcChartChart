@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.ViewGroup;
 
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.SmartFragmentStatePagerAdapter;
@@ -32,14 +33,15 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
 
   private final List<Cycle> mCycles = new ArrayList<>();
   private final Subject<Pair<Integer, CycleRenderer.CycleStats>> mStats = BehaviorSubject.create();
-  private boolean trainingMode = false;
+  private ViewMode viewMode;
 
-  public EntryListPageAdapter(FragmentManager fragmentManager) {
+  EntryListPageAdapter(FragmentManager fragmentManager, ViewMode viewMode) {
     super(fragmentManager);
+    this.viewMode = viewMode;
   }
 
-  public void update(List<Cycle> cycles, boolean isTrainingMode) {
-    trainingMode = isTrainingMode;
+  public void update(List<Cycle> cycles, ViewMode viewMode) {
+    this.viewMode = viewMode;
     if (!Iterables.elementsEqual(mCycles, cycles)) {
       mCycles.clear();
       mCycles.addAll(cycles);
@@ -70,7 +72,7 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
     Bundle args = new Bundle();
     args.putParcelable(EntryListFragment.Extras.CURRENT_CYCLE.name(), Parcels.wrap(cycle));
     args.putBoolean(EntryListFragment.Extras.IS_LAST_CYCLE.name(), position == mCycles.size() - 1);
-    args.putBoolean(EntryListFragment.Extras.IS_TRAINING_MODE.name(), trainingMode);
+    args.putInt(EntryListFragment.Extras.VIEW_MODE.name(), viewMode.ordinal());
 
     EntryListFragment fragment = new EntryListFragment();
     fragment.setArguments(args);

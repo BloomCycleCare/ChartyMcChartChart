@@ -3,18 +3,14 @@ package com.bloomcyclecare.cmcc.ui.entry.list;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
-import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepos;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
-import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepos;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.collect.ImmutableList;
 
@@ -47,27 +43,23 @@ public class EntryListViewModel extends AndroidViewModel {
   public Subject<Integer> currentPageUpdates = BehaviorSubject.createDefault(0);
 
   private final MyApplication mApplication;
-  private final Subject<Boolean> mTrainingMode = BehaviorSubject.create();
+  private final Subject<ViewMode> mViewMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
 
-  private EntryListViewModel(@NonNull Application application, boolean trainingMode) {
+  private EntryListViewModel(@NonNull Application application, ViewMode viewMode) {
     super(application);
     mApplication = MyApplication.cast(application);
-    mTrainingMode.onNext(trainingMode);
-    mTrainingMode.map(this::viewStateStream).subscribe(mViewStateStream);
+    mViewMode.onNext(viewMode);
+    mViewMode.map(this::viewStateStream).subscribe(mViewStateStream);
     mViewStateStream.switchMap(Flowable::toObservable).subscribe(mViewStates);
   }
 
-  private Flowable<ViewState> viewStateStream(boolean trainingMode) throws ObservationParser.InvalidObservationException {
-    ROInstructionsRepo instructionsRepo = trainingMode ?
-        InstructionsRepos.forTraining() : mApplication.instructionsRepo();
-    ROCycleRepo cycleRepo = trainingMode ?
-        CycleRepos.forTraining() : mApplication.cycleRepo();
-    ROChartEntryRepo entryRepo = trainingMode ?
-        ChartEntryRepos.forTraining() : mApplication.entryRepo();
-    ROPregnancyRepo pregnancyRepo = trainingMode ?
-        PregnancyRepos.forTraining() : mApplication.pregnancyRepo();
+  private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
+    ROInstructionsRepo instructionsRepo = mApplication.instructionsRepo(viewMode);
+    ROCycleRepo cycleRepo = mApplication.cycleRepo(viewMode);
+    ROChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
+    ROPregnancyRepo pregnancyRepo = mApplication.pregnancyRepo(viewMode);
 
     Flowable<List<CycleRenderer.CycleStats>> statsStream = Flowable.merge(Flowable.combineLatest(
         instructionsRepo.getAll()
@@ -110,16 +102,16 @@ public class EntryListViewModel extends AndroidViewModel {
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         subtitleStream.distinctUntilChanged(),
         cycleRepo.getStream(),
-        (currentPage, subtitle, cycles) -> new ViewState(currentPage, subtitle, cycles, trainingMode));
+        (currentPage, subtitle, cycles) -> new ViewState(currentPage, subtitle, cycles, viewMode));
   }
 
-  void setTrainingMode(boolean value) {
-    Timber.d("Toggling training mode = %b", value);
-    mTrainingMode.onNext(value);
+  void setViewMode(ViewMode viewMode) {
+    Timber.d("Toggling view mode = %s", viewMode.name());
+    mViewMode.onNext(viewMode);
   }
 
-  boolean isInTrainingMode() {
-    return mTrainingMode.blockingFirst(false);
+  ViewMode currentViewMode() {
+    return mViewMode.blockingFirst();
   }
 
   LiveData<ViewState> viewStates() {
@@ -177,16 +169,16 @@ public class EntryListViewModel extends AndroidViewModel {
     final String title;
     final String subtitle;
     final boolean showFab;
-    final boolean trainingMode;
+    final ViewMode viewMode;
 
     final int currentCycleIndex;
     final ImmutableList<Cycle> cycles;
 
-    ViewState(int currentPage, String subtitle, List<Cycle> cycles, boolean trainingMode) {
+    ViewState(int currentPage, String subtitle, List<Cycle> cycles, ViewMode viewMode) {
       this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
       this.subtitle = subtitle;
       this.showFab = currentPage == cycles.size() - 1;
-      this.trainingMode = trainingMode;
+      this.viewMode = viewMode;
 
       this.currentCycleIndex = currentPage;
       this.cycles = ImmutableList.copyOf(cycles);
@@ -195,17 +187,17 @@ public class EntryListViewModel extends AndroidViewModel {
 
   public static class Factory implements ViewModelProvider.Factory {
     private final Application mApplication;
-    private final boolean mTrainingMode;
+    private final ViewMode mViewMode;
 
-    public Factory(Application application, boolean trainingMode) {
+    public Factory(Application application, ViewMode viewMode) {
       mApplication = application;
-      mTrainingMode = trainingMode;
+      mViewMode = viewMode;
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new EntryListViewModel(mApplication, mTrainingMode);
+      return (T) new EntryListViewModel(mApplication, mViewMode);
     }
   }
 }

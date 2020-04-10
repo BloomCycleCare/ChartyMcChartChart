@@ -16,6 +16,7 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepos;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.logic.drive.UpdateTrigger;
@@ -189,24 +190,80 @@ public class MyApplication extends Application {
     return mDriveSubject;
   }
 
+  public RWInstructionsRepo instructionsRepo(ViewMode viewMode) {
+    switch (viewMode) {
+      case TRAINING:
+        return InstructionsRepos.forTraining();
+      case CHARTING:
+        return mInstructionsRepo;
+      default:
+        Timber.e("Unknown ViewMode %s, returning charting instruction repo", viewMode.name());
+        return mInstructionsRepo;
+    }
+  }
+
+  @Deprecated
   public RWInstructionsRepo instructionsRepo() {
-    return mInstructionsRepo;
+    return instructionsRepo(ViewMode.CHARTING);
   }
 
+  public RWCycleRepo cycleRepo(ViewMode viewMode) {
+    switch (viewMode) {
+      case TRAINING:
+        return CycleRepos.forTraining();
+      case CHARTING:
+        return mCycleRepo;
+      default:
+        Timber.e("Unknown ViewMode %s, returning charting cycle repo", viewMode.name());
+        return mCycleRepo;
+    }
+  }
+
+  @Deprecated
   public RWCycleRepo cycleRepo() {
-    return mCycleRepo;
+    return cycleRepo(ViewMode.CHARTING);
   }
 
+  public RWChartEntryRepo entryRepo(ViewMode viewMode) {
+    switch (viewMode) {
+      case TRAINING:
+        try {
+          return ChartEntryRepos.forTraining();
+        } catch (ObservationParser.InvalidObservationException ioe) {
+          Timber.wtf(ioe, "Exception creating training repo, returning charting repo");
+        }
+      case CHARTING:
+        return mChartEntryRepo;
+      default:
+        Timber.e("Unknown ViewMode %s, returning charting entry repo", viewMode.name());
+        return mChartEntryRepo;
+    }
+  }
+
+  @Deprecated
   public RWChartEntryRepo entryRepo() {
-    return mChartEntryRepo;
+    return entryRepo(ViewMode.CHARTING);
   }
 
   public PreferenceRepo preferenceRepo() {
     return mPreferenceRepo;
   }
 
+  public RWPregnancyRepo pregnancyRepo(ViewMode viewMode) {
+    switch (viewMode) {
+      case TRAINING:
+        return PregnancyRepos.forTraining();
+      case CHARTING:
+        return mPregnancyRepo;
+      default:
+        Timber.e("Unknown ViewMode %s, returning charting pregnancy repo", viewMode.name());
+        return mPregnancyRepo;
+    }
+  }
+
+  @Deprecated
   public RWPregnancyRepo pregnancyRepo() {
-    return mPregnancyRepo;
+    return pregnancyRepo(ViewMode.CHARTING);
   }
 
   public static MyApplication cast(Application app) {

@@ -14,6 +14,7 @@ import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
@@ -61,7 +62,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   public enum Extras {
     CYCLE_DESC_INDEX,
-    TRANING_MODE
+    VIEW_MODE
   }
 
   private enum RequestCode {
@@ -130,21 +131,27 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     drawerTitleView.setText("TODO: name");
 
-    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager());
 
-    EntryListViewModel.Factory factory = new EntryListViewModel.Factory(
-        getApplication(), getIntent().getBooleanExtra(Extras.TRANING_MODE.name(), false));
+    if (!getIntent().hasExtra(Extras.VIEW_MODE.name())) {
+      Timber.w("View mode not found, assuming CHARTING");
+    }
+    ViewMode viewMode = ViewMode.values()[getIntent().getIntExtra(Extras.VIEW_MODE.name(), 0)];
+    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), viewMode);
+
+    EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), viewMode);
     mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
     mViewModel.viewStates().observe(this, viewState -> {
-      setTitle(viewState.trainingMode ? "Training Cycle" : viewState.title);
-      setSubtitle(viewState.trainingMode ? String.format("#%d", viewState.currentCycleIndex + 1) : viewState.subtitle);
-      mPageAdapter.update(viewState.cycles, viewState.trainingMode);
+      setTitle(viewState.viewMode == ViewMode.TRAINING
+          ? "Training Cycle" : viewState.title);
+      setSubtitle(viewState.viewMode == ViewMode.TRAINING
+          ? String.format("#%d", viewState.currentCycleIndex + 1) : viewState.subtitle);
+      mPageAdapter.update(viewState.cycles, viewState.viewMode);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
         mViewPager.setCurrentItem(viewState.currentCycleIndex);
       }
 
-      if (!viewState.trainingMode && viewState.showFab) {
+      if (viewState.viewMode == ViewMode.CHARTING && viewState.showFab) {
         showFab();
       } else {
         hideFab();
@@ -204,11 +211,11 @@ public class ChartEntryListActivity extends AppCompatActivity
     getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
       @Override
       public void handleOnBackPressed() {
-        if (mViewModel.isInTrainingMode()) {
-          mNavView.getMenu().findItem(R.id.nav_my_chart).setChecked(true);
-          mViewModel.setTrainingMode(false);
-        } else {
+        if (mViewModel.currentViewMode() == ViewMode.CHARTING) {
           finish();
+        } else {
+          mNavView.getMenu().findItem(R.id.nav_my_chart).setChecked(true);
+          mViewModel.setViewMode(ViewMode.CHARTING);
         }
       }
     });
@@ -298,35 +305,6 @@ public class ChartEntryListActivity extends AppCompatActivity
       return true;
     }
 
-    if (id == R.id.action_drop_cycles) {
-      /*new AlertDialog.Builder(this)
-          //set message, title, and icon
-          .setTitle("Delete All Cycles?")
-          .setMessage("This is permanent and cannot be undone!")
-          .setPositiveButton("Delete All", new DialogInterface.OnClickListener() {
-            public void onClick(final DialogInterface dialog, int whichButton) {
-              showProgress();
-              mDisposables.add(mPageAdapter
-                  .subscribe(adapter -> adapter.shutdown(mViewPager)));
-              mDisposables.add(Single
-                  .merge(Single.zip(
-                      mCycleProvider, MyApplication.getCurrentUser().toSingle(), CycleProvider::dropCycles))
-                  .flatMapCompletable(UpdateHandle.run())
-                  .subscribe(() -> {
-                    Intent intent = new Intent(ChartEntryListActivity.this, UserInitActivity.class);
-                    startActivity(intent);
-                    dialog.dismiss();
-                  }));
-            }
-          })
-          .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-            public void onClick(DialogInterface dialog, int which) {
-              dialog.dismiss();
-            }
-          })
-          .create().show();
-      return true;*/
-    }
     if (id == R.id.action_export) {
       Log.v("PrintChartActivity", "Begin export");
       final ChartEntryListActivity activity = this;
@@ -369,6 +347,11 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
     if (id == R.id.action_trigger_sync) {
       MyApplication.cast(getApplication()).triggerSync();
+      return true;
+    }
+
+    if (id == R.id.action_toggle_demo) {
+      mViewModel.setViewMode(ViewMode.DEMO);
       return true;
     }
 
@@ -427,7 +410,7 @@ public class ChartEntryListActivity extends AppCompatActivity
         startActivityForResult(new Intent(this, PregnancyListActivity.class), RequestCode.PREGNANCY_LIST.ordinal());
         break;
       case R.id.nav_training:
-        mViewModel.setTrainingMode(true);
+        mViewModel.setViewMode(ViewMode.TRAINING);
         break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:

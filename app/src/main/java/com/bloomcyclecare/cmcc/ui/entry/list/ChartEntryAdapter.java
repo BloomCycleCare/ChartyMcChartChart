@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 
@@ -35,7 +36,7 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
   private final boolean mHasPreviousCycle;
   private final Consumer<Intent> mDetailNavigationConsumer;
   private String mLayerKey;
-  private boolean trainingMode;
+  private ViewMode viewMode;
   private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
 
   ChartEntryAdapter(
@@ -55,8 +56,8 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     notifyDataSetChanged();
   }
 
-  void update(CycleRenderer.RenderableCycle renderableCycle, boolean trainingMode) {
-    this.trainingMode = trainingMode;
+  void update(CycleRenderer.RenderableCycle renderableCycle, ViewMode viewMode) {
+    this.viewMode = viewMode;
     mRenderableEntries = renderableCycle.entries();
     notifyDataSetChanged();
   }
@@ -75,8 +76,8 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return new ChartEntryViewHolder.Impl(mContext, view, new OnClickHandler() {
       @Override
       public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
-        if (trainingMode) {
-          Timber.d("Not navigating to detail activity while in training mode");
+        if (viewMode != ViewMode.CHARTING) {
+          Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
           return;
         }
         mDetailNavigationConsumer.accept(getIntentForModification(modificationContext, index));

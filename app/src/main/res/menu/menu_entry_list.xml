@@ -25,8 +25,8 @@
         app:showAsAction="never"
         android:title="Export Data"/>
     <item
-        android:id="@+id/action_drop_cycles"
-        android:orderInCategory="3"
+        android:id="@+id/action_toggle_demo"
+        android:orderInCategory="2"
         app:showAsAction="never"
-        android:title="Drop Cycles"/>
+        android:title="Toggle Demo"/>
 </menu>

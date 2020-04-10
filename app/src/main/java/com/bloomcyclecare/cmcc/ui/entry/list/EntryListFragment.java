@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.google.common.collect.Maps;
 
@@ -34,7 +35,7 @@ public class EntryListFragment extends Fragment {
   enum Extras {
     CURRENT_CYCLE,
     IS_LAST_CYCLE,
-    IS_TRAINING_MODE
+    VIEW_MODE
   }
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
@@ -66,10 +67,9 @@ public class EntryListFragment extends Fragment {
     Bundle arguments = getArguments();
     Cycle cycle = Parcels.unwrap(arguments.getParcelable(Extras.CURRENT_CYCLE.name()));
 
+    ViewMode viewMode = ViewMode.values()[arguments.getInt(Extras.VIEW_MODE.name())];
     FragmentViewModel.Factory factory = new FragmentViewModel.Factory(
-        getActivity().getApplication(),
-        arguments.getBoolean(Extras.IS_TRAINING_MODE.name()),
-        cycle);
+        getActivity().getApplication(), viewMode, cycle);
     mViewModel = ViewModelProviders.of(this, factory).get(FragmentViewModel.class);
 
     Timber.v("Created Fragment for cycle starting %s", cycle.startDateStr);
@@ -113,7 +113,7 @@ public class EntryListFragment extends Fragment {
   }
 
   private void render(FragmentViewModel.ViewState viewState) {
-    mChartEntryAdapter.update(viewState.renderableCycle, viewState.trainingMode);
+    mChartEntryAdapter.update(viewState.renderableCycle, viewState.viewMode);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);
     }

@@ -3,15 +3,12 @@ package com.bloomcyclecare.cmcc.ui.entry.list;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
-import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepos;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepos;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.auto.value.AutoValue;
 
 import java.util.Optional;
@@ -36,35 +33,31 @@ class FragmentViewModel extends AndroidViewModel {
   private final Subject<ViewState> mViewState = BehaviorSubject.create();
   private final Subject<ScrollState> mScrollEventsFromUI = BehaviorSubject.create();
 
-  private FragmentViewModel(@NonNull Application application, boolean trainingMode, Cycle cycle) {
+  private FragmentViewModel(@NonNull Application application, ViewMode viewMode, Cycle cycle) {
     super(application);
-    try {
-      MyApplication myApp = MyApplication.cast(application);
-      ROCycleRepo cycleRepo = trainingMode ? CycleRepos.forTraining() : myApp.cycleRepo();
-      ROInstructionsRepo instructionsRepo = trainingMode ? InstructionsRepos.forTraining() : myApp.instructionsRepo();
-      ROChartEntryRepo entryRepo = trainingMode ? ChartEntryRepos.forTraining() : myApp.entryRepo();
+    MyApplication myApp = MyApplication.cast(application);
+    ROCycleRepo cycleRepo = myApp.cycleRepo(viewMode);
+    ROInstructionsRepo instructionsRepo = myApp.instructionsRepo(viewMode);
+    ROChartEntryRepo entryRepo = myApp.entryRepo(viewMode);
 
-      Flowable<CycleRenderer.RenderableCycle> cycleStream = Flowable.combineLatest(
-          cycleRepo.getPreviousCycle(cycle).map(Optional::of).defaultIfEmpty(Optional.empty()).toFlowable(),
-          instructionsRepo.getAll(),
-          entryRepo.getStreamForCycle(Flowable.just(cycle)),
-          (previousCycle, instructions, entries) -> new CycleRenderer(cycle, previousCycle, entries, instructions))
-          .map(CycleRenderer::render);
+    Flowable<CycleRenderer.RenderableCycle> cycleStream = Flowable.combineLatest(
+        cycleRepo.getPreviousCycle(cycle).map(Optional::of).defaultIfEmpty(Optional.empty()).toFlowable(),
+        instructionsRepo.getAll(),
+        entryRepo.getStreamForCycle(Flowable.just(cycle)),
+        (previousCycle, instructions, entries) -> new CycleRenderer(cycle, previousCycle, entries, instructions))
+        .map(CycleRenderer::render);
 
-      Flowable<ScrollState> scrollStateFlowable = mScrollEventsFromUI
-          .sample(200, TimeUnit.MILLISECONDS)
-          .toFlowable(BackpressureStrategy.BUFFER);
+    Flowable<ScrollState> scrollStateFlowable = mScrollEventsFromUI
+        .sample(200, TimeUnit.MILLISECONDS)
+        .toFlowable(BackpressureStrategy.BUFFER);
 
-      Flowable.combineLatest(
-          cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
-          scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
-          (renderableCycle, scrollState) -> new ViewState(cycle, renderableCycle, scrollState, trainingMode))
-          .toObservable()
-          .subscribeOn(Schedulers.computation())
-          .subscribe(mViewState);
-    } catch (ObservationParser.InvalidObservationException ioe) {
-      Timber.wtf(ioe);
-    }
+    Flowable.combineLatest(
+        cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
+        scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
+        (renderableCycle, scrollState) -> new ViewState(cycle, renderableCycle, scrollState, viewMode))
+        .toObservable()
+        .subscribeOn(Schedulers.computation())
+        .subscribe(mViewState);
   }
 
   void updateScrollState(ScrollState scrollState) {
@@ -82,13 +75,13 @@ class FragmentViewModel extends AndroidViewModel {
     final Cycle cycle;
     final CycleRenderer.RenderableCycle renderableCycle;
     final ScrollState scrollState;
-    final boolean trainingMode;
+    final ViewMode viewMode;
 
-    private ViewState(Cycle cycle, CycleRenderer.RenderableCycle renderableCycle, ScrollState scrollState, boolean trainingMode) {
+    private ViewState(Cycle cycle, CycleRenderer.RenderableCycle renderableCycle, ScrollState scrollState, ViewMode viewMode) {
       this.cycle = cycle;
       this.renderableCycle = renderableCycle;
       this.scrollState = scrollState;
-      this.trainingMode = trainingMode;
+      this.viewMode = viewMode;
     }
   }
 
@@ -110,19 +103,19 @@ class FragmentViewModel extends AndroidViewModel {
   public static class Factory implements ViewModelProvider.Factory {
 
     private final Application mApplication;
-    private final boolean isTrainingMode;
+    private final ViewMode viewMode;
     private final Cycle currentCycle;
 
-    public Factory(Application application, boolean isTrainingMode, Cycle currentCycle) {
+    public Factory(Application application, ViewMode viewMode, Cycle currentCycle) {
       mApplication = application;
-      this.isTrainingMode = isTrainingMode;
+      this.viewMode = viewMode;
       this.currentCycle = currentCycle;
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new FragmentViewModel(mApplication, isTrainingMode, currentCycle);
+      return (T) new FragmentViewModel(mApplication, viewMode, currentCycle);
     }
   }
 }
