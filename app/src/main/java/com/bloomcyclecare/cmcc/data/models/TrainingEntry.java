@@ -3,8 +3,11 @@ package com.bloomcyclecare.cmcc.data.models;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.google.common.base.Strings;
 
 import org.joda.time.LocalDate;
+
+import java.util.Optional;
 
 public class TrainingEntry {
 
@@ -26,6 +29,10 @@ public class TrainingEntry {
 
   public static TrainingEntry forText(String observationText, String marker) {
     return new TrainingEntry(observationText, marker);
+  }
+
+  public Optional<String> marker() {
+    return Strings.isNullOrEmpty(marker) ? Optional.empty() : Optional.of(marker);
   }
 
   public TrainingEntry peakDay() {

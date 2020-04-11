@@ -29,6 +29,8 @@ public class ChartEntry implements Parcelable, Comparable<ChartEntry> {
   public final WellnessEntry wellnessEntry;
   public final SymptomEntry symptomEntry;
 
+  public String marker = "";
+
   public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(

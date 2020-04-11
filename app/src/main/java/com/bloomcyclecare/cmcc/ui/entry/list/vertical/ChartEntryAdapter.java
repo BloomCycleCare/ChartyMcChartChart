@@ -10,6 +10,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
+import com.google.common.base.Strings;
 
 import org.parceler.Parcels;
 
@@ -76,6 +77,15 @@ public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder
     return new ChartEntryViewHolder.Impl(mContext, view, new OnClickHandler() {
       @Override
       public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
+        CycleRenderer.RenderableEntry entry = mRenderableEntries.get(index);
+        if (viewMode == ViewMode.TRAINING) {
+          if (!Strings.isNullOrEmpty(entry.trainingMarker())) {
+            Timber.d("TODO: prompt for entry");
+           } else {
+            Timber.d("Only prompting on training entries with markers");
+          }
+          return;
+        }
         if (viewMode != ViewMode.CHARTING) {
           Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
           return;

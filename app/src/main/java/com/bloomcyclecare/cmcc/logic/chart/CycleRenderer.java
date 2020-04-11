@@ -653,6 +653,7 @@ public class CycleRenderer {
     public abstract IntercourseTimeOfDay intercourseTimeOfDay();
     public abstract String pocSummary();
     public abstract EntryModificationContext modificationContext();
+    public abstract String trainingMarker();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
@@ -685,6 +686,7 @@ public class CycleRenderer {
           .instructionSummary(state.getInstructionSummary())
           .modificationContext(state.entryModificationContext())
           .essentialSamenessSummary(essentialSamenessSummary)
+          .trainingMarker(state.entry.marker)
           .build();
       return renderableEntry;
     }
@@ -722,6 +724,8 @@ public class CycleRenderer {
       public abstract Builder pocSummary(String pocSummary);
 
       public abstract Builder modificationContext(EntryModificationContext modificationContext);
+
+      public abstract Builder trainingMarker(String trainingMarker);
 
       public abstract RenderableEntry build();
     }

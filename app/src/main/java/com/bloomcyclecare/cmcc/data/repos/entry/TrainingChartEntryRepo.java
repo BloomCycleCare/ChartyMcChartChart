@@ -40,7 +40,9 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
         int numEntriesRemaining = numEntries - entries.size();
         LocalDate entryDate = LocalDate.now().minusDays(numEntriesRemaining - 1);
         ObservationEntry observationEntry = trainingEntry.asChartEntry(entryDate);
-        entries.add(new ChartEntry(entryDate, observationEntry, WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate)));
+        ChartEntry entry = new ChartEntry(entryDate, observationEntry, WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate));
+        entry.marker = trainingEntry.marker().orElse("");
+        entries.add(entry);
       }
     }
     mEntries = new TreeSet<>(entries);

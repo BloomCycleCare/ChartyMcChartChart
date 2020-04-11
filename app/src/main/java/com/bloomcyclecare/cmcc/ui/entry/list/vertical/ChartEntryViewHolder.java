@@ -35,6 +35,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
     private final Context mContext;
 
     private CycleRenderer.RenderableEntry mBoundEntry;
+    private ViewMode mBoundViewMode;
 
     public Impl(
         Context context,
@@ -66,7 +67,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
       mEntryBackgroundView.setBackgroundResource(viewMode == ViewMode.TRAINING
           ? R.color.entryGrey : renderableEntry.backgroundColor().resourceId);
       mEntryPeakTextView.setText(viewMode == ViewMode.TRAINING
-          ? "" : renderableEntry.peakDayText());
+          ? renderableEntry.trainingMarker() : renderableEntry.peakDayText());
       mBabyImageView.setVisibility(viewMode == ViewMode.TRAINING
           ? View.INVISIBLE : renderableEntry.showBaby() ? View.VISIBLE : View.INVISIBLE);
       mPocSummaryTextView.setText(viewMode == ViewMode.TRAINING
@@ -89,6 +90,7 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
       mSeparator.setVisibility(showTransition ? View.GONE : View.VISIBLE);
 
       mBoundEntry = renderableEntry;
+      mBoundViewMode = viewMode;
     }
 
     @Override
@@ -99,6 +101,9 @@ public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongC
 
     @Override
     public boolean onLongClick(View v) {
+      if (mBoundViewMode == ViewMode.TRAINING) {
+        return false;
+      }
       new AlertDialog.Builder(mContext)
           .setTitle("Instruction Summary")
           .setMessage(mBoundEntry.instructionSummary())

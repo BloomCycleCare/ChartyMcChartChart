@@ -144,11 +144,11 @@ public class ChartEntryListActivity extends AppCompatActivity
       switch (viewState.viewMode) {
         case TRAINING:
           setTitle("Training Cycle");
-          setSubtitle(String.format("#%d", viewState.currentCycleIndex + 1));
+          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.cycles.size()));
           break;
         case DEMO:
           setTitle("Demo Cycle");
-          setSubtitle(String.format("#%d", viewState.currentCycleIndex + 1));
+          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.cycles.size()));
           break;
         default:
           setTitle(viewState.title);
