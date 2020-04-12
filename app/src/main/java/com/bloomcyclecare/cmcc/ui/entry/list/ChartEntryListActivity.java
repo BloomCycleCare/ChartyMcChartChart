@@ -141,7 +141,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     mGridViewContainer = findViewById(R.id.grid_container);
 
-    mGridRowAdapter = new GridRowAdapter();
+    mGridRowAdapter = new GridRowAdapter(re -> {}, re -> {});
     RecyclerView rowRecyclerView = findViewById(R.id.rv_grid_rows);
     rowRecyclerView.setLayoutManager(new LinearLayoutManager(this));
     rowRecyclerView.setAdapter(mGridRowAdapter);
@@ -169,7 +169,7 @@ public class ChartEntryListActivity extends AppCompatActivity
           setSubtitle(viewState.subtitle);
           break;
       }
-      mGridRowAdapter.updateData(viewState.renderableCycles);
+      mGridRowAdapter.updateData(viewState.renderableCycles, viewState.viewMode);
       mPageAdapter.update(viewState.renderableCycles.stream()
           .map(CycleRenderer.RenderableCycle::cycle)
           .collect(Collectors.toList()), viewState.viewMode);

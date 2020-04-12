@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
 class GridRowViewHolder extends RecyclerView.ViewHolder {
@@ -33,16 +34,17 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   private final List<GridCell> mCells = new ArrayList<>();
   private final List<LinearLayout> mSections = new ArrayList<>();
 
-  GridRowViewHolder(View v) {
+  GridRowViewHolder(View v, Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer, Consumer<CycleRenderer.RenderableEntry> textClickConsumer) {
     super(v);
     mContext = v.getContext();
     LinearLayout linearLayout = (LinearLayout) v;
     for (Integer sectionId : SECTION_IDS) {
       LinearLayout sectionLayout = linearLayout.findViewById(sectionId);
-      mSections.add(sectionLayout);
       for (Integer cellId : CELL_IDS) {
-        mCells.add(new GridCell(sectionLayout.findViewById(cellId)));
+        int index = 7 * mSections.size() + mCells.size();
+        mCells.add(new GridCell(sectionLayout.findViewById(cellId), stickerClickConsumer, textClickConsumer));
       }
+      mSections.add(sectionLayout);
     }
   }
 
@@ -61,13 +63,18 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     private final TextView textView;
     private final ImageView imageView;
 
-    private GridCell(LinearLayout cellLayout) {
+    private CycleRenderer.RenderableEntry boundEntry;
+
+    private GridCell(LinearLayout cellLayout, Consumer<CycleRenderer.RenderableEntry> stickerClickListener, Consumer<CycleRenderer.RenderableEntry> textClickListener) {
       context = cellLayout.getContext();
       textView = cellLayout.findViewById(R.id.cell_text_view);
+      textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
       imageView = cellLayout.findViewById(R.id.cell_image_view);
+      imageView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
     }
 
     public void update(Optional<CycleRenderer.RenderableEntry> renderableEntry) {
+      boundEntry = renderableEntry.orElse(null);
       if (renderableEntry.isPresent()) {
         fillCell(renderableEntry.get());
       } else {
