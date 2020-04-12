@@ -16,6 +16,28 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
 
+    <HorizontalScrollView
+        android:id="@+id/grid_container"
+        android:background="@drawable/section_border"
+        android:visibility="gone"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent">
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <include
+                layout="@layout/content_grid_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rv_grid_rows"
+                android:layout_width="wrap_content"
+                android:layout_weight="1.0"
+                android:layout_height="0dp"/>
+        </LinearLayout>
+    </HorizontalScrollView>
+
     <TextView
         android:id="@+id/refresh_error"
         android:visibility="invisible"

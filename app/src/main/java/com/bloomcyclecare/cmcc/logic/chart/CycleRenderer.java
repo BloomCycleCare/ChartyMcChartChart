@@ -360,6 +360,7 @@ public class CycleRenderer {
     }
 
     return RenderableCycle.builder()
+        .cycle(mCycle)
         .entries(renderableEntries)
         .stats(statsBuilder.build())
         .build();
@@ -582,6 +583,7 @@ public class CycleRenderer {
 
   @AutoValue
   public abstract static class RenderableCycle {
+    public abstract Cycle cycle();
     public abstract List<RenderableEntry> entries();
     public abstract CycleStats stats();
 
@@ -594,6 +596,8 @@ public class CycleRenderer {
       public abstract Builder entries(List<RenderableEntry> entries);
 
       public abstract Builder stats(CycleStats stats);
+
+      public abstract Builder cycle(Cycle cycle);
 
       public abstract RenderableCycle build();
     }

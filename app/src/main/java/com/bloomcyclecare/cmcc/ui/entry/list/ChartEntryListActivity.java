@@ -18,7 +18,9 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
+import com.bloomcyclecare.cmcc.ui.entry.list.grid.GridRowAdapter;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
@@ -36,6 +38,7 @@ import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.io.File;
+import java.util.stream.Collectors;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -48,6 +51,8 @@ import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -78,6 +83,8 @@ public class ChartEntryListActivity extends AppCompatActivity
   private ViewPager mViewPager;
   private FloatingActionButton mNewCycleFab;
 
+  private View mGridViewContainer;
+
   private RWCycleRepo mCycleRepo;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
@@ -85,6 +92,7 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   private final Subject<String> mLayerSubject = BehaviorSubject.create();
   private EntryListPageAdapter mPageAdapter;
+  private GridRowAdapter mGridRowAdapter;
 
   public Observable<String> layerStream() {
     return mLayerSubject;
@@ -131,6 +139,12 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     drawerTitleView.setText("TODO: name");
 
+    mGridViewContainer = findViewById(R.id.grid_container);
+
+    mGridRowAdapter = new GridRowAdapter();
+    RecyclerView rowRecyclerView = findViewById(R.id.rv_grid_rows);
+    rowRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+    rowRecyclerView.setAdapter(mGridRowAdapter);
 
     if (!getIntent().hasExtra(Extras.VIEW_MODE.name())) {
       Timber.w("View mode not found, assuming CHARTING");
@@ -144,18 +158,21 @@ public class ChartEntryListActivity extends AppCompatActivity
       switch (viewState.viewMode) {
         case TRAINING:
           setTitle("Training Cycle");
-          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.cycles.size()));
+          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.renderableCycles.size()));
           break;
         case DEMO:
           setTitle("Demo Cycle");
-          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.cycles.size()));
+          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.renderableCycles.size()));
           break;
         default:
           setTitle(viewState.title);
           setSubtitle(viewState.subtitle);
           break;
       }
-      mPageAdapter.update(viewState.cycles, viewState.viewMode);
+      mGridRowAdapter.updateData(viewState.renderableCycles);
+      mPageAdapter.update(viewState.renderableCycles.stream()
+          .map(CycleRenderer.RenderableCycle::cycle)
+          .collect(Collectors.toList()), viewState.viewMode);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
         mViewPager.setCurrentItem(viewState.currentCycleIndex);
@@ -358,6 +375,16 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (id == R.id.action_trigger_sync) {
       MyApplication.cast(getApplication()).triggerSync();
       return true;
+    }
+
+    if (id == R.id.action_toggle_layout) {
+      if (mViewPager.getVisibility() == View.VISIBLE) {
+        mViewPager.setVisibility(View.GONE);
+        mGridViewContainer.setVisibility(View.VISIBLE);
+      } else {
+        mViewPager.setVisibility(View.VISIBLE);
+        mGridViewContainer.setVisibility(View.GONE);
+      }
     }
 
     if (id == R.id.action_toggle_demo) {

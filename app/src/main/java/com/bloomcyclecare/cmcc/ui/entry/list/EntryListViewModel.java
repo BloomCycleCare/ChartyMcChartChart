@@ -4,7 +4,6 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
@@ -21,6 +20,7 @@ import org.joda.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Supplier;
@@ -61,28 +61,34 @@ public class EntryListViewModel extends AndroidViewModel {
     ROChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
     ROPregnancyRepo pregnancyRepo = mApplication.pregnancyRepo(viewMode);
 
-    Flowable<List<CycleRenderer.CycleStats>> statsStream = Flowable.merge(Flowable.combineLatest(
-        instructionsRepo.getAll()
-            .distinctUntilChanged(),
-        cycleRepo.getStream()
-            .distinctUntilChanged(),
-        (instructions, cycles) -> Flowable.merge(Flowable
-            .fromIterable(cycles)
-            .observeOn(Schedulers.computation())
-            .parallel()
-            .map(cycle -> Flowable.combineLatest(
-                entryRepo.getStreamForCycle(Flowable.just(cycle)),
-                cycleRepo.getPreviousCycle(cycle)
-                    .map(Optional::of).defaultIfEmpty(Optional.empty())
-                    .toFlowable(),
-                (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
-                .map(CycleRenderer.RenderableCycle::stats)
-            )
-            .sequential()
-            .toList()
-            .toFlowable()
-            .map(RxUtil::combineLatest))))
-        .distinctUntilChanged();
+    Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
+            instructionsRepo.getAll()
+                .distinctUntilChanged(),
+            cycleRepo.getStream()
+                .distinctUntilChanged(),
+            (instructions, cycles) -> Flowable.merge(Flowable
+                .fromIterable(cycles)
+                .observeOn(Schedulers.computation())
+                .parallel()
+                .map(cycle -> Flowable.combineLatest(
+                    entryRepo.getStreamForCycle(Flowable.just(cycle)),
+                    cycleRepo.getPreviousCycle(cycle)
+                        .map(Optional::of).defaultIfEmpty(Optional.empty())
+                        .toFlowable(),
+                    (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
+                )
+                .sequential()
+                .toList()
+                .toFlowable()
+                .map(RxUtil::combineLatest))))
+        .distinctUntilChanged()
+        .cache();
+
+    Flowable<List<CycleRenderer.CycleStats>> statsStream = renderableCycleStream
+        .map(renderableCycles -> renderableCycles
+            .stream()
+            .map(CycleRenderer.RenderableCycle::stats)
+            .collect(Collectors.toList()));
 
     Flowable<String> subtitleStream = Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -101,8 +107,8 @@ public class EntryListViewModel extends AndroidViewModel {
     return Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         subtitleStream.distinctUntilChanged(),
-        cycleRepo.getStream(),
-        (currentPage, subtitle, cycles) -> new ViewState(currentPage, subtitle, cycles, viewMode));
+        renderableCycleStream,
+        (currentPage, subtitle, renderableCycles) -> new ViewState(currentPage, subtitle, renderableCycles, viewMode));
   }
 
   void setViewMode(ViewMode viewMode) {
@@ -172,16 +178,16 @@ public class EntryListViewModel extends AndroidViewModel {
     final ViewMode viewMode;
 
     final int currentCycleIndex;
-    final ImmutableList<Cycle> cycles;
+    final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
 
-    ViewState(int currentPage, String subtitle, List<Cycle> cycles, ViewMode viewMode) {
+    ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode) {
       this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
       this.subtitle = subtitle;
-      this.showFab = currentPage == cycles.size() - 1;
+      this.showFab = currentPage == renderableCycles.size() - 1;
       this.viewMode = viewMode;
 
       this.currentCycleIndex = currentPage;
-      this.cycles = ImmutableList.copyOf(cycles);
+      this.renderableCycles = ImmutableList.copyOf(renderableCycles);
     }
   }
 

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:background="@drawable/section_border"
+    android:padding="1dp"
+    android:orientation="horizontal">
+
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_3"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_4"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_5"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_6"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <include
+        layout="@layout/list_item_grid_cell"
+        android:id="@+id/grid_cell_7"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>
+

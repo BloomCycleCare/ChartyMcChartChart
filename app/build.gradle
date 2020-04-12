@@ -18,6 +18,9 @@ android {
             }
         }
     }
+    dexOptions {
+        javaMaxHeapSize "8g"
+    }
     buildTypes {
         release {
             minifyEnabled false
