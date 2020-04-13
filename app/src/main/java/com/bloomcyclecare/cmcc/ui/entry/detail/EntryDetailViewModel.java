@@ -236,7 +236,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
     positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
     pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
-    timeOfDayUpdates.onNext(context.entry.observationEntry.intercourseTimeOfDay);
+    timeOfDayUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.intercourseTimeOfDay).or(IntercourseTimeOfDay.NONE));
     noteUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.note).or(""));
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);

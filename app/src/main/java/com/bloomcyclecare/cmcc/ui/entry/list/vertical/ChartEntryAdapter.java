@@ -12,8 +12,6 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.google.common.base.Strings;
 
-import org.parceler.Parcels;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -121,8 +119,6 @@ class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> 
 
   private Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext, final int index) {
     modificationContext.hasPreviousCycle = mHasPreviousCycle;
-    Intent intent = new Intent(mContext, EntryDetailActivity.class);
-    intent.putExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(modificationContext));
-    return intent;
+    return EntryDetailActivity.createIntent(mContext, modificationContext);
   }
 }

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="sticker">
+        <item>Make selection</item>
+        <item>Red</item>
+        <item>Green</item>
+        <item>Green Baby</item>
+        <item>White</item>
+        <item>White Baby</item>
+        <item>Yellow</item>
+        <item>Yellow Baby</item>
+    </string-array>
+</resources>

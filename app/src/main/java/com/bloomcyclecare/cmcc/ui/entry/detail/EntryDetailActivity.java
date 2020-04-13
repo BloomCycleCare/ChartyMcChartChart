@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.entry.detail;
 
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
@@ -50,6 +51,12 @@ public class EntryDetailActivity extends AppCompatActivity {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private EntryDetailViewModel mViewModel;
+
+  public static Intent createIntent(Context context, CycleRenderer.EntryModificationContext entryModificationContext) {
+    Intent intent = new Intent(context, EntryDetailActivity.class);
+    intent.putExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(entryModificationContext));
+    return intent;
+  }
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {

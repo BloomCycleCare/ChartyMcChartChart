@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.VisibleForTesting;
 import androidx.core.util.Supplier;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
@@ -140,7 +141,7 @@ public class EntryListViewModel extends AndroidViewModel {
     mViewMode.onNext(viewMode);
   }
 
-  ViewMode currentViewMode() {
+  public ViewMode currentViewMode() {
     return mViewMode.blockingFirst();
   }
 
@@ -152,6 +153,7 @@ public class EntryListViewModel extends AndroidViewModel {
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
   }
 
+  @VisibleForTesting
   static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> todaySupplier, Optional<Pregnancy> pregnancy) {
     if (statsList.isEmpty()) {
       return "No data...";

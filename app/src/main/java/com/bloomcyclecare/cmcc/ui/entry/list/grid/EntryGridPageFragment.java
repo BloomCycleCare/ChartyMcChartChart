@@ -6,15 +6,18 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
+import com.google.common.base.Strings;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import timber.log.Timber;
 
 public class EntryGridPageFragment extends Fragment {
 
@@ -27,18 +30,20 @@ public class EntryGridPageFragment extends Fragment {
     super.onCreate(savedInstanceState);
 
     mViewModel = ViewModelProviders.of(getActivity()).get(EntryListViewModel.class);
-    mGridRowAdapter = new GridRowAdapter(re -> {
-      AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-      builder.setTitle("Sticker Click");
-      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
-      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
-      builder.show();
-    }, re -> {
-      AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
-      builder.setTitle("Text Click");
-      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
-      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
-      builder.show();
+    mGridRowAdapter = new GridRowAdapter(re -> {// Sticker Click
+      if (mViewModel.currentViewMode() != ViewMode.TRAINING || Strings.isNullOrEmpty(re.trainingMarker())) {
+        Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
+        return;
+      }
+      StickerDialogFragment fragment = new StickerDialogFragment();
+      fragment.show(getFragmentManager(), "tag");
+    }, re -> {// Text click
+      if (mViewModel.currentViewMode() != ViewMode.CHARTING) {
+        Timber.d("Not navigating to detail activity for ViewMode: %s", mViewModel.currentViewMode().name());
+        return;
+      }
+      Timber.d("Navigating to detail activity");
+      startActivity(EntryDetailActivity.createIntent(getContext(), re.modificationContext()));
     });
   }
 
