@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.view.View;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -64,7 +63,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   private static class GridCell {
     private final Context context;
     private final TextView textView;
-    private final ImageView imageView;
+    private final TextView stickerView;
 
     private CycleRenderer.RenderableEntry boundEntry;
 
@@ -72,8 +71,8 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       context = cellLayout.getContext();
       textView = cellLayout.findViewById(R.id.cell_text_view);
       textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
-      imageView = cellLayout.findViewById(R.id.cell_image_view);
-      imageView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
+      stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
+      stickerView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
     }
 
     public void update(Optional<CycleRenderer.RenderableEntry> renderableEntry) {
@@ -93,31 +92,33 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       if (renderableEntry.showBaby()) {
         switch (renderableEntry.backgroundColor()) {
           case WHITE:
-            imageView.setBackground(context.getDrawable(R.drawable.sticker_white_baby));
+            stickerView.setBackground(context.getDrawable(R.drawable.sticker_white_baby));
             break;
           case GREEN:
-            imageView.setBackground(context.getDrawable(R.drawable.sticker_green_baby));
+            stickerView.setBackground(context.getDrawable(R.drawable.sticker_green_baby));
             break;
           case YELLOW:
-            imageView.setBackground(context.getDrawable(R.drawable.sticker_yellow_baby));
+            stickerView.setBackground(context.getDrawable(R.drawable.sticker_yellow_baby));
             break;
           default:
             throw new IllegalStateException();
         }
       } else {
-        imageView.setBackground(context.getDrawable(R.drawable.border));
+        stickerView.setBackground(context.getDrawable(R.drawable.border));
         setColor(renderableEntry.backgroundColor().resourceId);
       }
+      stickerView.setText(renderableEntry.peakDayText());
     }
 
     private void clearCell() {
       textView.setText("");
+      stickerView.setText("");
       setColor(R.color.entryGrey);
     }
 
     private void setColor(int resourceId) {
-      imageView.setBackground(context.getDrawable(R.drawable.border));
-      Drawable drawable = imageView.getBackground().mutate();
+      stickerView.setBackground(context.getDrawable(R.drawable.border));
+      Drawable drawable = stickerView.getBackground().mutate();
       drawable.setTintMode(PorterDuff.Mode.SRC_OUT);
       drawable.setTint(context.getColor(resourceId));
     }
