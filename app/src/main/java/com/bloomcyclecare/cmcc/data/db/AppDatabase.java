@@ -1,6 +1,13 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
+import androidx.annotation.NonNull;
+import androidx.room.Database;
+import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
@@ -11,13 +18,6 @@ import com.google.common.collect.ImmutableList;
 
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.room.Database;
-import androidx.room.RoomDatabase;
-import androidx.room.TypeConverters;
-import androidx.room.migration.Migration;
-import androidx.sqlite.db.SupportSQLiteDatabase;
-
 @Database(
     entities = {
         Cycle.class,
@@ -27,7 +27,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         WellnessEntry.class,
         Pregnancy.class,
     },
-    version = 13)
+    version = 14)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -94,6 +94,12 @@ public abstract class AppDatabase extends RoomDatabase {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("ALTER TABLE Pregnancy ADD deliveryDate TEXT");
+        }
+    };
+    private static final Migration MIGRATION_13_14 = new Migration(13, 14) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_Cycle_pregnancyId` ON `Cycle` (`pregnancyId`)");
         }
     };
 

@@ -1,5 +1,13 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.ForeignKey;
+import androidx.room.Ignore;
+import androidx.room.Index;
+import androidx.room.PrimaryKey;
+
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.common.base.Objects;
@@ -8,22 +16,17 @@ import com.google.common.base.Preconditions;
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
-import androidx.room.ForeignKey;
-import androidx.room.Ignore;
-import androidx.room.PrimaryKey;
-
 /**
  * Created by parkeroth on 4/30/17.
  */
 @Parcel
-@Entity(foreignKeys = @ForeignKey(
-    entity = Pregnancy.class,
-    onDelete = ForeignKey.CASCADE,
-    parentColumns = "id",
-    childColumns = "pregnancyId"))
+@Entity(
+    foreignKeys = @ForeignKey(
+        entity = Pregnancy.class,
+        onDelete = ForeignKey.CASCADE,
+        parentColumns = "id",
+        childColumns = "pregnancyId"),
+    indices = @Index("pregnancyId"))
 public class Cycle implements Comparable<Cycle> {
 
   public String id;

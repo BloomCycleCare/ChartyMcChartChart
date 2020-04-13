@@ -1,0 +1,293 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 14,
+    "identityHash": "399c6cf1a307e2c72be9c42707108b6a",
+    "entities": [
+      {
+        "tableName": "Cycle",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT, `startDate` TEXT NOT NULL, `endDate` TEXT, `pregnancyId` INTEGER, PRIMARY KEY(`startDate`), FOREIGN KEY(`pregnancyId`) REFERENCES `Pregnancy`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "endDate",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "pregnancyId",
+            "columnName": "pregnancyId",
+            "affinity": "INTEGER",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "startDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_Cycle_pregnancyId",
+            "unique": false,
+            "columnNames": [
+              "pregnancyId"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_Cycle_pregnancyId` ON `${TABLE_NAME}` (`pregnancyId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Pregnancy",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "pregnancyId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "Instructions",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`startDate` TEXT NOT NULL, `activeItems` TEXT, `specialInstructions` TEXT, `yellowStampInstructions` TEXT, PRIMARY KEY(`startDate`))",
+        "fields": [
+          {
+            "fieldPath": "startDate",
+            "columnName": "startDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "activeItems",
+            "columnName": "activeItems",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "specialInstructions",
+            "columnName": "specialInstructions",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "yellowStampInstructions",
+            "columnName": "yellowStampInstructions",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "startDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "ObservationEntry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `observation` TEXT, `peakDay` INTEGER NOT NULL, `intercourse` INTEGER NOT NULL, `firstDay` INTEGER NOT NULL, `positivePregnancyTest` INTEGER NOT NULL, `pointOfChange` INTEGER NOT NULL, `unusualBleeding` INTEGER NOT NULL, `unusualStress` INTEGER NOT NULL, `unusualBuildup` INTEGER NOT NULL, `intercourseTimeOfDay` TEXT, `isEssentiallyTheSame` INTEGER NOT NULL, `note` TEXT, PRIMARY KEY(`entryDate`))",
+        "fields": [
+          {
+            "fieldPath": "mEntryDate",
+            "columnName": "entryDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "observation",
+            "columnName": "observation",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "peakDay",
+            "columnName": "peakDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intercourse",
+            "columnName": "intercourse",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstDay",
+            "columnName": "firstDay",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positivePregnancyTest",
+            "columnName": "positivePregnancyTest",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pointOfChange",
+            "columnName": "pointOfChange",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unusualBleeding",
+            "columnName": "unusualBleeding",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unusualStress",
+            "columnName": "unusualStress",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "unusualBuildup",
+            "columnName": "unusualBuildup",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "intercourseTimeOfDay",
+            "columnName": "intercourseTimeOfDay",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "isEssentiallyTheSame",
+            "columnName": "isEssentiallyTheSame",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "note",
+            "columnName": "note",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "entryDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "SymptomEntry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `symptoms` TEXT, PRIMARY KEY(`entryDate`))",
+        "fields": [
+          {
+            "fieldPath": "mEntryDate",
+            "columnName": "entryDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "symptoms",
+            "columnName": "symptoms",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "entryDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "WellnessEntry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `wellnessItems` TEXT, PRIMARY KEY(`entryDate`))",
+        "fields": [
+          {
+            "fieldPath": "mEntryDate",
+            "columnName": "entryDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "wellnessItems",
+            "columnName": "wellnessItems",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "entryDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "Pregnancy",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `positiveTestDate` TEXT, `dueDate` TEXT, `deliveryDate` TEXT)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "positiveTestDate",
+            "columnName": "positiveTestDate",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "dueDate",
+            "columnName": "dueDate",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "deliveryDate",
+            "columnName": "deliveryDate",
+            "affinity": "TEXT",
+            "notNull": false
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "id"
+          ],
+          "autoGenerate": true
+        },
+        "indices": [],
+        "foreignKeys": []
+      }
+    ],
+    "views": [],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '399c6cf1a307e2c72be9c42707108b6a')"
+    ]
+  }
+}
