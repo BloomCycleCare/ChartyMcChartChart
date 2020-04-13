@@ -4,11 +4,23 @@
                   android:layout_height="match_parent">
 
     <PreferenceCategory
+        android:title="General"
+        android:key="pref_key_general">
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="DEFAULT_TO_DEMO"
+            android:title="Default to demo mode"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="false"
+            android:key="DEFAULT_TO_GRID"
+            android:title="Default to grid view"/>
+    </PreferenceCategory>
+    <PreferenceCategory
         android:title="Backup &amp; Export"
         android:key="PREF_BACKUP_EXPORT_OPTIONS">
         <SwitchPreferenceCompat
             android:defaultValue="false"
-            android:key="ENABLE_BACKUP_TO_DRIVE"
+            android:key=""
             android:title="Backup to Google Drive"/>
         <SwitchPreferenceCompat
             android:defaultValue="false"

@@ -10,6 +10,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
@@ -21,6 +22,8 @@ import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
 class GridRowViewHolder extends RecyclerView.ViewHolder {
+
+  private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
   private static final List<Integer> SECTION_IDS = ImmutableList.of(
       R.id.grid_section_1, R.id.grid_section_2, R.id.grid_section_3, R.id.grid_section_4,
@@ -83,7 +86,10 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void fillCell(CycleRenderer.RenderableEntry renderableEntry) {
-      textView.setText(renderableEntry.entrySummary());
+      List<String> parts = new ArrayList<>();
+      parts.add(renderableEntry.dateSummaryShort());
+      parts.add(renderableEntry.entrySummary());
+      textView.setText(ON_NEW_LINE.join(parts));
       if (renderableEntry.showBaby()) {
         switch (renderableEntry.backgroundColor()) {
           case WHITE:
@@ -110,6 +116,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void setColor(int resourceId) {
+      imageView.setBackground(context.getDrawable(R.drawable.border));
       Drawable drawable = imageView.getBackground().mutate();
       drawable.setTintMode(PorterDuff.Mode.SRC_OUT);
       drawable.setTint(context.getColor(resourceId));

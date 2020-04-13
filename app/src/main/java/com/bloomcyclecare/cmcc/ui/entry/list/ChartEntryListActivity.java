@@ -18,6 +18,7 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
 import com.bloomcyclecare.cmcc.ui.entry.list.grid.GridRowAdapter;
@@ -149,7 +150,12 @@ public class ChartEntryListActivity extends AppCompatActivity
     if (!getIntent().hasExtra(Extras.VIEW_MODE.name())) {
       Timber.w("View mode not found, assuming CHARTING");
     }
-    ViewMode viewMode = ViewMode.values()[getIntent().getIntExtra(Extras.VIEW_MODE.name(), 0)];
+    PreferenceRepo.PreferenceSummary preferenceSummary =
+        MyApplication.cast(getApplication()).preferenceRepo().currentSummary();
+    toggleLayout(preferenceSummary.defaultToGrid());
+
+    ViewMode defaultViewMode = preferenceSummary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING;
+    ViewMode viewMode = ViewMode.values()[getIntent().getIntExtra(Extras.VIEW_MODE.name(), defaultViewMode.ordinal())];
     mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), viewMode);
 
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), viewMode);
@@ -200,7 +206,6 @@ public class ChartEntryListActivity extends AppCompatActivity
       public void onPageScrollStateChanged(int state) {}
     });
     mViewPager.setOffscreenPageLimit(4);
-    showList();
 
     mNewCycleFab = findViewById(R.id.fab_new_cycle);
     mNewCycleFab.setOnClickListener(__ -> {
@@ -378,13 +383,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_toggle_layout) {
-      if (mViewPager.getVisibility() == View.VISIBLE) {
-        mViewPager.setVisibility(View.GONE);
-        mGridViewContainer.setVisibility(View.VISIBLE);
-      } else {
-        mViewPager.setVisibility(View.VISIBLE);
-        mGridViewContainer.setVisibility(View.GONE);
-      }
+      toggleLayout(mViewPager.getVisibility() == View.VISIBLE);
     }
 
     if (id == R.id.action_toggle_demo) {
@@ -397,6 +396,16 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     return super.onOptionsItemSelected(item);
+  }
+
+  private void toggleLayout(boolean enableGrid) {
+    if (enableGrid) {
+      mViewPager.setVisibility(View.GONE);
+      mGridViewContainer.setVisibility(View.VISIBLE);
+    } else {
+      mViewPager.setVisibility(View.VISIBLE);
+      mGridViewContainer.setVisibility(View.GONE);
+    }
   }
 
   @Override

@@ -650,6 +650,7 @@ public class CycleRenderer {
     public abstract StickerColor backgroundColor();
     public abstract int entryNum();
     public abstract String dateSummary();
+    public abstract String dateSummaryShort();
     public abstract String peakDayText();
     public abstract String instructionSummary();
     public abstract String essentialSamenessSummary();
@@ -680,6 +681,7 @@ public class CycleRenderer {
       RenderableEntry renderableEntry = builder()
           .entryNum(state.entryNum)
           .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
+          .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
           .backgroundColor(state.getBackgroundColor())
           .showBaby(state.shouldShowBaby())
@@ -730,6 +732,8 @@ public class CycleRenderer {
       public abstract Builder modificationContext(EntryModificationContext modificationContext);
 
       public abstract Builder trainingMarker(String trainingMarker);
+
+      public abstract Builder dateSummaryShort(String dateSummaryShort);
 
       public abstract RenderableEntry build();
     }

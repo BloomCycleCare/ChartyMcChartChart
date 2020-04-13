@@ -9,14 +9,14 @@
     <ImageView
         android:id="@+id/cell_image_view"
         android:background="@drawable/border"
-        android:layout_width="40dp"
-        android:layout_height="60dp" />
+        android:layout_width="@dimen/sticker_width"
+        android:layout_height="@dimen/sticker_height" />
 
     <TextView
         android:id="@+id/cell_text_view"
         android:background="@drawable/border"
-        android:layout_width="40dp"
-        android:layout_height="60dp"
+        android:layout_width="@dimen/sticker_width"
+        android:layout_height="@dimen/sticker_height"
         android:text="10CK\nAD"
         android:textAlignment="center" />
 

@@ -17,7 +17,9 @@ public class PreferenceRepo {
     PROMPTED_FOR_BACKUP,
     PROMPTED_FOR_PUBLISH,
     ENABLE_BACKUP_TO_DRIVE,
-    ENABLE_PUBLISH_CHARTS_TO_DRIVE
+    ENABLE_PUBLISH_CHARTS_TO_DRIVE,
+    DEFAULT_TO_DEMO,
+    DEFAULT_TO_GRID
   }
 
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
@@ -37,6 +39,10 @@ public class PreferenceRepo {
       }
     });
     mSummarySubject.onNext(new PreferenceSummary(preferences));
+  }
+
+  public PreferenceSummary currentSummary() {
+    return mSummarySubject.getValue();
   }
 
   public Flowable<PreferenceSummary> summaries() {
@@ -71,6 +77,14 @@ public class PreferenceRepo {
 
     public Single<Boolean> publishEnabled(Callable<Single<Boolean>> promptSupplier) {
       return doTheStuff(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE, Key.PROMPTED_FOR_PUBLISH, promptSupplier);
+    }
+
+    public boolean defaultToDemoMode() {
+      return mPrefs.getBoolean(Key.DEFAULT_TO_DEMO.name(), false);
+    }
+
+    public boolean defaultToGrid() {
+      return mPrefs.getBoolean(Key.DEFAULT_TO_GRID.name(), false);
     }
 
     private Single<Boolean> doTheStuff(Key togglePref, Key promptPref, Callable<Single<Boolean>> promptSupplier) {
