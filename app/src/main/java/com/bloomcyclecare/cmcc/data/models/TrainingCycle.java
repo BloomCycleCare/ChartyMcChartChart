@@ -42,6 +42,11 @@ public class TrainingCycle {
     return this;
   }
 
+  public TrainingCycle addEntriesFrom(TrainingCycle other) {
+    entries.putAll(other.entries());
+    return this;
+  }
+
   public ImmutableMap<TrainingEntry, Optional<StickerExpectations>> entries() {
     return ImmutableMap.copyOf(entries);
   }

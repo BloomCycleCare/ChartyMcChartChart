@@ -1,5 +1,11 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
+
 import com.bloomcyclecare.cmcc.data.db.Converters;
 import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
@@ -12,13 +18,8 @@ import org.parceler.Parcel;
 import org.parceler.ParcelConstructor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-import androidx.room.TypeConverters;
 
 @Parcel
 @Entity
@@ -59,6 +60,16 @@ public class Instructions {
 
   public Instructions(Instructions that) {
     this(that.startDate, that.activeItems, that.specialInstructions, that.yellowStampInstructions);
+  }
+
+  public Instructions addInstructions(BasicInstruction... instructions) {
+    activeItems.addAll(Arrays.asList(instructions));
+    return this;
+  }
+
+  public Instructions addInstructions(YellowStampInstruction... instructions) {
+    yellowStampInstructions.addAll(Arrays.asList(instructions));
+    return this;
   }
 
   public boolean isActive(SpecialInstruction specialInstruction) {

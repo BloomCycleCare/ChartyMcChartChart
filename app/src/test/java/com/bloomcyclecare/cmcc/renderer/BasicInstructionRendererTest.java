@@ -12,6 +12,8 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Optional;
+
 /**
  * Created by parkeroth on 7/1/17.
  */
@@ -55,66 +57,29 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
 
   @Test
   public void testB7A() throws Exception {
-    ImmutableMap.Builder<TrainingEntry, TrainingCycle.StickerExpectations> entries = ImmutableMap.builder();
-    entries.put(TrainingEntry.forText("L2AD"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("L2AD"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("2AD").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2AD"), TrainingCycle.StickerExpectations.greenSticker());
-
-    entries.put(TrainingEntry.forText("2AD").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2AD").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2AD"), TrainingCycle.StickerExpectations.greenSticker());
-    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText("8cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText("8kad"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText("10cx1").peakDay(), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("P"));
-
-    entries.put(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("1"));
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("2"));
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("3"));
-    entries.put(TrainingEntry.forText("4ad"), TrainingCycle.StickerExpectations.greenSticker());
-    entries.put(TrainingEntry.forText("2ad").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker());
-    entries.put(TrainingEntry.forText("10cklx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-
-    entries.put(TrainingEntry.forText("10ckad").peakDay(), TrainingCycle.StickerExpectations.whiteSticker().withBaby().withPeakText("P"));
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("1"));
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("2"));
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker().withBaby().withPeakText("3"));
-    entries.put(TrainingEntry.forText("2x3").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("0ad"), TrainingCycle.StickerExpectations.greenSticker());
-    entries.put(TrainingEntry.forText("0ad").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-
-    entries.put(TrainingEntry.forText("4x1").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker());
-    entries.put(TrainingEntry.forText("2ad").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2ad"), TrainingCycle.StickerExpectations.greenSticker());
-    runTest(entries.build(), BASIC_INSTRUCTIONS);
+    runTest(DemoCycles.BASIC_B7A);
   }
 
   // TODO: B7B - "Missed Period" form of "Double Peak"
 
   @Test
   public void testNoBabiesOrNumbersIfEmpty() throws Exception {
-    ImmutableMap.Builder<TrainingEntry, TrainingCycle.StickerExpectations> entries = ImmutableMap.builder();
-    entries.put(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("L2AD"), TrainingCycle.StickerExpectations.redSticker());
-    entries.put(TrainingEntry.forText("2AD").intercourse(), TrainingCycle.StickerExpectations.greenSticker().withIntercourse());
-    entries.put(TrainingEntry.forText("2AD"), TrainingCycle.StickerExpectations.greenSticker());
+    ImmutableMap.Builder<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("H"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("H"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("M"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("M"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("L2AD"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("2AD").intercourse(), Optional.of(TrainingCycle.StickerExpectations.greenSticker().withIntercourse()));
+    entries.put(TrainingEntry.forText("2AD"), Optional.of(TrainingCycle.StickerExpectations.greenSticker()));
 
-    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText("6cx1"), TrainingCycle.StickerExpectations.whiteSticker().withBaby());
-    entries.put(TrainingEntry.forText(""), TrainingCycle.StickerExpectations.greySticker());
-    entries.put(TrainingEntry.forText(""), TrainingCycle.StickerExpectations.greySticker());
-    entries.put(TrainingEntry.forText(""), TrainingCycle.StickerExpectations.greySticker());
-    entries.put(TrainingEntry.forText(""), TrainingCycle.StickerExpectations.greySticker());
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
     runTest(entries.build(), BASIC_INSTRUCTIONS);
   }
 }
