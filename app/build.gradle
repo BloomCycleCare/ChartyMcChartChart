@@ -77,9 +77,9 @@ dependencies {
     implementation "commons-codec:commons-codec:1.10"
 
     api "com.google.guava:guava:$rootProject.ext.guavaVersion"
-    implementation 'com.google.android.material:material:1.0.0'
-    implementation 'androidx.navigation:navigation-fragment:2.0.0'
-    implementation 'androidx.navigation:navigation-ui:2.0.0'
+    implementation 'com.google.android.material:material:1.1.0'
+    implementation 'androidx.navigation:navigation-fragment:2.2.1'
+    implementation 'androidx.navigation:navigation-ui:2.2.1'
     testImplementation "com.google.truth:truth:0.46"
 
     implementation 'androidx.appcompat:appcompat:1.1.0'
@@ -119,8 +119,8 @@ dependencies {
     compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.4'
 
     implementation "org.apache.commons:commons-collections4:4.0"
-    implementation 'androidx.lifecycle:lifecycle-extensions:2.1.0'
-    implementation "androidx.lifecycle:lifecycle-reactivestreams:2.1.0"
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:2.2.0"
 
     def room_version = "2.2.5"
     implementation "androidx.room:room-runtime:$room_version"
@@ -134,10 +134,10 @@ dependencies {
     implementation 'org.parceler:parceler-api:1.1.12'
     annotationProcessor 'org.parceler:parceler:1.1.12'
 
-    compile group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
 
     // g drive libs
-    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation 'com.google.android.gms:play-services-auth:18.0.0'
     implementation 'com.google.http-client:google-http-client-gson:1.26.0'
     implementation('com.google.api-client:google-api-client-android:1.26.0') {
         exclude group: 'org.apache.httpcomponents'
@@ -146,7 +146,7 @@ dependencies {
         exclude group: 'org.apache.httpcomponents'
     }
 
-    def work_version = "2.3.0"
+    def work_version = "2.3.4"
     implementation "androidx.work:work-runtime:$work_version"
     implementation "androidx.work:work-rxjava2:$work_version"
 }

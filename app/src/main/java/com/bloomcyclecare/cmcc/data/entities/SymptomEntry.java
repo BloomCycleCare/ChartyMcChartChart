@@ -3,6 +3,9 @@ package com.bloomcyclecare.cmcc.data.entities;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Objects;
@@ -16,10 +19,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.crypto.SecretKey;
-
-import androidx.room.Entity;
-
 /**
  * Created by parkeroth on 9/18/17.
  */
@@ -32,12 +31,8 @@ public class SymptomEntry extends Entry implements Parcelable {
     return new SymptomEntry(date, new BoolMapping());
   }
 
+  @Ignore
   public SymptomEntry(LocalDate entryDate, BoolMapping symptoms) {
-    this(entryDate, symptoms, null);
-  }
-
-  @Deprecated
-  public SymptomEntry(LocalDate entryDate, Map<String, Boolean> symptoms, SecretKey key) {
     super(entryDate);
     this.symptoms = new BoolMapping(symptoms);
   }

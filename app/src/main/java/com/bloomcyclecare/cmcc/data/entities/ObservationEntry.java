@@ -1,5 +1,9 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
 import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
@@ -11,9 +15,6 @@ import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
 
 /**
  * Created by parkeroth on 4/22/17.
@@ -35,6 +36,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   public boolean isEssentiallyTheSame;
   public String note;
 
+  @Ignore
   public ObservationEntry(
       LocalDate entryDate,
       @Nullable Observation observation,

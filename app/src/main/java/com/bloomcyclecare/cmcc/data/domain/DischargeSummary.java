@@ -1,5 +1,8 @@
 package com.bloomcyclecare.cmcc.data.domain;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
@@ -14,9 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-
 /**
  * Created by parkeroth on 4/24/17.
  */
@@ -24,7 +24,7 @@ import androidx.annotation.Nullable;
 public class DischargeSummary {
   @Nullable
   public DischargeType mType;
-  public final Set<MucusModifier> mModifiers = new LinkedHashSet<>(); // preserve ordering
+  public Set<MucusModifier> mModifiers = new LinkedHashSet<>(); // preserve ordering
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
 

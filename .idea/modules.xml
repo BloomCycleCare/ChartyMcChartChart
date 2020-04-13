@@ -2,8 +2,9 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
+      <module fileurl="file://$PROJECT_DIR$/CMCC.iml" filepath="$PROJECT_DIR$/CMCC.iml" group="CMCC" />
       <module fileurl="file://$PROJECT_DIR$/ChartyMcChartChart.iml" filepath="$PROJECT_DIR$/ChartyMcChartChart.iml" group="ChartyMcChartChart" />
-      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="ChartyMcChartChart/app" />
+      <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="CMCC/app" />
     </modules>
   </component>
 </project>
