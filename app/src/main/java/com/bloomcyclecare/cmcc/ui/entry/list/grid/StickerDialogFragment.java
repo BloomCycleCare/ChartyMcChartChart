@@ -11,20 +11,28 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.core.util.Consumer;
+import androidx.fragment.app.DialogFragment;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.Sticker;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
-import java.util.Optional;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.DialogFragment;
 import io.reactivex.disposables.CompositeDisposable;
 
 public class StickerDialogFragment extends DialogFragment {
 
+  private final Consumer<StickerSelection> selectionConsumer;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
+
+  private final StickerSelection selection = new StickerSelection();
+
+  StickerDialogFragment(Consumer<StickerSelection> selectionConsumer) {
+    super();
+    this.selectionConsumer = selectionConsumer;
+  }
 
   @Override
   public void onAttach(Context context) {
@@ -51,30 +59,38 @@ public class StickerDialogFragment extends DialogFragment {
     stickerSpinner.setAdapter(stickerAdapter);
     mDisposables.add(RxAdapterView.itemSelections(stickerSpinner)
         .map(index -> Sticker.values()[index])
-        .map(sticker -> {
+        .subscribe(sticker -> {
+          int resourceId;
           switch (sticker) {
             case GREY:
-              return R.drawable.sticker_grey;
+              resourceId = R.drawable.sticker_grey;
+              break;
             case RED:
-              return R.drawable.sticker_red;
+              resourceId = R.drawable.sticker_red;
+              break;
             case WHITE:
-              return R.drawable.sticker_white;
+              resourceId = R.drawable.sticker_white;
+              break;
             case WHITE_BABY:
-              return R.drawable.sticker_white_baby;
+              resourceId = R.drawable.sticker_white_baby;
+              break;
             case YELLOW:
-              return R.drawable.sticker_yellow;
+              resourceId = R.drawable.sticker_yellow;
+              break;
             case YELLOW_BABY:
-              return R.drawable.sticker_yellow_baby;
+              resourceId = R.drawable.sticker_yellow_baby;
+              break;
             case GREEN:
-              return R.drawable.sticker_green;
+              resourceId = R.drawable.sticker_green;
+              break;
             case GREEN_BABY:
-              return R.drawable.sticker_green_baby;
+              resourceId = R.drawable.sticker_green_baby;
+              break;
             default:
               throw new IllegalStateException();
           }
-        })
-        .subscribe(resourceId -> {
           stickerTextView.setBackground(getContext().getDrawable(resourceId));
+          selection.sticker = sticker;
         }));
 
     Spinner textSpinner = view.findViewById(R.id.text_selector_spinner);
@@ -85,16 +101,24 @@ public class StickerDialogFragment extends DialogFragment {
     mDisposables.add(RxAdapterView.itemSelections(textSpinner)
         .map(index -> {
           if (index == 0) {
-            return Optional.<String>empty();
+            return "";
           }
-          return Optional.of(getContext().getResources().getStringArray(R.array.sticker_text)[index]);
+          return getContext().getResources().getStringArray(R.array.sticker_text)[index];
         })
-        .subscribe(text -> stickerTextView.setText(text.orElse(""))));
+        .subscribe(text -> {
+          selection.text = text;
+          stickerTextView.setText(text);
+        }));
 
     Button mButtonCancel = view.findViewById(R.id.button_cancel);
-    mButtonCancel.setOnClickListener(v -> dismiss());
+    mButtonCancel.setOnClickListener(v -> {
+      selectionConsumer.accept(selection);
+      dismiss();
+    });
     Button mButtonConfirm = view.findViewById(R.id.button_confirm);
-    mButtonConfirm.setOnClickListener(v -> dismiss());
+    mButtonConfirm.setOnClickListener(v -> {
+      dismiss();
+    });
 
     return view;
   }
