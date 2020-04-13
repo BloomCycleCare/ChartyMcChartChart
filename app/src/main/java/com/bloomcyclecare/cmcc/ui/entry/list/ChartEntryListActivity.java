@@ -142,7 +142,19 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     mGridViewContainer = findViewById(R.id.grid_container);
 
-    mGridRowAdapter = new GridRowAdapter(re -> {}, re -> {});
+    mGridRowAdapter = new GridRowAdapter(re -> {
+      AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
+      builder.setTitle("Sticker Click");
+      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
+      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
+      builder.show();
+    }, re -> {
+      AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
+      builder.setTitle("Text Click");
+      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
+      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
+      builder.show();
+    });
     RecyclerView rowRecyclerView = findViewById(R.id.rv_grid_rows);
     rowRecyclerView.setLayoutManager(new LinearLayoutManager(this));
     rowRecyclerView.setAdapter(mGridRowAdapter);
