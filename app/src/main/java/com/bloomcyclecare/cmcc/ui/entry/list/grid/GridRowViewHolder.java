@@ -107,6 +107,8 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       switch (renderableEntry.backgroundColor()) {
         case RED:
           return R.drawable.sticker_red;
+        case GREY:
+          return R.drawable.sticker_grey;
         case GREEN:
           return renderableEntry.showBaby() ? R.drawable.sticker_green_baby : R.drawable.sticker_green;
         case WHITE:
@@ -114,7 +116,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
         case YELLOW:
           return renderableEntry.showBaby() ? R.drawable.sticker_yellow_baby : R.drawable.sticker_yellow;
         default:
-          throw new IllegalStateException();
+          throw new IllegalStateException("Could not determine sticker for %s: " + renderableEntry.backgroundColor().name());
       }
     }
 

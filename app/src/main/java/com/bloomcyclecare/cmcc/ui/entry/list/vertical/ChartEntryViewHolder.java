@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
  * Created by parkeroth on 7/1/17.
  */
 
-public interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongClickListener {
+interface ChartEntryViewHolder extends View.OnClickListener, View.OnLongClickListener {
 
   class Impl extends RecyclerView.ViewHolder implements ChartEntryViewHolder {
     private final ChartEntryAdapter.OnClickHandler mClickHandler;

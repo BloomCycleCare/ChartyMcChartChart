@@ -27,7 +27,7 @@ import timber.log.Timber;
  * Created by parkeroth on 4/18/17.
  */
 
-public class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
+class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
   private static final boolean DEBUG = false;
   private static final String TAG = ChartEntryAdapter.class.getSimpleName();

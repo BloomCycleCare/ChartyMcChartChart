@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -16,30 +15,22 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.drive.DriveActivity;
-import com.bloomcyclecare.cmcc.ui.entry.list.grid.GridRowAdapter;
+import com.bloomcyclecare.cmcc.ui.entry.list.grid.EntryGridPageFragment;
+import com.bloomcyclecare.cmcc.ui.entry.list.vertical.EntryListPageFragment;
 import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
 import com.bloomcyclecare.cmcc.ui.profile.ProfileActivity;
 import com.bloomcyclecare.cmcc.ui.settings.SettingsActivity;
-import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
-import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
-
-import org.joda.time.Days;
-import org.joda.time.LocalDate;
 
 import java.io.File;
-import java.util.stream.Collectors;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.appcompat.app.ActionBarDrawerToggle;
@@ -50,11 +41,9 @@ import androidx.core.app.ShareCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -77,23 +66,13 @@ public class ChartEntryListActivity extends AppCompatActivity
 
   private NavigationView mNavView;
   private Toolbar mToolbar;
-  private DrawerLayout mDrawerLayout;
   private ActionBarDrawerToggle mDrawerToggle;
-  private TextView mErrorView;
-  private ProgressBar mProgressBar;
-  private ViewPager mViewPager;
   private FloatingActionButton mNewCycleFab;
 
-  private View mGridViewContainer;
-
-  private RWCycleRepo mCycleRepo;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
+  private final Subject<String> mLayerSubject = BehaviorSubject.create();
 
   private EntryListViewModel mViewModel;
-
-  private final Subject<String> mLayerSubject = BehaviorSubject.create();
-  private EntryListPageAdapter mPageAdapter;
-  private GridRowAdapter mGridRowAdapter;
 
   public Observable<String> layerStream() {
     return mLayerSubject;
@@ -104,16 +83,13 @@ public class ChartEntryListActivity extends AppCompatActivity
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_list);
 
-    mCycleRepo = MyApplication.cast(getApplication()).cycleRepo();
-
     mNavView = findViewById(R.id.nav_view);
     // Set the "My Chart" item as selected
     mNavView.setNavigationItemSelectedListener(this);
 
     View navHeaderView = mNavView.getHeaderView(0);
     final TextView drawerTitleView = navHeaderView.findViewById(R.id.drawer_title);
-    final TextView drawerSubtitleView = navHeaderView.findViewById(R.id.drawer_subtitle);
-    //drawerSubtitleView.setText(Objects.requireNonNull(user).getEmail());
+    drawerTitleView.setText("TODO: name");
 
     mToolbar = findViewById(R.id.app_bar);
     setTitle("Current Cycle");
@@ -128,48 +104,20 @@ public class ChartEntryListActivity extends AppCompatActivity
           .show();
     });
 
-    mDrawerLayout = findViewById(R.id.drawer_layout);
+    DrawerLayout mDrawerLayout = findViewById(R.id.drawer_layout);
     mDrawerToggle = new ActionBarDrawerToggle(
         this, mDrawerLayout, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
     mDrawerLayout.addDrawerListener(mDrawerToggle);
     mDrawerToggle.syncState();
-
-    mErrorView = findViewById(R.id.refresh_error);
-    mProgressBar = findViewById(R.id.progress_bar);
-    mViewPager = findViewById(R.id.view_pager);
-
-    drawerTitleView.setText("TODO: name");
-
-    mGridViewContainer = findViewById(R.id.grid_container);
-
-    mGridRowAdapter = new GridRowAdapter(re -> {
-      AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
-      builder.setTitle("Sticker Click");
-      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
-      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
-      builder.show();
-    }, re -> {
-      AlertDialog.Builder builder = new AlertDialog.Builder(ChartEntryListActivity.this);
-      builder.setTitle("Text Click");
-      builder.setMessage(String.format("You clicked on %s.", re.dateSummary()));
-      builder.setPositiveButton("Ok", (dialog, which) -> dialog.dismiss());
-      builder.show();
-    });
-    RecyclerView rowRecyclerView = findViewById(R.id.rv_grid_rows);
-    rowRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-    rowRecyclerView.setAdapter(mGridRowAdapter);
 
     if (!getIntent().hasExtra(Extras.VIEW_MODE.name())) {
       Timber.w("View mode not found, assuming CHARTING");
     }
     PreferenceRepo.PreferenceSummary preferenceSummary =
         MyApplication.cast(getApplication()).preferenceRepo().currentSummary();
-    toggleLayout(preferenceSummary.defaultToGrid());
 
     ViewMode defaultViewMode = preferenceSummary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING;
     ViewMode viewMode = ViewMode.values()[getIntent().getIntExtra(Extras.VIEW_MODE.name(), defaultViewMode.ordinal())];
-    mPageAdapter = new EntryListPageAdapter(getSupportFragmentManager(), viewMode);
-
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), viewMode);
     mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
     mViewModel.viewStates().observe(this, viewState -> {
@@ -187,40 +135,22 @@ public class ChartEntryListActivity extends AppCompatActivity
           setSubtitle(viewState.subtitle);
           break;
       }
-      mGridRowAdapter.updateData(viewState.renderableCycles, viewState.viewMode);
-      mPageAdapter.update(viewState.renderableCycles.stream()
-          .map(CycleRenderer.RenderableCycle::cycle)
-          .collect(Collectors.toList()), viewState.viewMode);
-      mPageAdapter.onPageActive(viewState.currentCycleIndex);
-      if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
-        mViewPager.setCurrentItem(viewState.currentCycleIndex);
-      }
-
       if (viewState.viewMode == ViewMode.CHARTING && viewState.showFab) {
         showFab();
       } else {
         hideFab();
       }
-    });
-
-    mViewPager.setAdapter(mPageAdapter);
-    mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-      @Override
-      public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
-
-      @Override
-      public void onPageSelected(int position) {
-        mViewModel.currentPageUpdates.onNext(position);
-        mPageAdapter.onPageActive(position);
+      if (viewState.targetLayoutMode.isPresent()) {
+        Fragment fragment = viewState.targetLayoutMode.get() == EntryListViewModel.LayoutMode.GRID
+            ? new EntryGridPageFragment() : new EntryListPageFragment();
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, fragment).commit();
+        getSupportFragmentManager().executePendingTransactions();
+        mViewModel.completeLayoutTransition(viewState.targetLayoutMode.get());
       }
-
-      @Override
-      public void onPageScrollStateChanged(int state) {}
     });
-    mViewPager.setOffscreenPageLimit(4);
 
     mNewCycleFab = findViewById(R.id.fab_new_cycle);
-    mNewCycleFab.setOnClickListener(__ -> {
+    /*mNewCycleFab.setOnClickListener(__ -> {
       EntryListPageAdapter adapter = (EntryListPageAdapter) mViewPager.getAdapter();
       Cycle cycle = adapter.getCycle(mViewPager.getCurrentItem());
       final LocalDate endDate = cycle.startDate.minusDays(1);
@@ -248,7 +178,7 @@ public class ChartEntryListActivity extends AppCompatActivity
       datePickerDialog.setTitle("First day of previous cycle");
       datePickerDialog.setMaxDate(endDate.toDateTimeAtCurrentTime().toGregorianCalendar());
       datePickerDialog.show(getFragmentManager(), "datepickerdialog");
-    });
+    });*/
     hideFab();
     maybeUpdateCurrentPage(getIntent());
 
@@ -259,7 +189,9 @@ public class ChartEntryListActivity extends AppCompatActivity
           finish();
         } else {
           mNavView.getMenu().findItem(R.id.nav_my_chart).setChecked(true);
-          mViewModel.setViewMode(ViewMode.CHARTING);
+          ViewMode targetViewMode = preferenceSummary.defaultToDemoMode()
+              ? ViewMode.DEMO : ViewMode.CHARTING;
+          mViewModel.setViewMode(targetViewMode);
         }
       }
     });
@@ -395,7 +327,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_toggle_layout) {
-      toggleLayout(mViewPager.getVisibility() == View.VISIBLE);
+      mViewModel.toggleLayoutMode().subscribe();
     }
 
     if (id == R.id.action_toggle_demo) {
@@ -408,23 +340,6 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     return super.onOptionsItemSelected(item);
-  }
-
-  private void toggleLayout(boolean enableGrid) {
-    if (enableGrid) {
-      mViewPager.setVisibility(View.GONE);
-      mGridViewContainer.setVisibility(View.VISIBLE);
-    } else {
-      mViewPager.setVisibility(View.VISIBLE);
-      mGridViewContainer.setVisibility(View.GONE);
-    }
-  }
-
-  @Override
-  public void showList() {
-    mViewPager.setVisibility(View.VISIBLE);
-    mErrorView.setVisibility(View.INVISIBLE);
-    mProgressBar.setVisibility(View.INVISIBLE);
   }
 
   @Override

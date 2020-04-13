@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.list;
+package com.bloomcyclecare.cmcc.ui.entry.list.vertical;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -7,7 +7,6 @@ import android.view.ViewGroup;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.ui.entry.list.vertical.EntryListFragment;
 import com.bloomcyclecare.cmcc.utils.SmartFragmentStatePagerAdapter;
 import com.google.common.collect.Iterables;
 
@@ -27,7 +26,7 @@ import io.reactivex.subjects.Subject;
  * Created by parkeroth on 11/16/17.
  */
 
-public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryListFragment> {
+class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryListFragment> {
 
   private static boolean DEBUG = true;
   private static String TAG = EntryListPageAdapter.class.getSimpleName();
@@ -36,9 +35,8 @@ public class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryLi
   private final Subject<Pair<Integer, CycleRenderer.CycleStats>> mStats = BehaviorSubject.create();
   private ViewMode viewMode;
 
-  EntryListPageAdapter(FragmentManager fragmentManager, ViewMode viewMode) {
+  EntryListPageAdapter(FragmentManager fragmentManager) {
     super(fragmentManager);
-    this.viewMode = viewMode;
   }
 
   public void update(List<Cycle> cycles, ViewMode viewMode) {

@@ -30,6 +30,7 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -44,6 +45,8 @@ public class EntryListViewModel extends AndroidViewModel {
 
   private final MyApplication mApplication;
   private final Subject<ViewMode> mViewMode = BehaviorSubject.create();
+  private final Subject<Optional<LayoutMode>> mTargetLayoutMode = BehaviorSubject.create();
+  private final Subject<LayoutMode> mCurrentLayoutMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
 
@@ -53,6 +56,10 @@ public class EntryListViewModel extends AndroidViewModel {
     mViewMode.onNext(viewMode);
     mViewMode.map(this::viewStateStream).subscribe(mViewStateStream);
     mViewStateStream.switchMap(Flowable::toObservable).subscribe(mViewStates);
+
+    LayoutMode initialLayoutMode = mApplication.preferenceRepo().currentSummary().defaultToGrid()
+        ? LayoutMode.GRID : LayoutMode.LIST;
+    mTargetLayoutMode.onNext(Optional.of(initialLayoutMode));
   }
 
   private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
@@ -108,7 +115,24 @@ public class EntryListViewModel extends AndroidViewModel {
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         subtitleStream.distinctUntilChanged(),
         renderableCycleStream,
-        (currentPage, subtitle, renderableCycles) -> new ViewState(currentPage, subtitle, renderableCycles, viewMode));
+        mTargetLayoutMode.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        (currentPage, subtitle, renderableCycles, targetLayoutMode) -> new ViewState(currentPage, subtitle, renderableCycles, viewMode, targetLayoutMode));
+  }
+
+  Completable toggleLayoutMode() {
+    return mCurrentLayoutMode.firstOrError().flatMapCompletable(currentViewMode -> {
+      mTargetLayoutMode.onNext(Optional.of(currentViewMode == LayoutMode.GRID ? LayoutMode.LIST : LayoutMode.GRID));
+      return Completable.complete();
+    });
+  }
+
+  void completeLayoutTransition(LayoutMode layoutMode) {
+    Optional<LayoutMode> currentTransition = mTargetLayoutMode.blockingFirst();
+    if (!currentTransition.isPresent() || currentTransition.get() == layoutMode) {
+      Timber.w("Corrupt layout transition! Expected %s, got %s", layoutMode.name(), currentTransition);
+    }
+    mCurrentLayoutMode.onNext(layoutMode);
+    mTargetLayoutMode.onNext(Optional.empty());
   }
 
   void setViewMode(ViewMode viewMode) {
@@ -120,7 +144,7 @@ public class EntryListViewModel extends AndroidViewModel {
     return mViewMode.blockingFirst();
   }
 
-  LiveData<ViewState> viewStates() {
+  public LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
         .subscribeOn(Schedulers.computation())
@@ -128,7 +152,7 @@ public class EntryListViewModel extends AndroidViewModel {
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
   }
 
-  public static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> todaySupplier, Optional<Pregnancy> pregnancy) {
+  static String subtitle(List<CycleRenderer.CycleStats> statsList, int index, Supplier<LocalDate> todaySupplier, Optional<Pregnancy> pregnancy) {
     if (statsList.isEmpty()) {
       return "No data...";
     }
@@ -175,20 +199,26 @@ public class EntryListViewModel extends AndroidViewModel {
     final String title;
     final String subtitle;
     final boolean showFab;
-    final ViewMode viewMode;
+    final Optional<LayoutMode> targetLayoutMode;
 
-    final int currentCycleIndex;
-    final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
+    public final int currentCycleIndex;
+    public final ViewMode viewMode;
+    public final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
 
-    ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode) {
+    ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode, Optional<LayoutMode> targetLayoutMode) {
       this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
       this.subtitle = subtitle;
       this.showFab = currentPage == renderableCycles.size() - 1;
       this.viewMode = viewMode;
+      this.targetLayoutMode = targetLayoutMode;
 
       this.currentCycleIndex = currentPage;
       this.renderableCycles = ImmutableList.copyOf(renderableCycles);
     }
+  }
+
+  public enum LayoutMode {
+    GRID, LIST
   }
 
   public static class Factory implements ViewModelProvider.Factory {

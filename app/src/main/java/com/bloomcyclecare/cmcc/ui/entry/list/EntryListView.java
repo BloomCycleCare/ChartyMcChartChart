@@ -9,7 +9,5 @@ public interface EntryListView {
 
   void setSubtitle(String message);
 
-  void showList();
-
   void setOverlay(String key);
 }
