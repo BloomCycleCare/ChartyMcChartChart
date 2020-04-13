@@ -1,13 +1,12 @@
 package com.bloomcyclecare.cmcc.ui.entry.list.grid;
 
 import android.content.Context;
-import android.graphics.PorterDuff;
-import android.graphics.drawable.Drawable;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -50,10 +49,10 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
   }
 
-  void updateRow(List<Optional<CycleRenderer.RenderableEntry>> renderableEntries) {
+  void updateRow(List<Optional<CycleRenderer.RenderableEntry>> renderableEntries, ViewMode viewMode) {
     Preconditions.checkArgument(renderableEntries.size() == 35);
     for (int i=0; i<renderableEntries.size(); i++) {
-      mCells.get(i).update(renderableEntries.get(i));
+      mCells.get(i).update(renderableEntries.get(i), viewMode);
     }
     for (LinearLayout sectionLayout : mSections) {
       sectionLayout.setBackground(mContext.getDrawable(R.drawable.section_border));
@@ -75,52 +74,54 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       stickerView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
     }
 
-    public void update(Optional<CycleRenderer.RenderableEntry> renderableEntry) {
+    public void update(Optional<CycleRenderer.RenderableEntry> renderableEntry, ViewMode viewMode) {
       boundEntry = renderableEntry.orElse(null);
       if (renderableEntry.isPresent()) {
-        fillCell(renderableEntry.get());
+        fillCell(renderableEntry.get(), viewMode);
       } else {
         clearCell();
       }
     }
 
-    private void fillCell(CycleRenderer.RenderableEntry renderableEntry) {
+    private void fillCell(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
       List<String> parts = new ArrayList<>();
-      parts.add(renderableEntry.dateSummaryShort());
+      if (viewMode != ViewMode.TRAINING) {
+        parts.add(renderableEntry.dateSummaryShort());
+      }
       parts.add(renderableEntry.entrySummary());
       textView.setText(ON_NEW_LINE.join(parts));
-      if (renderableEntry.showBaby()) {
-        switch (renderableEntry.backgroundColor()) {
-          case WHITE:
-            stickerView.setBackground(context.getDrawable(R.drawable.sticker_white_baby));
-            break;
-          case GREEN:
-            stickerView.setBackground(context.getDrawable(R.drawable.sticker_green_baby));
-            break;
-          case YELLOW:
-            stickerView.setBackground(context.getDrawable(R.drawable.sticker_yellow_baby));
-            break;
-          default:
-            throw new IllegalStateException();
-        }
+
+      stickerView.setBackground(context.getDrawable(getStickerResourceID(renderableEntry, viewMode)));
+
+      if (viewMode != ViewMode.TRAINING) {
+        stickerView.setText(renderableEntry.peakDayText());
       } else {
-        stickerView.setBackground(context.getDrawable(R.drawable.border));
-        setColor(renderableEntry.backgroundColor().resourceId);
+        stickerView.setText(renderableEntry.trainingMarker());
       }
-      stickerView.setText(renderableEntry.peakDayText());
+    }
+
+    private int getStickerResourceID(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
+      if (viewMode == ViewMode.TRAINING) {
+        return R.drawable.sticker_grey;
+      }
+      switch (renderableEntry.backgroundColor()) {
+        case RED:
+          return R.drawable.sticker_red;
+        case GREEN:
+          return renderableEntry.showBaby() ? R.drawable.sticker_green_baby : R.drawable.sticker_green;
+        case WHITE:
+          return renderableEntry.showBaby() ? R.drawable.sticker_white_baby : R.drawable.sticker_white;
+        case YELLOW:
+          return renderableEntry.showBaby() ? R.drawable.sticker_yellow_baby : R.drawable.sticker_yellow;
+        default:
+          throw new IllegalStateException();
+      }
     }
 
     private void clearCell() {
       textView.setText("");
       stickerView.setText("");
-      setColor(R.color.entryGrey);
-    }
-
-    private void setColor(int resourceId) {
-      stickerView.setBackground(context.getDrawable(R.drawable.border));
-      Drawable drawable = stickerView.getBackground().mutate();
-      drawable.setTintMode(PorterDuff.Mode.SRC_OUT);
-      drawable.setTint(context.getColor(resourceId));
+      stickerView.setBackground(context.getDrawable(R.drawable.sticker_grey));
     }
   }
 }

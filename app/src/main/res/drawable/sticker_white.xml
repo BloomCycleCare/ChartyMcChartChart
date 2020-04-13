@@ -7,5 +7,4 @@
             <stroke android:width="@dimen/sticker_border_width" android:color="@android:color/black" />
         </shape>
     </item>
-    <item android:drawable="@drawable/ic_child_care_33_24dp" android:gravity="center"/>
 </layer-list>

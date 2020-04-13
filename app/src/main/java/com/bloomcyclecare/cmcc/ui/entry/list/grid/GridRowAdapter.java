@@ -19,7 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
 
-  private ViewMode viewMode;
+  private ViewMode mViewMode;
   private final List<List<Optional<CycleRenderer.RenderableEntry>>> mEntryLists = new ArrayList<>();
   private final Consumer<CycleRenderer.RenderableEntry> mImageClickConsumer;
   private final Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer;
@@ -30,7 +30,7 @@ public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
   }
 
   public void updateData(List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode) {
-    this.viewMode = viewMode;
+    this.mViewMode = viewMode;
     List<List<Optional<CycleRenderer.RenderableEntry>>> entryLists = new ArrayList<>();
     for (CycleRenderer.RenderableCycle renderableCycle : renderableCycles) {
       append(entryLists, renderableCycle.entries());
@@ -63,7 +63,7 @@ public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
 
   @Override
   public void onBindViewHolder(@NonNull GridRowViewHolder holder, int position) {
-    holder.updateRow(mEntryLists.get(position));
+    holder.updateRow(mEntryLists.get(position), mViewMode);
   }
 
   @Override

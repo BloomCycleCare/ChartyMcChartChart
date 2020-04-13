@@ -53,7 +53,7 @@ public class TrainingCycles {
       .addEntry(TrainingEntry.forText("H"))
       .addEntry(TrainingEntry.forText("H"))
       .addEntry(TrainingEntry.forText("M"))
-      .addEntry(TrainingEntry.forText("M"));
+      .addEntry(TrainingEntry.forText("M", "C"));
 
   public static TrainingCycle REGULAR_CYCLES_D = TrainingCycle
       .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
