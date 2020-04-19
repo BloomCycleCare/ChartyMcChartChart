@@ -68,7 +68,10 @@ public class PreferenceRepo {
     }
 
     public Single<Boolean> backupEnabled(Callable<Single<Boolean>> promptSupplier) {
-      return doTheStuff(Key.ENABLE_BACKUP_TO_DRIVE, Key.PROMPTED_FOR_BACKUP, promptSupplier);
+      return doTheStuff(Key.ENABLE_BACKUP_TO_DRIVE, Key.PROMPTED_FOR_BACKUP, promptSupplier)
+          .doOnSuccess(enabled -> {
+            mPrefs.edit().putBoolean(Key.ENABLE_BACKUP_TO_DRIVE.name(), enabled).commit();
+          });
     }
 
     public boolean publishEnabled() {
@@ -76,7 +79,10 @@ public class PreferenceRepo {
     }
 
     public Single<Boolean> publishEnabled(Callable<Single<Boolean>> promptSupplier) {
-      return doTheStuff(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE, Key.PROMPTED_FOR_PUBLISH, promptSupplier);
+      return doTheStuff(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE, Key.PROMPTED_FOR_PUBLISH, promptSupplier)
+          .doOnSuccess(enabled -> {
+            mPrefs.edit().putBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE.name(), enabled).commit();
+          });
     }
 
     public boolean defaultToDemoMode() {
@@ -101,7 +107,7 @@ public class PreferenceRepo {
         Timber.v("Prompt result: %b", v);
         mPrefs.edit()
             .putBoolean(togglePref.name(), v)
-            .putBoolean(Key.PROMPTED_FOR_PUBLISH.name(), true)
+            .putBoolean(promptPref.name(), true)
             .apply();
       });
     }
