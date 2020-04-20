@@ -646,6 +646,8 @@ public class CycleRenderer {
 
   @AutoValue
   public static abstract class RenderableEntry {
+    public abstract ChartEntry entry();
+    public abstract Set<AbstractInstruction> fertilityReasons();
     public abstract String entrySummary();
     public abstract StickerColor backgroundColor();
     public abstract int entryNum();
@@ -679,7 +681,9 @@ public class CycleRenderer {
         essentialSamenessSummary = "";
       }
       RenderableEntry renderableEntry = builder()
+          .entry(state.entry)
           .entryNum(state.entryNum)
+          .fertilityReasons(state.fertilityReasons)
           .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
           .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
@@ -734,6 +738,10 @@ public class CycleRenderer {
       public abstract Builder trainingMarker(String trainingMarker);
 
       public abstract Builder dateSummaryShort(String dateSummaryShort);
+
+      public abstract Builder entry(ChartEntry entry);
+
+      public abstract Builder fertilityReasons(Set<AbstractInstruction> fertilityReasons);
 
       public abstract RenderableEntry build();
     }

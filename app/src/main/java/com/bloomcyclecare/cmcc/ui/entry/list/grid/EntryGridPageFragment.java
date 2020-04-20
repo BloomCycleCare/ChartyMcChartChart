@@ -5,20 +5,22 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.logic.training.SelectionChecker;
+import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
+import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
+import com.google.common.base.Strings;
+
+import org.parceler.Parcels;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
-import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
-import com.google.common.base.Strings;
-
 import timber.log.Timber;
 
 public class EntryGridPageFragment extends Fragment {
@@ -37,7 +39,20 @@ public class EntryGridPageFragment extends Fragment {
         Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
         return;
       }
-      StickerDialogFragment fragment = new StickerDialogFragment(s -> checkSelection(re, s));
+      StickerDialogFragment fragment = new StickerDialogFragment(s -> {
+        SelectionChecker.Result result = SelectionChecker.check(s, re);
+        if (result.ok()) {
+          Timber.i("Correct!");
+        } else {
+          Timber.w("Incorrect, reason:%s, hint:%s",
+              result.reason.map(Enum::name).orElse(""),
+              result.hint.map(Enum::name).orElse(""));
+        }
+      });
+
+      Bundle args = new Bundle();
+      args.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(StickerSelection.fromRenderableEntry(re)));
+      fragment.setArguments(args);
       fragment.show(getFragmentManager(), "tag");
     }, re -> {// Text click
       if (mViewModel.currentViewMode() != ViewMode.CHARTING) {
@@ -47,10 +62,6 @@ public class EntryGridPageFragment extends Fragment {
       Timber.d("Navigating to detail activity");
       startActivity(EntryDetailActivity.createIntent(getContext(), re.modificationContext()));
     });
-  }
-
-  private void checkSelection(CycleRenderer.RenderableEntry renderableEntry, StickerSelection selection) {
-    // TODO
   }
 
   @Nullable

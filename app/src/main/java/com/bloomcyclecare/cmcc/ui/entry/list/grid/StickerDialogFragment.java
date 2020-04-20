@@ -11,16 +11,20 @@ import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.logic.training.SelectionChecker;
+import com.jakewharton.rxbinding2.widget.RxAdapterView;
+
+import org.parceler.Parcels;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 import androidx.fragment.app.DialogFragment;
-
-import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.models.Sticker;
-import com.jakewharton.rxbinding2.widget.RxAdapterView;
-
 import io.reactivex.disposables.CompositeDisposable;
+
+import static android.view.View.GONE;
 
 public class StickerDialogFragment extends DialogFragment {
 
@@ -45,10 +49,22 @@ public class StickerDialogFragment extends DialogFragment {
     return super.onCreateDialog(savedInstanceState);
   }
 
+  private TextView mHintTextView;
+  private TextView mInfoTextView;
+  private Button mShowHintButton;
+
   @Nullable
   @Override
   public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.dialog_select_sticker, container);
+
+    mInfoTextView = view.findViewById(R.id.tv_info);
+    mHintTextView = view.findViewById(R.id.tv_hint);
+    mShowHintButton = view.findViewById(R.id.button_show_hint);
+    mShowHintButton.setOnClickListener(v -> {
+      showHint();
+    });
+    clearResultView();
 
     TextView stickerTextView = view.findViewById(R.id.sticker);
 
@@ -58,39 +74,11 @@ public class StickerDialogFragment extends DialogFragment {
     stickerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     stickerSpinner.setAdapter(stickerAdapter);
     mDisposables.add(RxAdapterView.itemSelections(stickerSpinner)
-        .map(index -> Sticker.values()[index])
+        .map(index -> StickerSelection.Sticker.values()[index])
         .subscribe(sticker -> {
-          int resourceId;
-          switch (sticker) {
-            case GREY:
-              resourceId = R.drawable.sticker_grey;
-              break;
-            case RED:
-              resourceId = R.drawable.sticker_red;
-              break;
-            case WHITE:
-              resourceId = R.drawable.sticker_white;
-              break;
-            case WHITE_BABY:
-              resourceId = R.drawable.sticker_white_baby;
-              break;
-            case YELLOW:
-              resourceId = R.drawable.sticker_yellow;
-              break;
-            case YELLOW_BABY:
-              resourceId = R.drawable.sticker_yellow_baby;
-              break;
-            case GREEN:
-              resourceId = R.drawable.sticker_green;
-              break;
-            case GREEN_BABY:
-              resourceId = R.drawable.sticker_green_baby;
-              break;
-            default:
-              throw new IllegalStateException();
-          }
-          stickerTextView.setBackground(getContext().getDrawable(resourceId));
+          stickerTextView.setBackground(getContext().getDrawable(sticker.resourceId));
           selection.sticker = sticker;
+          clearResultView();
         }));
 
     Spinner textSpinner = view.findViewById(R.id.text_selector_spinner);
@@ -105,21 +93,60 @@ public class StickerDialogFragment extends DialogFragment {
           }
           return getContext().getResources().getStringArray(R.array.sticker_text)[index];
         })
-        .subscribe(text -> {
-          selection.text = text;
-          stickerTextView.setText(text);
+        .subscribe(str -> {
+          selection.text = StickerSelection.Text.fromString(str);
+          stickerTextView.setText(str);
+          clearResultView();
         }));
 
     Button mButtonCancel = view.findViewById(R.id.button_cancel);
     mButtonCancel.setOnClickListener(v -> {
-      selectionConsumer.accept(selection);
-      dismiss();
-    });
-    Button mButtonConfirm = view.findViewById(R.id.button_confirm);
-    mButtonConfirm.setOnClickListener(v -> {
       dismiss();
     });
 
+    StickerSelection expected = Parcels.unwrap(getArguments().getParcelable(
+        StickerSelection.class.getCanonicalName()));
+
+    Button mButtonConfirm = view.findViewById(R.id.button_confirm);
+    mButtonConfirm.setOnClickListener(v -> {
+      if (selection.isEmpty()) {
+        renderEmptySelect();
+        return;
+      }
+      SelectionChecker.Result result = SelectionChecker.check(selection, expected);
+      if (result.ok()) {
+        dismiss();
+        return;
+      }
+      renderIncorrectResult(result);
+    });
+
     return view;
+  }
+
+  private void showHint() {
+    mHintTextView.setVisibility(View.VISIBLE);
+    mShowHintButton.setVisibility(GONE);
+  }
+
+  private void renderEmptySelect() {
+    mInfoTextView.setVisibility(View.VISIBLE);
+    mInfoTextView.setText("Please make a selection");
+  }
+
+  private void clearResultView() {
+    mInfoTextView.setVisibility(GONE);
+    mHintTextView.setVisibility(GONE);
+    mShowHintButton.setVisibility(GONE);
+  }
+
+  private void renderIncorrectResult(SelectionChecker.Result result) {
+    mInfoTextView.setVisibility(View.VISIBLE);
+    mInfoTextView.setText(String.format("Incorrect...\nreason: %s",
+        result.reason.map(Enum::name).orElse("")));
+    mHintTextView.setText(String.format("hint: %s",
+        result.hint.map(Enum::name).orElse("")));
+
+    mShowHintButton.setVisibility(View.VISIBLE);
   }
 }

@@ -109,10 +109,10 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
           return R.drawable.sticker_red;
         case GREY:
           return R.drawable.sticker_grey;
+        case WHITE:
+          return R.drawable.sticker_white_baby;
         case GREEN:
           return renderableEntry.showBaby() ? R.drawable.sticker_green_baby : R.drawable.sticker_green;
-        case WHITE:
-          return renderableEntry.showBaby() ? R.drawable.sticker_white_baby : R.drawable.sticker_white;
         case YELLOW:
           return renderableEntry.showBaby() ? R.drawable.sticker_yellow_baby : R.drawable.sticker_yellow;
         default:
