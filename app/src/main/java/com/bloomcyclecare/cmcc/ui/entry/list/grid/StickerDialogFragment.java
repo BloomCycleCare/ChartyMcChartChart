@@ -115,6 +115,7 @@ public class StickerDialogFragment extends DialogFragment {
       }
       SelectionChecker.Result result = SelectionChecker.check(selection, expected);
       if (result.ok()) {
+        selectionConsumer.accept(selection);
         dismiss();
         return;
       }

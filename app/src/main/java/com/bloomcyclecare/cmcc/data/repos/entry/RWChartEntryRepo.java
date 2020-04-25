@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -25,6 +26,8 @@ public interface RWChartEntryRepo extends ROChartEntryRepo {
   }
 
   Flowable<UpdateEvent> updateEvents();
+
+  Completable updateStickerSelection(LocalDate date, StickerSelection selection);
 
   Completable insert(ChartEntry entry);
 

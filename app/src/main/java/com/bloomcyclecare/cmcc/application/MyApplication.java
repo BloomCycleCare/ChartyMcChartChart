@@ -15,6 +15,8 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -68,6 +70,7 @@ public class MyApplication extends Application {
   private ChartEntryRepoFactory mChartEntryRepoFactory;
   private PregnancyRepoFactory mPregnancyRepoFactory;
   private PreferenceRepo mPreferenceRepo;
+  private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -101,10 +104,11 @@ public class MyApplication extends Application {
         //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
-    mInstructionsRepoFactory = new InstructionsRepoFactory(db);
-    mChartEntryRepoFactory = new ChartEntryRepoFactory(db);
-    mCycleRepoFactory = new CycleRepoFactory(db);
-    mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory);
+    mInstructionsRepoFactory = new InstructionsRepoFactory(db, FALLBACK_VIEW_MODE);
+    mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(FALLBACK_VIEW_MODE);
+    mChartEntryRepoFactory = new ChartEntryRepoFactory(db, FALLBACK_VIEW_MODE);
+    mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
+    mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
 
     mViewModelFactory = new ViewModelFactory();
@@ -192,7 +196,7 @@ public class MyApplication extends Application {
   }
 
   public RWInstructionsRepo instructionsRepo(ViewMode viewMode) {
-    return mInstructionsRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
+    return mInstructionsRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated
@@ -201,7 +205,7 @@ public class MyApplication extends Application {
   }
 
   public RWCycleRepo cycleRepo(ViewMode viewMode) {
-    return mCycleRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
+    return mCycleRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated
@@ -210,7 +214,7 @@ public class MyApplication extends Application {
   }
 
   public RWChartEntryRepo entryRepo(ViewMode viewMode) {
-    return mChartEntryRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
+    return mChartEntryRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated
@@ -223,7 +227,11 @@ public class MyApplication extends Application {
   }
 
   public RWPregnancyRepo pregnancyRepo(ViewMode viewMode) {
-    return mPregnancyRepoFactory.forViewMode(viewMode, FALLBACK_VIEW_MODE);
+    return mPregnancyRepoFactory.forViewMode(viewMode);
+  }
+
+  public RWStickerSelectionRepo stickerSelectionRepo(ViewMode viewMode) {
+    return mStickerSelectionRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated

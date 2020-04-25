@@ -1,55 +1,54 @@
 package com.bloomcyclecare.cmcc.data.models;
 
-import android.os.Parcel;
-import android.os.Parcelable;
-
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
-import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 
 import org.joda.time.LocalDate;
-import org.parceler.Parcels;
+import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 
 /**
  * Created by parkeroth on 9/23/17.
  */
-
-public class ChartEntry implements Parcelable, Comparable<ChartEntry> {
-  public final LocalDate entryDate;
-  public final ObservationEntry observationEntry;
-  public final WellnessEntry wellnessEntry;
-  public final SymptomEntry symptomEntry;
+@Parcel
+public class ChartEntry implements Comparable<ChartEntry> {
+  public LocalDate entryDate;
+  public ObservationEntry observationEntry;
+  public WellnessEntry wellnessEntry;
+  public SymptomEntry symptomEntry;
+  @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
 
-  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
+  public ChartEntry() {}
+
+  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
         observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
     this.observationEntry = observationEntry;
     this.wellnessEntry = wellnessEntry;
     this.symptomEntry = symptomEntry;
+    this.stickerSelection = stickerSelection;
   }
 
-  protected ChartEntry(Parcel in) {
-    this(DateUtil.fromWireStr(in.readString()),
-        Parcels.unwrap(in.readParcelable(ObservationEntry.class.getClassLoader())),
-        in.readParcelable(WellnessEntry.class.getClassLoader()),
-        in.readParcelable(SymptomEntry.class.getClassLoader()));
+  @Deprecated
+  public static ChartEntry withoutStickerSelection(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry) {
+    return new ChartEntry(entryDate, observationEntry, wellnessEntry, symptomEntry, null);
   }
 
   public static ChartEntry emptyEntry(LocalDate entryDate) {
     return new ChartEntry(
-        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate));
+        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), null);
   }
 
   @NonNull
@@ -82,31 +81,6 @@ public class ChartEntry implements Parcelable, Comparable<ChartEntry> {
   }
 
   @Override
-  public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(DateUtil.toWireStr(entryDate));
-    dest.writeParcelable(Parcels.wrap(observationEntry), flags);
-    dest.writeParcelable(wellnessEntry, flags);
-    dest.writeParcelable(symptomEntry, flags);
-  }
-
-  @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  public static final Creator<ChartEntry> CREATOR = new Creator<ChartEntry>() {
-    @Override
-    public ChartEntry createFromParcel(Parcel in) {
-      return new ChartEntry(in);
-    }
-
-    @Override
-    public ChartEntry[] newArray(int size) {
-      return new ChartEntry[size];
-    }
-  };
-
-  @Override
   public boolean equals(Object obj) {
     if (obj == null) {
       return false;
@@ -117,14 +91,15 @@ public class ChartEntry implements Parcelable, Comparable<ChartEntry> {
       return Objects.equal(this.entryDate, that.entryDate)
           && Objects.equal(this.observationEntry, that.observationEntry)
           && Objects.equal(this.wellnessEntry, that.wellnessEntry)
-          && Objects.equal(this.symptomEntry, that.symptomEntry);
+          && Objects.equal(this.symptomEntry, that.symptomEntry)
+          && Objects.equal(this.stickerSelection, that.stickerSelection);
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry);
+    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry, stickerSelection);
   }
 
   @Override

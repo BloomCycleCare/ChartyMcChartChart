@@ -16,12 +16,13 @@ public class CycleRepoFactory extends RepoFactory<RWCycleRepo> {
 
   private final RWCycleRepo mChartingRepo;
 
-  public CycleRepoFactory(@NonNull AppDatabase db) {
+  public CycleRepoFactory(@NonNull AppDatabase db, ViewMode fallbackViewMode) {
+    super(fallbackViewMode);
     mChartingRepo = new RoomCycleRepo(db);
   }
 
   @Override
-  protected Optional<RWCycleRepo> forViewMode(ViewMode viewMode) {
+  protected Optional<RWCycleRepo> forViewModeInternal(ViewMode viewMode) {
     switch (viewMode) {
       case CHARTING:
         return Optional.of(mChartingRepo);

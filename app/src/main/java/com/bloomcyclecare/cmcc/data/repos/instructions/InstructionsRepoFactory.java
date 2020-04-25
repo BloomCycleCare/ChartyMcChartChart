@@ -14,12 +14,13 @@ public class InstructionsRepoFactory extends RepoFactory<RWInstructionsRepo> {
 
   private final RWInstructionsRepo mChartingRepo;
 
-  public InstructionsRepoFactory(AppDatabase db) {
+  public InstructionsRepoFactory(AppDatabase db, ViewMode fallbackViewMode) {
+    super(fallbackViewMode);
     mChartingRepo = new RoomInstructionsRepo(db);
   }
 
   @Override
-  protected Optional<RWInstructionsRepo> forViewMode(ViewMode viewMode) {
+  protected Optional<RWInstructionsRepo> forViewModeInternal(ViewMode viewMode) {
     switch (viewMode) {
       case CHARTING:
         return Optional.of(mChartingRepo);

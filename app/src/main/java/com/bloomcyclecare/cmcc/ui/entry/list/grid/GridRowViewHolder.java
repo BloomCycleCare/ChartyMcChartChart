@@ -7,6 +7,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -96,28 +97,26 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       if (viewMode != ViewMode.TRAINING) {
         stickerView.setText(renderableEntry.peakDayText());
       } else {
-        stickerView.setText(renderableEntry.trainingMarker());
+        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
+        if (stickerSelection == null) {
+          stickerView.setText(renderableEntry.trainingMarker());
+        } else {
+          stickerView.setText(Optional.ofNullable(stickerSelection.text)
+              .map(t -> String.valueOf(t.value))
+              .orElse(""));
+        }
       }
     }
 
     private int getStickerResourceID(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
       if (viewMode == ViewMode.TRAINING) {
-        return R.drawable.sticker_grey;
-      }
-      switch (renderableEntry.backgroundColor()) {
-        case RED:
-          return R.drawable.sticker_red;
-        case GREY:
+        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
+        if (stickerSelection == null || stickerSelection.sticker == null) {
           return R.drawable.sticker_grey;
-        case WHITE:
-          return R.drawable.sticker_white_baby;
-        case GREEN:
-          return renderableEntry.showBaby() ? R.drawable.sticker_green_baby : R.drawable.sticker_green;
-        case YELLOW:
-          return renderableEntry.showBaby() ? R.drawable.sticker_yellow_baby : R.drawable.sticker_yellow;
-        default:
-          throw new IllegalStateException("Could not determine sticker for %s: " + renderableEntry.backgroundColor().name());
+        }
+        return stickerSelection.sticker.resourceId;
       }
+      return StickerSelection.fromRenderableEntry(renderableEntry).sticker.resourceId;
     }
 
     private void clearCell() {

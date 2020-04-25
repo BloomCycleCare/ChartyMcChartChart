@@ -131,7 +131,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
     for (Map.Entry<TrainingEntry, Boolean> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
-      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
+      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null, null));
       tests.add(renderableEntry -> {
         StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert

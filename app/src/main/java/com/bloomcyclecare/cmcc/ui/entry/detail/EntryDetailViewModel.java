@@ -183,7 +183,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         clarifyingQuestionRenderUpdates,
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
+              ChartEntry.withoutStickerSelection(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
 

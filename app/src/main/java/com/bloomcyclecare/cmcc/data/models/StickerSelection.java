@@ -4,7 +4,6 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
 import com.google.common.base.Objects;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
 import org.parceler.Parcel;
@@ -13,7 +12,6 @@ import androidx.annotation.Nullable;
 import timber.log.Timber;
 
 import static com.bloomcyclecare.cmcc.data.models.StickerSelection.Sticker.GREY;
-import static com.bloomcyclecare.cmcc.data.models.StickerSelection.Sticker.YELLOW;
 import static com.bloomcyclecare.cmcc.logic.chart.StickerColor.WHITE;
 
 @Parcel
@@ -22,43 +20,23 @@ public class StickerSelection {
   public Sticker sticker;
   public Text text;
 
-  public static StickerSelection fromRenderableEntry(CycleRenderer.RenderableEntry renderableEntry) {
-    Preconditions.checkArgument(renderableEntry.peakDayText().length() <= 1);
+  public static StickerSelection create(Sticker sticker, Text text) {
     StickerSelection stickerSelection = new StickerSelection();
-    stickerSelection.text = Text.fromString(renderableEntry.peakDayText());
-    if (renderableEntry.showBaby()) {
-      switch (renderableEntry.backgroundColor()) {
-        case GREEN:
-          stickerSelection.sticker = Sticker.GREEN_BABY;
-          break;
-        case WHITE:
-          stickerSelection.sticker = Sticker.WHITE_BABY;
-          break;
-        case YELLOW:
-          stickerSelection.sticker = Sticker.YELLOW_BABY;
-          break;
-        default:
-          throw new IllegalStateException();
-      }
-    } else {
-      switch (renderableEntry.backgroundColor()) {
-        case GREY:
-          stickerSelection.sticker = GREY;
-          break;
-        case GREEN:
-          stickerSelection.sticker = Sticker.GREEN;
-          break;
-        case RED:
-          stickerSelection.sticker = Sticker.RED;
-          break;
-        case YELLOW:
-          stickerSelection.sticker = YELLOW;
-          break;
-        default:
-          throw new IllegalStateException();
-      }
-    }
+    stickerSelection.text = text;
+    stickerSelection.sticker = sticker;
     return stickerSelection;
+  }
+
+  public static StickerSelection fromExpectations(TrainingCycle.StickerExpectations expectations) {
+    return create(
+        Sticker.fromStickerColor(expectations.backgroundColor, expectations.shouldHaveBaby),
+        Text.fromString(expectations.peakText));
+  }
+
+  public static StickerSelection fromRenderableEntry(CycleRenderer.RenderableEntry renderableEntry) {
+    return create(
+        Sticker.fromStickerColor(renderableEntry.backgroundColor(), renderableEntry.showBaby()),
+        Text.fromString(renderableEntry.peakDayText()));
   }
 
   public boolean hasSticker() {
@@ -105,6 +83,34 @@ public class StickerSelection {
       this.color = color;
       this.hasBaby = hasBaby;
       this.resourceId = resourceId;
+    }
+
+    public static Sticker fromStickerColor(StickerColor stickerColor, boolean showBaby) {
+      if (showBaby) {
+        switch (stickerColor) {
+          case GREEN:
+            return Sticker.GREEN_BABY;
+          case WHITE:
+            return Sticker.WHITE_BABY;
+          case YELLOW:
+            return Sticker.YELLOW_BABY;
+          default:
+            throw new IllegalStateException();
+        }
+      } else {
+        switch (stickerColor) {
+          case GREY:
+            return GREY;
+          case GREEN:
+            return Sticker.GREEN;
+          case RED:
+            return Sticker.RED;
+          case YELLOW:
+            return YELLOW;
+          default:
+            throw new IllegalStateException();
+        }
+      }
     }
   }
 

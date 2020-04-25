@@ -8,15 +8,21 @@ import timber.log.Timber;
 
 public abstract class RepoFactory<T> {
 
-  protected abstract Optional<T> forViewMode(ViewMode viewMode);
+  private final ViewMode mFallbackViewMode;
 
-  public final T forViewMode(ViewMode viewMode, ViewMode fallback) {
-    Optional<T> t = forViewMode(viewMode);
+  protected RepoFactory(ViewMode fallbackViewMode) {
+    this.mFallbackViewMode = fallbackViewMode;
+  }
+
+  protected abstract Optional<T> forViewModeInternal(ViewMode viewMode);
+
+  public final T forViewMode(ViewMode viewMode) {
+    Optional<T> t = forViewModeInternal(viewMode);
     if (t.isPresent()) {
       return t.get();
     }
     Timber.w("Using fallback report for unsupported ViewMode: %s", viewMode.name());
-    t = forViewMode(fallback);
+    t = forViewModeInternal(mFallbackViewMode);
     if (t.isPresent()) {
       return t.get();
     }

@@ -1,6 +1,8 @@
 package com.bloomcyclecare.cmcc.ui.entry.list;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
@@ -33,6 +35,7 @@ import com.google.common.io.Files;
 import java.io.File;
 
 import androidx.activity.OnBackPressedCallback;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -51,6 +54,9 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
+
+import static android.content.res.Configuration.ORIENTATION_LANDSCAPE;
+import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 
 public class ChartEntryListActivity extends AppCompatActivity
     implements EntryListView, NavigationView.OnNavigationItemSelectedListener {
@@ -214,9 +220,17 @@ public class ChartEntryListActivity extends AppCompatActivity
   }
 
   @Override
-  public void onConfigurationChanged(Configuration newConfig) {
+  public void onConfigurationChanged(@NonNull Configuration newConfig) {
     super.onConfigurationChanged(newConfig);
     mDrawerToggle.onConfigurationChanged(newConfig);
+    switch (newConfig.orientation) {
+      case ORIENTATION_LANDSCAPE:
+        mViewModel.setLandscapeMode();
+        break;
+      case ORIENTATION_PORTRAIT:
+        mViewModel.setPortraitMode();
+        break;
+    }
   }
 
   @Override
@@ -262,6 +276,7 @@ public class ChartEntryListActivity extends AppCompatActivity
     return true;
   }
 
+  @SuppressLint("SourceLockedOrientationActivity")
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     // Handle action bar item clicks here. The action bar will
@@ -327,6 +342,14 @@ public class ChartEntryListActivity extends AppCompatActivity
     }
 
     if (id == R.id.action_toggle_layout) {
+      switch (getResources().getConfiguration().orientation) {
+        case ORIENTATION_PORTRAIT:
+          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
+          break;
+        case ORIENTATION_LANDSCAPE:
+          setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+          break;
+      }
       mViewModel.toggleLayoutMode().subscribe();
     }
 

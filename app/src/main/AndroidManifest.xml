@@ -64,6 +64,7 @@
             android:name=".ui.entry.list.ChartEntryListActivity"
             android:label="@string/app_name"
             android:launchMode="singleTop"
+            android:configChanges="orientation|screenSize"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".ui.print.PrintChartActivity"

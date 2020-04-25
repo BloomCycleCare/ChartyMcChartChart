@@ -5,8 +5,9 @@ import android.app.Application;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
-import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
@@ -50,6 +51,7 @@ public class EntryListViewModel extends AndroidViewModel {
   private final Subject<LayoutMode> mCurrentLayoutMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
+  private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
 
   private EntryListViewModel(@NonNull Application application, ViewMode viewMode) {
     super(application);
@@ -66,8 +68,9 @@ public class EntryListViewModel extends AndroidViewModel {
   private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
     ROInstructionsRepo instructionsRepo = mApplication.instructionsRepo(viewMode);
     ROCycleRepo cycleRepo = mApplication.cycleRepo(viewMode);
-    ROChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
     ROPregnancyRepo pregnancyRepo = mApplication.pregnancyRepo(viewMode);
+    RWChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
+    mEntryRepoSubject.onNext(entryRepo);
 
     Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
             instructionsRepo.getAll()
@@ -79,7 +82,7 @@ public class EntryListViewModel extends AndroidViewModel {
                 .observeOn(Schedulers.computation())
                 .parallel()
                 .map(cycle -> Flowable.combineLatest(
-                    entryRepo.getStreamForCycle(Flowable.just(cycle)),
+                    entryRepo.getStreamForCycle(Flowable.just(cycle)).doOnNext(l -> Timber.i("NEXT!")).doOnComplete(() -> Timber.i("COMPLETE!")),
                     cycleRepo.getPreviousCycle(cycle)
                         .map(Optional::of).defaultIfEmpty(Optional.empty())
                         .toFlowable(),
@@ -127,6 +130,14 @@ public class EntryListViewModel extends AndroidViewModel {
     });
   }
 
+  void setPortraitMode() {
+    mTargetLayoutMode.onNext(Optional.of(LayoutMode.LIST));
+  }
+
+  void setLandscapeMode() {
+    mTargetLayoutMode.onNext(Optional.of(LayoutMode.GRID));
+  }
+
   void completeLayoutTransition(LayoutMode layoutMode) {
     Optional<LayoutMode> currentTransition = mTargetLayoutMode.blockingFirst();
     if (!currentTransition.isPresent() || currentTransition.get() == layoutMode) {
@@ -151,6 +162,11 @@ public class EntryListViewModel extends AndroidViewModel {
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
+  }
+
+  public Completable updateSticker(LocalDate entryDate, StickerSelection selection) {
+    return mEntryRepoSubject.firstOrError()
+        .flatMapCompletable(entryRepo -> entryRepo.updateStickerSelection(entryDate, selection));
   }
 
   @VisibleForTesting

@@ -43,7 +43,7 @@ public abstract class BaseRendererTest {
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
     for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
-      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null));
+      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null, null));
       Optional<TrainingCycle.StickerExpectations> stickerExpectations = anEntry.getValue();
       if (stickerExpectations.isPresent()) {
         tests.add(renderableEntry -> {

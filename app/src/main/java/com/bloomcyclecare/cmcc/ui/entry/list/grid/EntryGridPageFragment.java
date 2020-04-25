@@ -8,7 +8,6 @@ import android.view.ViewGroup;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.training.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
 import com.google.common.base.Strings;
@@ -39,15 +38,8 @@ public class EntryGridPageFragment extends Fragment {
         Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
         return;
       }
-      StickerDialogFragment fragment = new StickerDialogFragment(s -> {
-        SelectionChecker.Result result = SelectionChecker.check(s, re);
-        if (result.ok()) {
-          Timber.i("Correct!");
-        } else {
-          Timber.w("Incorrect, reason:%s, hint:%s",
-              result.reason.map(Enum::name).orElse(""),
-              result.hint.map(Enum::name).orElse(""));
-        }
+      StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
+        mViewModel.updateSticker(re.entry().entryDate, selection).subscribe();
       });
 
       Bundle args = new Bundle();

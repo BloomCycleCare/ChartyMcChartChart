@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Flowable;
 import io.reactivex.annotations.Nullable;
-import timber.log.Timber;
 
 /**
  * Created by parkeroth on 5/14/17.
@@ -82,8 +81,7 @@ public class DateUtil {
     long millisToMidnight = LocalDate.now().plusDays(1).toDate().getTime() - DateTime.now().getMillis();
     return Flowable.interval(millisToMidnight, 1, TimeUnit.DAYS)
         .map(i -> LocalDate.now())
-        .startWith(LocalDate.now())
-        .doOnNext(now -> Timber.v("Now: %s", now));
+        .startWith(LocalDate.now());
   }
 
   public static List<LocalDate> daysBetween(LocalDate firstDay, @Nullable LocalDate lastDay, boolean reversed) {
