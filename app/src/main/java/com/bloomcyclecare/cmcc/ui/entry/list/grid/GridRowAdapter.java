@@ -49,7 +49,7 @@ public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
       listOfLists.add(entries.stream().map(Optional::of).collect(Collectors.toList()));
     } else {
       append(listOfLists, entries.subList(0, 35));
-      append(listOfLists, entries.subList(35, entries.size() - 1));
+      append(listOfLists, entries.subList(35, entries.size()));
     }
   }
 

@@ -108,7 +108,7 @@ public class EntryListFragment extends Fragment {
     mRecyclerView.setVisibility(View.VISIBLE);
 
     mViewModel.updateScrollState(getScrollState());
-    mViewModel.viewState().observe(this, this::render);
+    mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
     return view;
   }

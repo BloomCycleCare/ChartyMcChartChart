@@ -48,7 +48,7 @@ class FragmentViewModel extends AndroidViewModel {
         .map(CycleRenderer::render);
 
     Flowable<ScrollState> scrollStateFlowable = mScrollEventsFromUI
-        .sample(200, TimeUnit.MILLISECONDS)
+        .sample(500, TimeUnit.MILLISECONDS)
         .toFlowable(BackpressureStrategy.BUFFER);
 
     Flowable.combineLatest(
