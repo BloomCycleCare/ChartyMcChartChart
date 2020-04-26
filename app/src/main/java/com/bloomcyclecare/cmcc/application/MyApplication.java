@@ -45,6 +45,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.SingleSubject;
 import timber.log.Timber;
@@ -119,13 +120,22 @@ public class MyApplication extends Application {
 
 
     Flowable<UpdateTrigger> triggerStream = Flowable.merge(
-        cycleRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New cycle update")) ,
-        entryRepo().updateEvents().flatMap(e -> cycleRepo()
-            .getCycleForDate(e.updateTarget).toSingle()
-            .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
-            .map(range -> new UpdateTrigger(e.updateTime, range))
-            .toFlowable()).doOnNext(t -> Timber.v("New entry update")),
-        instructionsRepo().updateEvents().map(e -> new UpdateTrigger(e.updateTime, e.dateRange)).doOnNext(t -> Timber.v("New instruction update")))
+        cycleRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
+            .doOnNext(t -> Timber.v("New cycle update")) ,
+        entryRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .flatMap(e -> cycleRepo(ViewMode.CHARTING)
+                .getCycleForDate(e.updateTarget).toSingle()
+                .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
+                .map(range -> new UpdateTrigger(e.updateTime, range))
+                .toFlowable())
+            .doOnNext(t -> Timber.v("New entry update")),
+        instructionsRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
+            .doOnNext(t -> Timber.v("New instruction update")))
         .share();
 
     Flowable<List<UpdateTrigger>> batchedTriggers = Flowable.merge(
@@ -171,7 +181,7 @@ public class MyApplication extends Application {
         .subscribe(request -> {
           Timber.d("Received work request for publish");
           WorkManager.getInstance(getApplicationContext()).enqueue(request);
-        }, Timber::e));
+        }, t -> Timber.e(t, "Error creating publish request")));
 
     mDisposables.add(batchedTriggers
         //.startWith(ImmutableList.<UpdateTrigger>of())
@@ -182,7 +192,7 @@ public class MyApplication extends Application {
         .subscribe(request -> {
           Timber.d("Received work request for backup");
           WorkManager.getInstance(getApplicationContext()).enqueue(request);
-        }, Timber::e));
+        }, t -> Timber.e("Error creating backup request")));
 
     mDisposables.add(mDriveSubject.subscribe(
         s -> Timber.d("DriveServiceHelper initialized."),

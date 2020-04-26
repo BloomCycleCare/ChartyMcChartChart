@@ -3,7 +3,6 @@ package com.bloomcyclecare.cmcc.ui.init;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,7 +16,6 @@ import timber.log.Timber;
 
 public class SplashFragment extends Fragment {
 
-  private static boolean DEBUG = true;
   private static String TAG = SplashFragment.class.getSimpleName();
 
   private ProgressBar mProgressBar;
@@ -26,13 +24,6 @@ public class SplashFragment extends Fragment {
 
   public SplashFragment() {
     // Required empty public constructor
-  }
-
-  public static SplashFragment newInstance() {
-    SplashFragment fragment = new SplashFragment();
-    Bundle args = new Bundle();
-    fragment.setArguments(args);
-    return fragment;
   }
 
   @Override
@@ -69,34 +60,22 @@ public class SplashFragment extends Fragment {
     if (activity == null) {
       return;
     }
-    activity.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        mProgressBar.setVisibility(View.VISIBLE);
-
-        updateStatus(message);
-        mStatusView.setVisibility(View.VISIBLE);
-
-        mErrorView.setText("");
-        mErrorView.setVisibility(View.INVISIBLE);
-
-        Timber.i(message);
-      }
+    activity.runOnUiThread(() -> {
+      mProgressBar.setVisibility(View.VISIBLE);
+      updateStatus(message);
+      mStatusView.setVisibility(View.VISIBLE);
+      mErrorView.setText("");
+      mErrorView.setVisibility(View.INVISIBLE);
+      Timber.i(message);
     });
   }
 
   public void updateStatus(final String status) {
-    if (DEBUG) Log.v(TAG, "Update: " + status);
     Activity activity = getActivity();
     if (activity == null) {
       return;
     }
-    getActivity().runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        mStatusView.setText(status);
-      }
-    });
+    getActivity().runOnUiThread(() -> mStatusView.setText(status));
   }
 
   public void showError(final String errorText) {
@@ -104,16 +83,11 @@ public class SplashFragment extends Fragment {
     if (activity == null) {
       return;
     }
-    activity.runOnUiThread(new Runnable() {
-      @Override
-      public void run() {
-        mProgressBar.setVisibility(View.INVISIBLE);
-
-        mStatusView.setVisibility(View.INVISIBLE);
-
-        mErrorView.setText(errorText);
-        mErrorView.setVisibility(View.VISIBLE);
-      }
+    activity.runOnUiThread(() -> {
+      mProgressBar.setVisibility(View.INVISIBLE);
+      mStatusView.setVisibility(View.INVISIBLE);
+      mErrorView.setText(errorText);
+      mErrorView.setVisibility(View.VISIBLE);
     });
   }
 

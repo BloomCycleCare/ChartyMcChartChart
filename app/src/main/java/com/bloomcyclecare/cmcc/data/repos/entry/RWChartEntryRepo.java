@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.data.repos.BatchingRepo;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -9,7 +10,7 @@ import org.joda.time.LocalDate;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 
-public interface RWChartEntryRepo extends ROChartEntryRepo {
+public interface RWChartEntryRepo extends ROChartEntryRepo, BatchingRepo {
 
   class UpdateEvent {
     public final DateTime updateTime;

@@ -13,11 +13,13 @@ import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.Iterables;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import androidx.core.util.Pair;
 import io.reactivex.BackpressureStrategy;
@@ -33,11 +35,40 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
+  private AtomicBoolean batchUpdate = new AtomicBoolean();
 
   RoomChartEntryRepo(AppDatabase db) {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
+  }
+
+  @Override
+  public boolean beginBatchUpdates() {
+    if (!batchUpdate.compareAndSet(false, true)) {
+      Timber.w("Already in batch mode!");
+      return false;
+    }
+    return true;
+  }
+
+  @Override
+  public boolean completeBatchUpdates() {
+    if (!batchUpdate.compareAndSet(true, false)) {
+      Timber.w("Not in batch mode!");
+      return false;
+    }
+    // TODO: something fancier
+    updates.onNext(new UpdateEvent(DateTime.now(), LocalDate.now()));
+    return true;
+  }
+
+  private void maybeSendUpdate(ChartEntry entry) {
+    if (batchUpdate.get()) {
+      Timber.d("Skipping update while in batch mode");
+      return;
+    }
+    updates.onNext(UpdateEvent.forEntry(entry));
   }
 
   @Override
@@ -122,7 +153,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.insert(entry.observationEntry),
         wellnessEntryDao.insert(entry.wellnessEntry),
         symptomEntryDao.insert(entry.symptomEntry))
-        .doOnComplete(() -> updates.onNext(RWChartEntryRepo.UpdateEvent.forEntry(entry)));
+        .doOnComplete(() -> maybeSendUpdate(entry));
   }
 
   @Override
@@ -141,7 +172,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.delete(entry.observationEntry),
         wellnessEntryDao.delete(entry.wellnessEntry),
         symptomEntryDao.delete(entry.symptomEntry))
-        .doOnComplete(() -> updates.onNext(RWChartEntryRepo.UpdateEvent.forEntry(entry)));
+        .doOnComplete(() -> maybeSendUpdate(entry));
   }
 
   private Flowable<ChartEntry> getStream(LocalDate entryDate) {

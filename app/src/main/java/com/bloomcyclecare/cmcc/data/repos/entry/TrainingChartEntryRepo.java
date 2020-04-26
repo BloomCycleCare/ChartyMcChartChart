@@ -125,4 +125,14 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
     return Completable.error(
         new UnsupportedOperationException("Updates not supported on training repo"));
   }
+
+  @Override
+  public boolean beginBatchUpdates() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean completeBatchUpdates() {
+    throw new UnsupportedOperationException();
+  }
 }

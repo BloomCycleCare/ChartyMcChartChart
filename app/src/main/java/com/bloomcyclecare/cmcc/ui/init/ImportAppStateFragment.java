@@ -80,6 +80,12 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
         })
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
+        .doOnSubscribe(d -> {
+          mEntryRepo.beginBatchUpdates();
+        })
+        .doOnTerminate(() -> {
+          mEntryRepo.completeBatchUpdates();
+        })
         .subscribe(cycle -> {
           showProgress("Staring app");
           Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
