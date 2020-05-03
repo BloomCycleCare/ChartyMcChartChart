@@ -26,6 +26,7 @@ import com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListActivity;
 import com.bloomcyclecare.cmcc.ui.print.PrintChartActivity;
 import com.bloomcyclecare.cmcc.ui.profile.ProfileActivity;
 import com.bloomcyclecare.cmcc.ui.settings.SettingsActivity;
+import com.bloomcyclecare.cmcc.ui.training.TrainingActivity;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationView;
@@ -130,11 +131,9 @@ public class ChartEntryListActivity extends AppCompatActivity
       switch (viewState.viewMode) {
         case TRAINING:
           setTitle("Training Cycle");
-          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.renderableCycles.size()));
           break;
         case DEMO:
           setTitle("Demo Cycle");
-          setSubtitle(String.format("#%d of %d", viewState.currentCycleIndex + 1, viewState.renderableCycles.size()));
           break;
         default:
           setTitle(viewState.title);
@@ -149,6 +148,10 @@ public class ChartEntryListActivity extends AppCompatActivity
       if (viewState.targetLayoutMode.isPresent()) {
         Fragment fragment = viewState.targetLayoutMode.get() == EntryListViewModel.LayoutMode.GRID
             ? new EntryGridPageFragment() : new EntryListPageFragment();
+        Bundle args = new Bundle();
+        args.putInt(ViewMode.class.getCanonicalName(), viewState.viewMode.ordinal());
+        fragment.setArguments(args);
+
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, fragment).commit();
         getSupportFragmentManager().executePendingTransactions();
         mViewModel.completeLayoutTransition(viewState.targetLayoutMode.get());
@@ -410,7 +413,7 @@ public class ChartEntryListActivity extends AppCompatActivity
         startActivityForResult(new Intent(this, PregnancyListActivity.class), RequestCode.PREGNANCY_LIST.ordinal());
         break;
       case R.id.nav_training:
-        mViewModel.setViewMode(ViewMode.TRAINING);
+        startActivity(new Intent(this, TrainingActivity.class));
         break;
       case R.id.nav_reference:
       case R.id.nav_help_and_feedback:

@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.repos.pregnancy;
 
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 
@@ -26,5 +27,10 @@ public class PregnancyRepoFactory extends RepoFactory<RWPregnancyRepo> {
         return Optional.of(new TrainingPregnancyRepo());
     }
     return Optional.empty();
+  }
+
+  @Override
+  public RWPregnancyRepo forExercise(Exercise exercise) {
+    return forViewMode(ViewMode.TRAINING);
   }
 }

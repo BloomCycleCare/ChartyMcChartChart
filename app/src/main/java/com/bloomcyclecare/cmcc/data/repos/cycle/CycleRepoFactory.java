@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.cycle;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.DemoCycles;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 
@@ -32,5 +33,10 @@ public class CycleRepoFactory extends RepoFactory<RWCycleRepo> {
         return Optional.of(new TrainingCycleRepo(TrainingCycles.REGULAR_CYCLES, LocalDate::now));
     }
     return Optional.empty();
+  }
+
+  @Override
+  public RWCycleRepo forExercise(Exercise exercise) {
+    return new TrainingCycleRepo(exercise.trainingCycles(), LocalDate::now);
   }
 }

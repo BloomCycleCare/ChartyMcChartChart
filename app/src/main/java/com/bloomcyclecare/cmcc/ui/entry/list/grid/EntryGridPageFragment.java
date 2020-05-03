@@ -1,5 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.entry.list.grid;
 
+import android.annotation.SuppressLint;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -9,30 +11,38 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
-import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
 import com.google.common.base.Strings;
 
 import org.parceler.Parcels;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import timber.log.Timber;
 
 public class EntryGridPageFragment extends Fragment {
 
-
-  private EntryListViewModel mViewModel;
+  private EntryGridPageViewModel mViewModel;
   private GridRowAdapter mGridRowAdapter;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mViewModel = ViewModelProviders.of(getActivity()).get(EntryListViewModel.class);
+  }
+
+  @Override
+  public void onAttach(@NonNull Context context) {
+    super.onAttach(context);
+
+    EntryGridPageViewModel.Factory factory = new EntryGridPageViewModel.Factory(
+        getActivity().getApplication(), getArguments());
+
+    mViewModel = new ViewModelProvider(this, factory).get(EntryGridPageViewModel.class);
     mGridRowAdapter = new GridRowAdapter(re -> {// Sticker Click
       if (mViewModel.currentViewMode() != ViewMode.TRAINING || Strings.isNullOrEmpty(re.trainingMarker())) {
         Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
@@ -58,6 +68,7 @@ public class EntryGridPageFragment extends Fragment {
 
   @Nullable
   @Override
+  @SuppressLint("SourceLockedOrientationActivity")
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_entry_grid_page, container, false);
 
@@ -65,9 +76,14 @@ public class EntryGridPageFragment extends Fragment {
     rowRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
     rowRecyclerView.setAdapter(mGridRowAdapter);
 
-    mViewModel.viewStates().observe(this, viewState -> {
-      mGridRowAdapter.updateData(viewState.renderableCycles, viewState.viewMode);
+    mViewModel.viewStates().observe(getViewLifecycleOwner(), viewState -> {
+      mGridRowAdapter.updateData(viewState.renderableCycles(), viewState.viewMode());
+      AppCompatActivity activity = (AppCompatActivity) getActivity();
+      activity.getSupportActionBar().setSubtitle(viewState.subtitle());
     });
+
+    /*Timber.d("Setting orientation to LANDSCAPE");
+    getActivity().setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);*/
 
     return view;
   }

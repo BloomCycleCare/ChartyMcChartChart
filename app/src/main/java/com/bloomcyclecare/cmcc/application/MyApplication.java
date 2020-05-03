@@ -7,16 +7,17 @@ import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.exercise.ExerciseRepoFactory;
+import com.bloomcyclecare.cmcc.data.repos.exercise.RWExerciseRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
-import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
-import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -71,7 +72,7 @@ public class MyApplication extends Application {
   private ChartEntryRepoFactory mChartEntryRepoFactory;
   private PregnancyRepoFactory mPregnancyRepoFactory;
   private PreferenceRepo mPreferenceRepo;
-  private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
+  private ExerciseRepoFactory mExerciseRepoFactory;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -106,7 +107,7 @@ public class MyApplication extends Application {
         .build();
 
     mInstructionsRepoFactory = new InstructionsRepoFactory(db, FALLBACK_VIEW_MODE);
-    mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(FALLBACK_VIEW_MODE);
+    mExerciseRepoFactory = new ExerciseRepoFactory(FALLBACK_VIEW_MODE);
     mChartEntryRepoFactory = new ChartEntryRepoFactory(db, FALLBACK_VIEW_MODE);
     mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
@@ -218,6 +219,10 @@ public class MyApplication extends Application {
     return mCycleRepoFactory.forViewMode(viewMode);
   }
 
+  public RWCycleRepo cycleRepo(Exercise exercise) {
+    return mCycleRepoFactory.forExercise(exercise);
+  }
+
   @Deprecated
   public RWCycleRepo cycleRepo() {
     return cycleRepo(ViewMode.CHARTING);
@@ -225,6 +230,10 @@ public class MyApplication extends Application {
 
   public RWChartEntryRepo entryRepo(ViewMode viewMode) {
     return mChartEntryRepoFactory.forViewMode(viewMode);
+  }
+
+  public RWChartEntryRepo entryRepo(Exercise exercise) {
+    return mChartEntryRepoFactory.forExercise(exercise);
   }
 
   @Deprecated
@@ -240,8 +249,8 @@ public class MyApplication extends Application {
     return mPregnancyRepoFactory.forViewMode(viewMode);
   }
 
-  public RWStickerSelectionRepo stickerSelectionRepo(ViewMode viewMode) {
-    return mStickerSelectionRepoFactory.forViewMode(viewMode);
+  public RWExerciseRepo exerciseRepo(ViewMode viewMode) {
+    return mExerciseRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated

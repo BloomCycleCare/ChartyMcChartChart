@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.repos;
 
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 
 import java.util.Optional;
 
@@ -15,6 +16,8 @@ public abstract class RepoFactory<T> {
   }
 
   protected abstract Optional<T> forViewModeInternal(ViewMode viewMode);
+
+  public abstract T forExercise(Exercise exercise);
 
   public final T forViewMode(ViewMode viewMode) {
     Optional<T> t = forViewModeInternal(viewMode);

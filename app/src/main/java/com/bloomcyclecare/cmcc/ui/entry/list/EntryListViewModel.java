@@ -9,7 +9,6 @@ import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
-import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.collect.ImmutableList;
@@ -34,6 +33,7 @@ import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -51,7 +51,6 @@ public class EntryListViewModel extends AndroidViewModel {
   private final Subject<LayoutMode> mCurrentLayoutMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
-  private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
 
   private EntryListViewModel(@NonNull Application application, ViewMode viewMode) {
     super(application);
@@ -68,9 +67,7 @@ public class EntryListViewModel extends AndroidViewModel {
   private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
     ROInstructionsRepo instructionsRepo = mApplication.instructionsRepo(viewMode);
     ROCycleRepo cycleRepo = mApplication.cycleRepo(viewMode);
-    ROPregnancyRepo pregnancyRepo = mApplication.pregnancyRepo(viewMode);
     RWChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
-    mEntryRepoSubject.onNext(entryRepo);
 
     Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
             instructionsRepo.getAll()
@@ -95,32 +92,57 @@ public class EntryListViewModel extends AndroidViewModel {
         .distinctUntilChanged()
         .cache();
 
-    Flowable<List<CycleRenderer.CycleStats>> statsStream = renderableCycleStream
-        .map(renderableCycles -> renderableCycles
-            .stream()
-            .map(CycleRenderer.RenderableCycle::stats)
-            .collect(Collectors.toList()));
-
-    Flowable<String> subtitleStream = Flowable.combineLatest(
-        currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        statsStream,
-        currentPageUpdates.flatMap(index -> cycleRepo.getStream()
-            .firstOrError()
-            .map(cycles -> cycles.get(index))
-            .map(cycle -> Optional.ofNullable(cycle.pregnancyId))
-            .flatMap(id -> !id.isPresent()
-                ? Single.just(Optional.<Pregnancy>empty())
-                : pregnancyRepo.get(id.get()).map(Optional::of).toSingle(Optional.empty()))
-            .toObservable())
-            .toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (currentPage, stats, pregnancy) -> subtitle(stats, currentPage, LocalDate::now, pregnancy));
 
     return Flowable.combineLatest(
         currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        subtitleStream.distinctUntilChanged(),
+        subtitleStream(viewMode, renderableCycleStream).distinctUntilChanged(),
         renderableCycleStream,
         mTargetLayoutMode.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         (currentPage, subtitle, renderableCycles, targetLayoutMode) -> new ViewState(currentPage, subtitle, renderableCycles, viewMode, targetLayoutMode));
+  }
+
+  private Flowable<String> subtitleStream(
+      ViewMode viewMode, Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream) {
+    switch (viewMode) {
+      case TRAINING:
+        return currentPageUpdates
+            .toFlowable(BackpressureStrategy.BUFFER)
+            .flatMap(index -> renderableCycleStream
+                .map(renderableCycles -> renderableCycles.get(index))
+                .map(renderableCycle -> {
+                  int numWithStickers = 0;
+                  for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
+                    StickerSelection selection = re.entry().stickerSelection;
+                    if (selection != null && !selection.isEmpty()) {
+                      numWithStickers++;
+                    }
+                  }
+                  int percentComplete = 100 * numWithStickers / renderableCycle.entries().size();
+                  return String.format("%d\\% complete", percentComplete);
+                }));
+      case CHARTING:
+      case DEMO:
+      default:
+        Flowable<List<CycleRenderer.CycleStats>> statsStream = renderableCycleStream
+            .map(renderableCycles -> renderableCycles
+                .stream()
+                .map(CycleRenderer.RenderableCycle::stats)
+                .collect(Collectors.toList()));
+        return Flowable.combineLatest(
+            currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            statsStream,
+            currentPageUpdates.flatMap(index -> mApplication.cycleRepo(viewMode)
+                .getStream()
+                .firstOrError()
+                .map(cycles -> cycles.get(index))
+                .map(cycle -> Optional.ofNullable(cycle.pregnancyId))
+                .flatMap(id -> !id.isPresent()
+                    ? Single.just(Optional.<Pregnancy>empty())
+                    : mApplication.pregnancyRepo(viewMode).get(id.get()).map(Optional::of).toSingle(Optional.empty()))
+                .toObservable())
+                .toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            (currentPage, stats, pregnancy) -> subtitle(stats, currentPage, LocalDate::now, pregnancy));
+    }
   }
 
   Completable toggleLayoutMode() {
@@ -164,9 +186,8 @@ public class EntryListViewModel extends AndroidViewModel {
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
   }
 
-  public Completable updateSticker(LocalDate entryDate, StickerSelection selection) {
-    return mEntryRepoSubject.firstOrError()
-        .flatMapCompletable(entryRepo -> entryRepo.updateStickerSelection(entryDate, selection));
+  public Observable<ViewState> viewStatesRx() {
+    return mViewStates;
   }
 
   @VisibleForTesting
@@ -221,6 +242,7 @@ public class EntryListViewModel extends AndroidViewModel {
 
     public final int currentCycleIndex;
     public final ViewMode viewMode;
+    @Deprecated
     public final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
 
     ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode, Optional<LayoutMode> targetLayoutMode) {

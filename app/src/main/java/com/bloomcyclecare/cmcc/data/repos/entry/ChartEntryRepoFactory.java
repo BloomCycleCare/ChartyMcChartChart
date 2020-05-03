@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.DemoCycles;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
@@ -37,6 +38,15 @@ public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
     } catch (ObservationParser.InvalidObservationException ioe) {
       Timber.e(ioe);
       return Optional.empty();
+    }
+  }
+
+  @Override
+  public RWChartEntryRepo forExercise(Exercise exercise) {
+    try {
+      return new TrainingChartEntryRepo(exercise.trainingCycles(), false);
+    } catch (ObservationParser.InvalidObservationException ioe) {
+      throw new IllegalStateException(ioe);
     }
   }
 }

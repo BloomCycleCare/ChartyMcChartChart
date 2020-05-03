@@ -96,6 +96,9 @@
             android:name=".ui.pregnancy.list.PregnancyListActivity"
             android:label="@string/title_activity_pregnancy_list" />
         <activity
+            android:name=".ui.training.TrainingActivity"
+            android:label="Training" />
+        <activity
             android:name=".ui.pregnancy.detail.PregnancyDetailActivity"
             android:label="@string/title_activity_pregnancy_detail" />
 

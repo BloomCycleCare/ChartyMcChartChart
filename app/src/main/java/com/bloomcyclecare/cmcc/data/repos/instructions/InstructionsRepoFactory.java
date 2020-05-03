@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.instructions;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.DemoCycles;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 
@@ -30,5 +31,10 @@ public class InstructionsRepoFactory extends RepoFactory<RWInstructionsRepo> {
         return Optional.of(new TrainingInstructionsRepo(DemoCycles.forRepos(), LocalDate::now));
     }
     return Optional.empty();
+  }
+
+  @Override
+  public RWInstructionsRepo forExercise(Exercise exercise) {
+    return forViewMode(ViewMode.TRAINING);
   }
 }

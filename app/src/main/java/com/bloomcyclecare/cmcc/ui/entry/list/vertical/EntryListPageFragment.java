@@ -8,6 +8,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
 
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
 
 public class EntryListPageFragment extends Fragment {
@@ -38,7 +39,13 @@ public class EntryListPageFragment extends Fragment {
 
     mPageAdapter = new EntryListPageAdapter(getFragmentManager());
 
-    mViewModel = ViewModelProviders.of(getActivity()).get(EntryListViewModel.class);
+    int viewModeIndex = 0;
+    if (getArguments() != null) {
+      viewModeIndex = getArguments().getInt(ViewMode.class.getCanonicalName(), 0);
+    }
+    ViewMode viewMode = ViewMode.values()[viewModeIndex];
+
+    mViewModel = new ViewModelProvider(getActivity(), new EntryListViewModel.Factory(getActivity().getApplication(), viewMode)).get(EntryListViewModel.class);
   }
 
   @Nullable
@@ -66,7 +73,7 @@ public class EntryListPageFragment extends Fragment {
     });
     mViewPager.setOffscreenPageLimit(4);
 
-    mViewModel.viewStates().observe(this, viewState -> {
+    mViewModel.viewStates().observe(getViewLifecycleOwner(), viewState -> {
       mPageAdapter.update(viewState.renderableCycles.stream()
           .map(CycleRenderer.RenderableCycle::cycle)
           .collect(Collectors.toList()), viewState.viewMode);
