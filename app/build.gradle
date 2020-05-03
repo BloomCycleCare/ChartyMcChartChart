@@ -1,5 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'idea'
+apply plugin: "androidx.navigation.safeargs"
 
 android {
     compileSdkVersion 28
@@ -149,4 +150,8 @@ dependencies {
     def work_version = "2.3.4"
     implementation "androidx.work:work-runtime:$work_version"
     implementation "androidx.work:work-rxjava2:$work_version"
+
+    def nav_version = "2.3.0-alpha06"
+    implementation "androidx.navigation:navigation-fragment:$nav_version"
+    implementation "androidx.navigation:navigation-ui:$nav_version"
 }
