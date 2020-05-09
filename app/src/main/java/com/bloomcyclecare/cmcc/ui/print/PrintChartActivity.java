@@ -33,9 +33,6 @@ import io.reactivex.schedulers.Schedulers;
 
 public class PrintChartActivity extends AppCompatActivity {
 
-  private static final boolean DEBUG = true;
-  private static final String TAG = PrintChartActivity.class.getSimpleName();
-
   private RecyclerView mRecyclerView;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
@@ -109,9 +106,11 @@ public class PrintChartActivity extends AppCompatActivity {
 
         mDisposables.add(renderers.toList()
             .map(r -> ChartPrinter.create(PrintChartActivity.this, r))
-            .flatMapCompletable(ChartPrinter::savePDF)
+            .flatMapObservable(ChartPrinter::print)
+            .flatMap(emitPrintJob())
             .subscribeOn(Schedulers.computation())
-            .subscribe(() -> printJobComplete()));
+            .toList()
+            .subscribe(jobs -> printJobComplete()));
       }
     });
   }
