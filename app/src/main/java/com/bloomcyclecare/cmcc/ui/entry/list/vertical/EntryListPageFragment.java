@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavDirections;
 import androidx.viewpager.widget.ViewPager;
 import timber.log.Timber;
 
@@ -33,15 +33,21 @@ public class EntryListPageFragment extends BaseCycleListFragment {
     return EntryListPageFragmentArgs.fromBundle(bundle).getViewMode();
   }
 
+  @NonNull
+  @Override
+  protected NavDirections toggleLayoutAction(ViewMode viewMode) {
+    return EntryListPageFragmentDirections.actionToggleLayout().setViewMode(viewMode);
+  }
+
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mPageAdapter = new EntryListPageAdapter(getFragmentManager());
+    // Use getChildFragmentManager(): https://stackoverflow.com/a/25525714
+    mPageAdapter = new EntryListPageAdapter(getChildFragmentManager());
 
     EntryListPageFragmentArgs args = EntryListPageFragmentArgs.fromBundle(requireArguments());
-    mViewModel = new ViewModelProvider(getActivity(), new EntryListViewModel.Factory(getActivity().getApplication(), args.getViewMode()))
-        .get(EntryListViewModel.class);
+    mViewModel = EntryListViewModel.create(this, requireActivity(), cycleListViewModel());
 
     if (args.getDateToFocus() != null) {
       Timber.v("Focusing date: %s", args.getDateToFocus());
@@ -87,5 +93,6 @@ public class EntryListPageFragment extends BaseCycleListFragment {
   @Override
   public void onResume() {
     super.onResume();
+    //mPageAdapter.notifyDataSetChanged();
   }
 }

@@ -20,7 +20,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.view.GravityCompat;
 import androidx.drawerlayout.widget.DrawerLayout;
-import androidx.lifecycle.ViewModelProviders;
 import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -98,8 +97,8 @@ public class ChartEntryListActivity extends AppCompatActivity
 
     ViewMode defaultViewMode = preferenceSummary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING;
     ViewMode viewMode = ViewMode.values()[getIntent().getIntExtra(Extras.VIEW_MODE.name(), defaultViewMode.ordinal())];
-    EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), viewMode);
-    mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
+    //EntryListViewModel.Factory factory = new EntryListViewModel.Factory(getApplication(), Cylkj);
+    //mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
   }
 
   @Override

@@ -12,6 +12,7 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 import io.reactivex.disposables.CompositeDisposable;
@@ -22,8 +23,15 @@ public abstract class BaseCycleListFragment extends Fragment {
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private CycleListViewModel mViewModel;
 
+  protected CycleListViewModel cycleListViewModel() {
+    return mViewModel;
+  }
+
   @NonNull
   protected abstract ViewMode initialViewModeFromArgs(Bundle bundle);
+
+  @NonNull
+  protected abstract NavDirections toggleLayoutAction(ViewMode viewMode);
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -44,6 +52,15 @@ public abstract class BaseCycleListFragment extends Fragment {
   @Override
   public boolean onOptionsItemSelected(@NonNull MenuItem item) {
     switch (item.getItemId()) {
+
+      case R.id.action_toggle_layout:
+        mDisposables.add(mViewModel.viewStateStream()
+            .firstOrError()
+            .map(CycleListViewModel.ViewState::viewMode)
+            .doOnSuccess(viewMode -> Timber.d("Toggling view mode with ViewState %s", viewMode.name()))
+            .map(this::toggleLayoutAction)
+            .subscribe(action -> NavHostFragment.findNavController(this).navigate(action)));
+        return true;
 
       case R.id.action_export:
         mDisposables.add(mViewModel.export().subscribe(this::startActivity, Timber::e));

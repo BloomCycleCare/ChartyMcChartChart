@@ -109,6 +109,7 @@ public class EntryListFragment extends Fragment {
   }
 
   private void render(FragmentViewModel.ViewState viewState) {
+    Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
     mChartEntryAdapter.update(viewState.renderableCycle, viewState.viewMode);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);

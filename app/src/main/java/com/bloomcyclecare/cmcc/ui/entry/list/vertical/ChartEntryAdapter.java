@@ -11,6 +11,7 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,8 +58,11 @@ class ChartEntryAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> 
 
   void update(CycleRenderer.RenderableCycle renderableCycle, ViewMode viewMode) {
     this.viewMode = viewMode;
-    mRenderableEntries = renderableCycle.entries();
-    notifyDataSetChanged();
+    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())) {
+      Timber.v("Updating entries for cycle %s", renderableCycle.cycle().startDate);
+      mRenderableEntries = renderableCycle.entries();
+      notifyDataSetChanged();
+    }
   }
 
   void shutdown() {

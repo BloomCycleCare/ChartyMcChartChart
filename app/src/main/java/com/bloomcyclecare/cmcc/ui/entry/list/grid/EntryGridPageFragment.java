@@ -1,7 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.entry.list.grid;
 
 import android.annotation.SuppressLint;
-import android.content.Context;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -13,7 +12,6 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.entry.list.BaseCycleListFragment;
-import com.bloomcyclecare.cmcc.ui.entry.list.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.google.common.base.Strings;
 
@@ -22,6 +20,7 @@ import org.parceler.Parcels;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavDirections;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import timber.log.Timber;
@@ -36,28 +35,26 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
   private MainViewModel mMainViewModel;
 
   @NonNull
+  @Override
   protected ViewMode initialViewModeFromArgs(Bundle args) {
     return EntryGridPageFragmentArgs.fromBundle(args).getViewMode();
+  }
+
+  @NonNull
+  @Override
+  protected NavDirections toggleLayoutAction(ViewMode viewMode) {
+    return EntryGridPageFragmentDirections.actionToggleLayout().setViewMode(viewMode);
   }
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-  }
-
-  @SuppressLint("SourceLockedOrientationActivity")
-  @Override
-  public void onAttach(@NonNull Context context) {
-    super.onAttach(context);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
 
-    EntryGridPageFragmentArgs args= EntryGridPageFragmentArgs.fromBundle(requireArguments());
-    CycleListViewModel cycleListViewModel = CycleListViewModel.forFragment(this, args.getViewMode());
-
     EntryGridPageViewModel.Factory factory = new EntryGridPageViewModel.Factory(
         requireActivity().getApplication(),
-        cycleListViewModel,
+        cycleListViewModel(),
         EntryGridPageFragmentArgs.fromBundle(requireArguments()));
 
     mViewModel = new ViewModelProvider(this, factory).get(EntryGridPageViewModel.class);

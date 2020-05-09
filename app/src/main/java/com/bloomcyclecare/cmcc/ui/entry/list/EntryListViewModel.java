@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.entry.list;
 
+import android.app.Activity;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
@@ -7,10 +8,7 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
-import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
-import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -30,6 +28,7 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.lifecycle.ViewModelStoreOwner;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -45,22 +44,24 @@ public class EntryListViewModel extends AndroidViewModel {
 
   private final MyApplication mApplication;
 
-  private final Subject<ViewMode> mViewMode = BehaviorSubject.create();
-  private final Subject<Optional<LayoutMode>> mTargetLayoutMode = BehaviorSubject.create();
-  private final Subject<LayoutMode> mCurrentLayoutMode = BehaviorSubject.create();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
-  private final Subject<Flowable<ViewState>> mViewStateStream = BehaviorSubject.create();
 
-  private EntryListViewModel(@NonNull Application application, ViewMode viewMode) {
+  public static EntryListViewModel create(ViewModelStoreOwner owner, Activity activity, CycleListViewModel cycleListViewModel) {
+    return new ViewModelProvider(owner, new EntryListViewModel.Factory(activity.getApplication(), cycleListViewModel))
+        .get(EntryListViewModel.class);
+  }
+
+  private EntryListViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel) {
     super(application);
     mApplication = MyApplication.cast(application);
-    mViewMode.onNext(viewMode);
-    mViewMode.map(this::viewStateStream).subscribe(mViewStateStream);
-    mViewStateStream.switchMap(Flowable::toObservable).subscribe(mViewStates);
 
-    LayoutMode initialLayoutMode = mApplication.preferenceRepo().currentSummary().defaultToGrid()
-        ? LayoutMode.GRID : LayoutMode.LIST;
-    mTargetLayoutMode.onNext(Optional.of(initialLayoutMode));
+    cycleListViewModel.viewStateStream()
+        .flatMap(viewState ->  Flowable.combineLatest(
+            currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+            subtitleStream(viewState.viewMode(), Flowable.just(viewState.renderableCycles())).distinctUntilChanged(),
+            Flowable.just(viewState.renderableCycles()),
+            (currentPage, subtitle, renderableCycles) -> new ViewState(currentPage, subtitle, renderableCycles, viewState.viewMode())))
+        .toObservable().subscribe(mViewStates);
   }
 
   public void focusDate(LocalDate dateToFocus) {
@@ -72,46 +73,7 @@ public class EntryListViewModel extends AndroidViewModel {
           int index = cycles.indexOf(cycleToFocus);
           int maxIndex = cycles.size() - 1;
           return maxIndex - index;
-        }).subscribe(index -> {
-      currentPageUpdates.onNext(index);
-    });
-  }
-
-  private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
-    ROInstructionsRepo instructionsRepo = mApplication.instructionsRepo(viewMode);
-    ROCycleRepo cycleRepo = mApplication.cycleRepo(viewMode);
-    RWChartEntryRepo entryRepo = mApplication.entryRepo(viewMode);
-
-    Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
-            instructionsRepo.getAll()
-                .distinctUntilChanged(),
-            cycleRepo.getStream()
-                .distinctUntilChanged(),
-            (instructions, cycles) -> Flowable.merge(Flowable
-                .fromIterable(cycles)
-                .observeOn(Schedulers.computation())
-                .parallel()
-                .map(cycle -> Flowable.combineLatest(
-                    entryRepo.getStreamForCycle(Flowable.just(cycle)).doOnNext(l -> Timber.i("NEXT!")).doOnComplete(() -> Timber.i("COMPLETE!")),
-                    cycleRepo.getPreviousCycle(cycle)
-                        .map(Optional::of).defaultIfEmpty(Optional.empty())
-                        .toFlowable(),
-                    (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
-                )
-                .sequential()
-                .toList()
-                .toFlowable()
-                .map(RxUtil::combineLatest))))
-        .distinctUntilChanged()
-        .cache();
-
-
-    return Flowable.combineLatest(
-        currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        subtitleStream(viewMode, renderableCycleStream).distinctUntilChanged(),
-        renderableCycleStream,
-        mTargetLayoutMode.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (currentPage, subtitle, renderableCycles, targetLayoutMode) -> new ViewState(currentPage, subtitle, renderableCycles, viewMode, targetLayoutMode));
+        }).subscribe(index -> currentPageUpdates.onNext(index));
   }
 
   private Flowable<String> subtitleStream(
@@ -131,7 +93,7 @@ public class EntryListViewModel extends AndroidViewModel {
                     }
                   }
                   int percentComplete = 100 * numWithStickers / renderableCycle.entries().size();
-                  return String.format("%d\\% complete", percentComplete);
+                  return String.format("%d%% complete", percentComplete);
                 }));
       case CHARTING:
       case DEMO:
@@ -214,19 +176,17 @@ public class EntryListViewModel extends AndroidViewModel {
     final String title;
     final String subtitle;
     final boolean showFab;
-    final Optional<LayoutMode> targetLayoutMode;
 
     public final int currentCycleIndex;
     public final ViewMode viewMode;
     @Deprecated
     public final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
 
-    ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode, Optional<LayoutMode> targetLayoutMode) {
+    ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode) {
       this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
       this.subtitle = subtitle;
       this.showFab = currentPage == renderableCycles.size() - 1;
       this.viewMode = viewMode;
-      this.targetLayoutMode = targetLayoutMode;
 
       this.currentCycleIndex = currentPage;
       this.renderableCycles = ImmutableList.copyOf(renderableCycles);
@@ -239,17 +199,17 @@ public class EntryListViewModel extends AndroidViewModel {
 
   public static class Factory implements ViewModelProvider.Factory {
     private final Application mApplication;
-    private final ViewMode mViewMode;
+    private final CycleListViewModel mCycleListViewModel;
 
-    public Factory(Application application, ViewMode viewMode) {
+    public Factory(Application application, CycleListViewModel cycleListViewModel) {
       mApplication = application;
-      mViewMode = viewMode;
+      mCycleListViewModel = cycleListViewModel;
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new EntryListViewModel(mApplication, mViewMode);
+      return (T) new EntryListViewModel(mApplication, mCycleListViewModel);
     }
   }
 }
