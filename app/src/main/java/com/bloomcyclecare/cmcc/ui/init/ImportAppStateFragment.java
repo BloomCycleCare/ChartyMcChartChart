@@ -11,7 +11,7 @@ import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.firebase.auth.FirebaseUser;
 
 import org.parceler.Parcels;
@@ -88,7 +88,7 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
         })
         .subscribe(cycle -> {
           showProgress("Staring app");
-          Intent intent = new Intent(getActivity(), ChartEntryListActivity.class);
+          Intent intent = new Intent(getActivity(), MainActivity.class);
           intent.putExtra(Cycle.class.getName(), Parcels.wrap(cycle));
           getActivity().finish();
           startActivity(intent);

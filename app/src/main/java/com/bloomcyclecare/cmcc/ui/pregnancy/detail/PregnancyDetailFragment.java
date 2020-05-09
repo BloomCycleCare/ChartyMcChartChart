@@ -31,10 +31,6 @@ import timber.log.Timber;
 
 public class PregnancyDetailFragment extends Fragment {
 
-  public enum Extras {
-    PREGNANCY, CYCLE_INDEX
-  }
-
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private TextView mTestDateValueView;
@@ -52,7 +48,7 @@ public class PregnancyDetailFragment extends Fragment {
   @Nullable
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-    View view = inflater.inflate(R.layout.fragment_pregnancy_list, container, false);
+    View view = inflater.inflate(R.layout.fragment_pregnancy_detail, container, false);
 
     mTestDateValueView = view.findViewById(R.id.tv_test_value);
     mDueDateValueView = view.findViewById(R.id.tv_due_date_value);
@@ -63,7 +59,7 @@ public class PregnancyDetailFragment extends Fragment {
 
     mViewModel = new ViewModelProvider(this).get(PregnancyDetailViewModel.class);
     // TODO: replace init with factory
-    mViewModel.init(PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy());
+    mViewModel.init(PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy);
     mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
     return view;

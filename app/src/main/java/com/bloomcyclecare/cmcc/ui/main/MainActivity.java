@@ -4,7 +4,7 @@ import android.os.Bundle;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.ui.entry.list.vertical.EntryListPageFragmentArgs;
+import com.bloomcyclecare.cmcc.ui.cycle.vertical.CyclePageFragmentArgs;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.Nullable;
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
     NavHostFragment fragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
     navController = fragment.getNavController();
 
-    EntryListPageFragmentArgs initialArgs = new EntryListPageFragmentArgs.Builder()
+    CyclePageFragmentArgs initialArgs = new CyclePageFragmentArgs.Builder()
         .setViewMode(initialViewMode)
         .build();
     navController.setGraph(R.navigation.main_nav_graph, initialArgs.toBundle());

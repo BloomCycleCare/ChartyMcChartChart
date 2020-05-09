@@ -17,7 +17,7 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 
 import org.joda.time.DateTime;
 
@@ -129,7 +129,7 @@ public class ChartingService extends Service {
         .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
         .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
-        new Intent(context, ChartEntryListActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+        new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
     builder.setContentIntent(contentIntent);
     return builder.build();
   }

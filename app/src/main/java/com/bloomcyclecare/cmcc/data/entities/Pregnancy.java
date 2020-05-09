@@ -1,10 +1,7 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
-import android.os.Parcelable;
-
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
-import org.parceler.Parcels;
 
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
@@ -12,7 +9,7 @@ import androidx.room.PrimaryKey;
 
 @Parcel
 @Entity
-public class Pregnancy implements Parcelable {
+public class Pregnancy {
   @PrimaryKey(autoGenerate = true)
   public long id;
 
@@ -31,30 +28,7 @@ public class Pregnancy implements Parcelable {
     this.positiveTestDate = that.positiveTestDate;
   }
 
-  protected Pregnancy(android.os.Parcel in) {
-    this(Parcels.<Pregnancy>unwrap(in.readParcelable(null)));
-    id = in.readLong();
+  public WrappedPregnancy wrap() {
+    return new WrappedPregnancy(this);
   }
-
-  @Override
-  public void writeToParcel(android.os.Parcel dest, int flags) {
-    dest.writeParcelable(Parcels.wrap(this), flags);
-  }
-
-  @Override
-  public int describeContents() {
-    return 0;
-  }
-
-  public static final Creator<Pregnancy> CREATOR = new Creator<Pregnancy>() {
-    @Override
-    public Pregnancy createFromParcel(android.os.Parcel in) {
-      return new Pregnancy(in);
-    }
-
-    @Override
-    public Pregnancy[] newArray(int size) {
-      return new Pregnancy[size];
-    }
-  };
 }
