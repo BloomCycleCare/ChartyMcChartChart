@@ -107,27 +107,6 @@ public class PrintChartActivity extends AppCompatActivity {
                 (entries, instructions) -> new CycleRenderer(cycle, Optional.empty(), entries, instructions))
                 .toObservable());
 
-        /*mDisposables.add(ChartPrinter.create(PrintChartActivity.this, renderers)
-            .print()
-            .flatMap(emitPrintJob())
-            .filter(new Predicate<PrintJob>() {
-              @Override
-              public boolean test(PrintJob printJob) throws Exception {
-                return printJob.isCancelled() || printJob.isFailed() || printJob.isCompleted();
-              }
-            })
-            .firstOrError()
-            .subscribeOn(Schedulers.computation())
-            .subscribe(printJob -> {
-              if (printJob.isCompleted()) {
-                printJobComplete();
-                return;
-              }
-              if (printJob.isFailed()) {
-                printJobFailed();
-                return;
-              }
-            }));*/
         mDisposables.add(renderers.toList()
             .map(r -> ChartPrinter.create(PrintChartActivity.this, r))
             .flatMapCompletable(ChartPrinter::savePDF)

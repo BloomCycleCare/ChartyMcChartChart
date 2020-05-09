@@ -84,7 +84,7 @@ public class ProfileActivity extends AppCompatActivity {
     public Fragment getItem(int position) {
       switch (position) {
         case 0:
-          return new ProfileFragment();
+          return new ProfilePageFragment();
         case 1:
           return new GoalListFragment();
         default:

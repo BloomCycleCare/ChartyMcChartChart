@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main_nav_graph"
+    app:startDestination="@id/chart_pager">
+
+    <fragment
+        android:id="@+id/chart_pager"
+        android:name="com.bloomcyclecare.cmcc.ui.entry.list.vertical.EntryListPageFragment"
+        android:label="Your Cycles"
+        tools:layout="@layout/fragment_entry_list_page">
+
+        <argument
+            android:name="view_mode"
+            app:argType="com.bloomcyclecare.cmcc.application.ViewMode"
+            android:defaultValue="DEMO" />
+        <argument
+            android:name="date_to_focus"
+            app:argType="string"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+        <action
+            android:id="@+id/action_toggle_layout"
+            app:destination="@id/chart_grid">
+            <argument
+                android:name="landscape_mode"
+                app:argType="boolean"
+                android:defaultValue="true"/>
+        </action>
+        <action
+            android:id="@+id/action_print"
+            app:destination="@id/print_chart" />
+        <action
+            android:id="@+id/action_edit_entry"
+            app:destination="@id/entry_details" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/chart_grid"
+        android:name="com.bloomcyclecare.cmcc.ui.entry.list.grid.EntryGridPageFragment"
+        android:label="Your Chart"
+        tools:layout="@layout/fragment_entry_grid_page">
+
+        <argument
+            android:name="view_mode"
+            app:argType="com.bloomcyclecare.cmcc.application.ViewMode"
+            android:defaultValue="DEMO"/>
+        <argument
+            android:name="exercise_id_ordinal"
+            app:argType="integer"
+            android:defaultValue="-1"/>
+        <argument
+            android:name="landscape_mode"
+            app:argType="boolean"
+            android:defaultValue="false"/>
+
+        <action
+            android:id="@+id/action_toggle_layout"
+            app:destination="@id/chart_pager" />
+        <action
+            android:id="@+id/action_print"
+            app:destination="@id/print_chart" />
+        <action
+            android:id="@+id/action_edit_entry"
+            app:destination="@id/entry_details" />
+    </fragment>
+
+    <activity
+        android:id="@+id/entry_details"
+        android:name="com.bloomcyclecare.cmcc.ui.entry.detail.EntryDetailActivity"
+        android:label="Entry Details"
+        tools:layout="@layout/activity_entry_detail"/>
+
+    <activity
+        android:id="@+id/print_chart"
+        android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartActivity"
+        android:label="Print Chart"
+        tools:layout="@layout/activity_print_chart"/>
+
+    <fragment
+        android:id="@+id/exercise_list"
+        android:name="com.bloomcyclecare.cmcc.ui.training.ExerciseListFragment"
+        android:label="List Exercises"
+        tools:layout="@layout/fragment_exercise_list">
+
+        <action
+            android:id="@+id/action_choose_exercise"
+            app:destination="@id/chart_grid" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/pregnancy_list"
+        android:name="com.bloomcyclecare.cmcc.ui.pregnancy.list.PregnancyListFragment"
+        android:label="Pregnancies"
+        tools:layout="@layout/fragment_pregnancy_list">
+
+        <action
+            android:id="@+id/action_edit_pregnancy"
+            app:destination="@id/pregnancy_detail" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/pregnancy_detail"
+        android:name="com.bloomcyclecare.cmcc.ui.pregnancy.detail.PregnancyDetailFragment"
+        android:label="Pregnancy"
+        tools:layout="@layout/fragment_pregnancy_detail">
+
+        <argument
+            android:name="pregnancy"
+            app:argType="com.bloomcyclecare.cmcc.data.entities.Pregnancy"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+        <action
+            android:id="@+id/action_view_cycle"
+            app:destination="@id/chart_pager"/>
+
+        <action
+            android:id="@+id/action_save_pregnancy_updates"
+            app:destination="@id/pregnancy_list"/>
+
+    </fragment>
+
+
+    <fragment
+        android:id="@+id/settings"
+        android:name="com.bloomcyclecare.cmcc.ui.settings.SettingsFragment"
+        android:label="Application Settings"
+        tools:layout="@layout/fragment_settings"/>
+
+
+    <activity
+        android:id="@+id/instructions_list"
+        android:name="com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity"
+        android:label="Instructions"
+        tools:layout="@layout/activity_appointment_list"/>
+    <activity
+        android:id="@+id/sharing"
+        android:name="com.bloomcyclecare.cmcc.ui.drive.DriveActivity"
+        android:label="Sharing"
+        tools:layout="@layout/activity_drive"/>
+    <activity
+        android:id="@+id/profile"
+        android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
+        android:label="Sharing"
+        tools:layout="@layout/activity_drive"/>
+
+</navigation>

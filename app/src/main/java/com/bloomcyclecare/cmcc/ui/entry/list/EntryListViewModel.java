@@ -31,9 +31,7 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
 import io.reactivex.Flowable;
-import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -46,6 +44,7 @@ public class EntryListViewModel extends AndroidViewModel {
   public Subject<Integer> currentPageUpdates = BehaviorSubject.createDefault(0);
 
   private final MyApplication mApplication;
+
   private final Subject<ViewMode> mViewMode = BehaviorSubject.create();
   private final Subject<Optional<LayoutMode>> mTargetLayoutMode = BehaviorSubject.create();
   private final Subject<LayoutMode> mCurrentLayoutMode = BehaviorSubject.create();
@@ -62,6 +61,20 @@ public class EntryListViewModel extends AndroidViewModel {
     LayoutMode initialLayoutMode = mApplication.preferenceRepo().currentSummary().defaultToGrid()
         ? LayoutMode.GRID : LayoutMode.LIST;
     mTargetLayoutMode.onNext(Optional.of(initialLayoutMode));
+  }
+
+  public void focusDate(LocalDate dateToFocus) {
+    ROCycleRepo cycleRepo = mApplication.cycleRepo(ViewMode.CHARTING);
+    Single.zip(
+        cycleRepo.getCycleForDate(dateToFocus).toSingle(),
+        cycleRepo.getStream().firstOrError(),
+        (cycleToFocus, cycles) -> {
+          int index = cycles.indexOf(cycleToFocus);
+          int maxIndex = cycles.size() - 1;
+          return maxIndex - index;
+        }).subscribe(index -> {
+      currentPageUpdates.onNext(index);
+    });
   }
 
   private Flowable<ViewState> viewStateStream(ViewMode viewMode) {
@@ -145,49 +158,12 @@ public class EntryListViewModel extends AndroidViewModel {
     }
   }
 
-  Completable toggleLayoutMode() {
-    return mCurrentLayoutMode.firstOrError().flatMapCompletable(currentViewMode -> {
-      mTargetLayoutMode.onNext(Optional.of(currentViewMode == LayoutMode.GRID ? LayoutMode.LIST : LayoutMode.GRID));
-      return Completable.complete();
-    });
-  }
-
-  void setPortraitMode() {
-    mTargetLayoutMode.onNext(Optional.of(LayoutMode.LIST));
-  }
-
-  void setLandscapeMode() {
-    mTargetLayoutMode.onNext(Optional.of(LayoutMode.GRID));
-  }
-
-  void completeLayoutTransition(LayoutMode layoutMode) {
-    Optional<LayoutMode> currentTransition = mTargetLayoutMode.blockingFirst();
-    if (!currentTransition.isPresent() || currentTransition.get() == layoutMode) {
-      Timber.w("Corrupt layout transition! Expected %s, got %s", layoutMode.name(), currentTransition);
-    }
-    mCurrentLayoutMode.onNext(layoutMode);
-    mTargetLayoutMode.onNext(Optional.empty());
-  }
-
-  void setViewMode(ViewMode viewMode) {
-    Timber.d("Toggling view mode = %s", viewMode.name());
-    mViewMode.onNext(viewMode);
-  }
-
-  public ViewMode currentViewMode() {
-    return mViewMode.blockingFirst();
-  }
-
   public LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
-  }
-
-  public Observable<ViewState> viewStatesRx() {
-    return mViewStates;
   }
 
   @VisibleForTesting

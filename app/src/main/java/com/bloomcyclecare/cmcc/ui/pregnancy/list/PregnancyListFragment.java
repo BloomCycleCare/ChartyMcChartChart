@@ -2,67 +2,58 @@ package com.bloomcyclecare.cmcc.ui.pregnancy.list;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ui.pregnancy.detail.PregnancyDetailActivity;
+import com.bloomcyclecare.cmcc.ui.pregnancy.detail.PregnancyDetailFragment;
 import com.bloomcyclecare.cmcc.utils.RxPrompt;
 import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
 
 import org.parceler.Parcels;
 
-import androidx.appcompat.app.AppCompatActivity;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.disposables.CompositeDisposable;
 
-public class PregnancyListActivity extends AppCompatActivity {
+public class PregnancyListFragment extends Fragment {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private SimpleArrayAdapter<PregnancyListViewModel.PregnancyViewModel, ViewHolder> mAdapter;
 
+  @Nullable
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_pregnancy_list);
+  public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment_pregnancy_list, container, false);
 
-    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle("Your Pregnancies");
-
-    ListView pregnanciesView = findViewById(R.id.lv_pregnancies);
-    mAdapter = new SimpleArrayAdapter<>(this, R.layout.list_item_pregnancy, v -> new ViewHolder(v, this::viewDetails), c -> {});
+    ListView pregnanciesView = view.findViewById(R.id.lv_pregnancies);
+    mAdapter = new SimpleArrayAdapter<>(requireActivity(), R.layout.list_item_pregnancy, v -> new ViewHolder(v, this::viewDetails), c -> {});
     pregnanciesView.setAdapter(mAdapter);
 
-    ViewModelProviders.of(this)
+    new ViewModelProvider(this)
         .get(PregnancyListViewModel.class)
         .viewState()
-        .observe(this, this::render);
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    int id = item.getItemId();
-    if (id == android.R.id.home) {
-      onBackPressed();
-      return true;
-    }
-    return super.onOptionsItemSelected(item);
+        .observe(getViewLifecycleOwner(), this::render);
+    return view;
   }
 
   private void render(PregnancyListViewModel.ViewState viewState) {
     for (RxPrompt prompt : viewState.prompts) {
-      mDisposables.add(prompt.doPrompt(this));
+      mDisposables.add(prompt.doPrompt(requireActivity()));
     }
     mAdapter.updateData(viewState.viewModels);
   }
 
   private void viewDetails(PregnancyListViewModel.PregnancyViewModel model) {
-    Intent intent = new Intent(this, PregnancyDetailActivity.class);
-    intent.putExtra(PregnancyDetailActivity.Extras.PREGNANCY.name(), Parcels.wrap(model.pregnancy));
-    intent.putExtra(PregnancyDetailActivity.Extras.CYCLE_INDEX.name(), model.cycleAscIndex);
+    Intent intent = new Intent(requireContext(), PregnancyDetailFragment.class);
+    intent.putExtra(PregnancyDetailFragment.Extras.PREGNANCY.name(), Parcels.wrap(model.pregnancy));
+    intent.putExtra(PregnancyDetailFragment.Extras.CYCLE_INDEX.name(), model.cycleAscIndex);
     startActivity(intent);
   }
 

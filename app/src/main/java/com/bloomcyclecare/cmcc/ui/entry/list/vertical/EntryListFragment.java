@@ -10,7 +10,6 @@ import android.widget.ProgressBar;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
@@ -81,10 +80,7 @@ public class EntryListFragment extends Fragment {
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_chart_list, container, false);
 
-    mProgressView = view.findViewById(R.id.list_load_progress);
-    mProgressView.setVisibility(View.VISIBLE);
     mRecyclerView = view.findViewById(R.id.recyclerview_chart_list);
-    mRecyclerView.setVisibility(View.INVISIBLE);
     mRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
     mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
       @Override
@@ -98,14 +94,13 @@ public class EntryListFragment extends Fragment {
         !getArguments().getBoolean(Extras.IS_LAST_CYCLE.name(), false),
         "",
         this::navigateToDetailActivity);
-    mDisposables.add(((ChartEntryListActivity) getActivity())
+    // TODO: enable layer stream
+    /*mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()
-        .subscribe(mChartEntryAdapter::updateLayerKey));
+        .subscribe(mChartEntryAdapter::updateLayerKey));*/
 
     mRecyclerView.setAdapter(mChartEntryAdapter);
     mChartEntryAdapter.notifyDataSetChanged();
-    mProgressView.setVisibility(View.INVISIBLE);
-    mRecyclerView.setVisibility(View.VISIBLE);
 
     mViewModel.updateScrollState(getScrollState());
     mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);

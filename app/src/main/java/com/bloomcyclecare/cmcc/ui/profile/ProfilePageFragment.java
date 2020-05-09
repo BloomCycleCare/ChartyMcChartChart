@@ -18,7 +18,7 @@ import me.philio.preferencecompatextended.PreferenceFragmentCompat;
 /**
  * A placeholder fragment containing a simple view.
  */
-public class ProfileFragment extends PreferenceFragmentCompat implements
+public class ProfilePageFragment extends PreferenceFragmentCompat implements
     SharedPreferences.OnSharedPreferenceChangeListener {
 
   private void setNumPickerSummary(SharedPreferences prefs, NumberPickerPreference pref) {

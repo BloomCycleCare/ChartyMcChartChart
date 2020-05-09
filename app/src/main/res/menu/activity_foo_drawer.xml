@@ -7,27 +7,27 @@
         android:id="@+id/nav_group_primary"
         android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_profile"
+            android:id="@+id/profile"
             android:icon="@drawable/ic_account_circle_black_24dp"
             android:title="Profile" />
         <item
-            android:id="@+id/nav_my_chart"
+            android:id="@+id/chart_pager"
             android:icon="@drawable/ic_list_black_24dp"
             android:title="Chart" />
         <item
-            android:id="@+id/nav_instructions"
+            android:id="@+id/instructions_list"
             android:icon="@drawable/ic_instructions_black_24dp"
             android:title="Instructions" />
         <item
-            android:id="@+id/nav_pregnancies"
+            android:id="@+id/pregnancy_list"
             android:icon="@drawable/ic_pregnant_woman_black_24dp"
             android:title="Pregnancies" />
         <item
-            android:id="@+id/nav_share"
+            android:id="@+id/sharing"
             android:icon="@drawable/ic_menu_share"
             android:title="Sharing" />
         <item
-            android:id="@+id/nav_training"
+            android:id="@+id/exercise_list"
             android:icon="@drawable/ic_school_black_24dp"
             android:title="Training" />
     </group>
@@ -45,7 +45,7 @@
         android:id="@+id/nav_group_last"
         android:checkableBehavior="single">
         <item
-            android:id="@+id/nav_settings"
+            android:id="@+id/settings"
             android:icon="@drawable/ic_settings_black_24dp"
             android:title="Settings" />
         <item

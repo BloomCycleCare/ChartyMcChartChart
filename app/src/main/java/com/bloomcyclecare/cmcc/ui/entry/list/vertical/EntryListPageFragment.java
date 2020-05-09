@@ -4,34 +4,34 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
-import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.entry.list.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.entry.list.EntryListViewModel;
+import com.bloomcyclecare.cmcc.utils.DateUtil;
 
 import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
+import timber.log.Timber;
 
-public class EntryListPageFragment extends Fragment {
-
-  public enum Args {
-    VIEW_MODE;
-  }
+public class EntryListPageFragment extends BaseCycleListFragment {
 
   private EntryListViewModel mViewModel;
   private EntryListPageAdapter mPageAdapter;
 
-  private TextView mErrorView;
-  private ProgressBar mProgressBar;
   private ViewPager mViewPager;
+
+  @NonNull
+  @Override
+  protected ViewMode initialViewModeFromArgs(Bundle bundle) {
+    return EntryListPageFragmentArgs.fromBundle(bundle).getViewMode();
+  }
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -39,22 +39,20 @@ public class EntryListPageFragment extends Fragment {
 
     mPageAdapter = new EntryListPageAdapter(getFragmentManager());
 
-    int viewModeIndex = 0;
-    if (getArguments() != null) {
-      viewModeIndex = getArguments().getInt(ViewMode.class.getCanonicalName(), 0);
-    }
-    ViewMode viewMode = ViewMode.values()[viewModeIndex];
+    EntryListPageFragmentArgs args = EntryListPageFragmentArgs.fromBundle(requireArguments());
+    mViewModel = new ViewModelProvider(getActivity(), new EntryListViewModel.Factory(getActivity().getApplication(), args.getViewMode()))
+        .get(EntryListViewModel.class);
 
-    mViewModel = new ViewModelProvider(getActivity(), new EntryListViewModel.Factory(getActivity().getApplication(), viewMode)).get(EntryListViewModel.class);
+    if (args.getDateToFocus() != null) {
+      Timber.v("Focusing date: %s", args.getDateToFocus());
+      mViewModel.focusDate(DateUtil.fromWireStr(args.getDateToFocus()));
+    }
   }
 
   @Nullable
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_entry_list_page, container, false);
-
-    mErrorView = view.findViewById(R.id.refresh_error);
-    mProgressBar = view.findViewById(R.id.progress_bar);
 
     mViewPager = view.findViewById(R.id.view_pager);
     mViewPager.setAdapter(mPageAdapter);
@@ -84,5 +82,10 @@ public class EntryListPageFragment extends Fragment {
     });
 
     return view;
+  }
+
+  @Override
+  public void onResume() {
+    super.onResume();
   }
 }

@@ -1,29 +1,35 @@
 package com.bloomcyclecare.cmcc.ui.pregnancy.detail;
 
 import android.app.DatePickerDialog;
-import android.content.Intent;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.jakewharton.rxbinding2.view.RxView;
 
 import org.joda.time.LocalDate;
-import org.parceler.Parcels;
 
 import java.util.Optional;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
-public class PregnancyDetailActivity extends AppCompatActivity {
+public class PregnancyDetailFragment extends Fragment {
 
   public enum Extras {
     PREGNANCY, CYCLE_INDEX
@@ -38,55 +44,59 @@ public class PregnancyDetailActivity extends AppCompatActivity {
   private PregnancyDetailViewModel mViewModel;
 
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_pregnancy_detail);
+    setHasOptionsMenu(true);
+  }
 
-    mTestDateValueView = findViewById(R.id.tv_test_value);
-    mDueDateValueView = findViewById(R.id.tv_due_date_value);
-    mDeliveryDateValueView = findViewById(R.id.tv_delivery_date_value);
+  @Nullable
+  @Override
+  public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment_pregnancy_list, container, false);
 
-    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-    getSupportActionBar().setTitle("Your Pregnancy");
+    mTestDateValueView = view.findViewById(R.id.tv_test_value);
+    mDueDateValueView = view.findViewById(R.id.tv_due_date_value);
+    mDeliveryDateValueView = view.findViewById(R.id.tv_delivery_date_value);
 
-    Intent intent = getIntent();
-    Pregnancy pregnancy = Parcels.unwrap(intent.getParcelableExtra(Extras.PREGNANCY.name()));
-
-    mViewModel = ViewModelProviders.of(this).get(PregnancyDetailViewModel.class);
     mDisposables.add(RxView.clicks(mDueDateValueView).subscribe(o -> onDueDateClick()));
     mDisposables.add(RxView.clicks(mDeliveryDateValueView).subscribe(o -> onDeliveryDateClick()));
 
-    mViewModel.init(pregnancy);
-    mViewModel.viewState().observe(this, this::render);
+    mViewModel = new ViewModelProvider(this).get(PregnancyDetailViewModel.class);
+    // TODO: replace init with factory
+    mViewModel.init(PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy());
+    mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
+
+    return view;
   }
 
   @Override
-  public boolean onCreateOptionsMenu(Menu menu) {
-    // Inflate the menu; this adds items to the action bar if it is present.
-    getMenuInflater().inflate(R.menu.menu_pregnancy_detail, menu);
-    return true;
+  public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    super.onCreateOptionsMenu(menu, inflater);
+    inflater.inflate(R.menu.menu_pregnancy_detail, menu);
   }
 
   @Override
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
-      case android.R.id.home:
-        onBackPressed();
-        return true;
-
       case R.id.action_save:
-        mDisposables.add(mViewModel.onSave().subscribe(
-            this::finish, t -> Timber.e(t, "Error saving updates")));
+        mDisposables.add(mViewModel.onSave().subscribe(() -> {
+          NavHostFragment.findNavController(this).navigate(
+              PregnancyDetailFragmentDirections.actionSavePregnancyUpdates());
+        }, t -> Timber.e(t, "Error saving updates")));
         return true;
 
       case R.id.action_view_cycle:
-        navigateToPregnancy(getIntent().getIntExtra(Extras.CYCLE_INDEX.name(), -1));
+        LocalDate dateToFocus = mViewModel.currentState().blockingGet().pregnancy.positiveTestDate.plusDays(1);
+        NavHostFragment.findNavController(this).navigate(
+            PregnancyDetailFragmentDirections.actionViewCycle()
+                .setDateToFocus(DateUtil.toWireStr(dateToFocus))
+                .setViewMode(ViewMode.CHARTING));
         return true;
 
       default:
-        Timber.w("Sipping unknown action");
+        return NavigationUI.onNavDestinationSelected(
+            item, NavHostFragment.findNavController(this));
     }
-    return super.onOptionsItemSelected(item);
   }
 
   private void onDueDateClick() {
@@ -94,7 +104,7 @@ public class PregnancyDetailActivity extends AppCompatActivity {
     mDisposables.add(mViewModel.currentState().toSingle().subscribe(currentState -> {
       LocalDate date = Optional.ofNullable(currentState.pregnancy.dueDate)
           .orElse(currentState.pregnancy.positiveTestDate.plusMonths(9));
-      DatePickerDialog dialog = new DatePickerDialog(this, (d, year, month, day) -> {
+      DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
         LocalDate dueDate = new LocalDate(year, month + 1, day);
         Timber.d("Registering due date update");
         mViewModel.onNewDueDate(dueDate);
@@ -110,7 +120,7 @@ public class PregnancyDetailActivity extends AppCompatActivity {
     mDisposables.add(mViewModel.currentState().toSingle().subscribe(currentState -> {
       LocalDate date = Optional.ofNullable(currentState.pregnancy.deliveryDate)
           .orElse(currentState.pregnancy.positiveTestDate.plusMonths(9));
-      DatePickerDialog dialog = new DatePickerDialog(this, (d, year, month, day) -> {
+      DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
         LocalDate dueDate = new LocalDate(year, month + 1, day);
         Timber.d("Registering delivery date update");
         mViewModel.onNewDeliveryDate(dueDate);
@@ -139,17 +149,5 @@ public class PregnancyDetailActivity extends AppCompatActivity {
         mDeliveryDateValueView.setText(deliveryDateStr);
       }
     }
-  }
-
-  private void navigateToPregnancy(int cycleIndex) {
-    if (cycleIndex < 0) {
-      Timber.w("Invalid cycle index");
-      return;
-    }
-    Intent intent = new Intent(getApplicationContext(), ChartEntryListActivity.class);
-    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-    intent.putExtra(ChartEntryListActivity.Extras.CYCLE_DESC_INDEX.name(), cycleIndex);
-    startActivity(intent);
-    finish();
   }
 }

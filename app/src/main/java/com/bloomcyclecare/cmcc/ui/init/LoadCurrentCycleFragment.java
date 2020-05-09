@@ -13,7 +13,7 @@ import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
-import com.bloomcyclecare.cmcc.ui.entry.list.ChartEntryListActivity;
+import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.api.services.drive.model.File;
 import com.google.firebase.auth.FirebaseUser;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -74,7 +74,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .observeOn(AndroidSchedulers.mainThread())
         .subscribeOn(Schedulers.computation())
         .subscribe(cycle -> {
-          Intent intent = new Intent(getContext(), ChartEntryListActivity.class);
+          Intent intent = new Intent(getContext(), MainActivity.class);
           startActivity(intent);
         }, throwable -> {
           Timber.e(throwable);

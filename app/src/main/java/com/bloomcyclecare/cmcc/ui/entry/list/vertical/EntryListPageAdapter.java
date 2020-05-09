@@ -44,8 +44,10 @@ class EntryListPageAdapter extends SmartFragmentStatePagerAdapter<EntryListFragm
     if (!Iterables.elementsEqual(mCycles, cycles)) {
       mCycles.clear();
       mCycles.addAll(cycles);
-      notifyDataSetChanged();
     }
+    // This should be done inside the if statement but doing so caused an issue when resuming the
+    // fragment so this is basically a hack...
+    notifyDataSetChanged();
   }
 
   @Override
