@@ -85,6 +85,8 @@ public class CyclePageFragment extends BaseCycleListFragment {
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
+      updateMenuItems(viewState.viewMode);
+
       mPageAdapter.update(viewState.renderableCycles.stream()
           .map(CycleRenderer.RenderableCycle::cycle)
           .collect(Collectors.toList()), viewState.viewMode);

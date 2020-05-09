@@ -99,6 +99,8 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
       mGridRowAdapter.updateData(viewState.renderableCycles(), viewState.viewMode());
       mMainViewModel.updateSubtitle(viewState.subtitle());
       mMainViewModel.updateTitle("Your Chart");
+
+      updateMenuItems(viewState.viewMode());
     });
 
     /*Timber.d("Setting orientation to LANDSCAPE");

@@ -22,6 +22,7 @@ public abstract class BaseCycleListFragment extends Fragment {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private CycleListViewModel mViewModel;
+  private Menu mMenu;
 
   protected CycleListViewModel cycleListViewModel() {
     return mViewModel;
@@ -45,8 +46,21 @@ public abstract class BaseCycleListFragment extends Fragment {
   @Override
   public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
     super.onCreateOptionsMenu(menu, inflater);
+    mMenu = menu;
 
     inflater.inflate(R.menu.menu_entry_list, menu);
+  }
+
+  protected void updateMenuItems(ViewMode viewMode) {
+    if (viewMode != ViewMode.CHARTING) {
+      mMenu.findItem(R.id.action_print).setVisible(false);
+      mMenu.findItem(R.id.action_export).setVisible(false);
+      mMenu.findItem(R.id.action_trigger_sync).setVisible(false);
+    } else {
+      mMenu.findItem(R.id.action_print).setVisible(true);
+      mMenu.findItem(R.id.action_export).setVisible(true);
+      mMenu.findItem(R.id.action_trigger_sync).setVisible(true);
+    }
   }
 
   @Override
