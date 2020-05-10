@@ -10,6 +10,8 @@ import android.widget.ProgressBar;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
@@ -93,7 +95,17 @@ public class EntryListFragment extends Fragment {
         getActivity(),
         !getArguments().getBoolean(Extras.IS_LAST_CYCLE.name(), false),
         "",
-        this::navigateToDetailActivity);
+        this::navigateToDetailActivity,
+        re -> {},
+        re -> {
+          StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
+            Timber.i("Selection: %s", selection);
+          });
+          Bundle dialogArgs = new Bundle();
+          dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(StickerSelection.fromRenderableEntry(re)));
+          fragment.setArguments(dialogArgs);
+          fragment.show(getChildFragmentManager(), "tag");
+        });
     // TODO: enable layer stream
     /*mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()

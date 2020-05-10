@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.cycle.grid;
+package com.bloomcyclecare.cmcc.ui.cycle;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -13,7 +13,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.training.SelectionChecker;
+import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
 import org.parceler.Parcels;
@@ -33,7 +33,7 @@ public class StickerDialogFragment extends DialogFragment {
 
   private final StickerSelection selection = new StickerSelection();
 
-  StickerDialogFragment(Consumer<StickerSelection> selectionConsumer) {
+  public StickerDialogFragment(Consumer<StickerSelection> selectionConsumer) {
     super();
     this.selectionConsumer = selectionConsumer;
   }

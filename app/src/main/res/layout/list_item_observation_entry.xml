@@ -1,17 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-              xmlns:app="http://schemas.android.com/apk/res-auto"
-              xmlns:tools="http://schemas.android.com/tools"
-              android:orientation="vertical"
-              android:layout_width="match_parent"
-              android:layout_height="wrap_content">
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
 
     <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/entry_item_layout"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="0dp">
+        android:id="@+id/entry_text_layout"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:background="@color/entryWhite"
+        app:layout_constraintBottom_toTopOf="@+id/separator"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.5">
 
         <TextView
             android:id="@+id/tv_entry_num"
@@ -19,10 +22,10 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:minWidth="30dp"
+            android:paddingStart="8dp"
             android:text="10"
             android:textAlignment="center"
             android:textStyle="bold"
-            android:paddingStart="8dp"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintHorizontal_chainStyle="packed"
             app:layout_constraintLeft_toLeftOf="parent"
@@ -44,6 +47,16 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_bias="0.19999999" />
 
+        <ImageView
+            android:id="@+id/star_image_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_star_black_24dp"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="@id/tv_entry_date"
+            app:layout_constraintStart_toEndOf="@+id/tv_entry_date"
+            app:layout_constraintTop_toTopOf="@id/tv_entry_date" />
+
         <TextView
             android:id="@+id/tv_entry_data"
             style="@style/Base.TextAppearance.AppCompat.Small"
@@ -56,20 +69,62 @@
             android:text="10CK AD"
             android:textAlignment="textStart"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toStartOf="@+id/tv_peak_day"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="@+id/tv_entry_date"
             app:layout_constraintTop_toBottomOf="@+id/tv_entry_date" />
 
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/entry_sticker_layout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_gravity="right"
+        android:background="@color/entryWhite"
+        app:layout_constraintBottom_toTopOf="@+id/separator"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.33"
+        app:layout_constraintStart_toEndOf="@+id/entry_text_layout"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintWidth_percent="0.5">
+
+        <TextView
+            android:id="@+id/tv_goal_symptom_summary"
+            style="@style/TextAppearance.AppCompat.Medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="S: 0"
+            android:visibility="invisible"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            tools:layout_editor_absoluteX="72dp" />
+
+        <TextView
+            android:id="@+id/tv_tv_poc_summary"
+            style="@style/TextAppearance.AppCompat.Medium"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingEnd="10dp"
+            android:text="POC+"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toStartOf="@+id/baby_image_view"
+            app:layout_constraintHorizontal_bias="0.0"
+            app:layout_constraintTop_toTopOf="parent" />
+
+
         <ImageView
             android:id="@+id/baby_image_view"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_height="0dp"
             android:layout_gravity="right|center_vertical"
-            android:src="@drawable/ic_child_care_15_24dp"
+            android:background="@drawable/sticker_green_baby"
             android:visibility="visible"
             app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintLeft_toRightOf="@id/tv_entry_date"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintDimensionRatio="3:2"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:layout_width="0dp" />
 
         <TextView
             android:id="@+id/tv_peak_day"
@@ -85,52 +140,15 @@
             app:layout_constraintRight_toRightOf="@id/baby_image_view"
             app:layout_constraintTop_toTopOf="@id/baby_image_view" />
 
-        <TextView
-            android:id="@+id/tv_tv_poc_summary"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="POC+"
-            android:paddingEnd="16dp"
-            style="@style/TextAppearance.AppCompat.Medium"
-            app:layout_constraintEnd_toStartOf="@id/tv_goal_symptom_summary"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-
-            />
-        <TextView
-            android:id="@+id/tv_goal_symptom_summary"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:visibility="invisible"
-            android:text="S: 0"
-            android:paddingEnd="16dp"
-            style="@style/TextAppearance.AppCompat.Medium"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="parent"
-            />
-
-        <ImageView
-            android:id="@+id/star_image_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_star_black_24dp"
-            android:visibility="invisible"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
+
     <!-- This View serves as a visual divider between list items -->
     <View
-        android:id="@+id/observation_list_separator"
+        android:id="@+id/separator"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:background="#dadada"/>
-    <View
-        android:visibility="gone"
-        android:id="@+id/week_separator"
-        android:layout_width="match_parent"
-        android:layout_height="2dp"
-        android:background="#000000"/>
-</LinearLayout>
+        android:background="@color/entry_separator"/>
+</androidx.constraintlayout.widget.ConstraintLayout>

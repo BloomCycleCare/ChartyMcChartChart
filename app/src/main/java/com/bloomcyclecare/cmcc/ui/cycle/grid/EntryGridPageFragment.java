@@ -11,6 +11,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
+import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.google.common.base.Strings;
@@ -69,7 +70,7 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
       Bundle dialogArgs = new Bundle();
       dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(StickerSelection.fromRenderableEntry(re)));
       fragment.setArguments(dialogArgs);
-      fragment.show(getFragmentManager(), "tag");
+      fragment.show(getChildFragmentManager(), "tag");
     }, re -> {// Text click
       if (mViewModel.currentViewMode() != ViewMode.CHARTING) {
         Timber.d("Not navigating to detail activity for ViewMode: %s", mViewModel.currentViewMode().name());

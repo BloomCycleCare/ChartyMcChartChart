@@ -1,8 +1,6 @@
-package com.bloomcyclecare.cmcc.logic.training;
+package com.bloomcyclecare.cmcc.logic.chart;
 
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
 
 import java.util.Optional;
 
@@ -24,6 +22,7 @@ public class SelectionChecker {
     ALWAYS_GREEN_BABY_ON_DRY_DAYS_WITHIN_COUNT,
     ALWAYS_GREEN_ON_DRY_DAYS_WITHOUT_COUNT,
     ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS,
+    ALWAYS_P_ON_PEAK_DAY,
   }
 
   public static class Result {
@@ -105,6 +104,9 @@ public class SelectionChecker {
         return Optional.of(Hint.ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS);
       }
       // TODO: implement yellow stamp logic
+    }
+    if (expected.text == StickerSelection.Text.P) {
+      return Optional.of(Hint.ALWAYS_P_ON_PEAK_DAY);
     }
     return Optional.empty();
   }

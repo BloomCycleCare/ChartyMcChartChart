@@ -28,10 +28,9 @@ import timber.log.Timber;
 
 class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
-  private static final boolean DEBUG = false;
-  private static final String TAG = EntryListAdapter.class.getSimpleName();
-
   private final Context mContext;
+  private final Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer;
+  private final Consumer<CycleRenderer.RenderableEntry> mStickerClickConsumer;
   private final CompositeDisposable mDisposables;
   private final boolean mHasPreviousCycle;
   private final Consumer<Intent> mDetailNavigationConsumer;
@@ -43,7 +42,11 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
       Context context,
       boolean hasPreviousCycle,
       String layerKey,
-      Consumer<Intent> detailNavigationConsumer) {
+      Consumer<Intent> detailNavigationConsumer,
+      Consumer<CycleRenderer.RenderableEntry> textClickConsumer,
+      Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer) {
+    mTextClickConsumer = textClickConsumer;
+    mStickerClickConsumer = stickerClickConsumer;
     mContext = context;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
@@ -76,24 +79,27 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new ChartEntryViewHolder.Impl(mContext, view, new OnClickHandler() {
-      @Override
-      public void onClick(CycleRenderer.EntryModificationContext modificationContext, int index) {
-        CycleRenderer.RenderableEntry entry = mRenderableEntries.get(index);
-        if (viewMode == ViewMode.TRAINING) {
-          if (!Strings.isNullOrEmpty(entry.trainingMarker())) {
-            Timber.d("TODO: prompt for entry");
-           } else {
-            Timber.d("Only prompting on training entries with markers");
-          }
-          return;
+    return new ChartEntryViewHolder.Impl(mContext, view, re -> {
+      if (viewMode == ViewMode.TRAINING) {
+        if (!Strings.isNullOrEmpty(re.trainingMarker())) {
+          Timber.d("TODO: prompt for entry");
+        } else {
+          Timber.d("Only prompting on training entries with markers");
         }
-        if (viewMode != ViewMode.CHARTING) {
-          Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
-          return;
-        }
-        mDetailNavigationConsumer.accept(getIntentForModification(modificationContext, index));
+        return;
       }
+      if (viewMode != ViewMode.CHARTING) {
+        Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
+        return;
+      }
+      mDetailNavigationConsumer.accept(getIntentForModification(re.modificationContext()));
+      mTextClickConsumer.accept(re);
+    }, re -> {
+      if (viewMode != ViewMode.CHARTING) {
+        Timber.d("Not prompting for sticker selection in mode: %s", viewMode.name());
+        return;
+      }
+      mStickerClickConsumer.accept(re);
     });
   }
 
@@ -117,11 +123,7 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     return mRenderableEntries.size();
   }
 
-  interface OnClickHandler {
-    void onClick(CycleRenderer.EntryModificationContext modificationContext, int index);
-  }
-
-  private Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext, final int index) {
+  private Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext) {
     modificationContext.hasPreviousCycle = mHasPreviousCycle;
     return EntryDetailActivity.createIntent(mContext, modificationContext);
   }
