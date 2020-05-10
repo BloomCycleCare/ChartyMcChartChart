@@ -85,8 +85,6 @@ public class CyclePageFragment extends BaseCycleListFragment {
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
-      updateMenuItems(viewState.viewMode);
-
       mPageAdapter.update(viewState.renderableCycles.stream()
           .map(CycleRenderer.RenderableCycle::cycle)
           .collect(Collectors.toList()), viewState.viewMode);
@@ -94,14 +92,10 @@ public class CyclePageFragment extends BaseCycleListFragment {
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
         mViewPager.setCurrentItem(viewState.currentCycleIndex);
       }
+
+      requireActivity().invalidateOptionsMenu();
     });
 
     return view;
-  }
-
-  @Override
-  public void onResume() {
-    super.onResume();
-    //mPageAdapter.notifyDataSetChanged();
   }
 }

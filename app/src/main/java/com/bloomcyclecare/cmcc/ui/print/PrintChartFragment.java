@@ -2,8 +2,9 @@ package com.bloomcyclecare.cmcc.ui.print;
 
 import android.os.Bundle;
 import android.print.PrintJob;
-import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
@@ -13,55 +14,63 @@ import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.print.ChartPrinter;
+import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.NavUtils;
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
-import io.reactivex.ObservableSource;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
+import timber.log.Timber;
 
-public class PrintChartActivity extends AppCompatActivity {
+public class PrintChartFragment extends Fragment {
 
   private RecyclerView mRecyclerView;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
+  private MainViewModel mMainViewModel;
+
   @Override
-  protected void onCreate(Bundle savedInstanceState) {
+  public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_print_chart);
 
-    getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+    mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+  }
 
-    setTitle("Select cycles to print");
+  @Nullable
+  @Override
+  public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    View view = inflater.inflate(R.layout.fragment_print_chart, container, false);
 
-    mRecyclerView = findViewById(R.id.recyclerview_cycle_entry);
-    boolean shouldReverseLayout = false;
+    mMainViewModel.updateTitle("Select cycles to print");
+
+    mRecyclerView = view.findViewById(R.id.recyclerview_cycle_entry);
     LinearLayoutManager layoutManager
-        = new LinearLayoutManager(this, LinearLayoutManager.VERTICAL, shouldReverseLayout);
+        = new LinearLayoutManager(requireContext(), LinearLayoutManager.VERTICAL, false);
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
 
-    MyApplication myApp = MyApplication.cast(getApplication());
+    MyApplication myApp = MyApplication.cast(requireActivity().getApplication());
     RWCycleRepo cycleRepo = myApp.cycleRepo();
     RWChartEntryRepo entryRepo = myApp.entryRepo();
     RWInstructionsRepo instructionsRepo = myApp.instructionsRepo();
 
-    CycleAdapter adapter = CycleAdapter.fromBundle(this, savedInstanceState);
+    CycleAdapter adapter = CycleAdapter.fromBundle(requireActivity(), savedInstanceState);
     if (adapter != null) {
       mRecyclerView.setAdapter(adapter);
     } else {
-
       mDisposables.add(cycleRepo
           .getStream()
           .firstOrError()
@@ -76,12 +85,12 @@ public class PrintChartActivity extends AppCompatActivity {
           .observeOn(AndroidSchedulers.mainThread())
           .subscribeOn(AndroidSchedulers.mainThread())
           .subscribe(viewModels -> mRecyclerView.setAdapter(
-              CycleAdapter.fromViewModels(PrintChartActivity.this, viewModels))));
+              CycleAdapter.fromViewModels(requireActivity(), viewModels))));
     }
 
-    FloatingActionButton fab = findViewById(R.id.fab);
+    FloatingActionButton fab = view.findViewById(R.id.fab);
     final Toast invalidSelectionToast =
-        Toast.makeText(this, "Continuous selection required", Toast.LENGTH_LONG);
+        Toast.makeText(requireActivity(), "Continuous selection required", Toast.LENGTH_LONG);
     fab.setOnClickListener(new View.OnClickListener() {
       @Override
       public void onClick(View view) {
@@ -105,57 +114,37 @@ public class PrintChartActivity extends AppCompatActivity {
                 .toObservable());
 
         mDisposables.add(renderers.toList()
-            .map(r -> ChartPrinter.create(PrintChartActivity.this, r))
+            .map(r -> ChartPrinter.create(requireActivity(), r))
             .flatMapObservable(ChartPrinter::print)
-            .flatMap(emitPrintJob())
-            .subscribeOn(Schedulers.computation())
+            .flatMap(printJob -> pollPrintJob(printJob))
             .toList()
-            .subscribe(jobs -> printJobComplete()));
+            .timeout(10, TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.computation())
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(jobs -> printJobComplete(), t -> printJobFailed()));
       }
     });
+
+    return view;
   }
 
   private void printJobComplete() {
-    finish();
+    NavHostFragment.findNavController(this).popBackStack();
   }
 
   private void printJobFailed() {
-    Toast.makeText(this, "Print failed", Toast.LENGTH_LONG).show();
+    Toast.makeText(requireActivity(), "Print failed", Toast.LENGTH_LONG).show();
   }
 
-  private Function<PrintJob, ObservableSource<PrintJob>> emitPrintJob() {
-    return printJob -> Observable
-        .interval(100, TimeUnit.MILLISECONDS)
-        .map(l -> printJob);
+  private Observable<PrintJob> pollPrintJob(PrintJob printJob) {
+    return Observable.interval(100, TimeUnit.MILLISECONDS)
+        .takeWhile(i -> !printJob.isCompleted() && !printJob.isCancelled() && !printJob.isFailed())
+        .ignoreElements()
+        .doOnComplete(() -> Timber.i("Print job complete: %s", printJob.getId()))
+        .andThen(Observable.just(printJob));
   }
 
   private CycleAdapter getAdapter() {
     return (CycleAdapter) mRecyclerView.getAdapter();
-  }
-
-  @Override
-  protected void onSaveInstanceState(Bundle outState) {
-    super.onSaveInstanceState(outState);
-    getAdapter().fillBundle(outState);
-  }
-
-  @Override
-  protected void onResume() {
-    super.onResume();
-  }
-
-  @Override
-  protected void onPause() {
-    super.onPause();
-  }
-
-  @Override
-  public boolean onOptionsItemSelected(MenuItem item) {
-    switch (item.getItemId()) {
-      case android.R.id.home:
-        NavUtils.navigateUpFromSameTask(this);
-        return true;
-    }
-    return super.onOptionsItemSelected(item);
   }
 }

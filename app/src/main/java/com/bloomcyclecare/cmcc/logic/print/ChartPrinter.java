@@ -125,7 +125,8 @@ public class ChartPrinter {
         .flatMapSingle(this::createWebView)
         .map(printedPage -> {
           String jobName = String.format("Chart %s", LocalDate.now().toString());
-          return mPrintManager.print(jobName, printedPage.webView.createPrintDocumentAdapter(jobName), mPrintAttributes);
+          PrintDocumentAdapter documentAdapter = printedPage.webView.createPrintDocumentAdapter(jobName);
+          return mPrintManager.print(jobName, documentAdapter, mPrintAttributes);
         });
   }
 

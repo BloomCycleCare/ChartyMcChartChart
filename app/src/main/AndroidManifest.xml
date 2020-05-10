@@ -64,11 +64,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.print.PrintChartActivity"
-            android:label="@string/title_activity_cycle_list"
-            android:launchMode="singleTop">
-        </activity>
-        <activity
             android:name=".ui.entry.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
             android:theme="@style/AppTheme.NoActionBar"

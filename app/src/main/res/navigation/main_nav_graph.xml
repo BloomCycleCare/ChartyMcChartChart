@@ -73,11 +73,11 @@
         android:label="Entry Details"
         tools:layout="@layout/activity_entry_detail"/>
 
-    <activity
+    <fragment
         android:id="@+id/print_chart"
-        android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartActivity"
+        android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartFragment"
         android:label="Print Chart"
-        tools:layout="@layout/activity_print_chart"/>
+        tools:layout="@layout/fragment_print_chart"/>
 
     <fragment
         android:id="@+id/exercise_list"
