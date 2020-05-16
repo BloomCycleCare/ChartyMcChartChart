@@ -9,12 +9,16 @@ import android.os.Bundle;
 import android.text.Html;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.api.services.drive.model.File;
+import com.google.auto.value.AutoValue;
+import com.google.common.collect.Queues;
 import com.google.firebase.auth.FirebaseUser;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
 
@@ -24,6 +28,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
 import java.util.Map;
+import java.util.Queue;
 
 import io.reactivex.Maybe;
 import io.reactivex.MaybeTransformer;
@@ -42,12 +47,15 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private Activity activity;
   private CompositeDisposable mDisposables = new CompositeDisposable();
   private RWCycleRepo mCycleRepo;
+  private RWPregnancyRepo mPregnancyRepo;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mCycleRepo = MyApplication.cast(getActivity().getApplication()).cycleRepo();
+    MyApplication myApp = MyApplication.cast(requireActivity().getApplication());
+    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
+    mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
   }
 
   @Override
@@ -70,7 +78,8 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .compose(tryUseLatestAsCurrent())
         .observeOn(AndroidSchedulers.mainThread())
         .compose(tryRestoreFromDrive())
-        .compose(initFirstCycle())
+        .observeOn(AndroidSchedulers.mainThread())
+        .switchIfEmpty(runInitFlow())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribeOn(Schedulers.computation())
         .subscribe(cycle -> {
@@ -149,15 +158,100 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
             }).doOnSubscribe(d -> Timber.d("Trying restore from Drive")));
   }
 
-  private MaybeTransformer<Cycle, Cycle> initFirstCycle() {
-    return upstream -> upstream
-        .switchIfEmpty(promptForStart()
-            .observeOn(Schedulers.computation())
-            .flatMap(startDate -> {
-              Cycle cycle = new Cycle("foo", LocalDate.now(), null, null);
-              return mCycleRepo.insertOrUpdate(cycle).andThen(Single.just(cycle));
-            }))
-        .toMaybe();
+  @AutoValue
+  static abstract class InitPrompt {
+    abstract String title();
+    abstract String subtitle();
+    abstract Single<Cycle> onPositive();
+
+    public static InitPrompt create(String title, String subtitle, Single<Cycle> onPositive) {
+      return new AutoValue_LoadCurrentCycleFragment_InitPrompt(title, subtitle, onPositive);
+    }
+
+    Maybe<Cycle> doPrompt(Context context) {
+      return Single.<Boolean>create(emitter -> new AlertDialog.Builder(context)
+          .setTitle(title())
+          .setMessage(subtitle())
+          .setPositiveButton("Yes", (dialog, whichButton) -> {
+            emitter.onSuccess(true);
+            dialog.dismiss();
+          })
+          .setNegativeButton("No", (dialog, which) -> {
+            emitter.onSuccess(false);
+            dialog.dismiss();
+          })
+          .setOnCancelListener(dialog -> {
+            emitter.onSuccess(false);
+            dialog.dismiss();
+          })
+          .setOnDismissListener(dialog -> {
+            emitter.onSuccess(false);
+            dialog.dismiss();
+          })
+          .create().show())
+          .flatMapMaybe(positive -> {
+            if (positive) {
+              return onPositive().toMaybe();
+            }
+            return Maybe.empty();
+          });
+    }
+  }
+
+  private Single<Cycle> runInitFlow() {
+    Queue<InitPrompt> prompts = Queues.newArrayDeque();
+    prompts.add(InitPrompt.create(
+        "Currently Pregnant?",
+        "Are you currently pregnant?",
+        Single.defer(this::initPregnancy)));
+    prompts.add(InitPrompt.create(
+        "Postpartum?",
+        "Are you postpartum before your period returns?",
+        Single.defer(this::initPostpartum)));
+    return runInitFlow(prompts)
+        .switchIfEmpty(Single.defer(this::initFirstCycle))
+        .doOnSubscribe(d -> Timber.d("Running init flow"))
+        .doOnSuccess(cycle -> Timber.d("Initialized first cycle starting %s", cycle.startDateStr));
+  }
+
+  private Maybe<Cycle> runInitFlow(Queue<InitPrompt> remainingPrompts) {
+    if (remainingPrompts.isEmpty()) {
+      return Maybe.empty();
+    }
+    return remainingPrompts.remove()
+        .doPrompt(requireContext())
+        .switchIfEmpty(Maybe.defer(() -> runInitFlow(remainingPrompts)));
+  }
+
+  private Single<Cycle> initPregnancy() {
+    return promptForPregnancyTestDate()
+        .observeOn(Schedulers.computation())
+        .flatMap(pregnancyTestDate -> {
+          Cycle firstCycle = new Cycle("first", pregnancyTestDate, null, null);
+          return mCycleRepo.insertOrUpdate(firstCycle)
+              .andThen(mPregnancyRepo.startPregnancy(pregnancyTestDate))
+              .andThen(mCycleRepo.getCurrentCycle().toSingle());
+        });
+  }
+
+  private Single<Cycle> initPostpartum() {
+    return promptForDeliveryDate()
+        .observeOn(Schedulers.computation())
+        .flatMap(deliveryDate -> {
+          Cycle firstCycle = new Cycle("first", deliveryDate.plusDays(1), null, null);
+          return mCycleRepo.insertOrUpdate(firstCycle).andThen(Single.just(firstCycle));
+        });
+  }
+
+  private Single<Cycle> initFirstCycle() {
+    Timber.d("Prompting for first cycle");
+    return promptForStart()
+        .observeOn(Schedulers.computation())
+        .flatMap(startDate -> {
+          Cycle cycle = new Cycle("first", startDate, null, null);
+          Timber.d("Initializing cycle starting %s", cycle.startDateStr);
+          return mCycleRepo.insertOrUpdate(cycle).andThen(Single.just(cycle));
+        });
   }
 
   private Single<Boolean> promptUseLatestAsCurrent() {
@@ -217,6 +311,26 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
       DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
           (view, year, monthOfYear, dayOfMonth) -> e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth)));
       datePickerDialog.setTitle("First day of current cycleToShow");
+      datePickerDialog.setMaxDate(Calendar.getInstance());
+      datePickerDialog.show(activity.getFragmentManager(), "datepickerdialog");
+    });
+  }
+
+  private Single<LocalDate> promptForPregnancyTestDate() {
+    return Single.create(e -> {
+      DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
+          (view, year, monthOfYear, dayOfMonth) -> e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth)));
+      datePickerDialog.setTitle("Date of positive pregnancy test");
+      datePickerDialog.setMaxDate(Calendar.getInstance());
+      datePickerDialog.show(activity.getFragmentManager(), "datepickerdialog");
+    });
+  }
+
+  private Single<LocalDate> promptForDeliveryDate() {
+    return Single.create(e -> {
+      DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
+          (view, year, monthOfYear, dayOfMonth) -> e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth)));
+      datePickerDialog.setTitle("Date of delivery");
       datePickerDialog.setMaxDate(Calendar.getInstance());
       datePickerDialog.show(activity.getFragmentManager(), "datepickerdialog");
     });

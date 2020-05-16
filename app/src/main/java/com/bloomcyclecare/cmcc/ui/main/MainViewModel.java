@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.google.auto.value.AutoValue;
 
@@ -21,22 +22,32 @@ public class MainViewModel extends AndroidViewModel {
 
   private final Subject<String> mTitleSubject = BehaviorSubject.createDefault("Some title");
   private final Subject<String> mSubtitleSubject = BehaviorSubject.createDefault("Some subtitle");
+  private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
 
-  private Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
+  private final ROInstructionsRepo mInstructionsRepo;
 
   public MainViewModel(@NonNull Application application) {
     super(application);
 
-    PreferenceRepo preferenceRepo = MyApplication.cast(application).preferenceRepo();
+    MyApplication myApp = MyApplication.cast(application);
+    PreferenceRepo preferenceRepo = myApp.preferenceRepo();
+    mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
 
     Flowable.combineLatest(
         mTitleSubject.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mSubtitleSubject.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        preferenceRepo.summaries().distinctUntilChanged()
-            .map(summary -> summary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING),
+        preferenceRepo.summaries()
+            .map(summary -> summary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING)
+            .distinctUntilChanged(),
         ViewState::create)
         .toObservable()
         .subscribe(mViewStateSubject);
+  }
+
+  Single<Boolean> instructionsInitialized() {
+    return mInstructionsRepo.getAll()
+        .firstOrError()
+        .map(instructions -> !instructions.isEmpty());
   }
 
   Single<ViewState> initialState() {

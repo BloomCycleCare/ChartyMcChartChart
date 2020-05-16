@@ -69,7 +69,7 @@ public class UserInitActivity extends FragmentActivity {
     getSupportFragmentManager().executePendingTransactions();
     mFragment = (SplashFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-    PreferenceRepo prefManager = PreferenceRepo.create(this);
+    PreferenceRepo prefManager = MyApplication.cast(getApplication()).preferenceRepo();
 
     CompositeDisposable disposables = new CompositeDisposable();
     disposables.add(prefManager

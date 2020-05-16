@@ -11,9 +11,9 @@
             android:key="DEFAULT_TO_DEMO"
             android:title="Default to demo mode"/>
         <SwitchPreferenceCompat
-            android:defaultValue="false"
-            android:key="DEFAULT_TO_GRID"
-            android:title="Default to grid view"/>
+            android:defaultValue="true"
+            android:key="CHARTING_REMINDER"
+            android:title="Enable charting reminder"/>
     </PreferenceCategory>
     <PreferenceCategory
         android:title="Backup &amp; Export"

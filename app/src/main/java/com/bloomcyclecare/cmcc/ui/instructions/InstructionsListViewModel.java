@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.ui.instructions;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
@@ -39,8 +40,8 @@ public class InstructionsListViewModel extends AndroidViewModel {
     super(application);
 
     MyApplication myApp = MyApplication.cast(application);
-    mInstructionsRepo = myApp.instructionsRepo();
-    mCycleRepo = myApp.cycleRepo();
+    mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
+    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
   }
 
   Single<Boolean> isDirty() {

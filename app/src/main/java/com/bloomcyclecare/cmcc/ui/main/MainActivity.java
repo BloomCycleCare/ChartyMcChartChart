@@ -1,14 +1,17 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
+import android.content.Intent;
 import android.os.Bundle;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.vertical.CyclePageFragmentArgs;
+import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -16,9 +19,12 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
+import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
+
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private NavController navController;
   private DrawerLayout drawerLayout;
@@ -33,9 +39,27 @@ public class MainActivity extends AppCompatActivity {
     setSupportActionBar(toolbar);
 
     mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
-    mViewModel.initialState()
+
+    mDisposables.add(mViewModel.initialState()
         .map(MainViewModel.ViewState::defaultViewMode)
-        .subscribe(this::configureNavigation);
+        .subscribe(this::configureNavigation));
+
+    mDisposables.add(mViewModel.instructionsInitialized().subscribe(initialized -> {
+      if (!initialized) {
+        new AlertDialog.Builder(this)
+            .setTitle("Initialize Instructions")
+            .setMessage("No instructions configured. Would you like to do so now?")
+            .setPositiveButton("Yes", (dialog, which) -> {
+              startActivity(new Intent(this, InstructionsListActivity.class));
+              dialog.dismiss();
+            })
+            .setNegativeButton("No", (dialog, which) -> {
+              dialog.dismiss();
+            })
+            .create()
+            .show();
+      }
+    }));
 
     Timber.v("Awaiting initial ViewState");
   }
