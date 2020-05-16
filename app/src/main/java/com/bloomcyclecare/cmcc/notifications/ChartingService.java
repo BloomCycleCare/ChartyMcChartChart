@@ -13,10 +13,12 @@ import android.os.IBinder;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 
 import org.joda.time.DateTime;
@@ -42,10 +44,11 @@ public class ChartingService extends Service {
 
     initNotificationChannel(this);
 
-    RWChartEntryRepo entryRepo = myApp.entryRepo();
-    RWCycleRepo cycleRepo = myApp.cycleRepo();
+    RWChartEntryRepo entryRepo = myApp.entryRepo(ViewMode.CHARTING);
+    RWCycleRepo cycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
+    PreferenceRepo preferenceRepo = myApp.preferenceRepo();
     NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-    Flowable<Boolean> stopStream = entryRepo
+    Flowable<Boolean> entryStopStream = entryRepo
         .getLatestN(2)
         .map(entries -> {
           if (entries.size() != 2) {
@@ -63,9 +66,18 @@ public class ChartingService extends Service {
               .toSingle(false)
               .toFlowable();
         });
+    Flowable<Boolean> preferenceDisableStream = preferenceRepo
+        .summaries()
+        .map(summary -> !summary.enableChartingReminder());
+    Flowable<Boolean> stopStream = Flowable.combineLatest(
+        entryStopStream.doOnNext(v -> { if (v) Timber.d("Entry stop"); }),
+        preferenceDisableStream.doOnNext(v -> { if (v) Timber.d("Preference stop"); }),
+        (a, b) -> a || b);
+    // TODO: fix this to handle turning the notification back on via preferences
     mDisposables.add(stopStream
         .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
         .takeUntil(shouldStop -> shouldStop)
+        .doOnNext(v -> Timber.d("Shutting down charting reminder"))
         .distinctUntilChanged()
         .doOnComplete(() -> clearNotificationAndTerminate(manager))
         .subscribe(yesterdayHasObservation -> {

@@ -16,6 +16,7 @@ public class PreferenceRepo {
   private enum Key {
     PROMPTED_FOR_BACKUP,
     PROMPTED_FOR_PUBLISH,
+    CHARTING_REMINDER,
     ENABLE_BACKUP_TO_DRIVE,
     ENABLE_PUBLISH_CHARTS_TO_DRIVE,
     DEFAULT_TO_DEMO,
@@ -24,6 +25,7 @@ public class PreferenceRepo {
 
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
   private final SharedPreferences preferences;
+  private final SharedPreferences.OnSharedPreferenceChangeListener mListener;
 
   public static PreferenceRepo create(Context context) {
     return new PreferenceRepo(context);
@@ -31,13 +33,17 @@ public class PreferenceRepo {
 
   private PreferenceRepo(Context context) {
     preferences = androidx.preference.PreferenceManager.getDefaultSharedPreferences(context);
-    preferences.registerOnSharedPreferenceChangeListener((sharedPreferences, s) -> {
+    mListener = (prefs, s) -> {
+      Timber.d("Received preference update");
       for (Key key : Key.values()) {
         if (key.name().equals(s)) {
-          mSummarySubject.onNext(new PreferenceSummary(sharedPreferences));
+          Timber.d("Triggering preference refresh");
+          mSummarySubject.onNext(new PreferenceSummary(prefs));
+          break;
         }
       }
-    });
+    };
+    preferences.registerOnSharedPreferenceChangeListener(mListener);
     mSummarySubject.onNext(new PreferenceSummary(preferences));
   }
 
@@ -89,8 +95,8 @@ public class PreferenceRepo {
       return mPrefs.getBoolean(Key.DEFAULT_TO_DEMO.name(), false);
     }
 
-    public boolean defaultToGrid() {
-      return mPrefs.getBoolean(Key.DEFAULT_TO_GRID.name(), false);
+    public boolean enableChartingReminder() {
+      return mPrefs.getBoolean(Key.CHARTING_REMINDER.name(), false);
     }
 
     private Single<Boolean> doTheStuff(Key togglePref, Key promptPref, Callable<Single<Boolean>> promptSupplier) {
