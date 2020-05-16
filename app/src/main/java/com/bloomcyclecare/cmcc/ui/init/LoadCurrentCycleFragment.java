@@ -78,6 +78,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .compose(tryUseLatestAsCurrent())
         .observeOn(AndroidSchedulers.mainThread())
         .compose(tryRestoreFromDrive())
+        .observeOn(AndroidSchedulers.mainThread())
         .switchIfEmpty(runInitFlow())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribeOn(Schedulers.computation())
