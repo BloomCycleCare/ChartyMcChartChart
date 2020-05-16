@@ -23,8 +23,8 @@ import timber.log.Timber;
 public class TempStore<T, P extends Comparable<? super P>> {
 
   private final Function<T, P> mPrimaryKeyExtractor;
-  private final BehaviorSubject<List<T>> mUpdatedValues = BehaviorSubject.create();
-  private final BehaviorSubject<List<T>> mStoredValues = BehaviorSubject.create();
+  private final BehaviorSubject<List<T>> mUpdatedValues = BehaviorSubject.createDefault(ImmutableList.of());
+  private final BehaviorSubject<List<T>> mStoredValues = BehaviorSubject.createDefault(ImmutableList.of());
 
   public TempStore(Observable<List<T>> remoteValues, Function<T, P> primaryKeyExtractor) {
     mPrimaryKeyExtractor = primaryKeyExtractor;
