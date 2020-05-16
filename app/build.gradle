@@ -33,6 +33,7 @@ android {
             ]
         }
         debug {
+            applicationIdSuffix ".debug"
             minifyEnabled false
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             resValue "string", "app_name", "CMCC (dev)"
