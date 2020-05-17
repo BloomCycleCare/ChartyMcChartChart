@@ -23,8 +23,10 @@ import timber.log.Timber;
 public class TempStore<T, P extends Comparable<? super P>> {
 
   private final Function<T, P> mPrimaryKeyExtractor;
-  private final BehaviorSubject<List<T>> mUpdatedValues = BehaviorSubject.createDefault(ImmutableList.of());
-  private final BehaviorSubject<List<T>> mStoredValues = BehaviorSubject.createDefault(ImmutableList.of());
+  // NOTE: these specifically do not have a default to prevent race where you ask for the stream
+  // before it has been initialized from stored values.
+  private final BehaviorSubject<List<T>> mUpdatedValues = BehaviorSubject.create();
+  private final BehaviorSubject<List<T>> mStoredValues = BehaviorSubject.create();
 
   public TempStore(Observable<List<T>> remoteValues, Function<T, P> primaryKeyExtractor) {
     mPrimaryKeyExtractor = primaryKeyExtractor;

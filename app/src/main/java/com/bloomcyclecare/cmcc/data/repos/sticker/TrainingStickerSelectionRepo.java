@@ -10,12 +10,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 
+import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
 
@@ -30,6 +32,7 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
   @Override
   public Completable recordSelection(StickerSelection selection, LocalDate entryDate) {
     return Completable.defer(() -> {
+      Timber.v("Updating selection for %s to %s", entryDate, selection);
       mSelections.put(entryDate, selection);
       mUpdateSubject.onNext(UpdateEvent.create(entryDate, selection));
       return Completable.complete();
@@ -38,7 +41,16 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
 
   @Override
   public Flowable<Map<LocalDate, StickerSelection>> getSelections(Range<LocalDate> dateRange) {
-    return Flowable.just(mSelections.subMap(dateRange.getLower(), dateRange.getUpper()));
+    return mUpdateSubject
+        .map(ignoredValue -> subset(dateRange))
+        .startWith(subset(dateRange))
+        .doOnNext(m -> Timber.v("Emitting new selection for %s", dateRange.toString()))
+        .toFlowable(BackpressureStrategy.BUFFER);
+  }
+
+  private Map<LocalDate, StickerSelection> subset(Range<LocalDate> dateRange) {
+    // NOTE: range upper is inclusive while subMap upper is exclusive
+    return mSelections.subMap(dateRange.getLower(), dateRange.getUpper().plusDays(1));
   }
 
   @Override

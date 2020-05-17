@@ -7,6 +7,11 @@
         android:title="General"
         android:key="pref_key_general">
         <SwitchPreferenceCompat
+            android:enabled="true"
+            android:defaultValue="true"
+            android:key="AUTO_STICKERING"
+            android:title="Enable automatic stickering"/>
+        <SwitchPreferenceCompat
             android:defaultValue="false"
             android:key="DEFAULT_TO_DEMO"
             android:title="Default to demo mode"/>

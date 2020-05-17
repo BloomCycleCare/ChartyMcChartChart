@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.detail;
+package com.bloomcyclecare.cmcc.ui.entry;
 
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
@@ -8,8 +8,6 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
-import com.bloomcyclecare.cmcc.ui.entry.ClarifyingQuestionUpdate;
-import com.bloomcyclecare.cmcc.ui.entry.EntryDetailViewModel;
 import com.google.common.collect.Iterables;
 
 import org.joda.time.LocalDate;

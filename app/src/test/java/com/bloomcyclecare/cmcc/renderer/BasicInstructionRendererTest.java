@@ -82,4 +82,18 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
     entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
     runTest(entries.build(), BASIC_INSTRUCTIONS);
   }
+
+  @Test
+  public void testFoo() throws Exception {
+    ImmutableMap.Builder<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText("0AD"), Optional.of(TrainingCycle.StickerExpectations.greenSticker()));
+
+    runTest(entries.build(), BASIC_INSTRUCTIONS);
+  }
 }

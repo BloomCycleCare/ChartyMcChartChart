@@ -72,17 +72,19 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       });
     }
 
-    public void bind(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
+    public void bind(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode, boolean showSticker) {
+      mBabyImageView.setVisibility(View.VISIBLE);
+
       mEntryDataTextView.setText(renderableEntry.entrySummary());
       mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum()));
       mEntryDateTextView.setText(renderableEntry.dateSummary());
 
       StickerSelection selection = StickerSelection.fromRenderableEntry(renderableEntry);
-      mBabyImageView.setBackgroundResource(viewMode == ViewMode.TRAINING
-          ? R.color.entryGrey : selection.sticker.resourceId);
-      mBabyImageView.setVisibility(View.VISIBLE);
 
-      if (selection.isEmpty()) {
+      mBabyImageView.setBackgroundResource(!showSticker || viewMode == ViewMode.TRAINING
+          ? R.color.entryGrey : selection.sticker.resourceId);
+
+      if (!showSticker || selection.isEmpty()) {
         mEntryPeakTextView.setText("?");
       } else {
         mEntryPeakTextView.setText(viewMode == ViewMode.TRAINING

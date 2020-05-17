@@ -18,6 +18,8 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
@@ -72,6 +74,7 @@ public class MyApplication extends Application {
   private ChartEntryRepoFactory mChartEntryRepoFactory;
   private PregnancyRepoFactory mPregnancyRepoFactory;
   private PreferenceRepo mPreferenceRepo;
+  private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
   private ExerciseRepoFactory mExerciseRepoFactory;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
@@ -111,6 +114,7 @@ public class MyApplication extends Application {
     mChartEntryRepoFactory = new ChartEntryRepoFactory(db, FALLBACK_VIEW_MODE);
     mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
+    mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
 
     mViewModelFactory = new ViewModelFactory();
@@ -251,6 +255,10 @@ public class MyApplication extends Application {
 
   public RWExerciseRepo exerciseRepo(ViewMode viewMode) {
     return mExerciseRepoFactory.forViewMode(viewMode);
+  }
+
+  public RWStickerSelectionRepo stickerSelectionRepo(ViewMode viewMode) {
+    return mStickerSelectionRepoFactory.forViewMode(viewMode);
   }
 
   @Deprecated

@@ -8,12 +8,16 @@ import android.net.Uri;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Charsets;
 import com.google.common.io.Files;
+
+import org.joda.time.LocalDate;
 
 import java.io.File;
 import java.util.List;
@@ -27,6 +31,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -37,6 +42,7 @@ import io.reactivex.subjects.Subject;
 
 public class CycleListViewModel extends AndroidViewModel {
 
+  private final Subject<RWStickerSelectionRepo> mStickerSelectionRepoSubject = BehaviorSubject.create();
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
   private final Subject<Boolean> mToggles = PublishSubject.create();
 
@@ -60,13 +66,16 @@ public class CycleListViewModel extends AndroidViewModel {
           } else {
             return ViewMode.CHARTING;
           }
-        });
+        }).cache();
+
+    viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
     viewModeStream.flatMap(viewMode -> Flowable.merge(Flowable.combineLatest(
         mApplication.instructionsRepo(viewMode).getAll()
             .distinctUntilChanged(),
         mApplication.cycleRepo(viewMode).getStream()
             .distinctUntilChanged(),
+
         (instructions, cycles) -> Flowable.merge(Flowable
             .fromIterable(cycles)
             .observeOn(Schedulers.computation())
@@ -93,6 +102,11 @@ public class CycleListViewModel extends AndroidViewModel {
 
   public ViewMode currentViewMode() {
     return mViewStateSubject.blockingFirst().viewMode();
+  }
+
+  public Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
+    return mStickerSelectionRepoSubject
+        .flatMapCompletable(repo -> repo.recordSelection(selection, date));
   }
 
   @AutoValue

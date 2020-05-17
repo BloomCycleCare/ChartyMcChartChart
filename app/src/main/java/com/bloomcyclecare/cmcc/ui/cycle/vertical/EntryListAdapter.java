@@ -1,20 +1,23 @@
 package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
+import org.joda.time.LocalDate;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Consumer;
@@ -32,17 +35,16 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   private final Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer;
   private final Consumer<CycleRenderer.RenderableEntry> mStickerClickConsumer;
   private final CompositeDisposable mDisposables;
-  private final boolean mHasPreviousCycle;
-  private final Consumer<Intent> mDetailNavigationConsumer;
+
   private String mLayerKey;
   private ViewMode viewMode;
   private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
+  private Map<LocalDate, StickerSelection> mStickerSelections = new HashMap<>();
+  private boolean mAutoStickeringEnabled;
 
   EntryListAdapter(
       Context context,
-      boolean hasPreviousCycle,
       String layerKey,
-      Consumer<Intent> detailNavigationConsumer,
       Consumer<CycleRenderer.RenderableEntry> textClickConsumer,
       Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer) {
     mTextClickConsumer = textClickConsumer;
@@ -50,8 +52,6 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     mContext = context;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
-    mHasPreviousCycle = hasPreviousCycle;
-    mDetailNavigationConsumer = detailNavigationConsumer;
   }
 
   void updateLayerKey(String key) {
@@ -59,11 +59,18 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     notifyDataSetChanged();
   }
 
-  void update(CycleRenderer.RenderableCycle renderableCycle, ViewMode viewMode) {
+  void update(
+      @NonNull CycleRenderer.RenderableCycle renderableCycle,
+      @NonNull ViewMode viewMode,
+      boolean autoStickeringEnabled,
+      @NonNull Map<LocalDate, StickerSelection> stickerSelections) {
     this.viewMode = viewMode;
-    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())) {
+    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())
+        || !Iterables.elementsEqual(mStickerSelections.entrySet(), stickerSelections.entrySet())) {
       Timber.v("Updating entries for cycle %s", renderableCycle.cycle().startDate);
       mRenderableEntries = renderableCycle.entries();
+      mStickerSelections = stickerSelections;
+      mAutoStickeringEnabled = autoStickeringEnabled;
       notifyDataSetChanged();
     }
   }
@@ -92,7 +99,6 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
         Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
         return;
       }
-      mDetailNavigationConsumer.accept(getIntentForModification(re.modificationContext()));
       mTextClickConsumer.accept(re);
     }, re -> {
       if (viewMode != ViewMode.CHARTING) {
@@ -115,16 +121,14 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
    */
   @Override
   public void onBindViewHolder(@NonNull ChartEntryViewHolder.Impl holder, int position) {
-    holder.bind(mRenderableEntries.get(mRenderableEntries.size() - position - 1), viewMode);
+    CycleRenderer.RenderableEntry re =
+        mRenderableEntries.get(mRenderableEntries.size() - position - 1);
+    boolean showSticker = mAutoStickeringEnabled || mStickerSelections.containsKey(re.entry().entryDate);
+    holder.bind(re, viewMode, showSticker);
   }
 
   @Override
   public int getItemCount() {
     return mRenderableEntries.size();
-  }
-
-  private Intent getIntentForModification(final CycleRenderer.EntryModificationContext modificationContext) {
-    modificationContext.hasPreviousCycle = mHasPreviousCycle;
-    return EntryDetailActivity.createIntent(mContext, modificationContext);
   }
 }

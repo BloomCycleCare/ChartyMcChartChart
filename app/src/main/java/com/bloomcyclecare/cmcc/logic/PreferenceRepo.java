@@ -20,7 +20,8 @@ public class PreferenceRepo {
     ENABLE_BACKUP_TO_DRIVE,
     ENABLE_PUBLISH_CHARTS_TO_DRIVE,
     DEFAULT_TO_DEMO,
-    DEFAULT_TO_GRID
+    DEFAULT_TO_GRID,
+    AUTO_STICKERING
   }
 
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
@@ -82,6 +83,10 @@ public class PreferenceRepo {
 
     public boolean publishEnabled() {
       return mPrefs.getBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE.name(), false);
+    }
+
+    public boolean autoStickeringEnabled() {
+      return mPrefs.getBoolean(Key.AUTO_STICKERING.name(), false);
     }
 
     public Single<Boolean> publishEnabled(Callable<Single<Boolean>> promptSupplier) {

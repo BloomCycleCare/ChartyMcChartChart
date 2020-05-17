@@ -96,10 +96,10 @@ public class EntryListFragment extends Fragment {
 
     mEntryListAdapter = new EntryListAdapter(
         getActivity(),
-        !getArguments().getBoolean(Extras.IS_LAST_CYCLE.name(), false),
         "",
-        this::navigateToDetailActivity,
-        re -> {},
+        re -> {
+          navigateToDetailActivity(re.modificationContext());
+        },
         re -> {
           if (!re.hasObservation()) {
             new AlertDialog.Builder(requireContext())
@@ -116,9 +116,13 @@ public class EntryListFragment extends Fragment {
           }
           StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
             Timber.i("Selection: %s", selection);
+            mDisposables.add(mViewModel.updateStickerSelection(re.entry().entryDate, selection).subscribe(
+                () -> Timber.d("Done updating selection"),
+                t -> Timber.e(t, "Error updating selection")));
           });
           Bundle dialogArgs = new Bundle();
-          dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(StickerSelection.fromRenderableEntry(re)));
+          StickerSelection expectedSelection = StickerSelection.fromRenderableEntry(re);
+          dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(expectedSelection));
           fragment.setArguments(dialogArgs);
           fragment.show(getChildFragmentManager(), "tag");
         });
@@ -138,7 +142,7 @@ public class EntryListFragment extends Fragment {
 
   private void render(EntryListViewModel.ViewState viewState) {
     Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
-    mEntryListAdapter.update(viewState.renderableCycle, viewState.viewMode);
+    mEntryListAdapter.update(viewState.renderableCycle, viewState.viewMode, viewState.autoStickeringEnabled, viewState.stickerSelections);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);
     }
