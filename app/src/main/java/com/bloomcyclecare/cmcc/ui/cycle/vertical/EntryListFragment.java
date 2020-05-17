@@ -11,7 +11,9 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
+import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.google.common.collect.Maps;
 
 import org.parceler.Parcels;
@@ -21,6 +23,7 @@ import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -98,6 +101,19 @@ public class EntryListFragment extends Fragment {
         this::navigateToDetailActivity,
         re -> {},
         re -> {
+          if (!re.hasObservation()) {
+            new AlertDialog.Builder(requireContext())
+                .setTitle("Observation Required")
+                .setMessage("An observation is required before selecting a sticker. Would you like to input an observation now?")
+                .setPositiveButton("Yes", (dialog, which) -> {
+                  navigateToDetailActivity(re.modificationContext());
+                  dialog.dismiss();
+                })
+                .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                .create()
+                .show();
+            return;
+          }
           StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
             Timber.i("Selection: %s", selection);
           });
@@ -161,8 +177,14 @@ public class EntryListFragment extends Fragment {
     manager.scrollToPositionWithOffset(topIndex, scrollState.offsetPixels());
   }
 
+  @Deprecated
   private void navigateToDetailActivity(Intent intent) {
     startActivityForResult(intent, 0);
+  }
+
+  private void navigateToDetailActivity(CycleRenderer.EntryModificationContext entryModificationContext) {
+    Intent intent = EntryDetailActivity.createIntent(requireContext(), entryModificationContext);
+    navigateToDetailActivity(intent);
   }
 
   @Override

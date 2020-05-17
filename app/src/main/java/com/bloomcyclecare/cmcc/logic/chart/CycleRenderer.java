@@ -646,7 +646,9 @@ public class CycleRenderer {
 
   @AutoValue
   public static abstract class RenderableEntry {
+    @Deprecated
     public abstract ChartEntry entry();
+    public abstract boolean hasObservation();
     public abstract Set<AbstractInstruction> fertilityReasons();
     public abstract String entrySummary();
     public abstract StickerColor backgroundColor();
@@ -682,6 +684,7 @@ public class CycleRenderer {
       }
       RenderableEntry renderableEntry = builder()
           .entry(state.entry)
+          .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
           .fertilityReasons(state.fertilityReasons)
           .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
@@ -742,6 +745,8 @@ public class CycleRenderer {
       public abstract Builder entry(ChartEntry entry);
 
       public abstract Builder fertilityReasons(Set<AbstractInstruction> fertilityReasons);
+
+      public abstract Builder hasObservation(boolean hasObservation);
 
       public abstract RenderableEntry build();
     }
