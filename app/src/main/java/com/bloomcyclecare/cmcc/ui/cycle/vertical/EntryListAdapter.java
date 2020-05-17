@@ -101,6 +101,10 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
       }
       mTextClickConsumer.accept(re);
     }, re -> {
+      if (mAutoStickeringEnabled) {
+        Timber.d("Not prompting for sticker selection while auto stickering is enabled");
+        return;
+      }
       if (viewMode != ViewMode.CHARTING) {
         Timber.d("Not prompting for sticker selection in mode: %s", viewMode.name());
         return;
