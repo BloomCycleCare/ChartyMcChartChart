@@ -7,7 +7,7 @@
         android:title="General"
         android:key="pref_key_general">
         <SwitchPreferenceCompat
-            android:enabled="false"
+            android:enabled="true"
             android:defaultValue="true"
             android:key="AUTO_STICKERING"
             android:title="Enable automatic stickering"/>
