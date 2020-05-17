@@ -10,6 +10,7 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -21,6 +22,7 @@ import org.joda.time.LocalDate;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
@@ -70,30 +72,43 @@ public class CycleListViewModel extends AndroidViewModel {
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
-    viewModeStream.flatMap(viewMode -> Flowable.merge(Flowable.combineLatest(
-        mApplication.instructionsRepo(viewMode).getAll()
-            .distinctUntilChanged(),
-        mApplication.cycleRepo(viewMode).getStream()
-            .distinctUntilChanged(),
+    viewModeStream.flatMap(viewMode -> {
+      Flowable<Boolean> autoStickeringStream = mApplication.preferenceRepo()
+          .summaries().map(PreferenceRepo.PreferenceSummary::autoStickeringEnabled)
+          .distinctUntilChanged();
 
-        (instructions, cycles) -> Flowable.merge(Flowable
-            .fromIterable(cycles)
-            .observeOn(Schedulers.computation())
-            .parallel()
-            .map(cycle -> Flowable.combineLatest(
-                mApplication.entryRepo(viewMode).getStreamForCycle(Flowable.just(cycle)),
-                mApplication.cycleRepo(viewMode).getPreviousCycle(cycle)
-                    .map(Optional::of).defaultIfEmpty(Optional.empty())
-                    .toFlowable(),
-                (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
-            )
-            .sequential()
-            .toList()
-            .toFlowable()
-            .map(RxUtil::combineLatest))))
-        .map(renderableCycles -> ViewState.create(viewMode, renderableCycles))
-        .toObservable())
-        .subscribe(mViewStateSubject);
+      Flowable<Map<LocalDate, StickerSelection>> stickerSelectionStream = mApplication.stickerSelectionRepo(viewMode)
+          .getSelections().distinctUntilChanged();
+
+      Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
+          mApplication.instructionsRepo(viewMode).getAll()
+              .distinctUntilChanged(),
+          mApplication.cycleRepo(viewMode).getStream()
+              .distinctUntilChanged(),
+          (instructions, cycles) -> Flowable.merge(Flowable
+              .fromIterable(cycles)
+              .observeOn(Schedulers.computation())
+              .parallel()
+              .map(cycle -> Flowable.combineLatest(
+                  mApplication.entryRepo(viewMode).getStreamForCycle(Flowable.just(cycle)),
+                  mApplication.cycleRepo(viewMode).getPreviousCycle(cycle)
+                      .map(Optional::of).defaultIfEmpty(Optional.empty())
+                      .toFlowable(),
+                  (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
+              )
+              .sequential()
+              .toList()
+              .toFlowable()
+              .map(RxUtil::combineLatest))));
+
+      return Flowable.combineLatest(
+          renderableCycleStream,
+          autoStickeringStream,
+          stickerSelectionStream,
+          (renderableCycles, autoStickeringEnabled, stickerSelections) -> ViewState.create(
+              viewMode, renderableCycles, autoStickeringEnabled, stickerSelections))
+          .toObservable();
+    }).subscribe(mViewStateSubject);
   }
 
   public Flowable<ViewState> viewStateStream() {
@@ -113,10 +128,13 @@ public class CycleListViewModel extends AndroidViewModel {
   public static abstract class ViewState {
     public abstract ViewMode viewMode();
     public abstract List<CycleRenderer.RenderableCycle> renderableCycles();
+    public abstract boolean autoStickeringEnabled();
+    public abstract Map<LocalDate, StickerSelection> stickerSelections();
 
-    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles) {
-      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles);
+    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, Map<LocalDate, StickerSelection> stickerSelections) {
+      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, stickerSelections);
     }
+
   }
 
   public void toggleViewMode() {

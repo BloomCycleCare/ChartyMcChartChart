@@ -13,6 +13,7 @@ import com.google.auto.value.AutoValue;
 import org.joda.time.LocalDate;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
@@ -44,7 +45,11 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     mCycleListViewModel.viewStateStream()
         .toObservable()
         .map(cycleListViewState -> ViewState.create(
-            cycleListViewState.renderableCycles(), getSubtitle(cycleListViewState), cycleListViewState.viewMode()))
+            cycleListViewState.renderableCycles(),
+            getSubtitle(cycleListViewState),
+            cycleListViewState.viewMode(),
+            cycleListViewState.autoStickeringEnabled(),
+            cycleListViewState.stickerSelections()))
         .subscribe(mViewStates);
   }
 
@@ -88,10 +93,13 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     public abstract List<CycleRenderer.RenderableCycle> renderableCycles();
     public abstract String subtitle();
     public abstract ViewMode viewMode();
+    public abstract boolean autoStickeringEnabled();
+    public abstract Map<LocalDate, StickerSelection> stickerSelections();
 
-    public static ViewState create(List<CycleRenderer.RenderableCycle> renderableCycles, String subtitle, ViewMode viewMode) {
-      return new AutoValue_EntryGridPageViewModel_ViewState(renderableCycles, subtitle, viewMode);
+    public static ViewState create(List<CycleRenderer.RenderableCycle> renderableCycles, String subtitle, ViewMode viewMode, boolean autoStickeringEnabled, Map<LocalDate, StickerSelection> stickerSelections) {
+      return new AutoValue_EntryGridPageViewModel_ViewState(renderableCycles, subtitle, viewMode, autoStickeringEnabled, stickerSelections);
     }
+
   }
 
   public static class Factory implements ViewModelProvider.Factory {

@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.sticker;
 import android.util.Range;
 
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.LocalDate;
 
@@ -44,7 +45,17 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
     return mUpdateSubject
         .map(ignoredValue -> subset(dateRange))
         .startWith(subset(dateRange))
+        .<Map<LocalDate, StickerSelection>>map(ImmutableMap::copyOf)
         .doOnNext(m -> Timber.v("Emitting new selection for %s", dateRange.toString()))
+        .toFlowable(BackpressureStrategy.BUFFER);
+  }
+
+  @Override
+  public Flowable<Map<LocalDate, StickerSelection>> getSelections() {
+    return mUpdateSubject
+        .map(ignoredValue -> mSelections)
+        .startWith(mSelections)
+        .<Map<LocalDate, StickerSelection>>map(ImmutableMap::copyOf)
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
