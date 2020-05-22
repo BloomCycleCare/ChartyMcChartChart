@@ -13,10 +13,13 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -73,8 +76,14 @@ class EntryListViewModel extends AndroidViewModel {
         cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
         scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
         autoStickeringStream.distinctUntilChanged(),
-        (renderableCycle, scrollState, autoStickeringEnabled) -> new ViewState(
-            cycle, renderableCycle, scrollState, viewMode, autoStickeringEnabled))
+        (renderableCycle, scrollState, autoStickeringEnabled) -> {
+          List<RenderedEntry> renderedEntries = new ArrayList<>();
+          for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
+            renderedEntries.add(RenderedEntry.create(re, autoStickeringEnabled, viewMode));
+          }
+          return new ViewState(
+              cycle, renderedEntries, scrollState, viewMode, autoStickeringEnabled);
+        })
         .toObservable()
         .subscribeOn(Schedulers.computation())
         .subscribe(mViewState);
@@ -97,20 +106,20 @@ class EntryListViewModel extends AndroidViewModel {
 
   public static class ViewState {
     final Cycle cycle;
-    final CycleRenderer.RenderableCycle renderableCycle;
+    final List<RenderedEntry> renderedEntries;
     final ScrollState scrollState;
     final ViewMode viewMode;
     final boolean autoStickeringEnabled;
 
     private ViewState(
         Cycle cycle,
-        CycleRenderer.RenderableCycle renderableCycle,
+        List<RenderedEntry> renderedEntries,
         ScrollState scrollState,
         ViewMode viewMode,
         boolean autoStickeringEnabled) {
       Timber.v("Creating new ViewState");
       this.cycle = cycle;
-      this.renderableCycle = renderableCycle;
+      this.renderedEntries = renderedEntries;
       this.scrollState = scrollState;
       this.viewMode = viewMode;
       this.autoStickeringEnabled = autoStickeringEnabled;

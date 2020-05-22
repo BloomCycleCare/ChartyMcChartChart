@@ -172,9 +172,9 @@ public class StickerDialogFragment extends DialogFragment {
 
   private void renderIncorrectResult(SelectionChecker.Result result) {
     mInfoTextView.setVisibility(View.VISIBLE);
-    mInfoTextView.setText(String.format("Incorrect...\nreason: %s",
+    mInfoTextView.setText(String.format("Incorrect selection\n\nReason: %s",
         result.reason.map(Enum::name).orElse("")));
-    mHintTextView.setText(String.format("hint: %s",
+    mHintTextView.setText(String.format("Hint: %s",
         result.hint.map(Enum::name).orElse("")));
 
     mShowHintButton.setVisibility(View.VISIBLE);
