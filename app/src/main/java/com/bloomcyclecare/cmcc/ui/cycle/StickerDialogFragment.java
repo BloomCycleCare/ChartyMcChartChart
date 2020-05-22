@@ -107,12 +107,16 @@ public class StickerDialogFragment extends DialogFragment {
         RxAdapterView.itemSelections(textSpinner)
             .map(index -> {
               if (index == 0) {
-                return StickerSelection.Text.UNKNOWN;
+                return Optional.<StickerSelection.Text>empty();
               }
-              return StickerSelection.Text.fromString(
-                  requireContext().getResources().getStringArray(R.array.sticker_text)[index]);
+              String spinnerText = requireContext().getResources().getStringArray(R.array.sticker_text)[index-1];
+              StickerSelection.Text t = StickerSelection.Text.fromString(spinnerText);
+              if (t == null) {
+                Timber.w("Unexpected null value for sticker text: %s", spinnerText);
+              }
+              return Optional.ofNullable(t);
             }),
-        (s, t) -> StickerSelection.create(s, t != StickerSelection.Text.UNKNOWN ? t : null))
+        (s, t) -> StickerSelection.create(s, t.orElse(null)))
         .subscribe(selectionSubject);
 
     Button mButtonCancel = view.findViewById(R.id.button_cancel);

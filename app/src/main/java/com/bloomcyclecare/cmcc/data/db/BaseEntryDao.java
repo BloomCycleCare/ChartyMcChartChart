@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.db;
 
 import com.bloomcyclecare.cmcc.data.entities.Entry;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
+import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
@@ -27,6 +28,8 @@ import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+
+// NOTE: new children of this class need to be added to the decorators below!!!!!
 
 @Dao
 public abstract class BaseEntryDao<E extends Entry> {
@@ -70,6 +73,20 @@ public abstract class BaseEntryDao<E extends Entry> {
         .toSingle(Optional.absent())
         .flatMapPublisher(initialEntry -> doFlowableT(query)
             .startWith(initialEntry.or(mEmptyEntryFn.apply(entryDate))))
+        .distinctUntilChanged();
+  }
+
+  public Flowable<Optional<E>> getOptionalStream(LocalDate entryDate) {
+    SimpleSQLiteQuery query = new SimpleSQLiteQuery(String.format(
+        "SELECT * FROM %s WHERE entryDate = \"%s\"",
+        mTableName,
+        DateUtil.toWireStr(entryDate)));
+    return doMaybeT(query)
+        .map(Optional::of)
+        .toSingle(Optional.absent())
+        .flatMapPublisher(initialEntry -> doFlowableT(query)
+            .map(Optional::of)
+            .startWith(initialEntry))
         .distinctUntilChanged();
   }
 
@@ -126,6 +143,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      StickerSelectionEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
@@ -133,6 +151,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      StickerSelectionEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
 
@@ -140,6 +159,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      StickerSelectionEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

@@ -41,6 +41,24 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
   }
 
   @Override
+  public Completable deleteAll() {
+    return Completable.defer(() -> {
+      mSelections.clear();
+      mUpdateSubject.onNext(UpdateEvent.create(null, null));
+      return Completable.complete();
+    });
+  }
+
+  @Override
+  public Completable delete(LocalDate date) {
+    return Completable.defer(() -> {
+      mSelections.remove(date);
+      mUpdateSubject.onNext(UpdateEvent.create(date, null));
+      return Completable.complete();
+    });
+  }
+
+  @Override
   public Flowable<Map<LocalDate, StickerSelection>> getSelections(Range<LocalDate> dateRange) {
     return mUpdateSubject
         .doOnNext(u -> Timber.v("FOO"))
@@ -59,15 +77,6 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
         .map(ignoredValue -> ImmutableMap.copyOf(mSelections))
         .startWith(ImmutableMap.copyOf(mSelections))
         .map(tm -> (Map<LocalDate, StickerSelection>) tm)
-        .toFlowable(BackpressureStrategy.BUFFER);
-  }
-
-  @Override
-  public Flowable<Map<LocalDate, StickerSelection>> getSelections() {
-    return mUpdateSubject
-        .map(ignoredValue -> mSelections)
-        .startWith(mSelections)
-        .<Map<LocalDate, StickerSelection>>map(ImmutableMap::copyOf)
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 

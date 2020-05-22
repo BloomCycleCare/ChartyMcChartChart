@@ -59,6 +59,8 @@ public class CycleRenderer {
   }
 
   public RenderableCycle render() {
+    Timber.v("Rendering cycle %s", mCycle);
+
     Set<LocalDate> daysWithAnObservation = new HashSet<>();
     TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();
     TreeSet<LocalDate> daysOfFlow = new TreeSet<>();

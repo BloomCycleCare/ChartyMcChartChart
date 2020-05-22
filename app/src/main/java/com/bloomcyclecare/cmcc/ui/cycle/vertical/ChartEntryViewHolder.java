@@ -85,15 +85,16 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
 
       StickerSelection autoSelection = StickerSelection.fromRenderableEntry(renderableEntry);
       StickerSelection manualSelection = renderableEntry.entry().stickerSelection;
+      boolean hasNonEmptyManualSelection = manualSelection != null && !manualSelection.equals(StickerSelection.empty());
 
       int resourceId = R.color.entryGrey;
-      if (manualSelection != null) {
+      if (hasNonEmptyManualSelection) {
         resourceId = manualSelection.sticker.resourceId;
       } else if (autoStickeringEnabled) {
         resourceId = autoSelection.sticker.resourceId;
       }
       mStickerView.setBackgroundResource(resourceId);
-      if (manualSelection != null && !autoSelection.equals(manualSelection)) {
+      if (!autoStickeringEnabled && hasNonEmptyManualSelection && !autoSelection.equals(manualSelection)) {
         mStrikeView.setVisibility(View.VISIBLE);
       } else {
         mStrikeView.setVisibility(View.GONE);
@@ -103,8 +104,9 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       if (viewMode == ViewMode.TRAINING) {
         text = renderableEntry.trainingMarker();
       } else if (autoStickeringEnabled) {
-        text = autoSelection.text != null ? autoSelection.text.name() : "";
-      } else if (manualSelection != null) {
+        text = autoSelection.text != null
+            ? autoSelection.text.name() : "";
+      } else if (hasNonEmptyManualSelection) {
         text = manualSelection.text != null ? manualSelection.text.name() : "";
       } else {
         text = "?";

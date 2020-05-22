@@ -9,4 +9,8 @@ import io.reactivex.Completable;
 public interface RWStickerSelectionRepo extends ROStickerSelectionRepo {
 
   Completable recordSelection(StickerSelection selection, LocalDate entryDate);
+
+  Completable deleteAll();
+
+  Completable delete(LocalDate date);
 }

@@ -19,6 +19,10 @@ public class StickerSelectionEntry extends Entry {
     this.selection = selection;
   }
 
+  public static StickerSelectionEntry emptyEntry(LocalDate entryDate) {
+    return new StickerSelectionEntry(entryDate, StickerSelection.empty());
+  }
+
   @Override
   public List<String> getSummaryLines() {
     return ImmutableList.of();

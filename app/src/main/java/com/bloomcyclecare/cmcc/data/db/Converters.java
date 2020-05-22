@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
@@ -30,6 +31,16 @@ public class Converters {
   @TypeConverter
   public Observation toObject(String in) {
     return GsonUtil.getGsonInstance().fromJson(in, Observation.class);
+  }
+
+  @TypeConverter
+  public String fromObject(StickerSelection in) {
+    return GsonUtil.getGsonInstance().toJson(in);
+  }
+
+  @TypeConverter
+  public StickerSelection toStickerSelection(String in) {
+    return GsonUtil.getGsonInstance().fromJson(in, StickerSelection.class);
   }
 
   @TypeConverter

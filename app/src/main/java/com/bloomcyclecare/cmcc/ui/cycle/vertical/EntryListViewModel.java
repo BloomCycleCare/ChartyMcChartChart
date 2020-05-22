@@ -108,6 +108,7 @@ class EntryListViewModel extends AndroidViewModel {
         ScrollState scrollState,
         ViewMode viewMode,
         boolean autoStickeringEnabled) {
+      Timber.v("Creating new ViewState");
       this.cycle = cycle;
       this.renderableCycle = renderableCycle;
       this.scrollState = scrollState;

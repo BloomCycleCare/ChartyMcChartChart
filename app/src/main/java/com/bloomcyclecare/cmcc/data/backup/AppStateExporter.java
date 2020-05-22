@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.backup;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.AppState;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
@@ -21,10 +22,10 @@ public class AppStateExporter {
   }
 
   public AppStateExporter(MyApplication myApp) {
-    mCycleRepo = myApp.cycleRepo();
-    mEntryRepo = myApp.entryRepo();
-    mInstructionsRepo = myApp.instructionsRepo();
-    mPregnancyRepo = myApp.pregnancyRepo();
+    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
+    mEntryRepo = myApp.entryRepo(ViewMode.CHARTING);
+    mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
+    mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
   }
 
   public Single<AppState> export() {

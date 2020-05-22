@@ -9,7 +9,7 @@ import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.repos.sticker.ROStickerSelectionRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
@@ -36,10 +36,10 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
-  private final ROStickerSelectionRepo stickerSelectionRepo;
+  private final RWStickerSelectionRepo stickerSelectionRepo;
   private AtomicBoolean batchUpdate = new AtomicBoolean();
 
-  RoomChartEntryRepo(AppDatabase db, ROStickerSelectionRepo stickerSelectionRepo) {
+  RoomChartEntryRepo(AppDatabase db, RWStickerSelectionRepo stickerSelectionRepo) {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
@@ -144,6 +144,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
     return Completable.mergeArray(
         observationEntryDao.insert(entry.observationEntry),
         wellnessEntryDao.insert(entry.wellnessEntry),
+        stickerSelectionRepo.recordSelection(entry.stickerSelection, entry.entryDate),
         symptomEntryDao.insert(entry.symptomEntry))
         .doOnComplete(() -> maybeSendUpdate(entry));
   }
@@ -153,6 +154,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
     return Completable.mergeArray(
         observationEntryDao.deleteAll(),
         wellnessEntryDao.deleteAll(),
+        stickerSelectionRepo.deleteAll(),
         symptomEntryDao.deleteAll())
         .doOnSubscribe(s -> Timber.i("Deleting all entries"))
         .doOnComplete(() -> Timber.i("Done deleting all entries"));
@@ -163,6 +165,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
     return Completable.mergeArray(
         observationEntryDao.delete(entry.observationEntry),
         wellnessEntryDao.delete(entry.wellnessEntry),
+        stickerSelectionRepo.delete(entry.entryDate),
         symptomEntryDao.delete(entry.symptomEntry))
         .doOnComplete(() -> maybeSendUpdate(entry));
   }

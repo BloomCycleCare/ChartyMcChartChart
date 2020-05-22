@@ -110,7 +110,7 @@ public class MyApplication extends Application {
         .build();
 
     mInstructionsRepoFactory = new InstructionsRepoFactory(db, FALLBACK_VIEW_MODE);
-    mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(FALLBACK_VIEW_MODE);
+    mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(db, FALLBACK_VIEW_MODE);
     mExerciseRepoFactory = new ExerciseRepoFactory(FALLBACK_VIEW_MODE);
     mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
     mChartEntryRepoFactory = new ChartEntryRepoFactory(db, mStickerSelectionRepoFactory, FALLBACK_VIEW_MODE);

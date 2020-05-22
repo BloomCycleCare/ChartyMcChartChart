@@ -19,7 +19,7 @@ import static com.bloomcyclecare.cmcc.logic.chart.StickerColor.WHITE;
 public class StickerSelection {
 
   public Sticker sticker;
-  public Text text;
+  @Nullable public Text text;
 
   public static StickerSelection create(Sticker sticker, Text text) {
     StickerSelection stickerSelection = new StickerSelection();
@@ -29,7 +29,7 @@ public class StickerSelection {
   }
 
   public static StickerSelection empty() {
-    return create(Sticker.GREY, Text.UNKNOWN);
+    return create(Sticker.GREY, null);
   }
 
   public static StickerSelection fromExpectations(TrainingCycle.StickerExpectations expectations) {
@@ -131,7 +131,7 @@ public class StickerSelection {
   }
 
   public enum Text {
-    UNKNOWN('?'), P('P'), ONE('1'), TWO('2'), THREE('3');
+    P('P'), ONE('1'), TWO('2'), THREE('3');
 
     public final char value;
 
@@ -149,8 +149,6 @@ public class StickerSelection {
         return null;
       }
       switch (str.charAt(0)) {
-        case '?':
-          return UNKNOWN;
         case 'P':
           return P;
         case '1':
