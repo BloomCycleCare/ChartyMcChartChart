@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="wrap_content"
+<androidx.constraintlayout.widget.ConstraintLayout android:layout_width="wrap_content"
     android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_gravity="center"
     android:background="@drawable/border"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android">
 
     <TextView
         android:id="@+id/cell_sticker_view"
@@ -12,17 +13,38 @@
         android:layout_height="@dimen/sticker_height"
         android:background="@drawable/border"
         android:gravity="center"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/cell_text_view"
         android:text="P"
         style="@style/TextAppearance.AppCompat.Large"
         android:textStyle="bold" />
+
+    <View
+        android:id="@+id/cell_sticker_strike_through"
+        android:layout_width="@dimen/sticker_width"
+        android:layout_height="@dimen/sticker_height"
+        android:background="@drawable/diagonal_line"
+        android:visibility="visible"
+        app:layout_constraintStart_toStartOf="@id/cell_sticker_view"
+        app:layout_constraintEnd_toEndOf="@id/cell_sticker_view"
+        app:layout_constraintTop_toTopOf="@id/cell_sticker_view"
+        app:layout_constraintBottom_toBottomOf="@id/cell_sticker_view"
+        android:elevation="2dp"
+        />
 
     <TextView
         android:id="@+id/cell_text_view"
         android:background="@drawable/border"
         android:layout_width="@dimen/sticker_width"
         android:layout_height="@dimen/sticker_height"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/cell_sticker_view"
         android:text="10CK\nAD"
         android:textAlignment="center" />
 
-</LinearLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
 

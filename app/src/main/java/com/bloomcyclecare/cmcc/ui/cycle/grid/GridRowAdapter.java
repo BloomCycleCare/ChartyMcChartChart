@@ -6,14 +6,10 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-
-import org.joda.time.LocalDate;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -23,37 +19,31 @@ import androidx.recyclerview.widget.RecyclerView;
 
 public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
 
-  private final List<List<Optional<CycleRenderer.RenderableEntry>>> mEntryLists = new ArrayList<>();
-  private final Consumer<CycleRenderer.RenderableEntry> mImageClickConsumer;
-  private final Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer;
+  private final List<List<Optional<RenderedEntry>>> mEntryLists = new ArrayList<>();
+  private final Consumer<RenderedEntry> mImageClickConsumer;
+  private final Consumer<RenderedEntry> mTextClickConsumer;
 
   private ViewMode mViewMode;
-  private boolean mAutoStickeringEnabled;
-  private Map<LocalDate, StickerSelection> mStickerSelections;
 
-  public GridRowAdapter(Consumer<CycleRenderer.RenderableEntry> mImageClickConsumer, Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer) {
+  public GridRowAdapter(Consumer<RenderedEntry> mImageClickConsumer, Consumer<RenderedEntry> mTextClickConsumer) {
     this.mImageClickConsumer = mImageClickConsumer;
     this.mTextClickConsumer = mTextClickConsumer;
   }
 
   public void updateData(
-      List<CycleRenderer.RenderableCycle> renderableCycles,
-      ViewMode viewMode,
-      boolean autoStickeringEnabled,
-      Map<LocalDate, StickerSelection> stickerSelections) {
+      List<List<RenderedEntry>> renderedEntryLists,
+      ViewMode viewMode) {
     this.mViewMode = viewMode;
-    List<List<Optional<CycleRenderer.RenderableEntry>>> entryLists = new ArrayList<>();
-    for (CycleRenderer.RenderableCycle renderableCycle : renderableCycles) {
-      append(entryLists, renderableCycle.entries());
-      List<Optional<CycleRenderer.RenderableEntry>> lastList = entryLists.get(entryLists.size() - 1);
+    List<List<Optional<RenderedEntry>>> entryLists = new ArrayList<>();
+    for (List<RenderedEntry> renderedEntryList : renderedEntryLists) {
+      append(entryLists, renderedEntryList);
+      List<Optional<RenderedEntry>> lastList = entryLists.get(entryLists.size() - 1);
       while (lastList.size() < 35) {
         lastList.add(Optional.empty());
       }
     }
     this.mEntryLists.clear();
     this.mEntryLists.addAll(entryLists);
-    mStickerSelections = stickerSelections;
-    mAutoStickeringEnabled = autoStickeringEnabled;
     notifyDataSetChanged();
   }
 
@@ -76,7 +66,7 @@ public class GridRowAdapter extends RecyclerView.Adapter<GridRowViewHolder> {
 
   @Override
   public void onBindViewHolder(@NonNull GridRowViewHolder holder, int position) {
-    holder.updateRow(mEntryLists.get(position), GridRowViewHolder.RowRenderContext.create(mViewMode, mAutoStickeringEnabled, mStickerSelections));
+    holder.updateRow(mEntryLists.get(position), GridRowViewHolder.RowRenderContext.create(mViewMode));
   }
 
   @Override

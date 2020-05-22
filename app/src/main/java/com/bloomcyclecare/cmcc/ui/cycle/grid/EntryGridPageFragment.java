@@ -9,7 +9,6 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
@@ -63,11 +62,16 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
         return;
       }*/
       StickerDialogFragment fragment = new StickerDialogFragment(result -> {
-        mViewModel.updateSticker(re.entry().entryDate, result.selection).subscribe();
+        mViewModel.updateSticker(re.entryDate(), result.selection).subscribe();
       });
 
       Bundle dialogArgs = new Bundle();
-      dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(StickerSelection.fromRenderableEntry(re)));
+      if (re.expectedStickerSelection().isPresent()) {
+        dialogArgs.putParcelable(StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(re.expectedStickerSelection().get()));
+      }
+      if (re.manualStickerSelection().isPresent()) {
+        dialogArgs.putParcelable(StickerDialogFragment.Args.PREVIOUS_SELECTION.name(), Parcels.wrap(re.manualStickerSelection().get()));
+      }
       fragment.setArguments(dialogArgs);
       fragment.show(getChildFragmentManager(), "tag");
     }, re -> {// Text click
@@ -76,7 +80,7 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
         return;
       }
       Timber.d("Navigating to detail activity");
-      startActivity(EntryDetailActivity.createIntent(getContext(), re.modificationContext()));
+      startActivity(EntryDetailActivity.createIntent(getContext(), re.entryModificationContext()));
     });
   }
 
@@ -97,10 +101,8 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
 
     mViewModel.viewStates().observe(getViewLifecycleOwner(), viewState -> {
       mGridRowAdapter.updateData(
-          viewState.renderableCycles(),
-          viewState.viewMode(),
-          viewState.autoStickeringEnabled(),
-          viewState.stickerSelections());
+          viewState.renderedEntries(),
+          viewState.viewMode());
       mMainViewModel.updateSubtitle(viewState.subtitle());
       mMainViewModel.updateTitle("Your Chart");
     });

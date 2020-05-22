@@ -7,21 +7,17 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
-
-import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -41,7 +37,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   private final List<GridCell> mCells = new ArrayList<>();
   private final List<LinearLayout> mSections = new ArrayList<>();
 
-  GridRowViewHolder(View v, Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer, Consumer<CycleRenderer.RenderableEntry> textClickConsumer) {
+  GridRowViewHolder(View v, Consumer<RenderedEntry> stickerClickConsumer, Consumer<RenderedEntry> textClickConsumer) {
     super(v);
     mContext = v.getContext();
     LinearLayout linearLayout = (LinearLayout) v;
@@ -55,7 +51,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
   }
 
-  void updateRow(List<Optional<CycleRenderer.RenderableEntry>> renderableEntries, RowRenderContext rowRenderContext) {
+  void updateRow(List<Optional<RenderedEntry>> renderableEntries, RowRenderContext rowRenderContext) {
     Preconditions.checkArgument(renderableEntries.size() == 35);
     for (int i=0; i<renderableEntries.size(); i++) {
       mCells.get(i).update(CellRenderContext.create(rowRenderContext, renderableEntries.get(i)));
@@ -69,23 +65,23 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     private final Context context;
     private final TextView textView;
     private final TextView stickerView;
-    private final Consumer<CycleRenderer.RenderableEntry> stickerClickListener;
+    private final View strikeThroughView;
+    private final Consumer<RenderedEntry> stickerClickListener;
 
-    private CycleRenderer.RenderableEntry boundEntry;
+    private RenderedEntry boundEntry;
 
-    private GridCell(LinearLayout cellLayout, Consumer<CycleRenderer.RenderableEntry> stickerClickListener, Consumer<CycleRenderer.RenderableEntry> textClickListener) {
+    private GridCell(ConstraintLayout cellLayout, Consumer<RenderedEntry> stickerClickListener, Consumer<RenderedEntry> textClickListener) {
       this.stickerClickListener = stickerClickListener;
       context = cellLayout.getContext();
       textView = cellLayout.findViewById(R.id.cell_text_view);
       textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
       stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
+      strikeThroughView = cellLayout.findViewById(R.id.cell_sticker_strike_through);
     }
 
     public void update(CellRenderContext renderContext) {
-      boundEntry = renderContext.renderableEntry().orElse(null);
-      boolean enableStickerClicks = (renderContext.rowRenderContext().viewMode() == ViewMode.TRAINING && boundEntry != null && !Strings.isNullOrEmpty(boundEntry.trainingMarker()))
-          || !renderContext.rowRenderContext().autoStickeringEnabled();
-      if (enableStickerClicks) {
+      boundEntry = renderContext.renderedEntry().orElse(null);
+      if (renderContext.renderedEntry().map(RenderedEntry::canPromptForStickerSelection).orElse(false)) {
         stickerView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
       } else {
         stickerView.setOnClickListener(v -> {});
@@ -98,52 +94,23 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void fillCell(CellRenderContext renderContext) {
-      if (!renderContext.renderableEntry().isPresent()) {
+      if (!renderContext.renderedEntry().isPresent()) {
+        clearCell();
         return;
       }
+      RenderedEntry renderedEntry = renderContext.renderedEntry().get();
       ViewMode viewMode = renderContext.rowRenderContext().viewMode();
-      CycleRenderer.RenderableEntry renderableEntry = renderContext.renderableEntry().get();
       List<String> parts = new ArrayList<>();
       if (viewMode != ViewMode.TRAINING) {
-        parts.add(renderableEntry.dateSummaryShort());
+        parts.add(renderedEntry.entryDateShortStr());
       }
-      parts.add(renderableEntry.entrySummary());
+      parts.add(renderedEntry.observationSummary());
       textView.setText(ON_NEW_LINE.join(parts));
 
-      stickerView.setBackground(context.getDrawable(getStickerResourceID(renderableEntry, renderContext)));
+      stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
+      stickerView.setText(renderedEntry.stickerText());
 
-      if (viewMode != ViewMode.TRAINING) {
-        if (!renderContext.rowRenderContext().autoStickeringEnabled()
-            && !renderContext.rowRenderContext().stickerSelections().containsKey(renderableEntry.entry().entryDate)) {
-          stickerView.setText("?");
-        } else {
-          stickerView.setText(renderableEntry.peakDayText());
-        }
-      } else {
-        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
-        if (stickerSelection == null) {
-          stickerView.setText(renderableEntry.trainingMarker());
-        } else {
-          stickerView.setText(Optional.ofNullable(stickerSelection.text)
-              .map(t -> String.valueOf(t.value))
-              .orElse(""));
-        }
-      }
-    }
-
-    private int getStickerResourceID(CycleRenderer.RenderableEntry renderableEntry, CellRenderContext renderContext) {
-      if (renderContext.rowRenderContext().viewMode() == ViewMode.TRAINING) {
-        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
-        if (stickerSelection == null || stickerSelection.sticker == null) {
-          return R.drawable.sticker_grey;
-        }
-        return stickerSelection.sticker.resourceId;
-      }
-      if (!renderContext.rowRenderContext().autoStickeringEnabled()
-          && !renderContext.rowRenderContext().stickerSelections().containsKey(renderableEntry.entry().entryDate)) {
-        return R.drawable.sticker_grey;
-      }
-      return StickerSelection.fromRenderableEntry(renderableEntry).sticker.resourceId;
+      strikeThroughView.setVisibility(renderedEntry.showStickerStrike() ? View.VISIBLE : View.GONE);
     }
 
     private void clearCell() {
@@ -157,11 +124,9 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   public static abstract class RowRenderContext {
 
     abstract ViewMode viewMode();
-    abstract boolean autoStickeringEnabled();
-    abstract Map<LocalDate, StickerSelection> stickerSelections();
 
-    public static RowRenderContext create(ViewMode viewMode, boolean autoStickeringEnabled, Map<LocalDate, StickerSelection> stickerSelections) {
-      return new AutoValue_GridRowViewHolder_RowRenderContext(viewMode, autoStickeringEnabled, stickerSelections);
+    public static RowRenderContext create(ViewMode viewMode) {
+      return new AutoValue_GridRowViewHolder_RowRenderContext(viewMode);
     }
   }
 
@@ -169,10 +134,10 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   public static abstract class CellRenderContext {
 
     abstract RowRenderContext rowRenderContext();
-    abstract Optional<CycleRenderer.RenderableEntry> renderableEntry();
+    abstract Optional<RenderedEntry> renderedEntry();
 
-    public static CellRenderContext create(RowRenderContext rowRenderContext, Optional<CycleRenderer.RenderableEntry> renderableEntry) {
-      return new AutoValue_GridRowViewHolder_CellRenderContext(rowRenderContext, renderableEntry);
+    public static CellRenderContext create(RowRenderContext rowRenderContext, Optional<RenderedEntry> renderedEntry) {
+      return new AutoValue_GridRowViewHolder_CellRenderContext(rowRenderContext,renderedEntry);
     }
   }
 }

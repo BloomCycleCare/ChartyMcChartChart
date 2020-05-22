@@ -20,6 +20,7 @@ public abstract class RenderedEntry {
   @NonNull public abstract String entryNum();
   @NonNull public abstract LocalDate entryDate();
   @NonNull public abstract String entryDateStr();
+  @NonNull public abstract String entryDateShortStr();
   @NonNull public abstract String observationSummary();
   @NonNull public abstract String stickerText();
   @NonNull public abstract String pocSummaryText();
@@ -38,8 +39,8 @@ public abstract class RenderedEntry {
   @NonNull public abstract Optional<StickerSelection> expectedStickerSelection();
   @NonNull public abstract Optional<StickerSelection> manualStickerSelection();
 
-  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String observationSummary, String stickerText, String pocSummaryText, String essentialSamenessSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
-    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, observationSummary, stickerText, pocSummaryText, essentialSamenessSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, hasObservation, entryModificationContext, expectedStickerSelection, manualStickerSelection);
+  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, String observationSummary, String stickerText, String pocSummaryText, String essentialSamenessSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
+    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, stickerText, pocSummaryText, essentialSamenessSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, hasObservation, entryModificationContext, expectedStickerSelection, manualStickerSelection);
   }
 
   @NonNull
@@ -88,6 +89,7 @@ public abstract class RenderedEntry {
         String.valueOf(re.entryNum()),
         re.modificationContext().entry.entryDate,
         re.dateSummary(),
+        re.dateSummaryShort(),
         re.entrySummary(),
         stickerText,
         pocSummary,
