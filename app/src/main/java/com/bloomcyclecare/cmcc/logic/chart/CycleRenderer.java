@@ -11,6 +11,7 @@ import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
@@ -59,6 +60,8 @@ public class CycleRenderer {
   }
 
   public RenderableCycle render() {
+    Timber.v("Rendering cycle %s", mCycle);
+
     Set<LocalDate> daysWithAnObservation = new HashSet<>();
     TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();
     TreeSet<LocalDate> daysOfFlow = new TreeSet<>();
@@ -648,6 +651,7 @@ public class CycleRenderer {
   public static abstract class RenderableEntry {
     @Deprecated
     public abstract ChartEntry entry();
+    public abstract Optional<StickerSelection> manualStickerSelection();
     public abstract boolean hasObservation();
     public abstract Set<AbstractInstruction> fertilityReasons();
     public abstract String entrySummary();
@@ -684,6 +688,7 @@ public class CycleRenderer {
       }
       RenderableEntry renderableEntry = builder()
           .entry(state.entry)
+          .manualStickerSelection(Optional.ofNullable(state.entry.stickerSelection))
           .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
           .fertilityReasons(state.fertilityReasons)
@@ -747,6 +752,8 @@ public class CycleRenderer {
       public abstract Builder fertilityReasons(Set<AbstractInstruction> fertilityReasons);
 
       public abstract Builder hasObservation(boolean hasObservation);
+
+      public abstract Builder manualStickerSelection(Optional<StickerSelection> manualStickerSelection);
 
       public abstract RenderableEntry build();
     }

@@ -8,6 +8,7 @@ import com.google.common.base.Strings;
 
 import org.parceler.Parcel;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 
@@ -18,13 +19,17 @@ import static com.bloomcyclecare.cmcc.logic.chart.StickerColor.WHITE;
 public class StickerSelection {
 
   public Sticker sticker;
-  public Text text;
+  @Nullable public Text text;
 
   public static StickerSelection create(Sticker sticker, Text text) {
     StickerSelection stickerSelection = new StickerSelection();
     stickerSelection.text = text;
     stickerSelection.sticker = sticker;
     return stickerSelection;
+  }
+
+  public static StickerSelection empty() {
+    return create(Sticker.GREY, null);
   }
 
   public static StickerSelection fromExpectations(TrainingCycle.StickerExpectations expectations) {
@@ -45,6 +50,17 @@ public class StickerSelection {
 
   public boolean isEmpty() {
     return text == null && !hasSticker();
+  }
+
+  @NonNull
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append(sticker.name()).append(":");
+    if (text != null) {
+      b.append(text.name());
+    }
+    return b.toString();
   }
 
   @Override

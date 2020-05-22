@@ -7,17 +7,12 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.google.common.base.Strings;
+import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.common.collect.Iterables;
 
-import org.joda.time.LocalDate;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Consumer;
@@ -32,21 +27,19 @@ import timber.log.Timber;
 class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
 
   private final Context mContext;
-  private final Consumer<CycleRenderer.RenderableEntry> mTextClickConsumer;
-  private final Consumer<CycleRenderer.RenderableEntry> mStickerClickConsumer;
+  private final Consumer<RenderedEntry> mTextClickConsumer;
+  private final Consumer<RenderedEntry> mStickerClickConsumer;
   private final CompositeDisposable mDisposables;
 
   private String mLayerKey;
   private ViewMode viewMode;
-  private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
-  private Map<LocalDate, StickerSelection> mStickerSelections = new HashMap<>();
-  private boolean mAutoStickeringEnabled;
+  private List<RenderedEntry> mRenderedEntries = new ArrayList<>();
 
   EntryListAdapter(
       Context context,
       String layerKey,
-      Consumer<CycleRenderer.RenderableEntry> textClickConsumer,
-      Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer) {
+      Consumer<RenderedEntry> textClickConsumer,
+      Consumer<RenderedEntry> stickerClickConsumer) {
     mTextClickConsumer = textClickConsumer;
     mStickerClickConsumer = stickerClickConsumer;
     mContext = context;
@@ -60,17 +53,13 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   }
 
   void update(
-      @NonNull CycleRenderer.RenderableCycle renderableCycle,
-      @NonNull ViewMode viewMode,
-      boolean autoStickeringEnabled,
-      @NonNull Map<LocalDate, StickerSelection> stickerSelections) {
+      @NonNull Cycle cycle,
+      @NonNull List<RenderedEntry> renderedEntries,
+      @NonNull ViewMode viewMode) {
     this.viewMode = viewMode;
-    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())
-        || !Iterables.elementsEqual(mStickerSelections.entrySet(), stickerSelections.entrySet())) {
-      Timber.v("Updating entries for cycle %s", renderableCycle.cycle().startDate);
-      mRenderableEntries = renderableCycle.entries();
-      mStickerSelections = stickerSelections;
-      mAutoStickeringEnabled = autoStickeringEnabled;
+    if (!Iterables.elementsEqual(mRenderedEntries, renderedEntries)) {
+      Timber.v("Updating entries for cycle %s", cycle.startDate);
+      mRenderedEntries = renderedEntries;
       notifyDataSetChanged();
     }
   }
@@ -86,31 +75,7 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new ChartEntryViewHolder.Impl(mContext, view, re -> {
-      if (viewMode == ViewMode.TRAINING) {
-        if (!Strings.isNullOrEmpty(re.trainingMarker())) {
-          Timber.d("TODO: prompt for entry");
-        } else {
-          Timber.d("Only prompting on training entries with markers");
-        }
-        return;
-      }
-      if (viewMode != ViewMode.CHARTING) {
-        Timber.d("Not navigating to detail activity while in mode: %s", viewMode.name());
-        return;
-      }
-      mTextClickConsumer.accept(re);
-    }, re -> {
-      if (mAutoStickeringEnabled) {
-        Timber.d("Not prompting for sticker selection while auto stickering is enabled");
-        return;
-      }
-      if (viewMode != ViewMode.CHARTING) {
-        Timber.d("Not prompting for sticker selection in mode: %s", viewMode.name());
-        return;
-      }
-      mStickerClickConsumer.accept(re);
-    });
+    return new ChartEntryViewHolder.Impl(mContext, view, mTextClickConsumer, mStickerClickConsumer);
   }
 
   /**
@@ -125,14 +90,12 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
    */
   @Override
   public void onBindViewHolder(@NonNull ChartEntryViewHolder.Impl holder, int position) {
-    CycleRenderer.RenderableEntry re =
-        mRenderableEntries.get(mRenderableEntries.size() - position - 1);
-    boolean showSticker = mAutoStickeringEnabled || mStickerSelections.containsKey(re.entry().entryDate);
-    holder.bind(re, viewMode, showSticker);
+    RenderedEntry re = mRenderedEntries.get(mRenderedEntries.size() - position - 1);
+    holder.bind(re, viewMode);
   }
 
   @Override
   public int getItemCount() {
-    return mRenderableEntries.size();
+    return mRenderedEntries.size();
   }
 }

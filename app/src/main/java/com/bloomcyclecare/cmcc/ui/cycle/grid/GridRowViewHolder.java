@@ -7,8 +7,8 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -36,7 +37,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
   private final List<GridCell> mCells = new ArrayList<>();
   private final List<LinearLayout> mSections = new ArrayList<>();
 
-  GridRowViewHolder(View v, Consumer<CycleRenderer.RenderableEntry> stickerClickConsumer, Consumer<CycleRenderer.RenderableEntry> textClickConsumer) {
+  GridRowViewHolder(View v, Consumer<RenderedEntry> stickerClickConsumer, Consumer<RenderedEntry> textClickConsumer) {
     super(v);
     mContext = v.getContext();
     LinearLayout linearLayout = (LinearLayout) v;
@@ -50,10 +51,10 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
   }
 
-  void updateRow(List<Optional<CycleRenderer.RenderableEntry>> renderableEntries, ViewMode viewMode) {
+  void updateRow(List<Optional<RenderedEntry>> renderableEntries, RowRenderContext rowRenderContext) {
     Preconditions.checkArgument(renderableEntries.size() == 35);
     for (int i=0; i<renderableEntries.size(); i++) {
-      mCells.get(i).update(renderableEntries.get(i), viewMode);
+      mCells.get(i).update(CellRenderContext.create(rowRenderContext, renderableEntries.get(i)));
     }
     for (LinearLayout sectionLayout : mSections) {
       sectionLayout.setBackground(mContext.getDrawable(R.drawable.section_border));
@@ -64,65 +65,79 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     private final Context context;
     private final TextView textView;
     private final TextView stickerView;
+    private final View strikeThroughView;
+    private final Consumer<RenderedEntry> stickerClickListener;
 
-    private CycleRenderer.RenderableEntry boundEntry;
+    private RenderedEntry boundEntry;
 
-    private GridCell(LinearLayout cellLayout, Consumer<CycleRenderer.RenderableEntry> stickerClickListener, Consumer<CycleRenderer.RenderableEntry> textClickListener) {
+    private GridCell(ConstraintLayout cellLayout, Consumer<RenderedEntry> stickerClickListener, Consumer<RenderedEntry> textClickListener) {
+      this.stickerClickListener = stickerClickListener;
       context = cellLayout.getContext();
       textView = cellLayout.findViewById(R.id.cell_text_view);
       textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
       stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
-      stickerView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
+      strikeThroughView = cellLayout.findViewById(R.id.cell_sticker_strike_through);
     }
 
-    public void update(Optional<CycleRenderer.RenderableEntry> renderableEntry, ViewMode viewMode) {
-      boundEntry = renderableEntry.orElse(null);
-      if (renderableEntry.isPresent()) {
-        fillCell(renderableEntry.get(), viewMode);
+    public void update(CellRenderContext renderContext) {
+      boundEntry = renderContext.renderedEntry().orElse(null);
+      if (renderContext.renderedEntry().map(RenderedEntry::canPromptForStickerSelection).orElse(false)) {
+        stickerView.setOnClickListener(v -> stickerClickListener.accept(boundEntry));
+      } else {
+        stickerView.setOnClickListener(v -> {});
+      }
+      if (boundEntry != null) {
+        fillCell(renderContext);
       } else {
         clearCell();
       }
     }
 
-    private void fillCell(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
+    private void fillCell(CellRenderContext renderContext) {
+      if (!renderContext.renderedEntry().isPresent()) {
+        clearCell();
+        return;
+      }
+      RenderedEntry renderedEntry = renderContext.renderedEntry().get();
+      ViewMode viewMode = renderContext.rowRenderContext().viewMode();
       List<String> parts = new ArrayList<>();
       if (viewMode != ViewMode.TRAINING) {
-        parts.add(renderableEntry.dateSummaryShort());
+        parts.add(renderedEntry.entryDateShortStr());
       }
-      parts.add(renderableEntry.entrySummary());
+      parts.add(renderedEntry.observationSummary());
       textView.setText(ON_NEW_LINE.join(parts));
 
-      stickerView.setBackground(context.getDrawable(getStickerResourceID(renderableEntry, viewMode)));
+      stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
+      stickerView.setText(renderedEntry.stickerText());
 
-      if (viewMode != ViewMode.TRAINING) {
-        stickerView.setText(renderableEntry.peakDayText());
-      } else {
-        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
-        if (stickerSelection == null) {
-          stickerView.setText(renderableEntry.trainingMarker());
-        } else {
-          stickerView.setText(Optional.ofNullable(stickerSelection.text)
-              .map(t -> String.valueOf(t.value))
-              .orElse(""));
-        }
-      }
-    }
-
-    private int getStickerResourceID(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode) {
-      if (viewMode == ViewMode.TRAINING) {
-        StickerSelection stickerSelection = renderableEntry.entry().stickerSelection;
-        if (stickerSelection == null || stickerSelection.sticker == null) {
-          return R.drawable.sticker_grey;
-        }
-        return stickerSelection.sticker.resourceId;
-      }
-      return StickerSelection.fromRenderableEntry(renderableEntry).sticker.resourceId;
+      strikeThroughView.setVisibility(renderedEntry.showStickerStrike() ? View.VISIBLE : View.GONE);
     }
 
     private void clearCell() {
       textView.setText("");
       stickerView.setText("");
       stickerView.setBackground(context.getDrawable(R.drawable.sticker_grey));
+    }
+  }
+
+  @AutoValue
+  public static abstract class RowRenderContext {
+
+    abstract ViewMode viewMode();
+
+    public static RowRenderContext create(ViewMode viewMode) {
+      return new AutoValue_GridRowViewHolder_RowRenderContext(viewMode);
+    }
+  }
+
+  @AutoValue
+  public static abstract class CellRenderContext {
+
+    abstract RowRenderContext rowRenderContext();
+    abstract Optional<RenderedEntry> renderedEntry();
+
+    public static CellRenderContext create(RowRenderContext rowRenderContext, Optional<RenderedEntry> renderedEntry) {
+      return new AutoValue_GridRowViewHolder_CellRenderContext(rowRenderContext,renderedEntry);
     }
   }
 }

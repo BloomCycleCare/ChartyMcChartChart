@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.sticker;
 import android.util.Range;
 
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.LocalDate;
 
@@ -40,21 +41,61 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
   }
 
   @Override
+  public Completable deleteAll() {
+    return Completable.defer(() -> {
+      mSelections.clear();
+      mUpdateSubject.onNext(UpdateEvent.create(null, null));
+      return Completable.complete();
+    });
+  }
+
+  @Override
+  public Completable delete(LocalDate date) {
+    return Completable.defer(() -> {
+      mSelections.remove(date);
+      mUpdateSubject.onNext(UpdateEvent.create(date, null));
+      return Completable.complete();
+    });
+  }
+
+  @Override
   public Flowable<Map<LocalDate, StickerSelection>> getSelections(Range<LocalDate> dateRange) {
     return mUpdateSubject
+        .doOnNext(u -> Timber.v("FOO"))
         .map(ignoredValue -> subset(dateRange))
         .startWith(subset(dateRange))
+        .<Map<LocalDate, StickerSelection>>map(ImmutableMap::copyOf)
         .doOnNext(m -> Timber.v("Emitting new selection for %s", dateRange.toString()))
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .doOnSubscribe(s -> Timber.v("SUB"))
+        .doOnComplete(() -> Timber.d("getSelections: COMPLETE"));
+  }
+
+  @Override
+  public Flowable<Map<LocalDate, StickerSelection>> getSelections() {
+    return mUpdateSubject
+        .map(ignoredValue -> ImmutableMap.copyOf(mSelections))
+        .startWith(ImmutableMap.copyOf(mSelections))
+        .map(tm -> (Map<LocalDate, StickerSelection>) tm)
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
   private Map<LocalDate, StickerSelection> subset(Range<LocalDate> dateRange) {
     // NOTE: range upper is inclusive while subMap upper is exclusive
-    return mSelections.subMap(dateRange.getLower(), dateRange.getUpper().plusDays(1));
+    return ImmutableMap.copyOf(mSelections.subMap(dateRange.getLower(), dateRange.getUpper().plusDays(1)));
   }
 
   @Override
   public Single<Optional<StickerSelection>> getSelection(LocalDate date) {
-    return Single.just(Optional.ofNullable(mSelections.get(date)));
+    return getSelectionStream(date).firstOrError();
+  }
+
+  @Override
+  public Flowable<Optional<StickerSelection>> getSelectionStream(LocalDate date) {
+    return mUpdateSubject
+        .map(ignoredValue -> Optional.ofNullable(mSelections.get(date)))
+        .startWith(Optional.ofNullable(mSelections.get(date)))
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .distinctUntilChanged();
   }
 }

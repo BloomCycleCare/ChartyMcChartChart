@@ -2,16 +2,20 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 
 import android.app.Application;
 
+import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,18 +37,33 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Optional<Exercise> mExercise;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
+  private final RWStickerSelectionRepo mStickerSelectionRepo;
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
     super(application);
     mCycleListViewModel = cycleListViewModel;
+    mStickerSelectionRepo = MyApplication.cast(application).stickerSelectionRepo(ViewMode.CHARTING);
     mExercise = exerciseID.flatMap(Exercise::forID);
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
     }
     mCycleListViewModel.viewStateStream()
         .toObservable()
-        .map(cycleListViewState -> ViewState.create(
-            cycleListViewState.renderableCycles(), getSubtitle(cycleListViewState), cycleListViewState.viewMode()))
+        .map(cycleListViewState -> {
+          List<List<RenderedEntry>> lofl = new ArrayList<>(cycleListViewState.renderableCycles().size());
+          for (CycleRenderer.RenderableCycle rc : cycleListViewState.renderableCycles()) {
+            List<RenderedEntry> renderedEntries = new ArrayList<>(rc.entries().size());
+            for (CycleRenderer.RenderableEntry re : rc.entries()) {
+              renderedEntries.add(RenderedEntry.create(
+                  re, cycleListViewState.autoStickeringEnabled(), cycleListViewState.viewMode()));
+            }
+            lofl.add(renderedEntries);
+          }
+          return ViewState.create(
+              lofl,
+              getSubtitle(cycleListViewState),
+              cycleListViewState.viewMode());
+        })
         .subscribe(mViewStates);
   }
 
@@ -74,8 +93,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   }
 
   Completable updateSticker(LocalDate entryDate, StickerSelection selection) {
-    return mEntryRepoSubject.firstOrError()
-        .flatMapCompletable(entryRepo -> entryRepo.updateStickerSelection(entryDate, selection));
+    return mStickerSelectionRepo.recordSelection(selection, entryDate);
   }
 
   LiveData<ViewState> viewStates() {
@@ -85,13 +103,14 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   @AutoValue
   public static abstract class ViewState {
 
-    public abstract List<CycleRenderer.RenderableCycle> renderableCycles();
+    public abstract List<List<RenderedEntry>> renderedEntries();
     public abstract String subtitle();
     public abstract ViewMode viewMode();
 
-    public static ViewState create(List<CycleRenderer.RenderableCycle> renderableCycles, String subtitle, ViewMode viewMode) {
-      return new AutoValue_EntryGridPageViewModel_ViewState(renderableCycles, subtitle, viewMode);
+    public static ViewState create(List<List<RenderedEntry>> renderedEntries, String subtitle, ViewMode viewMode) {
+      return new AutoValue_EntryGridPageViewModel_ViewState(renderedEntries, subtitle, viewMode);
     }
+
   }
 
   public static class Factory implements ViewModelProvider.Factory {

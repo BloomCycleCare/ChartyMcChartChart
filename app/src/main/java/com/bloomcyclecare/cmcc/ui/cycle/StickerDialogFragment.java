@@ -18,24 +18,34 @@ import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
 import org.parceler.Parcels;
 
+import java.util.Optional;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.util.Consumer;
 import androidx.fragment.app.DialogFragment;
+import io.reactivex.Observable;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 import static android.view.View.GONE;
 
 public class StickerDialogFragment extends DialogFragment {
 
-  private final Consumer<StickerSelection> selectionConsumer;
+  public enum Args {
+    EXPECTED_SELECTION,
+    PREVIOUS_SELECTION
+  }
+
+  private final Subject<StickerSelection> selectionSubject = BehaviorSubject.create();
+  private final Consumer<SelectionChecker.Result> resultConsumer;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  private final StickerSelection selection = new StickerSelection();
-
-  public StickerDialogFragment(Consumer<StickerSelection> selectionConsumer) {
+  public StickerDialogFragment(Consumer<SelectionChecker.Result> resultConsumer) {
     super();
-    this.selectionConsumer = selectionConsumer;
+    this.resultConsumer = resultConsumer;
   }
 
   @Override
@@ -66,6 +76,10 @@ public class StickerDialogFragment extends DialogFragment {
     });
     clearResultView();
 
+    Optional<StickerSelection> previousSelection = Optional.ofNullable(
+        Parcels.unwrap(requireArguments().getParcelable(Args.PREVIOUS_SELECTION.name())));
+    Timber.d("Previous selection: %s", previousSelection);
+
     TextView stickerTextView = view.findViewById(R.id.sticker);
 
     Spinner stickerSpinner = view.findViewById(R.id.sticker_selector_spinner);
@@ -73,53 +87,68 @@ public class StickerDialogFragment extends DialogFragment {
         R.array.sticker, android.R.layout.simple_spinner_item);
     stickerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     stickerSpinner.setAdapter(stickerAdapter);
-    mDisposables.add(RxAdapterView.itemSelections(stickerSpinner)
-        .map(index -> StickerSelection.Sticker.values()[index])
-        .subscribe(sticker -> {
-          stickerTextView.setBackground(getContext().getDrawable(sticker.resourceId));
-          selection.sticker = sticker;
-          clearResultView();
-        }));
+    if (previousSelection.isPresent()) {
+      stickerSpinner.setSelection(previousSelection.get().sticker.ordinal());
+    }
 
     Spinner textSpinner = view.findViewById(R.id.text_selector_spinner);
     ArrayAdapter<CharSequence> textAdapter = ArrayAdapter.createFromResource(getActivity(),
         R.array.sticker_text, android.R.layout.simple_spinner_item);
     textAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     textSpinner.setAdapter(textAdapter);
-    mDisposables.add(RxAdapterView.itemSelections(textSpinner)
-        .map(index -> {
-          if (index == 0) {
-            return "";
-          }
-          return getContext().getResources().getStringArray(R.array.sticker_text)[index];
-        })
-        .subscribe(str -> {
-          selection.text = StickerSelection.Text.fromString(str);
-          stickerTextView.setText(str);
-          clearResultView();
-        }));
+    if (previousSelection.isPresent()) {
+      textSpinner.setSelection(
+          previousSelection.get().text != null ? previousSelection.get().text.ordinal() : 0);
+    }
+
+    Observable.combineLatest(
+        RxAdapterView.itemSelections(stickerSpinner)
+            .map(index -> StickerSelection.Sticker.values()[index]),
+        RxAdapterView.itemSelections(textSpinner)
+            .map(index -> {
+              if (index == 0) {
+                return Optional.<StickerSelection.Text>empty();
+              }
+              String spinnerText = requireContext().getResources().getStringArray(R.array.sticker_text)[index-1];
+              StickerSelection.Text t = StickerSelection.Text.fromString(spinnerText);
+              if (t == null) {
+                Timber.w("Unexpected null value for sticker text: %s", spinnerText);
+              }
+              return Optional.ofNullable(t);
+            }),
+        (s, t) -> StickerSelection.create(s, t.orElse(null)))
+        .subscribe(selectionSubject);
 
     Button mButtonCancel = view.findViewById(R.id.button_cancel);
-    mButtonCancel.setOnClickListener(v -> {
-      dismiss();
-    });
+    mButtonCancel.setOnClickListener(v -> dismiss());
 
-    StickerSelection expected = Parcels.unwrap(getArguments().getParcelable(
-        StickerSelection.class.getCanonicalName()));
+    Optional<StickerSelection> expectedSelection = Optional.ofNullable(
+        Parcels.unwrap(requireArguments().getParcelable(Args.EXPECTED_SELECTION.name())));
+    Timber.d("Expected selection: %s", expectedSelection);
+
+    mDisposables.add(selectionSubject.distinctUntilChanged().subscribe(selection -> {
+      stickerTextView.setBackground(requireContext().getDrawable(selection.sticker.resourceId));
+      stickerTextView.setText(selection.text != null ? selection.text.name() : "");
+      if (previousSelection.isPresent() && expectedSelection.isPresent()) {
+        SelectionChecker.Result result = SelectionChecker.check(previousSelection.get(), expectedSelection.get());
+        if (!result.ok() && selection.equals(previousSelection.get())) {
+          renderIncorrectResult(result);
+          return;
+        }
+      }
+      clearResultView();
+    }));
+
 
     Button mButtonConfirm = view.findViewById(R.id.button_confirm);
     mButtonConfirm.setOnClickListener(v -> {
+      StickerSelection selection = selectionSubject.blockingFirst();
       if (selection.isEmpty()) {
         renderEmptySelect();
         return;
       }
-      SelectionChecker.Result result = SelectionChecker.check(selection, expected);
-      if (result.ok()) {
-        selectionConsumer.accept(selection);
-        dismiss();
-        return;
-      }
-      renderIncorrectResult(result);
+      resultConsumer.accept(SelectionChecker.check(selection, expectedSelection.get()));
+      dismiss();
     });
 
     return view;
@@ -143,9 +172,9 @@ public class StickerDialogFragment extends DialogFragment {
 
   private void renderIncorrectResult(SelectionChecker.Result result) {
     mInfoTextView.setVisibility(View.VISIBLE);
-    mInfoTextView.setText(String.format("Incorrect...\nreason: %s",
+    mInfoTextView.setText(String.format("Incorrect selection\n\nReason: %s",
         result.reason.map(Enum::name).orElse("")));
-    mHintTextView.setText(String.format("hint: %s",
+    mHintTextView.setText(String.format("Hint: %s",
         result.hint.map(Enum::name).orElse("")));
 
     mShowHintButton.setVisibility(View.VISIBLE);

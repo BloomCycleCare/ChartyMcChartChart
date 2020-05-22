@@ -70,11 +70,11 @@ public class TrainingChartEntryRepoTest {
     ChartEntry firstEntry = repo.getLatestN(1).blockingFirst().get(0);
     assertThat(firstEntry.stickerSelection).isEqualTo(StickerSelection.create(StickerSelection.Sticker.RED, null));
 
-    StickerSelection expected = StickerSelection.create(StickerSelection.Sticker.GREEN_BABY, StickerSelection.Text.P);
+    /*StickerSelection expected = StickerSelection.create(StickerSelection.Sticker.GREEN_BABY, StickerSelection.Text.P);
     repo.updateStickerSelection(firstEntry.entryDate, expected).test().assertComplete();
 
     ChartEntry updatedEntry = repo.getLatestN(1).blockingFirst().get(0);
-    assertThat(updatedEntry.stickerSelection).isEqualTo(expected);
+    assertThat(updatedEntry.stickerSelection).isEqualTo(expected);*/
   }
 
   private List<ChartEntry> expectedEntries() {

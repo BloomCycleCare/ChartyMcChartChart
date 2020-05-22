@@ -5,6 +5,7 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
+import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.google.common.collect.ImmutableList;
@@ -23,11 +24,12 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         Cycle.class,
         Instructions.class,
         ObservationEntry.class,
+        StickerSelectionEntry.class,
         SymptomEntry.class,
         WellnessEntry.class,
         Pregnancy.class,
     },
-    version = 14)
+    version = 15)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -35,6 +37,7 @@ public abstract class AppDatabase extends RoomDatabase {
     public abstract InstructionDao instructionDao();
     public abstract ObservationEntryDao observationEntryDao();
     public abstract WellnessEntryDao wellnessEntryDao();
+    public abstract StickerSelectionEntryDao stickerSelectionEntryDao();
     public abstract SymptomEntryDao symptomEntryDao();
     public abstract PregnancyDao pregnancyDao();
 
@@ -102,8 +105,14 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_Cycle_pregnancyId` ON `Cycle` (`pregnancyId`)");
         }
     };
+    private static final Migration MIGRATION_14_15 = new Migration(14, 14) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("CREATE TABLE IF NOT EXISTS `StickerSelectionEntry` (`entryDate` TEXT NOT NULL, `selection` TEXT, PRIMARY KEY(`entryDate`))");
+        }
+    };
 
     public static List<Migration> MIGRATIONS = ImmutableList.of(
         MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14);
+        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15);
 }

@@ -22,8 +22,6 @@ import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -93,19 +91,6 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
   public Flowable<UpdateEvent> updateEvents() {
     return Flowable.<UpdateEvent>empty()
         .doOnSubscribe(s -> Timber.w("No updates will be provided from training repo"));
-  }
-
-  @Override
-  public Completable updateStickerSelection(@NonNull LocalDate date, @Nullable StickerSelection selection) {
-    return Completable.defer(() -> {
-      if (!mEntries.containsKey(date)) {
-        return Completable.error(new IllegalAccessException("No entry found for date " + date));
-      }
-      mEntries.get(date).stickerSelection = selection;
-      mUpdateSubject.onNext(date);
-      return Completable.complete();
-    });
-
   }
 
   @Override

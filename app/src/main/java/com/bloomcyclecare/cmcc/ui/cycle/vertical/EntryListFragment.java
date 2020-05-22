@@ -6,11 +6,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
@@ -94,19 +94,27 @@ public class EntryListFragment extends Fragment {
       }
     });
 
-    mEntryListAdapter = new EntryListAdapter(
+  mEntryListAdapter = new EntryListAdapter(
         getActivity(),
         "",
         re -> {
-          navigateToDetailActivity(re.modificationContext());
+          if (!re.canNavigateToDetailActivity()) {
+            Timber.d("Not navigating to detail activity");
+            return;
+          }
+          navigateToDetailActivity(re.entryModificationContext());
         },
         re -> {
+          if (!re.canPromptForStickerSelection()) {
+            Timber.d("Not prompting for sticker selection");
+            return;
+          }
           if (!re.hasObservation()) {
             new AlertDialog.Builder(requireContext())
                 .setTitle("Observation Required")
                 .setMessage("An observation is required before selecting a sticker. Would you like to input an observation now?")
                 .setPositiveButton("Yes", (dialog, which) -> {
-                  navigateToDetailActivity(re.modificationContext());
+                  navigateToDetailActivity(re.entryModificationContext());
                   dialog.dismiss();
                 })
                 .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
@@ -114,15 +122,26 @@ public class EntryListFragment extends Fragment {
                 .show();
             return;
           }
-          StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
-            Timber.i("Selection: %s", selection);
-            mDisposables.add(mViewModel.updateStickerSelection(re.entry().entryDate, selection).subscribe(
+          StickerDialogFragment fragment = new StickerDialogFragment(result -> {
+            Timber.i("Selection: %s", result.selection);
+            mDisposables.add(mViewModel.updateStickerSelection(re.entryDate(), result.selection).subscribe(
                 () -> Timber.d("Done updating selection"),
                 t -> Timber.e(t, "Error updating selection")));
+            if (!result.ok()) {
+              Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
+            }
           });
           Bundle dialogArgs = new Bundle();
-          StickerSelection expectedSelection = StickerSelection.fromRenderableEntry(re);
-          dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(expectedSelection));
+          if (!re.expectedStickerSelection().isPresent()) {
+            Timber.w("Expected to have a sticker selection");
+            return;
+          }
+          dialogArgs.putParcelable(
+              StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(re.expectedStickerSelection().get()));
+          if (re.manualStickerSelection().isPresent()) {
+            dialogArgs.putParcelable(
+                StickerDialogFragment.Args.PREVIOUS_SELECTION.name(), Parcels.wrap(re.manualStickerSelection().get()));
+          }
           fragment.setArguments(dialogArgs);
           fragment.show(getChildFragmentManager(), "tag");
         });
@@ -142,7 +161,7 @@ public class EntryListFragment extends Fragment {
 
   private void render(EntryListViewModel.ViewState viewState) {
     Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
-    mEntryListAdapter.update(viewState.renderableCycle, viewState.viewMode, viewState.autoStickeringEnabled, viewState.stickerSelections);
+    mEntryListAdapter.update(viewState.cycle, viewState.renderedEntries, viewState.viewMode);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);
     }
