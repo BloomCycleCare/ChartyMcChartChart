@@ -40,12 +40,12 @@ public class StickerDialogFragment extends DialogFragment {
   }
 
   private final Subject<StickerSelection> selectionSubject = BehaviorSubject.create();
-  private final Consumer<StickerSelection> selectionConsumer;
+  private final Consumer<SelectionChecker.Result> resultConsumer;
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  public StickerDialogFragment(Consumer<StickerSelection> selectionConsumer) {
+  public StickerDialogFragment(Consumer<SelectionChecker.Result> resultConsumer) {
     super();
-    this.selectionConsumer = selectionConsumer;
+    this.resultConsumer = resultConsumer;
   }
 
   @Override
@@ -147,7 +147,7 @@ public class StickerDialogFragment extends DialogFragment {
         renderEmptySelect();
         return;
       }
-      selectionConsumer.accept(selection);
+      resultConsumer.accept(SelectionChecker.check(selection, expectedSelection.get()));
       dismiss();
     });
 

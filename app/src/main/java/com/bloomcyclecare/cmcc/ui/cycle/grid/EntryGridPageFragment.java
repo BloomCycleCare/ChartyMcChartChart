@@ -62,8 +62,8 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
         Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
         return;
       }*/
-      StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
-        mViewModel.updateSticker(re.entry().entryDate, selection).subscribe();
+      StickerDialogFragment fragment = new StickerDialogFragment(result -> {
+        mViewModel.updateSticker(re.entry().entryDate, result.selection).subscribe();
       });
 
       Bundle dialogArgs = new Bundle();

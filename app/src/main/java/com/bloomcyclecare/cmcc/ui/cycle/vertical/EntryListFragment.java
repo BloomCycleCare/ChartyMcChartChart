@@ -6,6 +6,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
@@ -114,11 +115,14 @@ public class EntryListFragment extends Fragment {
                 .show();
             return;
           }
-          StickerDialogFragment fragment = new StickerDialogFragment(selection -> {
-            Timber.i("Selection: %s", selection);
-            mDisposables.add(mViewModel.updateStickerSelection(re.entry().entryDate, selection).subscribe(
+          StickerDialogFragment fragment = new StickerDialogFragment(result -> {
+            Timber.i("Selection: %s", result.selection);
+            mDisposables.add(mViewModel.updateStickerSelection(re.entry().entryDate, result.selection).subscribe(
                 () -> Timber.d("Done updating selection"),
                 t -> Timber.e(t, "Error updating selection")));
+            if (!result.ok()) {
+              Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
+            }
           });
           Bundle dialogArgs = new Bundle();
           StickerSelection expectedSelection = StickerSelection.fromRenderableEntry(re);

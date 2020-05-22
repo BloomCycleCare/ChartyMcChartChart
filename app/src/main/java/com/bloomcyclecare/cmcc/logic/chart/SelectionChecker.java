@@ -27,11 +27,13 @@ public class SelectionChecker {
 
   public static class Result {
     public final StickerSelection expected;
+    public final StickerSelection selection;
     public final Optional<Reason> reason;
     public final Optional<Hint> hint;
 
-    Result(StickerSelection expected, Optional<Reason> reason, Optional<Hint> hint) {
+    Result(StickerSelection expected, StickerSelection selection, Optional<Reason> reason, Optional<Hint> hint) {
       this.expected = expected;
+      this.selection = selection;
       this.reason = reason;
       this.hint = hint;
     }
@@ -45,7 +47,7 @@ public class SelectionChecker {
     return check(selection, StickerSelection.fromRenderableEntry(renderableEntry));
   }
   public static Result check(StickerSelection selection, StickerSelection expected) {
-    return new Result(expected, getReason(selection, expected), getHint(selection, expected));
+    return new Result(expected, selection, getReason(selection, expected), getHint(selection, expected));
   }
 
   private static Optional<Reason> getReason(StickerSelection selection, StickerSelection expected) {
