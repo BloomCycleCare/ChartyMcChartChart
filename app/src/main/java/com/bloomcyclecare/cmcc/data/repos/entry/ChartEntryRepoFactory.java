@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.data.models.DemoCycles;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
+import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 
 import java.util.Optional;
@@ -18,9 +19,10 @@ public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
   private final RWChartEntryRepo mChartingRepo;
 
   public ChartEntryRepoFactory(@NonNull AppDatabase db,
+                               @NonNull StickerSelectionRepoFactory stickerSelectionRepoFactory,
                                @NonNull ViewMode fallbackViewMode) {
     super(fallbackViewMode);
-    mChartingRepo = new RoomChartEntryRepo(db);
+    mChartingRepo = new RoomChartEntryRepo(db, stickerSelectionRepoFactory.forViewMode(ViewMode.CHARTING));
   }
 
   @Override

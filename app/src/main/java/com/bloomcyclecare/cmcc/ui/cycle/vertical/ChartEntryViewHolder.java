@@ -28,9 +28,10 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     private final TextView mEntryPeakTextView;
     private final TextView mSymptomGoalSummaryView;
     private final TextView mPocSummaryTextView;
-    private final ImageView mBabyImageView;
     private final ImageView mStarImageView;
+    private final View mStickerView;
     private final View mSeparator;
+    private final View mStrikeView;
     private final Context mContext;
 
     private CycleRenderer.RenderableEntry mBoundEntry;
@@ -49,10 +50,11 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mEntryPeakTextView = itemView.findViewById(R.id.tv_peak_day);
       mPocSummaryTextView = itemView.findViewById(R.id.tv_tv_poc_summary);
       mSymptomGoalSummaryView = itemView.findViewById(R.id.tv_goal_symptom_summary);
-      mBabyImageView = itemView.findViewById(R.id.baby_image_view);
+      mStickerView = itemView.findViewById(R.id.baby_image_view);
       mStarImageView = itemView.findViewById(R.id.star_image_view);
       mSeparator = itemView.findViewById(R.id.separator);
-      mBabyImageView.setOnClickListener(v -> stickerClickConsumer.accept(mBoundEntry));
+      mStrikeView = itemView.findViewById(R.id.strike_through);
+      mStickerView.setOnClickListener(v -> stickerClickConsumer.accept(mBoundEntry));
       itemView.setOnClickListener(v -> textClickConsumer.accept(mBoundEntry));
       itemView.setOnLongClickListener(v -> {
         if (mBoundViewMode == ViewMode.TRAINING) {
@@ -72,24 +74,42 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       });
     }
 
-    public void bind(CycleRenderer.RenderableEntry renderableEntry, ViewMode viewMode, boolean showSticker) {
-      mBabyImageView.setVisibility(View.VISIBLE);
+    public void bind(CycleRenderer.RenderableEntry renderableEntry,
+                     ViewMode viewMode,
+                     boolean autoStickeringEnabled) {
+      mStickerView.setVisibility(View.VISIBLE);
 
       mEntryDataTextView.setText(renderableEntry.entrySummary());
       mEntryNumTextView.setText(String.valueOf(renderableEntry.entryNum()));
       mEntryDateTextView.setText(renderableEntry.dateSummary());
 
-      StickerSelection selection = StickerSelection.fromRenderableEntry(renderableEntry);
+      StickerSelection autoSelection = StickerSelection.fromRenderableEntry(renderableEntry);
+      StickerSelection manualSelection = renderableEntry.entry().stickerSelection;
 
-      mBabyImageView.setBackgroundResource(!showSticker || viewMode == ViewMode.TRAINING
-          ? R.color.entryGrey : selection.sticker.resourceId);
-
-      if (!showSticker || selection.isEmpty()) {
-        mEntryPeakTextView.setText("?");
-      } else {
-        mEntryPeakTextView.setText(viewMode == ViewMode.TRAINING
-            ? renderableEntry.trainingMarker() : renderableEntry.peakDayText());
+      int resourceId = R.color.entryGrey;
+      if (manualSelection != null) {
+        resourceId = manualSelection.sticker.resourceId;
+      } else if (autoStickeringEnabled) {
+        resourceId = autoSelection.sticker.resourceId;
       }
+      mStickerView.setBackgroundResource(resourceId);
+      if (manualSelection != null && !autoSelection.equals(manualSelection)) {
+        mStrikeView.setVisibility(View.VISIBLE);
+      } else {
+        mStrikeView.setVisibility(View.GONE);
+      }
+
+      String text = "";
+      if (viewMode == ViewMode.TRAINING) {
+        text = renderableEntry.trainingMarker();
+      } else if (autoStickeringEnabled) {
+        text = autoSelection.text != null ? autoSelection.text.name() : "";
+      } else if (manualSelection != null) {
+        text = manualSelection.text != null ? manualSelection.text.name() : "";
+      } else {
+        text = "?";
+      }
+      mEntryPeakTextView.setText(text);
 
       mPocSummaryTextView.setText(viewMode == ViewMode.TRAINING
           ? "" : renderableEntry.pocSummary());

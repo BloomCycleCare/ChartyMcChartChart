@@ -122,7 +122,12 @@ public class EntryListFragment extends Fragment {
           });
           Bundle dialogArgs = new Bundle();
           StickerSelection expectedSelection = StickerSelection.fromRenderableEntry(re);
-          dialogArgs.putParcelable(StickerSelection.class.getCanonicalName(), Parcels.wrap(expectedSelection));
+          dialogArgs.putParcelable(
+              StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(expectedSelection));
+          if (re.entry().stickerSelection != null) {
+            dialogArgs.putParcelable(
+                StickerDialogFragment.Args.PREVIOUS_SELECTION.name(), Parcels.wrap(re.entry().stickerSelection));
+          }
           fragment.setArguments(dialogArgs);
           fragment.show(getChildFragmentManager(), "tag");
         });
@@ -142,7 +147,7 @@ public class EntryListFragment extends Fragment {
 
   private void render(EntryListViewModel.ViewState viewState) {
     Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
-    mEntryListAdapter.update(viewState.renderableCycle, viewState.viewMode, viewState.autoStickeringEnabled, viewState.stickerSelections);
+    mEntryListAdapter.update(viewState.renderableCycle, viewState.viewMode, viewState.autoStickeringEnabled);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);
     }

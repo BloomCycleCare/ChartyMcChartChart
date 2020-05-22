@@ -8,6 +8,7 @@ import com.google.common.base.Strings;
 
 import org.parceler.Parcel;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import timber.log.Timber;
 
@@ -25,6 +26,10 @@ public class StickerSelection {
     stickerSelection.text = text;
     stickerSelection.sticker = sticker;
     return stickerSelection;
+  }
+
+  public static StickerSelection empty() {
+    return create(Sticker.GREY, Text.UNKNOWN);
   }
 
   public static StickerSelection fromExpectations(TrainingCycle.StickerExpectations expectations) {
@@ -45,6 +50,17 @@ public class StickerSelection {
 
   public boolean isEmpty() {
     return text == null && !hasSticker();
+  }
+
+  @NonNull
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append(sticker.name()).append(":");
+    if (text != null) {
+      b.append(text.name());
+    }
+    return b.toString();
   }
 
   @Override
@@ -115,7 +131,7 @@ public class StickerSelection {
   }
 
   public enum Text {
-    P('P'), ONE('1'), TWO('2'), THREE('3');
+    UNKNOWN('?'), P('P'), ONE('1'), TWO('2'), THREE('3');
 
     public final char value;
 
@@ -133,6 +149,8 @@ public class StickerSelection {
         return null;
       }
       switch (str.charAt(0)) {
+        case '?':
+          return UNKNOWN;
         case 'P':
           return P;
         case '1':

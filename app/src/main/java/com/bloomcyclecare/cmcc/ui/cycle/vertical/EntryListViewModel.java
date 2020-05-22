@@ -14,7 +14,6 @@ import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.LocalDate;
 
@@ -74,9 +73,8 @@ class EntryListViewModel extends AndroidViewModel {
         cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
         scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
         autoStickeringStream.distinctUntilChanged(),
-        stickerSelectionStream.map(ImmutableMap::copyOf),
-        (renderableCycle, scrollState, autoStickeringEnabled, stickerSelections) -> new ViewState(
-            cycle, renderableCycle, scrollState, viewMode, autoStickeringEnabled, stickerSelections))
+        (renderableCycle, scrollState, autoStickeringEnabled) -> new ViewState(
+            cycle, renderableCycle, scrollState, viewMode, autoStickeringEnabled))
         .toObservable()
         .subscribeOn(Schedulers.computation())
         .subscribe(mViewState);
@@ -103,21 +101,18 @@ class EntryListViewModel extends AndroidViewModel {
     final ScrollState scrollState;
     final ViewMode viewMode;
     final boolean autoStickeringEnabled;
-    final Map<LocalDate, StickerSelection> stickerSelections;
 
     private ViewState(
         Cycle cycle,
         CycleRenderer.RenderableCycle renderableCycle,
         ScrollState scrollState,
         ViewMode viewMode,
-        boolean autoStickeringEnabled,
-        Map<LocalDate, StickerSelection> stickerSelections) {
+        boolean autoStickeringEnabled) {
       this.cycle = cycle;
       this.renderableCycle = renderableCycle;
       this.scrollState = scrollState;
       this.viewMode = viewMode;
       this.autoStickeringEnabled = autoStickeringEnabled;
-      this.stickerSelections = stickerSelections;
     }
   }
 

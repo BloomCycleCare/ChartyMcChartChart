@@ -2,10 +2,12 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 
 import android.app.Application;
 
+import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.google.auto.value.AutoValue;
@@ -34,10 +36,12 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Optional<Exercise> mExercise;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
+  private final RWStickerSelectionRepo mStickerSelectionRepo;
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
     super(application);
     mCycleListViewModel = cycleListViewModel;
+    mStickerSelectionRepo = MyApplication.cast(application).stickerSelectionRepo(ViewMode.CHARTING);
     mExercise = exerciseID.flatMap(Exercise::forID);
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
@@ -79,8 +83,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   }
 
   Completable updateSticker(LocalDate entryDate, StickerSelection selection) {
-    return mEntryRepoSubject.firstOrError()
-        .flatMapCompletable(entryRepo -> entryRepo.updateStickerSelection(entryDate, selection));
+    return mStickerSelectionRepo.recordSelection(selection, entryDate);
   }
 
   LiveData<ViewState> viewStates() {

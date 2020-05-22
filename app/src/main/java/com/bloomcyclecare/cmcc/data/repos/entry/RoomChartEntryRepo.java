@@ -1,5 +1,7 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
+import android.util.Range;
+
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.ObservationEntryDao;
 import com.bloomcyclecare.cmcc.data.db.SymptomEntryDao;
@@ -7,11 +9,10 @@ import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.data.repos.sticker.ROStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
-import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -35,12 +36,14 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
+  private final ROStickerSelectionRepo stickerSelectionRepo;
   private AtomicBoolean batchUpdate = new AtomicBoolean();
 
-  RoomChartEntryRepo(AppDatabase db) {
+  RoomChartEntryRepo(AppDatabase db, ROStickerSelectionRepo stickerSelectionRepo) {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
+    this.stickerSelectionRepo = stickerSelectionRepo;
   }
 
   @Override
@@ -77,27 +80,17 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   }
 
   @Override
-  public Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
-    return getStream(date)
-        .firstOrError()
-        .map(entry -> {
-          entry.stickerSelection = selection;
-          return entry;
-        })
-        .flatMapCompletable(this::insert);
-  }
-
-  @Override
   public Single<List<ChartEntry>> getAllEntries() {
     return Single.zip(
         observationEntryDao.getAllEntries(),
         wellnessEntryDao.getAllEntries(),
         symptomEntryDao.getAllEntries(),
-        (observationEntries, wellnessEntries, symptomEntries) -> {
+        stickerSelectionRepo.getSelections().firstOrError(),
+        (observationEntries, wellnessEntries, symptomEntries, stickerSelections) -> {
           List<ChartEntry> out = new ArrayList<>(observationEntries.size());
           for (ObservationEntry observationEntry : observationEntries.values()) {
             LocalDate date = observationEntry.getDate();
-            out.add(ChartEntry.withoutStickerSelection(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date)));
+            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date), stickerSelections.get(date)));
           }
           return out;
         });
@@ -111,9 +104,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             .nowStream()
             .map(now -> DateUtil.daysBetween(now.minusDays(n - 1), now, false)))
         .distinctUntilChanged()
-        .doOnNext(days -> Timber.v("New date range: %s", Iterables.toString(days)))
-        .switchMap(this::entriesForDates)
-        .doOnNext(i -> Timber.v("New data"));
+        .switchMap(this::entriesForDates);
   }
 
   private Flowable<List<ChartEntry>> entriesForDates(List<LocalDate> dates) {
@@ -138,10 +129,11 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             observationEntryDao.getIndexedStream(pair.first, pair.second),
             wellnessEntryDao.getIndexedStream(pair.first, pair.second),
             symptomEntryDao.getIndexedStream(pair.first, pair.second),
-            (observationStream, wellnessStream, symptomStream) -> {
+            stickerSelectionRepo.getSelections(Range.create(pair.first, pair.second)),
+            (observationStream, wellnessStream, symptomStream, stickerSelections) -> {
               List<ChartEntry> out = new ArrayList<>();
               for (LocalDate d : DateUtil.daysBetween(pair.first, pair.second, false)) {
-                out.add(ChartEntry.withoutStickerSelection(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d)));
+                out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), stickerSelections.get(d)));
               }
               return out;
             }));
@@ -182,12 +174,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             observationEntryDao.getStream(entryDate),
             wellnessEntryDao.getStream(entryDate),
             symptomEntryDao.getStream(entryDate),
-            ChartEntry::withoutStickerSelection);
+            stickerSelectionRepo.getSelectionStream(entryDate),
+            (d, o, w, s, ss) -> new ChartEntry(d, o, w, s, ss.orElse(null)));
   }
-
-  private static Flowable<List<LocalDate>> datesForCycle(Cycle cycle) {
-    Flowable<LocalDate> endDate = cycle.endDate != null ? Flowable.just(cycle.endDate) : DateUtil.nowStream();
-    return endDate.map(lastDay -> DateUtil.daysBetween(cycle.startDate, lastDay, true));
-  }
-
 }

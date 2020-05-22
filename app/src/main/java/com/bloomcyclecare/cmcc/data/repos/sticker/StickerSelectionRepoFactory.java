@@ -8,15 +8,16 @@ import java.util.Optional;
 
 public class StickerSelectionRepoFactory extends RepoFactory<RWStickerSelectionRepo> {
 
-  private final TrainingStickerSelectionRepo repo = new TrainingStickerSelectionRepo();
+  private final TrainingStickerSelectionRepo mRepo;
 
   public StickerSelectionRepoFactory(ViewMode fallbackViewMode) {
     super(fallbackViewMode);
+    mRepo = new TrainingStickerSelectionRepo();
   }
 
   @Override
   protected Optional<RWStickerSelectionRepo> forViewModeInternal(ViewMode viewMode) {
-    return Optional.of(repo);
+    return Optional.of(mRepo);
   }
 
   @Override

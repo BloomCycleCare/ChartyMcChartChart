@@ -114,7 +114,7 @@
             app:layout_constraintTop_toTopOf="parent" />
 
 
-        <ImageView
+        <View
             android:id="@+id/baby_image_view"
             android:layout_height="0dp"
             android:layout_gravity="right|center_vertical"
@@ -125,6 +125,20 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toTopOf="parent"
             android:layout_width="0dp" />
+
+        <View
+            android:id="@+id/strike_through"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:layout_gravity="right|center_vertical"
+            android:background="@drawable/diagonal_line"
+            android:elevation="2dp"
+            android:visibility="visible"
+            app:layout_constraintBottom_toBottomOf="@id/baby_image_view"
+            app:layout_constraintDimensionRatio="3:2"
+            app:layout_constraintEnd_toEndOf="@id/baby_image_view"
+            app:layout_constraintStart_toStartOf="@id/baby_image_view"
+            app:layout_constraintTop_toTopOf="@id/baby_image_view" />
 
         <TextView
             android:id="@+id/tv_peak_day"

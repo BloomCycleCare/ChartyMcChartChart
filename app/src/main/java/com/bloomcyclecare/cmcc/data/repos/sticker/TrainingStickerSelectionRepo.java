@@ -43,10 +43,22 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
   @Override
   public Flowable<Map<LocalDate, StickerSelection>> getSelections(Range<LocalDate> dateRange) {
     return mUpdateSubject
+        .doOnNext(u -> Timber.v("FOO"))
         .map(ignoredValue -> subset(dateRange))
         .startWith(subset(dateRange))
         .<Map<LocalDate, StickerSelection>>map(ImmutableMap::copyOf)
         .doOnNext(m -> Timber.v("Emitting new selection for %s", dateRange.toString()))
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .doOnSubscribe(s -> Timber.v("SUB"))
+        .doOnComplete(() -> Timber.d("getSelections: COMPLETE"));
+  }
+
+  @Override
+  public Flowable<Map<LocalDate, StickerSelection>> getSelections() {
+    return mUpdateSubject
+        .map(ignoredValue -> ImmutableMap.copyOf(mSelections))
+        .startWith(ImmutableMap.copyOf(mSelections))
+        .map(tm -> (Map<LocalDate, StickerSelection>) tm)
         .toFlowable(BackpressureStrategy.BUFFER);
   }
 
@@ -61,11 +73,20 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
 
   private Map<LocalDate, StickerSelection> subset(Range<LocalDate> dateRange) {
     // NOTE: range upper is inclusive while subMap upper is exclusive
-    return mSelections.subMap(dateRange.getLower(), dateRange.getUpper().plusDays(1));
+    return ImmutableMap.copyOf(mSelections.subMap(dateRange.getLower(), dateRange.getUpper().plusDays(1)));
   }
 
   @Override
   public Single<Optional<StickerSelection>> getSelection(LocalDate date) {
-    return Single.just(Optional.ofNullable(mSelections.get(date)));
+    return getSelectionStream(date).firstOrError();
+  }
+
+  @Override
+  public Flowable<Optional<StickerSelection>> getSelectionStream(LocalDate date) {
+    return mUpdateSubject
+        .map(ignoredValue -> Optional.ofNullable(mSelections.get(date)))
+        .startWith(Optional.ofNullable(mSelections.get(date)))
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .distinctUntilChanged();
   }
 }

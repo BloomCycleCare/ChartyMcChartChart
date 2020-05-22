@@ -7,17 +7,12 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
-import org.joda.time.LocalDate;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Consumer;
@@ -39,7 +34,6 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   private String mLayerKey;
   private ViewMode viewMode;
   private List<CycleRenderer.RenderableEntry> mRenderableEntries = new ArrayList<>();
-  private Map<LocalDate, StickerSelection> mStickerSelections = new HashMap<>();
   private boolean mAutoStickeringEnabled;
 
   EntryListAdapter(
@@ -62,14 +56,11 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   void update(
       @NonNull CycleRenderer.RenderableCycle renderableCycle,
       @NonNull ViewMode viewMode,
-      boolean autoStickeringEnabled,
-      @NonNull Map<LocalDate, StickerSelection> stickerSelections) {
+      boolean autoStickeringEnabled) {
     this.viewMode = viewMode;
-    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())
-        || !Iterables.elementsEqual(mStickerSelections.entrySet(), stickerSelections.entrySet())) {
+    if (!Iterables.elementsEqual(mRenderableEntries, renderableCycle.entries())) {
       Timber.v("Updating entries for cycle %s", renderableCycle.cycle().startDate);
       mRenderableEntries = renderableCycle.entries();
-      mStickerSelections = stickerSelections;
       mAutoStickeringEnabled = autoStickeringEnabled;
       notifyDataSetChanged();
     }
@@ -127,8 +118,7 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   public void onBindViewHolder(@NonNull ChartEntryViewHolder.Impl holder, int position) {
     CycleRenderer.RenderableEntry re =
         mRenderableEntries.get(mRenderableEntries.size() - position - 1);
-    boolean showSticker = mAutoStickeringEnabled || mStickerSelections.containsKey(re.entry().entryDate);
-    holder.bind(re, viewMode, showSticker);
+    holder.bind(re, viewMode, mAutoStickeringEnabled);
   }
 
   @Override
