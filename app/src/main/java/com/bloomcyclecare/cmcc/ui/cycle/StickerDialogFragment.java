@@ -98,7 +98,7 @@ public class StickerDialogFragment extends DialogFragment {
     textSpinner.setAdapter(textAdapter);
     if (previousSelection.isPresent()) {
       textSpinner.setSelection(
-          previousSelection.get().text != null ? previousSelection.get().text.ordinal() : 0);
+          previousSelection.get().text != null ? previousSelection.get().text.ordinal() + 1 : 0);
     }
 
     Observable.combineLatest(
