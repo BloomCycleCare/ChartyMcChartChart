@@ -649,8 +649,6 @@ public class CycleRenderer {
 
   @AutoValue
   public static abstract class RenderableEntry {
-    @Deprecated
-    public abstract ChartEntry entry();
     public abstract Optional<StickerSelection> manualStickerSelection();
     public abstract boolean hasObservation();
     public abstract Set<AbstractInstruction> fertilityReasons();
@@ -687,7 +685,6 @@ public class CycleRenderer {
         essentialSamenessSummary = "";
       }
       RenderableEntry renderableEntry = builder()
-          .entry(state.entry)
           .manualStickerSelection(Optional.ofNullable(state.entry.stickerSelection))
           .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
@@ -746,8 +743,6 @@ public class CycleRenderer {
       public abstract Builder trainingMarker(String trainingMarker);
 
       public abstract Builder dateSummaryShort(String dateSummaryShort);
-
-      public abstract Builder entry(ChartEntry entry);
 
       public abstract Builder fertilityReasons(Set<AbstractInstruction> fertilityReasons);
 

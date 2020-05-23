@@ -86,7 +86,7 @@ public class CyclePageViewModel extends AndroidViewModel {
                 .map(renderableCycle -> {
                   int numWithStickers = 0;
                   for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
-                    StickerSelection selection = re.entry().stickerSelection;
+                    StickerSelection selection = re.manualStickerSelection().orElse(null);
                     if (selection != null && !selection.isEmpty()) {
                       numWithStickers++;
                     }

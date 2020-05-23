@@ -73,7 +73,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long cyclesWithSticker = viewState.renderableCycles().stream()
             .map(renderableCycle -> {
               for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
-                if (re.entry().stickerSelection != null && !re.entry().stickerSelection.isEmpty()) {
+                if (re.manualStickerSelection().isPresent() && !re.manualStickerSelection().get().isEmpty()) {
                   return true;
                 }
               }
