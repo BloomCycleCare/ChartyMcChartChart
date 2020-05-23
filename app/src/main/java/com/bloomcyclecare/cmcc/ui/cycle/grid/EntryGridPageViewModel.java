@@ -9,9 +9,11 @@ import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Strings;
 
 import org.joda.time.LocalDate;
 
@@ -41,9 +43,15 @@ public class EntryGridPageViewModel extends AndroidViewModel {
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
     super(application);
+    MyApplication myApp = MyApplication.cast(application);
+
     mCycleListViewModel = cycleListViewModel;
-    mStickerSelectionRepo = MyApplication.cast(application).stickerSelectionRepo(ViewMode.CHARTING);
     mExercise = exerciseID.flatMap(Exercise::forID);
+    if (mExercise.isPresent()) {
+      mStickerSelectionRepo = myApp.stickerSelectionRepo(mExercise.get());
+    } else {
+      mStickerSelectionRepo = myApp.stickerSelectionRepo(ViewMode.CHARTING);
+    }
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
     }
@@ -70,18 +78,24 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private String getSubtitle(CycleListViewModel.ViewState viewState) {
     switch (viewState.viewMode()) {
       case TRAINING:
-        long cyclesWithSticker = viewState.renderableCycles().stream()
-            .map(renderableCycle -> {
-              for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
-                if (re.manualStickerSelection().isPresent() && !re.manualStickerSelection().get().isEmpty()) {
-                  return true;
-                }
+        int entriesWithCorrectAnswer = 0;
+        int entriesWithMarker = 0;
+        for (CycleRenderer.RenderableCycle rc : viewState.renderableCycles()) {
+          for (CycleRenderer.RenderableEntry re : rc.entries()) {
+            if (!Strings.isNullOrEmpty(re.trainingMarker())) {
+              entriesWithMarker++;
+            }
+            if (re.manualStickerSelection().isPresent()) {
+              if (SelectionChecker.check(re.manualStickerSelection().get(), re).ok()) {
+                entriesWithCorrectAnswer++;
               }
-              return false;
-            })
-            .filter(v -> v)
-            .count();
-        long percentComplete = 100 * cyclesWithSticker / viewState.renderableCycles().size();
+            }
+          }
+        }
+        if (entriesWithMarker == 0) {
+          return "No entries to check!";
+        }
+        long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
         return "";

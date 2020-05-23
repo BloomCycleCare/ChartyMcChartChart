@@ -261,6 +261,10 @@ public class MyApplication extends Application {
     return mStickerSelectionRepoFactory.forViewMode(viewMode);
   }
 
+  public RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise) {
+    return mStickerSelectionRepoFactory.forExercise(exercise);
+  }
+
   @Deprecated
   public RWPregnancyRepo pregnancyRepo() {
     return pregnancyRepo(ViewMode.CHARTING);

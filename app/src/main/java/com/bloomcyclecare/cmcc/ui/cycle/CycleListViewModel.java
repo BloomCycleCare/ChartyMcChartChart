@@ -8,7 +8,10 @@ import android.net.Uri;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
@@ -41,6 +44,7 @@ import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 public class CycleListViewModel extends AndroidViewModel {
 
@@ -51,12 +55,15 @@ public class CycleListViewModel extends AndroidViewModel {
   private final Activity mActivity;
   private final MyApplication mApplication;
 
-  public static CycleListViewModel forFragment(Fragment fragment, ViewMode initialViewMode) {
-    Factory factory = new Factory(fragment.requireActivity(), initialViewMode);
+  public static CycleListViewModel forFragment(Fragment fragment, ViewMode initialViewMode, Optional<Exercise.ID> exerciseID) {
+    Factory factory = new Factory(fragment.requireActivity(), initialViewMode, exerciseID);
     return new ViewModelProvider(fragment, factory).get(CycleListViewModel.class);
   }
 
-  public CycleListViewModel(@NonNull Application application, @NonNull Activity activity, @NonNull ViewMode initialViewMode) {
+  public CycleListViewModel(@NonNull Application application,
+                            @NonNull Activity activity,
+                            @NonNull ViewMode initialViewMode,
+                            @NonNull Optional<Exercise.ID> exerciseID) {
     super(application);
     mApplication = MyApplication.cast(application);
     mActivity = activity;
@@ -72,7 +79,17 @@ public class CycleListViewModel extends AndroidViewModel {
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
+    Optional<Exercise> exercise = Exercise.forID(exerciseID.orElse(Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES));
+
     viewModeStream.flatMap(viewMode -> {
+      if (viewMode == ViewMode.TRAINING && !exerciseID.isPresent()) {
+        Timber.w("Need exercise ID for TRAINING mode!, defaulting to regular cycle");
+      }
+      ROChartEntryRepo entryRepo = viewMode == ViewMode.TRAINING
+          ? mApplication.entryRepo(exercise.orElse(null)) : mApplication.entryRepo(viewMode);
+      ROCycleRepo cycleRepo = viewMode == ViewMode.TRAINING
+          ? mApplication.cycleRepo(exercise.orElse(null)) : mApplication.cycleRepo(viewMode);
+
       Flowable<Boolean> autoStickeringStream = mApplication.preferenceRepo()
           .summaries().map(PreferenceRepo.PreferenceSummary::autoStickeringEnabled)
           .distinctUntilChanged();
@@ -83,15 +100,15 @@ public class CycleListViewModel extends AndroidViewModel {
       Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
           mApplication.instructionsRepo(viewMode).getAll()
               .distinctUntilChanged(),
-          mApplication.cycleRepo(viewMode).getStream()
+          cycleRepo.getStream()
               .distinctUntilChanged(),
           (instructions, cycles) -> Flowable.merge(Flowable
               .fromIterable(cycles)
               .observeOn(Schedulers.computation())
               .parallel()
               .map(cycle -> Flowable.combineLatest(
-                  mApplication.entryRepo(viewMode).getStreamForCycle(Flowable.just(cycle)),
-                  mApplication.cycleRepo(viewMode).getPreviousCycle(cycle)
+                  entryRepo.getStreamForCycle(Flowable.just(cycle)),
+                  cycleRepo.getPreviousCycle(cycle)
                       .map(Optional::of).defaultIfEmpty(Optional.empty())
                       .toFlowable(),
                   (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
@@ -173,16 +190,18 @@ public class CycleListViewModel extends AndroidViewModel {
 
     private final Activity mActivity;
     private final ViewMode mInitialViewMode;
+    private final Optional<Exercise.ID> mExerciseId;
 
-    public Factory(Activity activity, ViewMode initialViewMode) {
+    public Factory(Activity activity, ViewMode initialViewMode, Optional<Exercise.ID> exerciseID) {
       mActivity = activity;
       mInitialViewMode = initialViewMode;
+      mExerciseId = exerciseID;
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new CycleListViewModel(mActivity.getApplication(), mActivity, mInitialViewMode);
+      return (T) new CycleListViewModel(mActivity.getApplication(), mActivity, mInitialViewMode, mExerciseId);
     }
   }
 }

@@ -8,6 +8,9 @@ import android.view.MenuItem;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
+
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -31,13 +34,16 @@ public abstract class BaseCycleListFragment extends Fragment {
   protected abstract ViewMode initialViewModeFromArgs(Bundle bundle);
 
   @NonNull
+  protected abstract Optional<Exercise.ID> exerciseIdFromArgs(Bundle bundle);
+
+  @NonNull
   protected abstract NavDirections toggleLayoutAction(ViewMode viewMode);
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mViewModel = CycleListViewModel.forFragment(this, initialViewModeFromArgs(requireArguments()));
+    mViewModel = CycleListViewModel.forFragment(this, initialViewModeFromArgs(requireArguments()), exerciseIdFromArgs(requireArguments()));
 
     setHasOptionsMenu(true);
   }

@@ -254,7 +254,7 @@ public class TrainingCycles {
 
   public static TrainingCycle LONG_CYCLES_1 = TrainingCycle
       .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
-      .withTitle(REGULAR_CYCLES_TITLE)
+      .withTitle(LONG_CYCLES_TITLE)
       .addEntry(TrainingEntry.forText("VL2AD"))
       .addEntry(TrainingEntry.forText("H"))
       .addEntry(TrainingEntry.forText("M"))
@@ -310,7 +310,7 @@ public class TrainingCycles {
 
   public static TrainingCycle LONG_CYCLES_2 = TrainingCycle
       .withInstructions(Instructions.createBasicInstructions(LocalDate.now()))
-      .withTitle(REGULAR_CYCLES_TITLE)
+      .withTitle(LONG_CYCLES_TITLE)
       .addEntry(TrainingEntry.forText("H"))
       .addEntry(TrainingEntry.forText("H"))
       .addEntry(TrainingEntry.forText("M"))
@@ -342,7 +342,7 @@ public class TrainingCycles {
       .addEntry(TrainingEntry.forText("10CKX1"))
       .addEntry(TrainingEntry.forText("10WLAD"))
       .addEntry(TrainingEntry.forText("10KLAD"))
-      .addEntry(TrainingEntry.forText("110KLAD"))
+      .addEntry(TrainingEntry.forText("10KLAD"))
       .addEntry(TrainingEntry.forText("10CX1"))
       .addEntry(TrainingEntry.forText("8CX2"))
       .addEntry(TrainingEntry.forText("6CX1"))

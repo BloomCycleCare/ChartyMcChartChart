@@ -51,7 +51,7 @@ public abstract class RenderedEntry {
     StickerSelection manualSelection = re.manualStickerSelection().orElse(null);
     boolean hasNonEmptyManualSelection = manualSelection != null && !manualSelection.equals(StickerSelection.empty());
 
-    int resourceId = R.color.entryGrey;
+    int resourceId = R.drawable.sticker_grey;
     if (hasNonEmptyManualSelection) {
       resourceId = manualSelection.sticker.resourceId;
     } else if (autoStickeringEnabled) {

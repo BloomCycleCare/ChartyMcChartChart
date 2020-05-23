@@ -8,6 +8,7 @@ import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.collect.ImmutableList;
 
@@ -26,25 +27,27 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 public class TrainingChartEntryRepo implements RWChartEntryRepo {
 
-  private final TreeMap<LocalDate, ChartEntry> mEntries = new TreeMap<>();
   private final Subject<LocalDate> mUpdateSubject = PublishSubject.create();
+  private final Subject<TreeMap<LocalDate, ChartEntry>> mEntriesSubject = BehaviorSubject.create();
 
-  TrainingChartEntryRepo(List<TrainingCycle> trainingCycles, boolean populateStickerSelections) throws ObservationParser.InvalidObservationException {
+  TrainingChartEntryRepo(List<TrainingCycle> trainingCycles, boolean populateStickerSelections, RWStickerSelectionRepo stickerSelectionRepo) throws ObservationParser.InvalidObservationException {
     int numEntries = 0;
     for (TrainingCycle trainingCycle : trainingCycles) {
       numEntries += trainingCycle.entries().size();
     }
+    TreeMap<LocalDate, ChartEntry> initialEntries = new TreeMap<>();
     for (TrainingCycle trainingCycle : trainingCycles) {
       for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> mapEntry
           : trainingCycle.entries().entrySet()) {
         TrainingEntry trainingEntry = mapEntry.getKey();
-        int numEntriesRemaining = numEntries - mEntries.size();
+        int numEntriesRemaining = numEntries - initialEntries.size();
         LocalDate entryDate = LocalDate.now().minusDays(numEntriesRemaining - 1);
         ObservationEntry observationEntry = trainingEntry.asChartEntry(entryDate);
         StickerSelection stickerSelection = mapEntry.getValue().map(StickerSelection::fromExpectations).orElse(null);
@@ -52,39 +55,53 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
             WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate),
             populateStickerSelections ? stickerSelection : null);
         entry.marker = trainingEntry.marker().orElse("");
-        mEntries.put(entryDate, entry);
+        initialEntries.put(entryDate, entry);
       }
     }
+    stickerSelectionRepo.getSelections().scan(initialEntries, (entries, selections) -> {
+      TreeMap<LocalDate, ChartEntry> copy = new TreeMap<>(entries);
+      for (Map.Entry<LocalDate, ChartEntry> entry : copy.entrySet()) {
+        entry.getValue().stickerSelection = selections.get(entry.getKey());
+      }
+      return copy;
+    }).toObservable().subscribe(mEntriesSubject);
   }
 
   @Override
   public Single<List<ChartEntry>> getAllEntries() {
-    return Single.just(ImmutableList.copyOf(mEntries.values()));
+    return mEntriesSubject.map(TrainingChartEntryRepo::valuesAsList).firstOrError();
   }
 
   @Override
   public Flowable<List<ChartEntry>> getLatestN(int n) {
-    Deque<ChartEntry> out = new ArrayDeque<>(n);
-    Iterator<ChartEntry> iterator = mEntries.descendingMap().values().iterator();
-    while (out.size() < n && iterator.hasNext()) {
-      out.push(iterator.next());
-    }
-    return Flowable.just(ImmutableList.copyOf(out));
+    return mEntriesSubject.map(entries -> {
+      Deque<ChartEntry> out = new ArrayDeque<>(n);
+      Iterator<ChartEntry> iterator = entries.descendingMap().values().iterator();
+      while (out.size() < n && iterator.hasNext()) {
+        out.push(iterator.next());
+      }
+      List<ChartEntry> l = ImmutableList.copyOf(out);
+      return l;
+    }).toFlowable(BackpressureStrategy.BUFFER);
+  }
+
+  private static <T> List<T> valuesAsList(Map<?, T> m) {
+    List<T> l = ImmutableList.copyOf(m.values());
+    return l;
   }
 
   @Override
   public Flowable<List<ChartEntry>> getStreamForCycle(Flowable<Cycle> cycleStream) {
-    return mUpdateSubject
-        .map(d -> true)
-        .startWith(false)
-        .toFlowable(BackpressureStrategy.BUFFER)
-        .flatMap(v -> cycleStream.map(cycle -> {
-          SortedMap<LocalDate, ChartEntry> m = mEntries.tailMap(cycle.startDate);
+    return Flowable.combineLatest(
+        mEntriesSubject.toFlowable(BackpressureStrategy.BUFFER),
+        cycleStream,
+        (entries, cycle) -> {
+          SortedMap<LocalDate, ChartEntry> m = entries.tailMap(cycle.startDate);
           if (cycle.endDate != null) {
             m = m.headMap(cycle.endDate.plusDays(1));
           }
           return ImmutableList.copyOf(m.values());
-        }));
+        });
   }
 
   @Override

@@ -12,6 +12,7 @@ import org.joda.time.LocalDate;
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
+import timber.log.Timber;
 
 public class CycleRepoFactory extends RepoFactory<RWCycleRepo> {
 
@@ -30,6 +31,7 @@ public class CycleRepoFactory extends RepoFactory<RWCycleRepo> {
       case DEMO:
         return Optional.of(new TrainingCycleRepo(DemoCycles.forRepos(), LocalDate::now));
       case TRAINING:
+        Timber.w("Use exercise getter!");
         return Optional.of(new TrainingCycleRepo(TrainingCycles.REGULAR_CYCLES, LocalDate::now));
     }
     return Optional.empty();

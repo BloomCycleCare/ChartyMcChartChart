@@ -6,15 +6,19 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 
 import org.parceler.Parcels;
+
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,6 +40,16 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
   @Override
   protected ViewMode initialViewModeFromArgs(Bundle args) {
     return EntryGridPageFragmentArgs.fromBundle(args).getViewMode();
+  }
+
+  @NonNull
+  @Override
+  protected Optional<Exercise.ID> exerciseIdFromArgs(Bundle bundle) {
+    int ordinal = EntryGridPageFragmentArgs.fromBundle(bundle).getExerciseIdOrdinal();
+    if (ordinal < 0) {
+      return Optional.empty();
+    }
+    return Optional.of(Exercise.ID.values()[ordinal]);
   }
 
   @NonNull
@@ -63,6 +77,9 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
       }*/
       StickerDialogFragment fragment = new StickerDialogFragment(result -> {
         mViewModel.updateSticker(re.entryDate(), result.selection).subscribe();
+        if (!result.ok()) {
+          Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
+        }
       });
 
       Bundle dialogArgs = new Bundle();

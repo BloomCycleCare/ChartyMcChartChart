@@ -7,11 +7,13 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
@@ -33,6 +35,12 @@ public class CyclePageFragment extends BaseCycleListFragment {
   @Override
   protected ViewMode initialViewModeFromArgs(Bundle bundle) {
     return CyclePageFragmentArgs.fromBundle(bundle).getViewMode();
+  }
+
+  @NonNull
+  @Override
+  protected Optional<Exercise.ID> exerciseIdFromArgs(Bundle bundle) {
+    return Optional.empty();
   }
 
   @NonNull

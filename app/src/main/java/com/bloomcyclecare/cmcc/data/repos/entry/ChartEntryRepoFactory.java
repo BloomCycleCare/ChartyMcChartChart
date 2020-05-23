@@ -4,7 +4,6 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.DemoCycles;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
@@ -16,12 +15,14 @@ import timber.log.Timber;
 
 public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
 
+  private final StickerSelectionRepoFactory mStickerSelectionRepoFactory;
   private final RWChartEntryRepo mChartingRepo;
 
   public ChartEntryRepoFactory(@NonNull AppDatabase db,
                                @NonNull StickerSelectionRepoFactory stickerSelectionRepoFactory,
                                @NonNull ViewMode fallbackViewMode) {
     super(fallbackViewMode);
+    mStickerSelectionRepoFactory = stickerSelectionRepoFactory;
     mChartingRepo = new RoomChartEntryRepo(db, stickerSelectionRepoFactory.forViewMode(ViewMode.CHARTING));
   }
 
@@ -32,9 +33,16 @@ public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
         case CHARTING:
           return Optional.of(mChartingRepo);
         case DEMO:
-          return Optional.of(new TrainingChartEntryRepo(DemoCycles.forRepos(), false));
+          return Optional.of(new TrainingChartEntryRepo(
+              DemoCycles.forRepos(), false,
+              mStickerSelectionRepoFactory.forViewMode(ViewMode.DEMO)));
         case TRAINING:
-          return Optional.of(new TrainingChartEntryRepo(TrainingCycles.REGULAR_CYCLES ,false));
+          Timber.w("Use exercise getter!");
+          // TODO: drop
+          Exercise exercise = Exercise.forID(Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES).get();
+          return Optional.of(new TrainingChartEntryRepo(
+              exercise.trainingCycles(),false,
+              mStickerSelectionRepoFactory.forExercise(exercise)));
       }
       return Optional.empty();
     } catch (ObservationParser.InvalidObservationException ioe) {
@@ -46,7 +54,9 @@ public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
   @Override
   public RWChartEntryRepo forExercise(Exercise exercise) {
     try {
-      return new TrainingChartEntryRepo(exercise.trainingCycles(), false);
+      return new TrainingChartEntryRepo(
+          exercise.trainingCycles(), false,
+          mStickerSelectionRepoFactory.forExercise(exercise));
     } catch (ObservationParser.InvalidObservationException ioe) {
       throw new IllegalStateException(ioe);
     }

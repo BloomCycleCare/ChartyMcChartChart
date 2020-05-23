@@ -4,15 +4,21 @@ import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
+import timber.log.Timber;
 
 public class StickerSelectionRepoFactory extends RepoFactory<RWStickerSelectionRepo> {
 
   private final RoomStickerSelectionRepo mRoomRepo;
   private final TrainingStickerSelectionRepo mInmemoryRepo;
+  private final Cache<Exercise, RWStickerSelectionRepo> mTrainingRepoCache = CacheBuilder.newBuilder()
+      .maximumSize(Exercise.COLLECTION.size())
+      .build();
 
   public StickerSelectionRepoFactory(@NonNull AppDatabase db, @NonNull ViewMode fallbackViewMode) {
     super(fallbackViewMode);
@@ -35,6 +41,11 @@ public class StickerSelectionRepoFactory extends RepoFactory<RWStickerSelectionR
 
   @Override
   public RWStickerSelectionRepo forExercise(Exercise exercise) {
-    return forViewMode(ViewMode.TRAINING);
+    try {
+      return mTrainingRepoCache.get(exercise, TrainingStickerSelectionRepo::new);
+    } catch (Exception e) {
+      Timber.wtf(e);
+      return new TrainingStickerSelectionRepo();
+    }
   }
 }
