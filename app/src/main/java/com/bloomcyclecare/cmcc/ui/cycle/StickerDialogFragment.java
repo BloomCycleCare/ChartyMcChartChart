@@ -109,7 +109,7 @@ public class StickerDialogFragment extends DialogFragment {
               if (index == 0) {
                 return Optional.<StickerSelection.Text>empty();
               }
-              String spinnerText = requireContext().getResources().getStringArray(R.array.sticker_text)[index-1];
+              String spinnerText = requireContext().getResources().getStringArray(R.array.sticker_text)[index];
               StickerSelection.Text t = StickerSelection.Text.fromString(spinnerText);
               if (t == null) {
                 Timber.w("Unexpected null value for sticker text: %s", spinnerText);
@@ -128,7 +128,7 @@ public class StickerDialogFragment extends DialogFragment {
 
     mDisposables.add(selectionSubject.distinctUntilChanged().subscribe(selection -> {
       stickerTextView.setBackground(requireContext().getDrawable(selection.sticker.resourceId));
-      stickerTextView.setText(selection.text != null ? selection.text.name() : "");
+      stickerTextView.setText(selection.text != null ? String.valueOf(selection.text.value) : "");
       if (previousSelection.isPresent() && expectedSelection.isPresent()) {
         SelectionChecker.Result result = SelectionChecker.check(previousSelection.get(), expectedSelection.get());
         if (!result.ok() && selection.equals(previousSelection.get())) {
