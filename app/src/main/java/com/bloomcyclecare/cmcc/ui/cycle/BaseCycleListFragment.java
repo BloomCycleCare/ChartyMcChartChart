@@ -70,6 +70,9 @@ public abstract class BaseCycleListFragment extends Fragment {
       menu.findItem(R.id.action_export).setVisible(true);
       menu.findItem(R.id.action_trigger_sync).setVisible(true);
     }
+    menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
+    menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
+    menu.findItem(R.id.action_layer).setVisible(viewMode != ViewMode.TRAINING);
   }
 
   @Override
