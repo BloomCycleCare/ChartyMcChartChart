@@ -54,18 +54,19 @@ public abstract class RenderedEntry {
     int resourceId = R.drawable.sticker_grey;
     if (hasNonEmptyManualSelection) {
       resourceId = manualSelection.sticker.resourceId;
-    } else if (autoStickeringEnabled) {
+    } else if (autoStickeringEnabled || viewMode == ViewMode.DEMO) {
       resourceId = autoSelection.sticker.resourceId;
     }
 
     String stickerText = "";
     if (viewMode == ViewMode.TRAINING) {
       stickerText = re.trainingMarker();
-    } else if (autoStickeringEnabled) {
+    } else if (autoStickeringEnabled || viewMode == ViewMode.DEMO) {
       stickerText = autoSelection.text != null
-          ? autoSelection.text.name() : "";
+          ? String.valueOf(autoSelection.text.value) : "";
     } else if (hasNonEmptyManualSelection) {
-      stickerText = manualSelection.text != null ? manualSelection.text.name() : "";
+      stickerText = manualSelection.text != null
+          ? String.valueOf(manualSelection.text.value) : "";
     } else {
       stickerText = "?";
     }
@@ -78,7 +79,9 @@ public abstract class RenderedEntry {
 
     boolean canNavigateToDetailActivity = viewMode == ViewMode.CHARTING || (
         viewMode == ViewMode.TRAINING && !Strings.isNullOrEmpty(re.trainingMarker()));
-    boolean canPromptForStickerSelection = !autoStickeringEnabled || viewMode != ViewMode.CHARTING;
+    boolean canPromptForStickerSelection =
+        (viewMode == ViewMode.CHARTING && !autoStickeringEnabled)
+        || (viewMode == ViewMode.TRAINING && !Strings.isNullOrEmpty(re.trainingMarker()));
 
     Optional<StickerSelection> expectedStickerSelection = entry.hasObservation()
         ? Optional.of(StickerSelection.fromRenderableEntry(re)) : Optional.empty();
