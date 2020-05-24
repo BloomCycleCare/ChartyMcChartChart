@@ -47,9 +47,13 @@ public abstract class RenderedEntry {
   public static RenderedEntry create(@NonNull CycleRenderer.RenderableEntry re,
                                      boolean autoStickeringEnabled,
                                      @NonNull ViewMode viewMode) {
-    StickerSelection autoSelection = StickerSelection.fromRenderableEntry(re);
     StickerSelection manualSelection = re.manualStickerSelection().orElse(null);
     boolean hasNonEmptyManualSelection = manualSelection != null && !manualSelection.equals(StickerSelection.empty());
+    Optional<StickerSelection> expectedStickerSelection = re.hasObservation()
+        ? Optional.of(StickerSelection.fromRenderableEntry(re, viewMode)) : Optional.empty();
+    Optional<StickerSelection> manualStickerSelection = hasNonEmptyManualSelection
+        ? re.manualStickerSelection() : Optional.empty();
+    StickerSelection autoSelection = expectedStickerSelection.orElse(StickerSelection.empty());
 
     int resourceId = R.drawable.sticker_grey;
     if (hasNonEmptyManualSelection) {
@@ -83,10 +87,6 @@ public abstract class RenderedEntry {
         (viewMode == ViewMode.CHARTING && !autoStickeringEnabled)
         || (viewMode == ViewMode.TRAINING && !Strings.isNullOrEmpty(re.trainingMarker()));
 
-    Optional<StickerSelection> expectedStickerSelection = entry.hasObservation()
-        ? Optional.of(StickerSelection.fromRenderableEntry(re)) : Optional.empty();
-    Optional<StickerSelection> manualStickerSelection = hasNonEmptyManualSelection
-        ? re.manualStickerSelection() : Optional.empty();
 
     return create(
         String.valueOf(re.entryNum()),

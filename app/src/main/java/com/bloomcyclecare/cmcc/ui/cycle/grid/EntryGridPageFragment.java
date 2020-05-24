@@ -16,8 +16,6 @@ import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 
-import org.parceler.Parcels;
-
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
@@ -81,15 +79,8 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
           Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
         }
       });
-
-      Bundle dialogArgs = new Bundle();
-      if (re.expectedStickerSelection().isPresent()) {
-        dialogArgs.putParcelable(StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(re.expectedStickerSelection().get()));
-      }
-      if (re.manualStickerSelection().isPresent()) {
-        dialogArgs.putParcelable(StickerDialogFragment.Args.PREVIOUS_SELECTION.name(), Parcels.wrap(re.manualStickerSelection().get()));
-      }
-      fragment.setArguments(dialogArgs);
+      fragment.setArguments(StickerDialogFragment.fillArgs(
+          new Bundle(), re.expectedStickerSelection().orElse(null), re.manualStickerSelection(), mViewModel.currentViewMode()));
       fragment.show(getChildFragmentManager(), "tag");
     }, re -> {// Text click
       if (mViewModel.currentViewMode() != ViewMode.CHARTING) {

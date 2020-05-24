@@ -94,7 +94,7 @@ public class EntryListFragment extends Fragment {
       }
     });
 
-  mEntryListAdapter = new EntryListAdapter(
+    mEntryListAdapter = new EntryListAdapter(
         getActivity(),
         "",
         re -> {
@@ -131,18 +131,12 @@ public class EntryListFragment extends Fragment {
               Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
             }
           });
-          Bundle dialogArgs = new Bundle();
           if (!re.expectedStickerSelection().isPresent()) {
             Timber.w("Expected to have a sticker selection");
             return;
           }
-          dialogArgs.putParcelable(
-              StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(re.expectedStickerSelection().get()));
-          if (re.manualStickerSelection().isPresent()) {
-            dialogArgs.putParcelable(
-                StickerDialogFragment.Args.PREVIOUS_SELECTION.name(), Parcels.wrap(re.manualStickerSelection().get()));
-          }
-          fragment.setArguments(dialogArgs);
+          fragment.setArguments(StickerDialogFragment.fillArgs(
+              new Bundle(), re.expectedStickerSelection().get(), re.manualStickerSelection(), mViewModel.viewMode()));
           fragment.show(getChildFragmentManager(), "tag");
         });
     // TODO: enable layer stream

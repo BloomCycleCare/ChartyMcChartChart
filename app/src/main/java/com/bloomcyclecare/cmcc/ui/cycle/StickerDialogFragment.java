@@ -12,6 +12,7 @@ import android.widget.Spinner;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
@@ -34,9 +35,20 @@ import static android.view.View.GONE;
 
 public class StickerDialogFragment extends DialogFragment {
 
-  public enum Args {
+  private enum Args {
     EXPECTED_SELECTION,
-    PREVIOUS_SELECTION
+    PREVIOUS_SELECTION,
+    VIEW_MODE
+  }
+
+  public static Bundle fillArgs(
+      Bundle args, StickerSelection expectedSelection, Optional<StickerSelection> previousSelection, ViewMode viewMode) {
+    args.putInt(Args.VIEW_MODE.name(), viewMode.ordinal());
+    args.putParcelable(
+        StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(expectedSelection));
+    previousSelection.ifPresent(selection -> args.putParcelable(
+        Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
+    return args;
   }
 
   private final Subject<StickerSelection> selectionSubject = BehaviorSubject.create();
@@ -76,6 +88,8 @@ public class StickerDialogFragment extends DialogFragment {
     });
     clearResultView();
 
+    ViewMode viewMode = ViewMode.values()[requireArguments().getInt(Args.VIEW_MODE.name())];
+
     Optional<StickerSelection> previousSelection = Optional.ofNullable(
         Parcels.unwrap(requireArguments().getParcelable(Args.PREVIOUS_SELECTION.name())));
     Timber.d("Previous selection: %s", previousSelection);
@@ -100,12 +114,18 @@ public class StickerDialogFragment extends DialogFragment {
       textSpinner.setSelection(
           previousSelection.get().text != null ? previousSelection.get().text.ordinal() + 1 : 0);
     }
+    int textInputVisibility = viewMode == ViewMode.TRAINING ? View.GONE : View.VISIBLE;
+    textSpinner.setVisibility(textInputVisibility);
+    view.findViewById(R.id.text_selector_header).setVisibility(textInputVisibility);
 
     Observable.combineLatest(
         RxAdapterView.itemSelections(stickerSpinner)
             .map(index -> StickerSelection.Sticker.values()[index]),
         RxAdapterView.itemSelections(textSpinner)
             .map(index -> {
+              if (viewMode == ViewMode.TRAINING) {
+                return Optional.<StickerSelection.Text>empty();
+              }
               if (index == 0) {
                 return Optional.<StickerSelection.Text>empty();
               }
@@ -122,9 +142,16 @@ public class StickerDialogFragment extends DialogFragment {
     Button mButtonCancel = view.findViewById(R.id.button_cancel);
     mButtonCancel.setOnClickListener(v -> dismiss());
 
-    Optional<StickerSelection> expectedSelection = Optional.ofNullable(
+    Optional<StickerSelection> expectedSelectionArg = Optional.ofNullable(
         Parcels.unwrap(requireArguments().getParcelable(Args.EXPECTED_SELECTION.name())));
-    Timber.d("Expected selection: %s", expectedSelection);
+    Timber.d("Expected selection: %s", expectedSelectionArg);
+
+    Optional<StickerSelection> expectedSelection = viewMode != ViewMode.TRAINING
+        ? expectedSelectionArg
+        : expectedSelectionArg.map(es -> {
+          es.text = null;
+          return es;
+        });
 
     mDisposables.add(selectionSubject.distinctUntilChanged().subscribe(selection -> {
       stickerTextView.setBackground(requireContext().getDrawable(selection.sticker.resourceId));

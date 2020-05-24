@@ -45,6 +45,7 @@ class EntryListViewModel extends AndroidViewModel {
   private final Subject<ScrollState> mScrollEventsFromUI = BehaviorSubject.create();
 
   private final RWStickerSelectionRepo mStickerSelectionRepo;
+  private final ViewMode mViewMode;
 
   private EntryListViewModel(@NonNull Application application, ViewMode viewMode, Cycle cycle) {
     super(application);
@@ -54,6 +55,7 @@ class EntryListViewModel extends AndroidViewModel {
     ROChartEntryRepo entryRepo = myApp.entryRepo(viewMode);
     PreferenceRepo preferenceRepo = myApp.preferenceRepo();
     mStickerSelectionRepo = myApp.stickerSelectionRepo(viewMode);
+    mViewMode = viewMode;
 
     Flowable<CycleRenderer.RenderableCycle> cycleStream = Flowable.combineLatest(
         cycleRepo.getPreviousCycle(cycle).map(Optional::of).defaultIfEmpty(Optional.empty()).toFlowable(),
@@ -87,6 +89,10 @@ class EntryListViewModel extends AndroidViewModel {
         .toObservable()
         .subscribeOn(Schedulers.computation())
         .subscribe(mViewState);
+  }
+
+  public ViewMode viewMode() {
+    return mViewMode;
   }
 
   Completable updateStickerSelection(LocalDate date, StickerSelection selection) {

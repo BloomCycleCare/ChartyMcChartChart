@@ -43,9 +43,6 @@ public class SelectionChecker {
     }
   }
 
-  public static Result check(StickerSelection selection, CycleRenderer.RenderableEntry renderableEntry) {
-    return check(selection, StickerSelection.fromRenderableEntry(renderableEntry));
-  }
   public static Result check(StickerSelection selection, StickerSelection expected) {
     return new Result(expected, selection, getReason(selection, expected), getHint(selection, expected));
   }

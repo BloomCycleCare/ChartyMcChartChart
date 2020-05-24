@@ -86,7 +86,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
               entriesWithMarker++;
             }
             if (re.manualStickerSelection().isPresent()) {
-              if (SelectionChecker.check(re.manualStickerSelection().get(), re).ok()) {
+              if (SelectionChecker.check(
+                  re.manualStickerSelection().get(),
+                  StickerSelection.fromRenderableEntry(re, viewState.viewMode()))
+                  .ok()) {
                 entriesWithCorrectAnswer++;
               }
             }

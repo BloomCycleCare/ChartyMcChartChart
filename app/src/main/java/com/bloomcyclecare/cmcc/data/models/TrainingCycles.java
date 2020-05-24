@@ -292,7 +292,7 @@ public class TrainingCycles {
       .addEntry(TrainingEntry.forText("10CKX1", "E"))
       .addEntry(TrainingEntry.forText("10KLX2"))
       .addEntry(TrainingEntry.forText("10KLAD"))
-      .addEntry(TrainingEntry.forText("10KLAD"))
+      .addEntry(TrainingEntry.forText("10KLAD").peakDay())
       .addEntry(TrainingEntry.forText("8CX1"))
       .addEntry(TrainingEntry.forText("2AD", "F"))
       .addEntry(TrainingEntry.forText("2AD"))
