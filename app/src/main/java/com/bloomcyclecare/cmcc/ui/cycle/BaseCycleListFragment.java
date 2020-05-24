@@ -1,19 +1,23 @@
 package com.bloomcyclecare.cmcc.ui.cycle;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 
+import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.ui.init.UserInitActivity;
 
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavDirections;
 import androidx.navigation.fragment.NavHostFragment;
@@ -73,6 +77,7 @@ public abstract class BaseCycleListFragment extends Fragment {
     menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_layer).setVisible(viewMode != ViewMode.TRAINING);
+    menu.findItem(R.id.action_clear_data).setVisible(BuildConfig.BUILD_TYPE.equals("debug"));
   }
 
   @Override
@@ -99,6 +104,22 @@ public abstract class BaseCycleListFragment extends Fragment {
       case R.id.action_toggle_demo:
         mViewModel.toggleViewMode();
         return true;
+
+      case R.id.action_clear_data:
+        new AlertDialog.Builder(requireContext())
+            .setTitle("Confirm Clear Data")
+            .setMessage("Are you sure you want to permanently clear all your data?")
+            .setPositiveButton("Yes", (dialog, which) -> {
+              mDisposables.add(mViewModel.clearData().subscribe(() -> {
+                startActivity(new Intent(requireContext(), UserInitActivity.class));
+                requireActivity().finish();
+                dialog.dismiss();
+              }));
+            })
+            .setNegativeButton("No", ((dialog, which) -> {
+              dialog.dismiss();
+            }))
+            .create().show();
 
       default:
         return NavigationUI.onNavDestinationSelected(

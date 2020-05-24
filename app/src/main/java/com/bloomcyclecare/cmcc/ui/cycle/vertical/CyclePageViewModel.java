@@ -59,7 +59,7 @@ public class CyclePageViewModel extends AndroidViewModel {
     cycleListViewModel.viewStateStream()
         .flatMap(viewState ->  Flowable.combineLatest(
             currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            subtitleStream(viewState.viewMode(), Flowable.just(viewState.renderableCycles())).distinctUntilChanged(),
+            subtitleStream(viewState.viewMode(), Flowable.just(viewState.renderableCycles())).distinctUntilChanged().onErrorReturnItem("ERROR!"),
             Flowable.just(viewState.renderableCycles()),
             (currentPage, subtitle, renderableCycles) -> new ViewState(currentPage, subtitle, renderableCycles, viewState.viewMode())))
         .toObservable().subscribe(mViewStates);

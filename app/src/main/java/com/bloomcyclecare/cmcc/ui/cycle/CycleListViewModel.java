@@ -141,6 +141,12 @@ public class CycleListViewModel extends AndroidViewModel {
         .flatMapCompletable(repo -> repo.recordSelection(selection, date));
   }
 
+  Completable clearData() {
+    return Completable.mergeArray(
+        mApplication.cycleRepo(ViewMode.CHARTING).deleteAll(),
+        mApplication.entryRepo(ViewMode.CHARTING).deleteAll());
+  }
+
   @AutoValue
   public static abstract class ViewState {
     public abstract ViewMode viewMode();

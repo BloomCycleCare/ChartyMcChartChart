@@ -35,6 +35,9 @@
         <action
             android:id="@+id/action_edit_entry"
             app:destination="@id/entry_details" />
+        <action
+            android:id="@+id/action_user_init"
+            app:destination="@id/init" />
     </fragment>
 
     <fragment
@@ -65,6 +68,9 @@
         <action
             android:id="@+id/action_edit_entry"
             app:destination="@id/entry_details" />
+        <action
+            android:id="@+id/action_user_init"
+            app:destination="@id/init" />
     </fragment>
 
     <activity
@@ -146,5 +152,10 @@
         android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
         android:label="Sharing"
         tools:layout="@layout/activity_drive"/>
+    <activity
+        android:id="@+id/init"
+        android:name="com.bloomcyclecare.cmcc.ui.init.UserInitActivity"
+        android:label="User Init"
+        tools:layout="@layout/activity_user_init"/>
 
 </navigation>
