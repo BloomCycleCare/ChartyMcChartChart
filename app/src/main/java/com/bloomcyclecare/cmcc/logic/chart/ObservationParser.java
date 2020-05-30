@@ -27,7 +27,7 @@ public class ObservationParser {
 
   private static final Joiner ON_SPACE = Joiner.on(' ');
   private static final String VALID_OCCURRENCES_STR = ON_SPACE.join(Occurrences.values());
-  private static final Set<DischargeType> TYPES_ALLOWING_MODIFIERS =
+  private static final Set<DischargeType> TYPES_REQUIRING_MODIFIERS =
       ImmutableSet.of(DischargeType.STICKY, DischargeType.STRETCHY, DischargeType.TACKY);
   private static final Set<MucusModifier> MODIFIERS_NOT_REQUIRING_DISCHARGE_TYPE =
       ImmutableSet.of(MucusModifier.P);
@@ -94,8 +94,11 @@ public class ObservationParser {
       throw new InvalidObservationException("Could not determine DischargeType for: " + input);
     }
     if (dischargeType != null) {
-      if (!mucusModifiers.isEmpty() && !TYPES_ALLOWING_MODIFIERS.contains(dischargeType)) {
+      if (!mucusModifiers.isEmpty() && !TYPES_REQUIRING_MODIFIERS.contains(dischargeType)) {
         throw new InvalidObservationException(dischargeType.getCode() + " does not allow modifiers");
+      }
+      if (mucusModifiers.isEmpty() && TYPES_REQUIRING_MODIFIERS.contains(dischargeType)) {
+        throw new InvalidObservationException(dischargeType.getCode() + " needs a modifier");
       }
       // Add "implicit" modifiers
       if (dischargeType.isLubricative()) {

@@ -74,9 +74,9 @@ public class ObservationTest {
 
   @Test
   public void fromString_light() throws Exception {
-    Observation observation = createAndTestToString("L6AD");
-    assertThat(observation.dischargeSummary.getCode()).hasValue("6");
-    assertEquals(DischargeType.STICKY, observation.dischargeSummary.mType);
+    Observation observation = createAndTestToString("L4AD");
+    assertThat(observation.dischargeSummary.getCode()).hasValue("4");
+    assertEquals(DischargeType.SHINY_WO_LUB, observation.dischargeSummary.mType);
     assertEquals(Occurrences.AD, observation.occurrences);
   }
 
@@ -196,6 +196,15 @@ public class ObservationTest {
     try {
       createAndTestToString("6BADBX1");
       fail("Repeated modifier");
+    } catch (ObservationParser.InvalidObservationException expected) {
+    }
+  }
+
+  @Test
+  public void fromString_missingModifier() throws Exception {
+    try {
+      createAndTestToString("6AD");
+      fail("6 should be followed by a modifier");
     } catch (ObservationParser.InvalidObservationException expected) {
     }
   }

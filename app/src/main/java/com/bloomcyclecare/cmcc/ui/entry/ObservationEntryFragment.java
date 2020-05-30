@@ -145,9 +145,11 @@ public class ObservationEntryFragment extends Fragment {
           String existingText = observationEditText.getText() == null ? null : observationEditText.getText().toString();
           if (existingText == null || existingText.equals(newText)) {
             observationEditText.setText(newText);
+            observationEditText.setSelection(newText.length());
             observationDescriptionTextView.setText(observation.getDescription());
           }
           observationEditText.setText(observation.toString());
+          observationEditText.setSelection(newText.length());
           observationDescriptionTextView.setText(observation.getDescription());
         }
       }
