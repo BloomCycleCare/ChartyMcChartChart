@@ -1,31 +1,9 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
-import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
-import com.google.common.collect.ImmutableList;
-
-import org.joda.time.LocalDate;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import io.reactivex.Flowable;
-
-import static com.google.common.truth.Truth.assertThat;
-
 public class TrainingChartEntryRepoTest {
 
   /*
   Flowable<List<ChartEntry>> getStreamForCycle(Flowable<Cycle> cycleStream);
-  */
 
   @Test
   public void testGetAllEntries() throws Exception {
@@ -74,7 +52,7 @@ public class TrainingChartEntryRepoTest {
     repo.updateStickerSelection(firstEntry.entryDate, expected).test().assertComplete();
 
     ChartEntry updatedEntry = repo.getLatestN(1).blockingFirst().get(0);
-    assertThat(updatedEntry.stickerSelection).isEqualTo(expected);*/
+    assertThat(updatedEntry.stickerSelection).isEqualTo(expected);
   }
 
   private List<ChartEntry> expectedEntries() {
@@ -108,4 +86,5 @@ public class TrainingChartEntryRepoTest {
 
     return ImmutableList.of(cycle1, cycle2);
   }
+*/
 }

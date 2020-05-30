@@ -2,11 +2,14 @@ package com.bloomcyclecare.cmcc.data.domain;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
+import com.google.common.collect.Iterables;
 
 import org.parceler.Parcel;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by parkeroth on 4/20/17.
@@ -20,17 +23,21 @@ public class Observation {
   public Flow flow;
   public DischargeSummary dischargeSummary;
   public Occurrences occurrences;
+  public Map<MucusModifier, Occurrences> additionalOccurrences = new LinkedHashMap<>();
 
   public Observation() {}  // Only for @Parcel
 
-  public Observation(Flow flow, DischargeSummary dischargeSummary, Occurrences occurrences) {
+  public Observation(Flow flow, DischargeSummary dischargeSummary, Occurrences occurrences, Map<MucusModifier, Occurrences> additionalOccurrences) {
     this.flow = flow;
     this.dischargeSummary = dischargeSummary;
     this.occurrences = occurrences;
+    this.additionalOccurrences.putAll(additionalOccurrences);
   }
 
   public boolean hasBlood() {
-    return flow != null || (dischargeSummary != null && dischargeSummary.hasBlood());
+    return flow != null
+        || (dischargeSummary != null && dischargeSummary.hasBlood())
+        || additionalOccurrences.containsKey(MucusModifier.B);
   }
 
   public boolean hasMucus() {
@@ -48,6 +55,9 @@ public class Observation {
     }
     if (occurrences != null) {
       strs.add(occurrences.name());
+    }
+    for (Map.Entry<MucusModifier, Occurrences> e : additionalOccurrences.entrySet()) {
+      strs.add(e.getKey().name() + e.getValue().name());
     }
     return ON_SPACE.join(strs);
   }
@@ -83,19 +93,16 @@ public class Observation {
   public boolean equals(Object o) {
     if (o instanceof Observation) {
       Observation that = (Observation) o;
-      if (this.flow != that.flow) {
-        return false;
-      }
-      if (this.occurrences != that.occurrences) {
-        return false;
-      }
-      return Objects.equal(this.dischargeSummary, that.dischargeSummary);
+      return Objects.equal(this.dischargeSummary, that.dischargeSummary)
+          && Objects.equal(this.flow, that.flow)
+          && Objects.equal(this.occurrences, that.occurrences)
+          && Iterables.elementsEqual(this.additionalOccurrences.entrySet(), that.additionalOccurrences.entrySet());
     }
     return false;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(flow, dischargeSummary, occurrences);
+    return Objects.hashCode(flow, dischargeSummary, occurrences, additionalOccurrences);
   }
 }

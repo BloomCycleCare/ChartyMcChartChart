@@ -10,11 +10,15 @@ import com.bloomcyclecare.cmcc.utils.StringUtil;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
@@ -58,7 +62,7 @@ public class ObservationParser {
           throw new InvalidObservationException("Only B can follow H or M", e);
         }
       }
-      return Optional.of(new Observation(flow, dischargeSummary, null));
+      return Optional.of(new Observation(flow, dischargeSummary, null, ImmutableMap.of()));
     }
 
     DischargeType dischargeType = null;
@@ -116,12 +120,46 @@ public class ObservationParser {
                 observationWithoutModifiers, VALID_OCCURRENCES_STR));
       }
     }
-    String shouldBeEmptyString =
-        StringUtil.consumePrefix(observationWithoutModifiers, occurrences.name());
-    if (!shouldBeEmptyString.isEmpty()) {
+    String remainder = StringUtil.consumePrefix(observationWithoutModifiers, occurrences.name());
+    Map<MucusModifier, Occurrences> additionalOccurrences = new LinkedHashMap<>();
+    if (!remainder.isEmpty()) {
+      Set<MucusModifier> modifiersWithOccurrences = new LinkedHashSet<>();
+      remainder = StringUtil.consumeEnum(
+          remainder, modifiersWithOccurrences, MucusModifier.class,
+          MucusModifier.VALUES_ALLOWING_SEPARATE_OCCURRENCES::contains);
+      if (modifiersWithOccurrences.isEmpty()) {
+        throw new InvalidObservationException(
+            "Occurrance should only be followed with additional modifiers");
+      }
+      Set<MucusModifier> repeatedModifiers = Sets.intersection(modifiersWithOccurrences, mucusModifiers);
+      if (!repeatedModifiers.isEmpty()) {
+        throw new InvalidObservationException(
+            "Cannot repeat modifier " + repeatedModifiers.iterator().next().name());
+      }
+      Occurrences additionalOccurrence = null;
+      for (Occurrences o : Occurrences.values()) {
+        if (remainder.startsWith(o.name())) {
+          additionalOccurrence = o;
+          break;
+        }
+      }
+      if (additionalOccurrence == null) {
+        throw new InvalidObservationException(
+            "Additonal modifiers should be followed by an occurrence");
+      }
+      for (MucusModifier m : modifiersWithOccurrences) {
+        additionalOccurrences.put(m, additionalOccurrence);
+      }
+      remainder = StringUtil.consumePrefix(remainder, additionalOccurrence.name());
+      if (!Strings.isNullOrEmpty(remainder)) {
+        throw new InvalidObservationException(
+            "No additional info should follow extra occurrences");
+      }
+    }
+    if (!remainder.isEmpty()) {
       throw new InvalidObservationException("Extra info after occurrences.");
     }
-    return Optional.of(new Observation(flow, mucusSummary, occurrences));
+    return Optional.of(new Observation(flow, mucusSummary, occurrences, additionalOccurrences));
   }
 
   public static class InvalidObservationException extends Exception {

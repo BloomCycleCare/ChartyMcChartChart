@@ -158,6 +158,48 @@ public class ObservationTest {
     }
   }
 
+  @Test
+  public void fromString_brownBleeding() throws Exception {
+    Observation o = createAndTestToString("0ADBX1");
+    assertThat(o.hasBlood()).isTrue();
+  }
+
+  @Test
+  public void fromString_extraOccurrenceOnUnsupportedModifier() throws Exception {
+    try {
+      createAndTestToString("0ADYX1");
+      fail("Y cannot have extra occurrences");
+    } catch (ObservationParser.InvalidObservationException expected) {
+    }
+  }
+
+  @Test
+  public void fromString_extraOccurrenceMissing() throws Exception {
+    try {
+      createAndTestToString("0ADB");
+      fail("Extra occurrence missing");
+    } catch (ObservationParser.InvalidObservationException expected) {
+    }
+  }
+
+  @Test
+  public void fromString_extraInfoAfterExtraOccurrence() throws Exception {
+    try {
+      createAndTestToString("0ADBX1Foo");
+      fail("Extra info after extra occurrence");
+    } catch (ObservationParser.InvalidObservationException expected) {
+    }
+  }
+
+  @Test
+  public void fromString_repeatedModifierInExtraOccurrence() throws Exception {
+    try {
+      createAndTestToString("6BADBX1");
+      fail("Repeated modifier");
+    } catch (ObservationParser.InvalidObservationException expected) {
+    }
+  }
+
   private Observation createAndTestToString(String observationStr) throws Exception {
     Observation observation = ObservationParser.parse(observationStr).orNull();
     assertEquals(observationStr, observation.toString().replace(" ", ""));

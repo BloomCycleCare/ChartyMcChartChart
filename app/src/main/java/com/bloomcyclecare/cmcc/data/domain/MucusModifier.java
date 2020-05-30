@@ -18,6 +18,7 @@ public enum MucusModifier {
 
   public static final ImmutableSet<MucusModifier> VALUES_INDICATING_BLEEDING = ImmutableSet.of(B, R);
   public static final ImmutableSet<MucusModifier> VALUES_REQUIRING_COLOR = ImmutableSet.of(P, G);
+  public static final ImmutableSet<MucusModifier> VALUES_ALLOWING_SEPARATE_OCCURRENCES = ImmutableSet.of(B);
   public static final ImmutableSet<MucusModifier> COLOR_VALUES = ImmutableSet.of(B, R, CK, C, K, Y);
 
   private String mDescription;

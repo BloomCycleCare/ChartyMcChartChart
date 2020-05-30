@@ -58,7 +58,7 @@ public abstract class RenderedEntry {
     int resourceId = R.drawable.sticker_grey;
     if (hasNonEmptyManualSelection) {
       resourceId = manualSelection.sticker.resourceId;
-    } else if (autoStickeringEnabled || viewMode == ViewMode.DEMO) {
+    } else if (viewMode != ViewMode.TRAINING && (autoStickeringEnabled || viewMode == ViewMode.DEMO)) {
       resourceId = autoSelection.sticker.resourceId;
     }
 
