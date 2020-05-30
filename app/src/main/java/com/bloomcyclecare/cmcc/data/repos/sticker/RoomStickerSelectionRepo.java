@@ -106,7 +106,7 @@ public class RoomStickerSelectionRepo implements RWStickerSelectionRepo {
           if (!stickerSelectionEntryOptional.isPresent()) {
             return Optional.empty();
           }
-          return Optional.of(stickerSelectionEntryOptional.get().selection);
+          return Optional.ofNullable(stickerSelectionEntryOptional.get().selection);
         });
   }
 }

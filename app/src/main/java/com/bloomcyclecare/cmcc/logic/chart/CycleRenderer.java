@@ -4,7 +4,6 @@ import com.bloomcyclecare.cmcc.data.domain.AbstractInstruction;
 import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.domain.Flow;
 import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.domain.MucusModifier;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
@@ -520,10 +519,7 @@ public class CycleRenderer {
       if (observation == null) {
         return StickerColor.GREY;
       }
-      if (observation.flow != null) {
-        return StickerColor.RED;
-      }
-      if (observation.dischargeSummary.mModifiers.contains(MucusModifier.B)) {
+      if (observation.hasBlood()) {
         return StickerColor.RED;
       }
       if (!observation.hasMucus()) {
