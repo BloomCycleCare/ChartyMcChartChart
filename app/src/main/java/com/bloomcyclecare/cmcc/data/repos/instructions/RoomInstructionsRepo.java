@@ -101,6 +101,11 @@ class RoomInstructionsRepo implements RWInstructionsRepo {
   }
 
   @Override
+  public Completable deleteAll() {
+    return mTempStore.deleteAll().andThen(commit());
+  }
+
+  @Override
   public Completable insertOrUpdate(Instructions instructions) {
     return mTempStore.updateOrInsert(instructions)
         .doOnComplete(() -> updates.onNext(UpdateEvent.forInstructions(instructions)));

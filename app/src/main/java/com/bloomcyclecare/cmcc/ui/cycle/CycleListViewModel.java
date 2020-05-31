@@ -144,6 +144,7 @@ public class CycleListViewModel extends AndroidViewModel {
   Completable clearData() {
     return Completable.mergeArray(
         mApplication.cycleRepo(ViewMode.CHARTING).deleteAll(),
+        mApplication.instructionsRepo(ViewMode.CHARTING).deleteAll(),
         mApplication.entryRepo(ViewMode.CHARTING).deleteAll());
   }
 

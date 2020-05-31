@@ -87,6 +87,12 @@ public class TrainingInstructionsRepo implements RWInstructionsRepo {
   }
 
   @Override
+  public Completable deleteAll() {
+    return Completable.error(
+        new UnsupportedOperationException("Updates not supported on training repo"));
+  }
+
+  @Override
   public Completable insertOrUpdate(Instructions instructions) {
     return Completable.error(
         new UnsupportedOperationException("Updates not supported on training repo"));

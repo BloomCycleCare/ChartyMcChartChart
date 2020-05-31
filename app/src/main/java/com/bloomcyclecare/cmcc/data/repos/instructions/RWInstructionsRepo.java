@@ -31,6 +31,8 @@ public interface RWInstructionsRepo extends ROInstructionsRepo {
 
   Single<Instructions> delete(Instructions instructions);
 
+  Completable deleteAll();
+
   Completable insertOrUpdate(Instructions instructions);
 
   Single<Boolean> isDirty();

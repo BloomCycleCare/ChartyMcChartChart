@@ -6,11 +6,13 @@ import android.content.Intent;
 import android.os.Bundle;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.firebase.auth.FirebaseUser;
 
@@ -34,6 +36,7 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
 
   private RWCycleRepo mCycleRepo;
   private RWChartEntryRepo mEntryRepo;
+  private RWInstructionsRepo mInstructionRepo;
   private CompositeDisposable mDisposables = new CompositeDisposable();
 
   @Override
@@ -41,8 +44,9 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
     super.onCreate(savedInstanceState);
 
     MyApplication myApp = MyApplication.cast(getActivity().getApplication());
-    mCycleRepo = myApp.cycleRepo();
-    mEntryRepo = myApp.entryRepo();
+    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
+    mEntryRepo = myApp.entryRepo(ViewMode.CHARTING);
+    mInstructionRepo = myApp.instructionsRepo(ViewMode.CHARTING);
   }
 
   @Override
@@ -63,13 +67,14 @@ public class ImportAppStateFragment extends SplashFragment implements UserInitia
             return mCycleRepo.getCurrentCycle().toSingle();
           }
           showProgress("Importing data.");
-          AppStateImporter importer = new AppStateImporter(MyApplication.cast(getActivity().getApplication()));
+          AppStateImporter importer = new AppStateImporter(MyApplication.cast(requireActivity().getApplication()));
           return AppStateParser.parse(() -> getActivity()
               .getContentResolver()
-              .openInputStream(getActivity().getIntent().getData()))
+              .openInputStream(requireActivity().getIntent().getData()))
               .doOnSuccess(appState -> showProgress("Successfully parsed data."))
               .flatMapCompletable(appState -> Completable.mergeArray(
                   mCycleRepo.deleteAll(),
+                  mInstructionRepo.deleteAll(),
                   mEntryRepo.deleteAll())
                   .doOnComplete(() -> showProgress("Done clearing old data."))
                   .andThen(importer.importAppState(appState))

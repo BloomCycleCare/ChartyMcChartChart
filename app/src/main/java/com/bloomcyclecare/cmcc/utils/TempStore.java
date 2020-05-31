@@ -158,6 +158,13 @@ public class TempStore<T, P extends Comparable<? super P>> {
         });
   }
 
+  public Completable deleteAll() {
+    return Completable.defer(() -> {
+      mUpdatedValues.onNext(ImmutableList.of());
+      return Completable.complete();
+    });
+  }
+
   public Completable commit(GenericDao<T> dao) {
     return isDirty().flatMapCompletable(isDirty -> {
       if (!isDirty) {
