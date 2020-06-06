@@ -21,7 +21,7 @@
         android:id="@+id/action_export"
         android:orderInCategory="2"
         app:showAsAction="never"
-        android:title="Export Data"/>
+        android:title="Create Backup File"/>
     <item
         android:id="@+id/action_clear_data"
         android:orderInCategory="3"
