@@ -13,12 +13,6 @@
         android:icon="@drawable/ic_print_white_24dp"
         android:title="Print Chart"/>
     <item
-        android:id="@+id/action_layer"
-        android:icon="@drawable/ic_layers_white_24dp"
-        android:orderInCategory="2"
-        app:showAsAction="never"
-        android:title="Layers"/>
-    <item
         android:id="@+id/action_trigger_sync"
         android:orderInCategory="2"
         app:showAsAction="never"
@@ -37,5 +31,5 @@
         android:id="@+id/action_toggle_demo"
         android:orderInCategory="2"
         app:showAsAction="never"
-        android:title="Toggle Demo"/>
+        android:title="Demo Mode On/Off"/>
 </menu>

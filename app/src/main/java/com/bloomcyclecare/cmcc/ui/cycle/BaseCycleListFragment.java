@@ -65,6 +65,7 @@ public abstract class BaseCycleListFragment extends Fragment {
   }
 
   private static void pruneMenuOptions(@NonNull Menu menu, @NonNull ViewMode viewMode) {
+    boolean runningDebugBuild = BuildConfig.BUILD_TYPE.equals("debug");
     if (viewMode != ViewMode.CHARTING) {
       menu.findItem(R.id.action_print).setVisible(false);
       menu.findItem(R.id.action_export).setVisible(false);
@@ -72,12 +73,11 @@ public abstract class BaseCycleListFragment extends Fragment {
     } else {
       menu.findItem(R.id.action_print).setVisible(true);
       menu.findItem(R.id.action_export).setVisible(true);
-      menu.findItem(R.id.action_trigger_sync).setVisible(true);
+      menu.findItem(R.id.action_trigger_sync).setVisible(runningDebugBuild);
     }
-    menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
-    menu.findItem(R.id.action_layer).setVisible(viewMode != ViewMode.TRAINING);
-    menu.findItem(R.id.action_clear_data).setVisible(BuildConfig.BUILD_TYPE.equals("debug"));
+    menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
+    menu.findItem(R.id.action_clear_data).setVisible(runningDebugBuild);
   }
 
   @Override
