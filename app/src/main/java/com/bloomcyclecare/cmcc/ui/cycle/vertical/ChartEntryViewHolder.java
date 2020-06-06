@@ -96,10 +96,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mBoundViewMode = viewMode;
 
       if (re.showStickerStrike()) {
-        mShowcaseManager.showShowcase(
-            ShowcaseManager.ShowcaseID.FIRST_INCORRECT_STICKER,
-            mStrikeView,
-            "Testing testing, this is a test");
+        mShowcaseManager.showShowcase(ShowcaseManager.ShowcaseID.FIRST_INCORRECT_STICKER, mStrikeView);
       }
     }
   }

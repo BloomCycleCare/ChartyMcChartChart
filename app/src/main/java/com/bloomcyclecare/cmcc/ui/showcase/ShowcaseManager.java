@@ -12,10 +12,16 @@ import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 public class ShowcaseManager {
 
   public enum ShowcaseID {
-    FIRST_INCORRECT_STICKER
+    FIRST_INCORRECT_STICKER("Incorrect sticker selections are noted by a strike. Touch the sticker to reopen the selection dialog for more information.");
+
+    final String content;
+
+    ShowcaseID(String content) {
+      this.content = content;
+    }
   }
 
-  public void showShowcase(ShowcaseID showcaseID, View target, String content) {
+  public void showShowcase(ShowcaseID showcaseID, View target) {
     Activity activity = getActivity(target);
     if (activity == null) {
       Timber.w("Failed to find activity for view: %d", target.getId());
@@ -24,7 +30,7 @@ public class ShowcaseManager {
     new MaterialShowcaseView.Builder(activity)
         .setTarget(target)
         .setDismissText("GOT IT")
-        .setContentText(content)
+        .setContentText(showcaseID.content)
         .setDelay(200) // optional but starting animations immediately in onCreate can make them choppy
         .singleUse(showcaseID.name())
         .show();
