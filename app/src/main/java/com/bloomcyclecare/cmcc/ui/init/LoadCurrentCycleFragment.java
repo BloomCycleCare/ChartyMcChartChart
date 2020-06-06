@@ -7,6 +7,9 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
@@ -62,6 +65,14 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   public void onAttach(Context context) {
     super.onAttach(context);
     activity = getActivity();
+  }
+
+  @Override
+  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    View view = super.onCreateView(inflater, container, savedInstanceState);
+    // TODO: Drop https://github.com/parkeroth/ChartyMcChartChart/issues/17
+    onUserInitialized(null);
+    return view;
   }
 
   @Override

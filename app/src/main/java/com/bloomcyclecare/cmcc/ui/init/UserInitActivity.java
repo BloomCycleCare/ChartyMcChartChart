@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
@@ -21,8 +20,6 @@ import androidx.fragment.app.FragmentActivity;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.MaybeSubject;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
@@ -69,8 +66,8 @@ public class UserInitActivity extends FragmentActivity {
     getSupportFragmentManager().executePendingTransactions();
     mFragment = (SplashFragment) getSupportFragmentManager().findFragmentById(R.id.fragment_container);
 
-    PreferenceRepo prefManager = MyApplication.cast(getApplication()).preferenceRepo();
-
+    // TODO: https://github.com/parkeroth/ChartyMcChartChart/issues/17
+    /*PreferenceRepo prefManager = MyApplication.cast(getApplication()).preferenceRepo();
     CompositeDisposable disposables = new CompositeDisposable();
     disposables.add(prefManager
         .summaries()
@@ -91,7 +88,7 @@ public class UserInitActivity extends FragmentActivity {
           mFragment.updateStatus("Drive initialized");
           MyApplication.cast(getApplication()).registerDriveService(optionalDriveService);
           mUserListener.onUserInitialized(null);
-        }, Timber::e));
+        }, Timber::e));*/
   }
 
   @Override
