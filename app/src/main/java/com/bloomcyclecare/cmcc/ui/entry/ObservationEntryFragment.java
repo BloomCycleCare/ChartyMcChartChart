@@ -10,6 +10,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
@@ -161,6 +162,7 @@ public class ObservationEntryFragment extends Fragment {
       }
       if (maybeUpdate(pregnancyTestSwitch, observationEntry.positivePregnancyTest)) {
         pregnancyTestLayout.setVisibility(View.VISIBLE);
+        Toast.makeText(requireContext(), "Congrats!", Toast.LENGTH_LONG).show();
       } else {
         pregnancyTestLayout.setVisibility(View.GONE);
       }
