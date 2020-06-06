@@ -275,9 +275,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
           if (!viewState.isDirty()) {
             return Maybe.empty();
           }
-          return resolveValidationIssues(viewState, validationIssueResolver)
-              .doOnComplete(() -> Timber.d("Entry validated"))
-              .andThen(Maybe.just(viewState));
+          return Maybe.just(viewState);
         })
         .observeOn(Schedulers.computation())
         .flatMapCompletable(this::updateRepos);
@@ -389,16 +387,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
       ObservationEntry observationEntry = chartEntry.observationEntry;
       CycleRenderer.EntryModificationContext entryContext = entryModificationContext;
 
-      boolean entryHasBlood = observationEntry.observation != null && observationEntry.observation.hasBlood();
-      if (entryHasBlood && !observationEntry.unusualBleeding && !entryContext.allPreviousDaysHaveHadBlood && !observationEntry.firstDay) {
-        validationIssues.add(ValidationIssue.confirm("Unusual bleeding?", "Are you sure this bleedin is typical?"));
-      }
-      boolean shouldBePocOrSame = entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus();
-      boolean isPocOrSame = observationEntry.isEssentiallyTheSame || observationEntry.pointOfChange;
-      boolean hasAskedPocAndSame = previousPrompts.contains(ClarifyingQuestion.ESSENTIAL_SAMENESS) && previousPrompts.contains(ClarifyingQuestion.POINT_OF_CHANGE);
-      if (shouldBePocOrSame && !isPocOrSame && hasAskedPocAndSame) {
-        validationIssues.add(ValidationIssue.confirm("Point of change?", "Are you sure this isn't essentially the same or a point of change?"));
-      }
       if (!observationErrorText.isEmpty()) {
         validationIssues.add(ValidationIssue.block("Incomplete Observation", "Please complete or clear the observation before saving."));
       }

@@ -1,11 +1,11 @@
 package com.bloomcyclecare.cmcc.data.domain;
 
 public enum ClarifyingQuestion {
-  ESSENTIAL_SAMENESS("Essentially the same?", "Some description here"),
-  POINT_OF_CHANGE("Point of change?", "Some description here"),
-  UNUSUAL_BLEEDING("Unusual bleeding?", "Some description here"),
-  UNUSUAL_BUILDUP("Unusual buildup?", "Some description here"),
-  UNUSUAL_STRESS("Unusual stress?", "Some description here");
+  ESSENTIAL_SAMENESS("Essentially the same?", "Is today essentially the same as yesterday?"),
+  POINT_OF_CHANGE("Point of change?", "You have indicated today is not essentially the same. Is it a point of change?"),
+  UNUSUAL_BLEEDING("Unusual bleeding?", "Is this unusual bleeding?"),
+  UNUSUAL_BUILDUP("Unusual buildup?", "Did you observe an unusual buildup?"),
+  UNUSUAL_STRESS("Unusual stress?", "Were you under unusual amounts of stress?");
 
   public final String title;
   public final String message;
