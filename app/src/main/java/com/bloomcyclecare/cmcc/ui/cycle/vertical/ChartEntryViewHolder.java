@@ -8,6 +8,7 @@ import android.widget.TextView;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,6 +30,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     private final View mSeparator;
     private final View mStrikeView;
     private final Context mContext;
+    private final ShowcaseManager mShowcaseManager;
 
     private RenderedEntry mBoundEntry;
     private ViewMode mBoundViewMode;
@@ -37,8 +39,10 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
         Context context,
         View itemView,
         Consumer<RenderedEntry> textClickConsumer,
-        Consumer<RenderedEntry> stickerClickConsumer) {
+        Consumer<RenderedEntry> stickerClickConsumer,
+        ShowcaseManager showcaseManager) {
       super(itemView);
+      mShowcaseManager = showcaseManager;
       mContext = context;
       mEntryNumTextView = itemView.findViewById(R.id.tv_entry_num);
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
@@ -90,6 +94,13 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
 
       mBoundEntry = re;
       mBoundViewMode = viewMode;
+
+      if (re.showStickerStrike()) {
+        mShowcaseManager.showShowcase(
+            ShowcaseManager.ShowcaseID.FIRST_INCORRECT_STICKER,
+            mStrikeView,
+            "Testing testing, this is a test");
+      }
     }
   }
 }

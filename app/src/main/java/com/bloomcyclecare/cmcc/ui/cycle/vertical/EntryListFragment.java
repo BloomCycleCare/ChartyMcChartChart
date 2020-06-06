@@ -9,6 +9,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
@@ -138,7 +139,8 @@ public class EntryListFragment extends Fragment {
           fragment.setArguments(StickerDialogFragment.fillArgs(
               new Bundle(), re.expectedStickerSelection().get(), re.manualStickerSelection(), mViewModel.viewMode()));
           fragment.show(getChildFragmentManager(), "tag");
-        });
+        },
+        MyApplication.cast(requireActivity().getApplication()).showcaseManager());
     // TODO: enable layer stream
     /*mDisposables.add(((ChartEntryListActivity) getActivity())
         .layerStream()

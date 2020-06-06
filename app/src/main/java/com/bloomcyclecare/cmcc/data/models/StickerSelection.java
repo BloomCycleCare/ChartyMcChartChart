@@ -111,6 +111,9 @@ public class StickerSelection {
             return Sticker.WHITE_BABY;
           case YELLOW:
             return Sticker.YELLOW_BABY;
+          case RED:
+            Timber.w("Red baby should not happen!!!");
+            return Sticker.RED;
           default:
             throw new IllegalStateException();
         }

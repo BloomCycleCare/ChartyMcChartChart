@@ -9,6 +9,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.collect.Iterables;
 
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   private final Consumer<RenderedEntry> mTextClickConsumer;
   private final Consumer<RenderedEntry> mStickerClickConsumer;
   private final CompositeDisposable mDisposables;
+  private final ShowcaseManager mShowcaseManager;
 
   private String mLayerKey;
   private ViewMode viewMode;
@@ -39,12 +41,14 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
       Context context,
       String layerKey,
       Consumer<RenderedEntry> textClickConsumer,
-      Consumer<RenderedEntry> stickerClickConsumer) {
+      Consumer<RenderedEntry> stickerClickConsumer,
+      ShowcaseManager showcaseManager) {
     mTextClickConsumer = textClickConsumer;
     mStickerClickConsumer = stickerClickConsumer;
     mContext = context;
     mLayerKey = layerKey;
     mDisposables = new CompositeDisposable();
+    mShowcaseManager = showcaseManager;
   }
 
   void updateLayerKey(String key) {
@@ -75,7 +79,7 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
     LayoutInflater inflater = LayoutInflater.from(mContext);
 
     View view = inflater.inflate(layoutIdForListItem, parent, false);
-    return new ChartEntryViewHolder.Impl(mContext, view, mTextClickConsumer, mStickerClickConsumer);
+    return new ChartEntryViewHolder.Impl(mContext, view, mTextClickConsumer, mStickerClickConsumer, mShowcaseManager);
   }
 
   /**

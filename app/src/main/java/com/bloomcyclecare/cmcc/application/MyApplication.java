@@ -25,6 +25,7 @@ import com.bloomcyclecare.cmcc.logic.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.logic.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.logic.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.notifications.ChartingReceiver;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -76,6 +77,8 @@ public class MyApplication extends Application {
   private PreferenceRepo mPreferenceRepo;
   private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
   private ExerciseRepoFactory mExerciseRepoFactory;
+
+  private final ShowcaseManager mShowcaseManager = new ShowcaseManager();
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -268,6 +271,10 @@ public class MyApplication extends Application {
   @Deprecated
   public RWPregnancyRepo pregnancyRepo() {
     return pregnancyRepo(ViewMode.CHARTING);
+  }
+
+  public ShowcaseManager showcaseManager() {
+    return mShowcaseManager;
   }
 
   public static MyApplication cast(Application app) {
