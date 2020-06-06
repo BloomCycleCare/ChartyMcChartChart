@@ -39,6 +39,8 @@ public class MainViewModel extends AndroidViewModel {
         preferenceRepo.summaries()
             .map(summary -> summary.defaultToDemoMode() ? ViewMode.DEMO : ViewMode.CHARTING)
             .distinctUntilChanged(),
+        myApp.pregnancyRepo(ViewMode.CHARTING).getAll()
+            .map(l -> !l.isEmpty()),
         ViewState::create)
         .toObservable()
         .subscribe(mViewStateSubject);
@@ -72,9 +74,10 @@ public class MainViewModel extends AndroidViewModel {
     public abstract String title();
     public abstract String subtitle();
     public abstract ViewMode defaultViewMode();
+    public abstract boolean showPregnancyMenuItem();
 
-    public static ViewState create(String title, String subtitle, ViewMode defaultViewMode) {
-      return new AutoValue_MainViewModel_ViewState(title, subtitle, defaultViewMode);
+    public static ViewState create(String title, String subtitle, ViewMode defaultViewMode, boolean showPregnancyMenuItem) {
+      return new AutoValue_MainViewModel_ViewState(title, subtitle, defaultViewMode, showPregnancyMenuItem);
     }
 
   }

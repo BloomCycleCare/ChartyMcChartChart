@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.ui.main;
 import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.Menu;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
@@ -20,6 +21,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
@@ -27,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
+  private NavigationView navView;
   private NavController navController;
   private DrawerLayout drawerLayout;
   private MainViewModel mViewModel;
@@ -43,6 +46,7 @@ public class MainActivity extends AppCompatActivity {
 
     mDisposables.add(mViewModel.initialState()
         .map(MainViewModel.ViewState::defaultViewMode)
+        .observeOn(AndroidSchedulers.mainThread())
         .subscribe(this::configureNavigation));
 
     mDisposables.add(mViewModel.instructionsInitialized().subscribe(initialized -> {
@@ -67,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
   private void configureNavigation(ViewMode initialViewMode) {
     Timber.d("Configuring navigation with default ViewMode %s", initialViewMode.name());
 
-    NavigationView navigationView = findViewById(R.id.nav_view);
+    navView = findViewById(R.id.nav_view);
     drawerLayout = findViewById(R.id.drawer_layout);
     NavHostFragment fragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
     navController = fragment.getNavController();
@@ -81,7 +85,7 @@ public class MainActivity extends AppCompatActivity {
     NavigationUI.setupActionBarWithNavController(this, navController, drawerLayout);
 
     // Handle Navigation item clicks
-    NavigationUI.setupWithNavController(navigationView, navController);
+    NavigationUI.setupWithNavController(navView, navController);
 
     mViewModel.viewState().observe(this, this::render);
   }
@@ -102,5 +106,7 @@ public class MainActivity extends AppCompatActivity {
       actionBar.setTitle(viewState.title());
       actionBar.setSubtitle(viewState.subtitle());
     }
+    Menu menu = navView.getMenu();
+    menu.findItem(R.id.pregnancy_list).setVisible(viewState.showPregnancyMenuItem());
   }
 }
