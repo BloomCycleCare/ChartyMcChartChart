@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
+import android.app.Dialog;
 import android.content.Intent;
 import android.os.Bundle;
 
@@ -46,18 +47,17 @@ public class MainActivity extends AppCompatActivity {
 
     mDisposables.add(mViewModel.instructionsInitialized().subscribe(initialized -> {
       if (!initialized) {
-        new AlertDialog.Builder(this)
+        Dialog dialog = new AlertDialog.Builder(this)
             .setTitle("Initialize Instructions")
-            .setMessage("No instructions configured. Would you like to do so now?")
-            .setPositiveButton("Yes", (dialog, which) -> {
+            .setMessage("Before you can begin charting we need to know your current set of instructions.")
+            .setPositiveButton("Continue", (d, which) -> {
               startActivity(new Intent(this, InstructionsListActivity.class));
-              dialog.dismiss();
+              d.dismiss();
             })
-            .setNegativeButton("No", (dialog, which) -> {
-              dialog.dismiss();
-            })
-            .create()
-            .show();
+            .create();
+        dialog.setCancelable(false);
+        dialog.setCanceledOnTouchOutside(false);
+        dialog.show();
       }
     }));
 

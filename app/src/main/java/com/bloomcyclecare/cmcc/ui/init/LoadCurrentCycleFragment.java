@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.ui.init;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -21,6 +22,7 @@ import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 import com.google.firebase.auth.FirebaseUser;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -30,12 +32,16 @@ import org.joda.time.LocalDate;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
+import java.util.Deque;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeTransformer;
 import io.reactivex.Single;
+import io.reactivex.SingleEmitter;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
@@ -180,26 +186,31 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     }
 
     Maybe<Cycle> doPrompt(Context context) {
-      return Single.<Boolean>create(emitter -> new AlertDialog.Builder(context)
-          .setTitle(title())
-          .setMessage(subtitle())
-          .setPositiveButton("Yes", (dialog, whichButton) -> {
-            emitter.onSuccess(true);
-            dialog.dismiss();
-          })
-          .setNegativeButton("No", (dialog, which) -> {
-            emitter.onSuccess(false);
-            dialog.dismiss();
-          })
-          .setOnCancelListener(dialog -> {
-            emitter.onSuccess(false);
-            dialog.dismiss();
-          })
-          .setOnDismissListener(dialog -> {
-            emitter.onSuccess(false);
-            dialog.dismiss();
-          })
-          .create().show())
+      return Single.<Boolean>create(emitter -> {
+        Dialog d = new AlertDialog.Builder(context)
+            .setTitle(title())
+            .setMessage(subtitle())
+            .setPositiveButton("Yes", (dialog, whichButton) -> {
+              emitter.onSuccess(true);
+              dialog.dismiss();
+            })
+            .setNegativeButton("No", (dialog, which) -> {
+              emitter.onSuccess(false);
+              dialog.dismiss();
+            })
+            .setOnCancelListener(dialog -> {
+              emitter.onSuccess(false);
+              dialog.dismiss();
+            })
+            .setOnDismissListener(dialog -> {
+              emitter.onSuccess(false);
+              dialog.dismiss();
+            })
+            .create();
+        d.setCancelable(false);
+        d.setCanceledOnTouchOutside(false);
+        d.show();
+      })
           .flatMapMaybe(positive -> {
             if (positive) {
               return onPositive().toMaybe();
@@ -219,10 +230,65 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         "Postpartum?",
         "Are you postpartum before your period returns?",
         Single.defer(this::initPostpartum)));
-    return runInitFlow(prompts)
+    return promptTermsOfUse()
+        .flatMapCompletable(agree -> {
+          if (!agree) {
+            requireActivity().finish();
+          }
+          return promptStartInit();
+        })
+        .andThen(runInitFlow(prompts))
         .switchIfEmpty(Single.defer(this::initFirstCycle))
         .doOnSubscribe(d -> Timber.d("Running init flow"))
         .doOnSuccess(cycle -> Timber.d("Initialized first cycle starting %s", cycle.startDateStr));
+  }
+
+  private static final List<String> TERMS_OF_USE = ImmutableList.of(
+      "I acknowledge that CMCC is not a medical tool. The content does not substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified medical professional or healthcare provider for any questions you have regarding a medical condition.",
+      "I agree to only use CMCC to track my cycle using the Creighton Model FertilityCare System with the supervision of a qualified FertilityCare Practitioner (FCP) or a FertilityCare Practitioner Intern (FCPI).",
+      "I acknowledge that the FertilityCare System is highly effective only when used appropriately with the guidance of my FCP/FCPI.",
+      "I acknowledge that I am responsible for all of my choices and decisions and any resulting events.",
+      "I acknowledge that CMCC is in a testing phase.");
+
+  private Single<Boolean> promptTermsOfUse() {
+    return Single.create(emitter -> promptForTermOfUse(Queues.newArrayDeque(TERMS_OF_USE), emitter));
+  }
+
+  private void promptForTermOfUse(Deque<String> remainingTerms, SingleEmitter<Boolean> emitter) {
+    if (remainingTerms.isEmpty()) {
+      emitter.onSuccess(true);
+      return;
+    }
+    Dialog dialog = new AlertDialog.Builder(requireContext())
+        .setTitle("Terms of Use")
+        .setMessage(remainingTerms.poll())
+        .setPositiveButton("Agree", (d, w) -> {
+          promptForTermOfUse(remainingTerms, emitter);
+          d.dismiss();
+        })
+        .setNegativeButton("Cancel", (d, w) -> {
+          emitter.onSuccess(false);
+          d.dismiss();
+        })
+        .create();
+    dialog.setCancelable(false);
+    dialog.setCanceledOnTouchOutside(false);
+    dialog.show();
+  }
+
+  private Completable promptStartInit() {
+    return Completable.create(emitter -> {
+      Dialog dialog = new AlertDialog.Builder(requireContext())
+          .setTitle("App Initialization")
+          .setMessage("Thank you for agreeing to our terms of use. The next series of dialogs will guide you through the process of initializing your first cycle.")
+          .setPositiveButton("Continue", (d, w) -> {
+            emitter.onComplete();
+            d.dismiss();
+          }).create();
+      dialog.setCancelable(false);
+      dialog.setCanceledOnTouchOutside(false);
+      dialog.show();
+    });
   }
 
   private Maybe<Cycle> runInitFlow(Queue<InitPrompt> remainingPrompts) {
@@ -321,8 +387,9 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
       updateStatus("Creating first cycleToShow");
       DatePickerDialog datePickerDialog = DatePickerDialog.newInstance(
           (view, year, monthOfYear, dayOfMonth) -> e.onSuccess(new LocalDate(year, monthOfYear + 1, dayOfMonth)));
-      datePickerDialog.setTitle("First day of current cycleToShow");
+      datePickerDialog.setTitle("First day of last period");
       datePickerDialog.setMaxDate(Calendar.getInstance());
+      datePickerDialog.setCancelable(false);
       datePickerDialog.show(activity.getFragmentManager(), "datepickerdialog");
     });
   }
