@@ -280,8 +280,8 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public int getCount() {
-      // Show 3 total pages.
-      return 3;
+      // TODO: change to 3 when we're ready to show wellness and symptom stuff
+      return 1;
     }
 
     @Override
