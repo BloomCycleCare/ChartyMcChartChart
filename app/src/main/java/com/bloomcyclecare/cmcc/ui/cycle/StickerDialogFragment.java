@@ -160,6 +160,7 @@ public class StickerDialogFragment extends DialogFragment {
         SelectionChecker.Result result = SelectionChecker.check(previousSelection.get(), expectedSelection.get());
         if (!result.ok() && selection.equals(previousSelection.get())) {
           renderIncorrectResult(result);
+          // TODO: show reason and hint showcase once the library supports dialogs
           return;
         }
       }
