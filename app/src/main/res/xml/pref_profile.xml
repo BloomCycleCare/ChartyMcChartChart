@@ -1,46 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <EditTextPreference
-        android:defaultValue="FirebaseUser Info"
+        android:defaultValue="Touch to input"
         android:inputType="text"
-        android:key="preferred_name"
+        android:key="womans_name"
         android:singleLine="true"
-        android:title="Preferred name"/>
+        android:title="Woman's Name"/>
 
-    <DatePickerPreference
-        android:key="date_of_birth_key"
-        android:title="Date of birth"
-        app:defaultYearsAgo="25"
-        app:dateAsSummary="true" />
+    <EditTextPreference
+        android:defaultValue="Touch to input"
+        android:inputType="text"
+        android:key="mans_name"
+        android:singleLine="true"
+        android:title="Man's Name (if applicable)"/>
 
-    <ListPreference
+    <!--<ListPreference
         android:key="achieve_avoid_key"
         android:title="Goal for using system"
         android:entries="@array/pref_system_goal_values"
-        android:entryValues="@array/pref_system_goal_keys"/>
-
-    <NumberPickerPreference
-        android:defaultValue="100"
-        android:key="height_key"
-        android:title="Height"
-        app:maxValue="200"
-        app:minValue="1"
-        app:subtitleText="cm"
-        app:wrapSelectorWheel="false"
-        app:valueAsSummary="true" />
-
-    <NumberPickerPreference
-        android:defaultValue="50"
-        android:key="weight_key"
-        android:title="Weight"
-        app:maxValue="200"
-        app:minValue="1"
-        app:subtitleText="kg"
-        app:wrapSelectorWheel="false"
-        app:valueAsSummary="true" />
+        android:entryValues="@array/pref_system_goal_keys"/>-->
 
 </PreferenceScreen>

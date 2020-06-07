@@ -94,7 +94,8 @@ public class ProfileActivity extends AppCompatActivity {
 
     @Override
     public int getCount() {
-      return 2;
+      // TODO: change to 2 when we're ready to enable goals
+      return 1;
     }
 
     @Override
