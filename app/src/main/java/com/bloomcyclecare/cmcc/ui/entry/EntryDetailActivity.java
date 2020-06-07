@@ -100,11 +100,17 @@ public class EntryDetailActivity extends AppCompatActivity {
     if (DEBUG) Log.v(TAG, "onCreate: Finish");
   }
 
+  private Menu menu;
+
+  public Menu getMenu() {
+    return menu;
+  }
 
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     // Inflate the menu; this adds items to the action bar if it is present.
     getMenuInflater().inflate(R.menu.menu_entry_detail, menu);
+    this.menu = menu;
     return true;
   }
 

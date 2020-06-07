@@ -13,9 +13,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 import com.jakewharton.rxbinding2.widget.RxCompoundButton;
@@ -114,7 +116,7 @@ public class ObservationEntryFragment extends Fragment {
     };
 
     final AtomicBoolean uiInitialized = new AtomicBoolean(false);
-    mEntryDetailViewModel.viewStates().observe(this, (viewState -> {
+    mEntryDetailViewModel.viewStates().observe(getViewLifecycleOwner(), (viewState -> {
       Timber.d("Updating ViewState");
       boolean hideOnFirstEntry = viewState.entryModificationContext.isFirstEntry && (
           !viewState.entryModificationContext.hasPreviousCycle || viewState.isInPregnancy);
@@ -126,6 +128,7 @@ public class ObservationEntryFragment extends Fragment {
       clarifyingQuestionsLayout.setVisibility(showClarifyingQuestions ? View.VISIBLE : View.GONE);
       clarifyingQuestionAdapter.updateQuestions(viewState.clarifyingQuestionState);
 
+      boolean hasValidObservation = false;
       ObservationEntry observationEntry = viewState.chartEntry.observationEntry;
       if (!Strings.isNullOrEmpty(viewState.observationErrorText)) {
         Timber.d("Found invalid observation");
@@ -142,6 +145,7 @@ public class ObservationEntryFragment extends Fragment {
         observationEditText.setError(null);
         Observation observation = observationEntry.observation;
         if (observation != null) {
+          hasValidObservation = true;
           String newText = observation.toString();
           String existingText = observationEditText.getText() == null ? null : observationEditText.getText().toString();
           if (existingText == null || existingText.equals(newText)) {
@@ -183,6 +187,37 @@ public class ObservationEntryFragment extends Fragment {
         } catch (Exception e) {
           Timber.e(e);
         }
+      }
+
+      ShowcaseManager showcaseManager =
+          MyApplication.cast(requireActivity().getApplication()).showcaseManager();
+      showcaseManager.showShowcase(ShowcaseManager.ShowcaseID.ENTRY_DETAIL_INPUT_OBSERVATION, observationEditText);
+
+      EntryDetailActivity activity = (EntryDetailActivity) requireActivity();
+      activity.getMenu().findItem(R.id.action_save);
+
+      if (hasValidObservation) {
+        ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION,
+                observationDescriptionTextView)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_PEAK_DAY, peakDaySwitch)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_INTERCOURSE, intercourseSwitch)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_FIRST_DAY_NEW_CYCLE, firstDaySwitch)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_NOTE, noteTextView)
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES, view.findViewById(R.id.observation_entry_layout))
+            /*.addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_MENU,
+                requireActivity().findViewById(R.id.action_pregnancy_test))*/
+            .addShowcase(
+                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_SAVE,
+                activity.findViewById(activity.getMenu().findItem(R.id.action_save).getItemId()))
+            .build();
       }
     }));
 
