@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.Spinner;
@@ -32,6 +33,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.functions.Action;
 import timber.log.Timber;
+import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
+import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 
 /**
  * Created by parkeroth on 9/11/17.
@@ -197,10 +200,21 @@ public class ObservationEntryFragment extends Fragment {
       activity.getMenu().findItem(R.id.action_save);
 
       if (hasValidObservation) {
-        ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE)
+        ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE, requireActivity())
             .addShowcase(
                 ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION,
-                observationDescriptionTextView)
+                observationDescriptionTextView,
+                new IShowcaseListener() {
+                  @Override
+                  public void onShowcaseDisplayed(MaterialShowcaseView showcaseView) {
+                    InputMethodManager inputManager = (InputMethodManager)
+                        requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    inputManager.hideSoftInputFromWindow(requireActivity().getCurrentFocus().getWindowToken(),
+                        InputMethodManager.HIDE_NOT_ALWAYS);
+                  }
+                  @Override
+                  public void onShowcaseDismissed(MaterialShowcaseView showcaseView) {}
+                })
             .addShowcase(
                 ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_PEAK_DAY, peakDaySwitch)
             .addShowcase(

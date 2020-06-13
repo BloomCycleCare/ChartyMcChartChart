@@ -12,17 +12,19 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.data.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
+import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
+import com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragment;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 import com.google.firebase.auth.FirebaseUser;
 import com.wdullaer.materialdatetimepicker.date.DatePickerDialog;
@@ -32,8 +34,6 @@ import org.joda.time.LocalDate;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Calendar;
-import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 
@@ -41,7 +41,6 @@ import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.MaybeTransformer;
 import io.reactivex.Single;
-import io.reactivex.SingleEmitter;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
@@ -57,6 +56,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   private CompositeDisposable mDisposables = new CompositeDisposable();
   private RWCycleRepo mCycleRepo;
   private RWPregnancyRepo mPregnancyRepo;
+  private ROInstructionsRepo mInstructionsRepo;
 
   @Override
   public void onCreate(Bundle savedInstanceState) {
@@ -65,6 +65,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     MyApplication myApp = MyApplication.cast(requireActivity().getApplication());
     mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
     mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
+    mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
   }
 
   @Override
@@ -91,6 +92,8 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
   public void onUserInitialized(final FirebaseUser user) {
     updateStatus("Loading your data");
     Timber.v("Getting current cycleToShow");
+    getChildFragmentManager().beginTransaction().add(R.layout.fragment_stepper, new StepperFragment()).commit();
+
     mDisposables.add(mCycleRepo.getCurrentCycle()
         .compose(tryUseLatestAsCurrent())
         .observeOn(AndroidSchedulers.mainThread())
@@ -230,7 +233,7 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         "Postpartum?",
         "Are you postpartum before your period returns?",
         Single.defer(this::initPostpartum)));
-    return promptTermsOfUse()
+    return Single.just(true)
         .flatMapCompletable(agree -> {
           if (!agree) {
             requireActivity().finish();
@@ -241,39 +244,6 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
         .switchIfEmpty(Single.defer(this::initFirstCycle))
         .doOnSubscribe(d -> Timber.d("Running init flow"))
         .doOnSuccess(cycle -> Timber.d("Initialized first cycle starting %s", cycle.startDateStr));
-  }
-
-  private static final List<String> TERMS_OF_USE = ImmutableList.of(
-      "I acknowledge that CMCC is not a medical tool. The content does not substitute for professional medical advice, diagnosis, or treatment. Always seek the advice of a qualified medical professional or healthcare provider for any questions you have regarding a medical condition.",
-      "I agree to only use CMCC to track my cycle using the Creighton Model FertilityCare System with the supervision of a qualified FertilityCare Practitioner (FCP) or a FertilityCare Practitioner Intern (FCPI).",
-      "I acknowledge that the FertilityCare System is highly effective only when used appropriately with the guidance of my FCP/FCPI.",
-      "I acknowledge that I am responsible for all of my choices and decisions and any resulting events.",
-      "I acknowledge that CMCC is in a testing phase.");
-
-  private Single<Boolean> promptTermsOfUse() {
-    return Single.create(emitter -> promptForTermOfUse(Queues.newArrayDeque(TERMS_OF_USE), emitter));
-  }
-
-  private void promptForTermOfUse(Deque<String> remainingTerms, SingleEmitter<Boolean> emitter) {
-    if (remainingTerms.isEmpty()) {
-      emitter.onSuccess(true);
-      return;
-    }
-    Dialog dialog = new AlertDialog.Builder(requireContext())
-        .setTitle("Terms of Use")
-        .setMessage(remainingTerms.poll())
-        .setPositiveButton("Agree", (d, w) -> {
-          promptForTermOfUse(remainingTerms, emitter);
-          d.dismiss();
-        })
-        .setNegativeButton("Cancel", (d, w) -> {
-          emitter.onSuccess(false);
-          d.dismiss();
-        })
-        .create();
-    dialog.setCancelable(false);
-    dialog.setCanceledOnTouchOutside(false);
-    dialog.show();
   }
 
   private Completable promptStartInit() {
@@ -290,6 +260,8 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
       dialog.show();
     });
   }
+
+
 
   private Maybe<Cycle> runInitFlow(Queue<InitPrompt> remainingPrompts) {
     if (remainingPrompts.isEmpty()) {

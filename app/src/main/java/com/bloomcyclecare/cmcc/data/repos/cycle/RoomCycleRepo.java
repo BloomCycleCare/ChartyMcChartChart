@@ -15,6 +15,7 @@ import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
 import timber.log.Timber;
 
@@ -91,7 +92,8 @@ class RoomCycleRepo implements RWCycleRepo {
     copyOfCycleToSplit.endDate = firstDayOfNewCycle.minusDays(1);
     return insertOrUpdate(newCycle)
         .andThen(insertOrUpdate(copyOfCycleToSplit))
-        .andThen(Single.just(new RWCycleRepo.SplitResult(newCycle, copyOfCycleToSplit)));
+        .andThen(Single.just(new RWCycleRepo.SplitResult(newCycle, copyOfCycleToSplit)))
+        .subscribeOn(Schedulers.computation());
   }
 
   @Override
@@ -144,6 +146,7 @@ class RoomCycleRepo implements RWCycleRepo {
   @Override
   public Completable insertOrUpdate(Cycle cycle) {
     return cycleDao.insert(cycle)
-        .doOnComplete(() -> updates.onNext(RWCycleRepo.UpdateEvent.forCycle(cycle)));
+        .doOnComplete(() -> updates.onNext(RWCycleRepo.UpdateEvent.forCycle(cycle)))
+        .subscribeOn(Schedulers.computation());
   }
 }

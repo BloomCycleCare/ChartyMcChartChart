@@ -3,7 +3,35 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/main_nav_graph"
-    app:startDestination="@id/chart_pager">
+    app:startDestination="@id/main">
+
+    <fragment
+        android:id="@+id/main"
+        android:name="com.bloomcyclecare.cmcc.ui.main.MainFragment"
+        android:label="Main"
+        tools:layout="@layout/fragment_splash">
+        <action
+            android:id="@+id/action_init_app"
+            app:destination="@id/init_stepper" />
+        <action
+            android:id="@+id/action_show_chart"
+            app:destination="@id/chart_pager" />
+        <action
+            android:id="@+id/action_import_app_state"
+            app:destination="@id/import_app_state" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/init_stepper"
+        android:name="com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragment"
+        android:label="App Initialization"
+        tools:layout="@layout/fragment_stepper"/>
+
+    <fragment
+        android:id="@+id/import_app_state"
+        android:name="com.bloomcyclecare.cmcc.ui.init.ImportAppStateFragment"
+        android:label="Import App State"
+        tools:layout="@layout/fragment_splash"/>
 
     <fragment
         android:id="@+id/chart_pager"

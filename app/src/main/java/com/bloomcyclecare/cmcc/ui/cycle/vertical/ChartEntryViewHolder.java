@@ -31,6 +31,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     private final View mStrikeView;
     private final Context mContext;
     private final ShowcaseManager mShowcaseManager;
+    private final View mItemView;
 
     private RenderedEntry mBoundEntry;
     private ViewMode mBoundViewMode;
@@ -42,6 +43,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
         Consumer<RenderedEntry> stickerClickConsumer,
         ShowcaseManager showcaseManager) {
       super(itemView);
+      mItemView = itemView;
       mShowcaseManager = showcaseManager;
       mContext = context;
       mEntryNumTextView = itemView.findViewById(R.id.tv_entry_num);
@@ -73,7 +75,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       });
     }
 
-    public void bind(RenderedEntry re, ViewMode viewMode) {
+    public void bind(RenderedEntry re, ViewMode viewMode, boolean showcaseEntry, boolean showcaseStickerSelection) {
       mStickerView.setVisibility(View.VISIBLE);
 
       mEntryDataTextView.setText(re.observationSummary());
@@ -97,6 +99,12 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
 
       if (re.showStickerStrike()) {
         mShowcaseManager.showShowcase(ShowcaseManager.ShowcaseID.FIRST_INCORRECT_STICKER, mStrikeView);
+      }
+      if (showcaseEntry) {
+        mShowcaseManager.showShowcase(ShowcaseManager.ShowcaseID.OBSERVATION_INPUT, mEntryDataTextView);
+      }
+      if (showcaseStickerSelection) {
+        mShowcaseManager.showShowcase(ShowcaseManager.ShowcaseID.STICKER_SELECTION, mStickerView);
       }
     }
   }

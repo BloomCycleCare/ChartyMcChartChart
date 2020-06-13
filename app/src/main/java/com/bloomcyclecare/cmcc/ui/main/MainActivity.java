@@ -1,19 +1,14 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
-import android.app.Dialog;
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.ui.cycle.vertical.CyclePageFragmentArgs;
-import com.bloomcyclecare.cmcc.ui.instructions.InstructionsListActivity;
 import com.google.android.material.navigation.NavigationView;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
@@ -49,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         .observeOn(AndroidSchedulers.mainThread())
         .subscribe(this::configureNavigation));
 
-    mDisposables.add(mViewModel.instructionsInitialized().subscribe(initialized -> {
+    /*mDisposables.add(mViewModel.instructionsInitialized().subscribe(initialized -> {
       if (!initialized) {
         Dialog dialog = new AlertDialog.Builder(this)
             .setTitle("Initialize Instructions")
@@ -63,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
         dialog.setCanceledOnTouchOutside(false);
         dialog.show();
       }
-    }));
+    }));*/
 
     Timber.v("Awaiting initial ViewState");
   }
@@ -76,10 +71,7 @@ public class MainActivity extends AppCompatActivity {
     NavHostFragment fragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
     navController = fragment.getNavController();
 
-    CyclePageFragmentArgs initialArgs = new CyclePageFragmentArgs.Builder()
-        .setViewMode(initialViewMode)
-        .build();
-    navController.setGraph(R.navigation.main_nav_graph, initialArgs.toBundle());
+    navController.setGraph(R.navigation.main_nav_graph);
 
     // Show and Manage the Drawer and Back Icon
     NavigationUI.setupActionBarWithNavController(this, navController, drawerLayout);
@@ -96,6 +88,10 @@ public class MainActivity extends AppCompatActivity {
     // drawer menu, depending on the situation.
     return NavigationUI.navigateUp(navController, drawerLayout);
 
+  }
+
+  public void hideUp() {
+    getSupportActionBar().setDisplayHomeAsUpEnabled(false);
   }
 
   private void render(MainViewModel.ViewState viewState) {

@@ -3,15 +3,11 @@ package com.bloomcyclecare.cmcc.ui.showcase;
 import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
-import android.util.Pair;
 import android.view.View;
-
-import com.google.common.collect.Queues;
-
-import java.util.Deque;
 
 import androidx.annotation.Nullable;
 import timber.log.Timber;
+import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
@@ -49,8 +45,10 @@ public class ShowcaseManager {
         "Use this space to record any special comments for the day that you want to remember. This is a good way to record things you want to discuss with your practitioner at your next follow up appointment.", true),
     ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES("Please note that this screen will adapt and change as your instructions change."),
     ENTRY_DETAIL_EXPLAIN_MENU("Look here for additional observational entry options"),
-    ENTRY_DETAIL_EXPLAIN_SAVE("Touch here to save your description. You can always return to make any changes.")
-      ;
+    ENTRY_DETAIL_EXPLAIN_SAVE("Touch here to save your description. You can always return to make any changes."),
+    OBSERVATION_INPUT("Touch here to record your observation", true),
+    STICKER_SELECTION("After recording an observation, you can select a sticker for the day. Touch Here.", true)
+    ;
 
     final String content;
     final boolean useRectangle;
@@ -66,71 +64,74 @@ public class ShowcaseManager {
   }
 
   public void showShowcase(ShowcaseID showcaseID, View target) {
+    showShowcase(showcaseID, target, null);
+  }
+
+  public void showShowcase(ShowcaseID showcaseID, View target, @Nullable IShowcaseListener listener) {
     Activity activity = getActivity(target);
     if (activity == null) {
       Timber.w("Failed to find activity for view: %d", target.getId());
       return;
     }
-    new MaterialShowcaseView.Builder(activity)
+    MaterialShowcaseView.Builder builder = new MaterialShowcaseView.Builder(activity);
+    if (showcaseID.useRectangle) {
+      builder = builder.withRectangleShape();
+    }
+    if (listener != null) {
+      builder.setListener(listener);
+    }
+    builder
+        .renderOverNavigationBar()
         .setTarget(target)
         .setDismissText("GOT IT")
         .setContentText(showcaseID.content)
-        .setDelay(DELAY_MS) // optional but starting animations immediately in onCreate can make them choppy
+        .setDelay(2000) // optional but starting animations immediately in onCreate can make them choppy
         .singleUse(showcaseID.name())
         .show();
   }
 
-  public static SequenceBuilder sequenceBuilder(SequenceID id) {
-    return new SequenceBuilder(id);
+  public static SequenceBuilder sequenceBuilder(SequenceID id, Activity activity) {
+    return new SequenceBuilder(id, activity);
   }
 
   public static class SequenceBuilder {
 
-    private final SequenceID mSequenceID;
-    private final Deque<Pair<ShowcaseID, View>> mQueue = Queues.newArrayDeque();
+    private final Activity mActivity;
+    private final MaterialShowcaseSequence mSequence;
 
-    private SequenceBuilder(SequenceID id) {
-      mSequenceID = id;
+    private SequenceBuilder(SequenceID id, Activity activity) {
+      mActivity = activity;
+      mSequence = new MaterialShowcaseSequence(activity, id.name());
+
+      ShowcaseConfig config = new ShowcaseConfig();
+      config.setDelay(DELAY_MS);
+      mSequence.setConfig(config);
     }
 
-    public SequenceBuilder addShowcase(ShowcaseID showcaseID, View view) {
-      mQueue.push(Pair.create(showcaseID, view));
+    public SequenceBuilder addShowcase(ShowcaseID showcaseID, View view, IShowcaseListener listener) {
+      MaterialShowcaseView.Builder builder = new MaterialShowcaseView.Builder(mActivity);
+      if (showcaseID.useRectangle) {
+        builder = builder.withRectangleShape();
+      }
+      if (listener != null) {
+        builder = builder.setListener(listener);
+      }
+      mSequence.addSequenceItem(builder
+          .setTarget(view)
+          .setDismissText("GOT IT")
+          .setContentText(showcaseID.content)
+          .setDelay(DELAY_MS) // optional but starting animations immediately in onCreate can make them choppy
+          .singleUse(showcaseID.name())
+          .build());
       return this;
     }
 
+    public SequenceBuilder addShowcase(ShowcaseID showcaseID, View view) {
+      return addShowcase(showcaseID, view, null);
+    }
+
     public void build() {
-      if (mQueue.isEmpty()) {
-        Timber.d("No showcases in sequence");
-        return;
-      }
-
-      View firstView = mQueue.peek().second;
-      Activity activity = getActivity(firstView);
-      if (activity == null) {
-        Timber.w("Failed to find activity for view: %d", firstView.getId());
-      }
-
-      MaterialShowcaseSequence sequence = new MaterialShowcaseSequence(activity, mSequenceID.name());
-      while (!mQueue.isEmpty()) {
-        Pair<ShowcaseID, View> p = mQueue.pollLast();
-        MaterialShowcaseView.Builder builder = new MaterialShowcaseView.Builder(activity);
-        if (p.first.useRectangle) {
-          builder = builder.withRectangleShape();
-        }
-        sequence.addSequenceItem(builder
-          .setTarget(p.second)
-          .setDismissText("GOT IT")
-          .setContentText(p.first.content)
-          .setDelay(DELAY_MS) // optional but starting animations immediately in onCreate can make them choppy
-          .singleUse(p.first.name())
-          .build());
-      }
-
-      ShowcaseConfig config = new ShowcaseConfig();
-      config.setDelay(500);
-      sequence.setConfig(config);
-
-      sequence.start();
+      mSequence.start();
     }
   }
 

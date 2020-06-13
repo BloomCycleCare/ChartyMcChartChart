@@ -78,13 +78,27 @@ class EntryListViewModel extends AndroidViewModel {
         cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
         scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
         autoStickeringStream.distinctUntilChanged(),
-        (renderableCycle, scrollState, autoStickeringEnabled) -> {
+        instructionsRepo.getAll(),
+        (renderableCycle, scrollState, autoStickeringEnabled, instructionsList) -> {
+          boolean showcaseStickerSelection = false;
+          Optional<LocalDate> entryShowcaseDate = Optional.empty();
+          boolean inhibitShowcase = cycle.endDate != null/* || instructionsList.isEmpty()*/;
+
           List<RenderedEntry> renderedEntries = new ArrayList<>();
           for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
-            renderedEntries.add(RenderedEntry.create(re, autoStickeringEnabled, viewMode));
+            RenderedEntry renderedEntry = RenderedEntry.create(re, autoStickeringEnabled, viewMode);
+            if (!inhibitShowcase && renderedEntry.hasObservation()) {
+              showcaseStickerSelection = true;
+              entryShowcaseDate = Optional.of(renderedEntry.entryDate());
+            }
+            renderedEntries.add(renderedEntry);
+          }
+          if (!inhibitShowcase && !entryShowcaseDate.isPresent() && !renderedEntries.isEmpty()) {
+            RenderedEntry lastEntry = renderedEntries.get(renderedEntries.size() - 1);
+            entryShowcaseDate = Optional.of(lastEntry.entryDate());
           }
           return new ViewState(
-              cycle, renderedEntries, scrollState, viewMode, autoStickeringEnabled);
+              cycle, renderedEntries, scrollState, viewMode, autoStickeringEnabled, entryShowcaseDate, showcaseStickerSelection);
         })
         .toObservable()
         .subscribeOn(Schedulers.computation())
@@ -115,20 +129,24 @@ class EntryListViewModel extends AndroidViewModel {
     final List<RenderedEntry> renderedEntries;
     final ScrollState scrollState;
     final ViewMode viewMode;
-    final boolean autoStickeringEnabled;
+    final Optional<LocalDate> entryShowcaseDate;
+    final boolean showcaseStickerSelection;
 
     private ViewState(
         Cycle cycle,
         List<RenderedEntry> renderedEntries,
         ScrollState scrollState,
         ViewMode viewMode,
-        boolean autoStickeringEnabled) {
+        boolean autoStickeringEnabled,
+        Optional<LocalDate> entryShowcaseDate,
+        boolean showcaseStickerSelection) {
       Timber.v("Creating new ViewState");
       this.cycle = cycle;
       this.renderedEntries = renderedEntries;
       this.scrollState = scrollState;
       this.viewMode = viewMode;
-      this.autoStickeringEnabled = autoStickeringEnabled;
+      this.entryShowcaseDate = entryShowcaseDate;
+      this.showcaseStickerSelection = showcaseStickerSelection;
     }
   }
 

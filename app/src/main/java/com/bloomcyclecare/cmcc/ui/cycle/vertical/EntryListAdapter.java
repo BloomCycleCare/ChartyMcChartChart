@@ -12,8 +12,11 @@ import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.collect.Iterables;
 
+import org.joda.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Consumer;
@@ -36,6 +39,8 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   private String mLayerKey;
   private ViewMode viewMode;
   private List<RenderedEntry> mRenderedEntries = new ArrayList<>();
+  private Optional<LocalDate> mDateToShowcase;
+  private boolean mShowcaseStickerSelection;
 
   EntryListAdapter(
       Context context,
@@ -59,7 +64,11 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   void update(
       @NonNull Cycle cycle,
       @NonNull List<RenderedEntry> renderedEntries,
-      @NonNull ViewMode viewMode) {
+      @NonNull ViewMode viewMode,
+      @NonNull Optional<LocalDate> entryDateToShowcase,
+      boolean showcaseStickerSelection) {
+    mDateToShowcase = entryDateToShowcase;
+    mShowcaseStickerSelection = showcaseStickerSelection;
     this.viewMode = viewMode;
     if (!Iterables.elementsEqual(mRenderedEntries, renderedEntries)) {
       Timber.v("Updating entries for cycle %s", cycle.startDate);
@@ -95,7 +104,9 @@ class EntryListAdapter extends RecyclerView.Adapter<ChartEntryViewHolder.Impl> {
   @Override
   public void onBindViewHolder(@NonNull ChartEntryViewHolder.Impl holder, int position) {
     RenderedEntry re = mRenderedEntries.get(mRenderedEntries.size() - position - 1);
-    holder.bind(re, viewMode);
+    boolean showcaseEntry = mDateToShowcase.isPresent() && re.entryDate().equals(mDateToShowcase.get());
+    boolean showcaseStickerSelection = showcaseEntry && mShowcaseStickerSelection;
+    holder.bind(re, viewMode, showcaseEntry, showcaseStickerSelection);
   }
 
   @Override

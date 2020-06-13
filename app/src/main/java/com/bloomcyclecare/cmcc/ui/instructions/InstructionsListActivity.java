@@ -176,7 +176,10 @@ public class InstructionsListActivity extends AppCompatActivity {
             }
           });
         })
-        .observeOn(AndroidSchedulers.mainThread()).subscribe(super::onBackPressed));
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(() -> {
+          super.onBackPressed();
+        }));
   }
 
   private Single<Boolean> promptSaveChanges() {

@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.google.auto.value.AutoValue;
@@ -15,16 +16,18 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
 public class MainViewModel extends AndroidViewModel {
 
   private final Subject<String> mTitleSubject = BehaviorSubject.createDefault("Some title");
-  private final Subject<String> mSubtitleSubject = BehaviorSubject.createDefault("Some subtitle");
+  private final Subject<String> mSubtitleSubject = BehaviorSubject.createDefault("");
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
 
   private final ROInstructionsRepo mInstructionsRepo;
+  private final ROCycleRepo mCycleRepo;
 
   public MainViewModel(@NonNull Application application) {
     super(application);
@@ -32,6 +35,7 @@ public class MainViewModel extends AndroidViewModel {
     MyApplication myApp = MyApplication.cast(application);
     PreferenceRepo preferenceRepo = myApp.preferenceRepo();
     mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
+    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
 
     Flowable.combineLatest(
         mTitleSubject.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -46,10 +50,12 @@ public class MainViewModel extends AndroidViewModel {
         .subscribe(mViewStateSubject);
   }
 
-  Single<Boolean> instructionsInitialized() {
-    return mInstructionsRepo.getAll()
-        .firstOrError()
-        .map(instructions -> !instructions.isEmpty());
+  Single<Boolean> appInitialized() {
+    return Single.zip(
+        mCycleRepo.getCurrentCycle().map(c -> true).switchIfEmpty(Single.just(false)),
+        mInstructionsRepo.getAll().firstOrError().map(instructions -> !instructions.isEmpty()),
+        (hasCycle, hasInstructions) -> hasCycle && hasInstructions)
+        .subscribeOn(Schedulers.computation());
   }
 
   Single<ViewState> initialState() {

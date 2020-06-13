@@ -157,7 +157,7 @@ public class EntryListFragment extends Fragment {
 
   private void render(EntryListViewModel.ViewState viewState) {
     Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
-    mEntryListAdapter.update(viewState.cycle, viewState.renderedEntries, viewState.viewMode);
+    mEntryListAdapter.update(viewState.cycle, viewState.renderedEntries, viewState.viewMode, viewState.entryShowcaseDate, viewState.showcaseStickerSelection);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);
     }
