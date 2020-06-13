@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.repos.pregnancy;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.PregnancyDao;
+import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.google.common.base.Preconditions;
@@ -9,6 +10,7 @@ import com.google.common.base.Preconditions;
 import org.joda.time.LocalDate;
 
 import java.util.List;
+import java.util.Optional;
 
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -60,8 +62,16 @@ class RoomPregnancyRepo implements RWPregnancyRepo {
   public Completable startPregnancy(LocalDate dateOfTest) {
     return Single.merge(Single.zip(
         createPregnancy(dateOfTest),
-        mCycleRepo.getCycleForDate(dateOfTest).toSingle(),
-        ((pregnancy, currentCycle) -> mCycleRepo.splitCycle(currentCycle, dateOfTest.plusDays(1), newCycle -> newCycle.pregnancyId = pregnancy.id))))
+        mCycleRepo.getCurrentCycle().map(Optional::of).switchIfEmpty(Single.just(Optional.empty())),
+        (pregnancy, currentCycle) ->  {
+          LocalDate cycleStartDate = dateOfTest.plusDays(1);
+          if (currentCycle.isPresent()) {
+            return mCycleRepo.splitCycle(
+                currentCycle.get(), cycleStartDate, newCycle -> newCycle.pregnancyId = pregnancy.id);
+          }
+          Cycle newCycle = new Cycle("new", cycleStartDate, null, pregnancy.id);
+          return mCycleRepo.insertOrUpdate(newCycle).andThen(Single.just(newCycle));
+        }))
         .ignoreElement()
         .subscribeOn(Schedulers.computation());
   }
