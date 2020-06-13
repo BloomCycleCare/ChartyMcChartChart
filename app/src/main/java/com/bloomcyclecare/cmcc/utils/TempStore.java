@@ -133,10 +133,12 @@ public class TempStore<T, P extends Comparable<? super P>> {
   }
 
   public Completable clearPending() {
-    return mStoredValues.flatMapCompletable(storedValues -> {
-      mUpdatedValues.onNext(storedValues);
-      return Completable.complete();
-    });
+    return mStoredValues
+        .firstOrError()
+        .flatMapCompletable(storedValues -> {
+          mUpdatedValues.onNext(storedValues);
+          return Completable.complete();
+        });
   }
 
   public Completable delete(T value) {
