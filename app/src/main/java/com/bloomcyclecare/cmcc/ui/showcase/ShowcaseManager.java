@@ -23,42 +23,44 @@ public class ShowcaseManager {
 
   public enum ShowcaseID {
     FIRST_INCORRECT_STICKER(
-        "Incorrect sticker selections are noted by a strike. Touch the sticker to reopen the selection dialog for more information."),
+        "Incorrect sticker selections are noted by a strike. Touch the sticker to reopen the selection dialog for more information.", true),
     INCORRECT_STICKER_REASON(
-        "This section explains why the previous selection was incorrect."),
+        "This section explains why the previous selection was incorrect.", false),
     INCORRECT_STICKER_HINT(
-        "Touch here for a hint to determine the correct sticker for this observation."),
+        "Touch here for a hint to determine the correct sticker for this observation.", false),
     ENTRY_DETAIL_INPUT_OBSERVATION(
-        "Touch here to input your observation using the vaginal discharge recording system (VDRS).", true),
+        "Touch here to input your observation using the vaginal discharge recording system (VDRS).", true, true),
     ENTRY_DETAIL_EXPLAIN_DESCRIPTION(
         "Here is the summary of your description \n" +
-            "Use to verify your description input.", true),
+            "Use to verify your description input.", false, true),
     ENTRY_DETAIL_EXPLAIN_PEAK_DAY(
         "Use this switch to indicate if the day was a peak day. \n" +
-            "You can return to this entry on previous days to accurately mark a peak day."),
+            "You can return to this entry on previous days to accurately mark a peak day.", false),
     ENTRY_DETAIL_EXPLAIN_INTERCOURSE(
-        "Use this switch to record an act of intercourse "),
+        "Use this switch to record an act of intercourse ", false),
     ENTRY_DETAIL_EXPLAIN_FIRST_DAY_NEW_CYCLE(
         "Use this switch to indicate the beginning of a new cycle. \n" +
-        "This will end the current cycle and create the next."),
+        "This will end the current cycle and create the next.", false),
     ENTRY_DETAIL_EXPLAIN_NOTE(
-        "Use this space to record any special comments for the day that you want to remember. This is a good way to record things you want to discuss with your practitioner at your next follow up appointment.", true),
-    ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES("Please note that this screen will adapt and change as your instructions change."),
-    ENTRY_DETAIL_EXPLAIN_MENU("Look here for additional observational entry options"),
-    ENTRY_DETAIL_EXPLAIN_SAVE("Touch here to save your description. You can always return to make any changes."),
-    OBSERVATION_INPUT("Touch here to record your observation", true),
-    STICKER_SELECTION("After recording an observation, you can select a sticker for the day. Touch Here.", true)
+        "Use this space to record any special comments for the day that you want to remember. This is a good way to record things you want to discuss with your practitioner at your next follow up appointment.", false, true),
+    ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES("Please note that this screen will adapt and change as your instructions change.", false),
+    ENTRY_DETAIL_EXPLAIN_MENU("Look here for additional observational entry options", true),
+    ENTRY_DETAIL_EXPLAIN_SAVE("Touch here to save your description. You can always return to make any changes.", true),
+    OBSERVATION_INPUT("Touch here to record your observation", true, true),
+    STICKER_SELECTION("After recording an observation, you can select a sticker for the day. Touch Here.", true, true)
     ;
 
     final String content;
     final boolean useRectangle;
+    final boolean targetTouchable;
 
-    ShowcaseID(String content) {
-      this(content, false);
+    ShowcaseID(String content, boolean targetTouchable) {
+      this(content, targetTouchable, false);
     }
 
-    ShowcaseID(String content, boolean useRectangle) {
+    ShowcaseID(String content, boolean targetTouchable, boolean useRectangle) {
       this.content = content;
+      this.targetTouchable = targetTouchable;
       this.useRectangle = useRectangle;
     }
   }
@@ -85,6 +87,7 @@ public class ShowcaseManager {
         .setTarget(target)
         .setDismissText("GOT IT")
         .setContentText(showcaseID.content)
+        .setTargetTouchable(showcaseID.targetTouchable)
         .setDelay(2000) // optional but starting animations immediately in onCreate can make them choppy
         .singleUse(showcaseID.name())
         .show();
