@@ -7,6 +7,9 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.google.android.material.navigation.NavigationView;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -15,6 +18,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -24,9 +28,9 @@ public class MainActivity extends AppCompatActivity {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
+  private AppBarConfiguration appBarConfiguration;
   private NavigationView navView;
   private NavController navController;
-  private DrawerLayout drawerLayout;
   private MainViewModel mViewModel;
 
   @Override
@@ -67,14 +71,22 @@ public class MainActivity extends AppCompatActivity {
     Timber.d("Configuring navigation with default ViewMode %s", initialViewMode.name());
 
     navView = findViewById(R.id.nav_view);
-    drawerLayout = findViewById(R.id.drawer_layout);
+    DrawerLayout drawerLayout = findViewById(R.id.drawer_layout);
     NavHostFragment fragment = (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.main_content);
     navController = fragment.getNavController();
 
     navController.setGraph(R.navigation.main_nav_graph);
 
+    Set<Integer> topLevelDestinations = new HashSet<>();
+    topLevelDestinations.add(R.id.main);
+    topLevelDestinations.add(R.id.chart_pager);
+
+    appBarConfiguration = new AppBarConfiguration.Builder(topLevelDestinations)
+        .setOpenableLayout(drawerLayout)
+        .build();
+
     // Show and Manage the Drawer and Back Icon
-    NavigationUI.setupActionBarWithNavController(this, navController, drawerLayout);
+    NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
 
     // Handle Navigation item clicks
     NavigationUI.setupWithNavController(navView, navController);
@@ -86,8 +98,7 @@ public class MainActivity extends AppCompatActivity {
   public boolean onSupportNavigateUp() {
     // Allows NavigationUI to support proper up navigation or the drawer layout
     // drawer menu, depending on the situation.
-    return NavigationUI.navigateUp(navController, drawerLayout);
-
+    return NavigationUI.navigateUp(navController, appBarConfiguration);
   }
 
   public void hideUp() {
