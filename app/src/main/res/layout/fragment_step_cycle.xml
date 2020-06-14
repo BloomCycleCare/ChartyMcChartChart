@@ -83,7 +83,26 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintHorizontal_chainStyle="packed"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tv_selection_prompt"
+        app:layout_constraintTop_toBottomOf="@+id/tv_start_header"
+        app:layout_constraintVertical_bias="0.55"
         app:srcCompat="@drawable/ic_check_circle_black_24dp" />
+
+    <androidx.constraintlayout.widget.Group
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="tv_selection_prompt,button_date_prompt"
+        android:id="@+id/selection_action_group"/>
+
+    <androidx.constraintlayout.widget.Group
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="tv_date_outcome,iv_outcome"
+        android:id="@+id/selection_outcome_group"/>
+
+    <androidx.constraintlayout.widget.Group
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="tv_welcome_message,tv_selection_prompt,spinner_cycle_type,button_date_prompt"
+        android:id="@+id/selection_outer_group"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

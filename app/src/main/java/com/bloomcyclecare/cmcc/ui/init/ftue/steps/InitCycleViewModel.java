@@ -28,7 +28,6 @@ public class InitCycleViewModel extends AndroidViewModel {
 
   private final RWCycleRepo mCycleRepo;
   private final RWPregnancyRepo mPregnancyRepo;
-  private final Subject<Optional<Cycle>> mCycleSubject = BehaviorSubject.createDefault(Optional.empty());
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
 
   final Subject<Integer> mSpinnerSelectionSubject = BehaviorSubject.create();
@@ -40,46 +39,28 @@ public class InitCycleViewModel extends AndroidViewModel {
     mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
 
     Observable.combineLatest(
-        mCycleSubject.map(Optional::isPresent),
-        mSpinnerSelectionSubject,
-        (hasCycle, selection) -> {
-          String promptText = "";
-          String dateDialogTitle = "";
-          if (selection == 1) {
-            promptText = "Something here saying select the date of the positive pregnancy test";
-            dateDialogTitle = "Test Date";
-          } else if (selection == 2) {
-            promptText = "Something here saying select the delivery date";
-            dateDialogTitle = "Delivery Date";
-          } else if (selection == 3) {
-            promptText = "Something here saying select the first day of your last period";
-            dateDialogTitle = "First Day of Last Period";
-          }
+        mCycleRepo.getStream().toObservable(),
+        mSpinnerSelectionSubject.map(i -> InitCycleType.values()[i]),
+        (cycles, initCycleType) -> {
           Optional<VerificationError> verificationError = Optional.empty();
-          if (!hasCycle) {
+          if (cycles.isEmpty()) {
             verificationError = Optional.of(new VerificationError("Cycle required to proceed"));
           }
-          return ViewState.create(selection, promptText, dateDialogTitle, hasCycle, verificationError);
+          return ViewState.create(initCycleType, initCycleType.promptText, initCycleType.dialogTitle, !cycles.isEmpty(), verificationError);
         })
         .subscribe(mViewStateSubject);
   }
 
-  void setCycleDate(LocalDate date) {
-    mSpinnerSelectionSubject.firstOrError()
-        .flatMapCompletable(selection -> {
-          if (selection == 0 || selection > 3) {
-            return Completable.error(new IllegalStateException());
-          }
-          if (selection == 1) {
+  Completable createCycle(LocalDate date) {
+    return mSpinnerSelectionSubject.firstOrError()
+        .map(i -> InitCycleType.values()[i])
+        .flatMapCompletable(initCycleType -> {
+          if (initCycleType == InitCycleType.PREGNANT) {
             return mPregnancyRepo.startPregnancy(date);
           }
           Cycle firstCycle = new Cycle("first", date.plusDays(1), null, null);
           return mCycleRepo.insertOrUpdate(firstCycle);
-        })
-        .andThen(mCycleRepo.getCurrentCycle())
-        .map(Optional::of)
-        .toObservable()
-        .subscribe(mCycleSubject);
+        });
   }
 
   LiveData<ViewState> viewState() {
@@ -90,14 +71,14 @@ public class InitCycleViewModel extends AndroidViewModel {
   @AutoValue
   public static abstract class ViewState {
 
-    public abstract int spinnerSelection();
+    public abstract InitCycleType initCycleType();
     public abstract String selectionPromptText();
     public abstract String dateDialogTitle();
     public abstract boolean hasCycle();
     public abstract Optional<VerificationError> verificationError();
 
-    public static ViewState create(int spinnerSelection, String selectionPromptText, String dateDialogTitle, boolean hasCycle, Optional<VerificationError> verificationError) {
-      return new AutoValue_InitCycleViewModel_ViewState(spinnerSelection, selectionPromptText, dateDialogTitle, hasCycle, verificationError);
+    public static ViewState create(InitCycleType initCycleType, String selectionPromptText, String dateDialogTitle, boolean hasCycle, Optional<VerificationError> verificationError) {
+      return new AutoValue_InitCycleViewModel_ViewState(initCycleType, selectionPromptText, dateDialogTitle, hasCycle, verificationError);
     }
 
   }

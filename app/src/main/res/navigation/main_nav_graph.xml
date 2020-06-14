@@ -25,13 +25,21 @@
         android:id="@+id/init_stepper"
         android:name="com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragment"
         android:label="App Initialization"
-        tools:layout="@layout/fragment_stepper"/>
+        tools:layout="@layout/fragment_stepper">
+        <action
+            android:id="@+id/action_load_chart"
+            app:destination="@id/chart_pager" />
+    </fragment>
 
     <fragment
         android:id="@+id/import_app_state"
         android:name="com.bloomcyclecare.cmcc.ui.init.ImportAppStateFragment"
         android:label="Import App State"
-        tools:layout="@layout/fragment_splash"/>
+        tools:layout="@layout/fragment_splash">
+        <action
+            android:id="@+id/action_import_app_state_to_chart_pager"
+            app:destination="@id/chart_pager" />
+    </fragment>
 
     <fragment
         android:id="@+id/chart_pager"

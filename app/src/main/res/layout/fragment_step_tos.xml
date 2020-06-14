@@ -27,4 +27,27 @@
         app:layout_constraintTop_toBottomOf="@+id/tv_tos_title"
         app:layout_constraintVertical_bias="0.100000024" />
 
+    <Button
+        android:id="@+id/button_revisit_tos"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Revisit Agreements"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/button_exit"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintHorizontal_chainStyle="spread"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/rv_tos_items" />
+
+    <Button
+        android:id="@+id/button_exit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Exit App"
+        app:layout_constraintBottom_toBottomOf="@+id/button_revisit_tos"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.5"
+        app:layout_constraintStart_toEndOf="@+id/button_revisit_tos"
+        app:layout_constraintTop_toTopOf="@+id/button_revisit_tos" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>

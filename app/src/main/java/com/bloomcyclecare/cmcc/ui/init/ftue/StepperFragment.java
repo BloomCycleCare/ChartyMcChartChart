@@ -8,6 +8,9 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
 import com.stepstone.stepper.StepperLayout;
 import com.stepstone.stepper.VerificationError;
@@ -15,6 +18,8 @@ import com.stepstone.stepper.VerificationError;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 public class StepperFragment extends Fragment implements StepperLayout.StepperListener {
 
@@ -45,16 +50,19 @@ public class StepperFragment extends Fragment implements StepperLayout.StepperLi
     View view = inflater.inflate(R.layout.fragment_stepper, container, false);
     mStepperLayout = view.findViewById(R.id.stepperLayout);
     mStepperLayout.setAdapter(new StepAdapter(getChildFragmentManager(), requireContext()));
-
-    //mStepperLayout.setListener(this);
-
+    mStepperLayout.setListener(this);
 
     return view;
   }
 
   @Override
   public void onCompleted(View completeButton) {
-
+    PreferenceRepo preferenceRepo =
+        MyApplication.cast(requireActivity().getApplication()).preferenceRepo();
+    ViewMode viewMode = preferenceRepo.currentSummary().defaultToDemoMode()
+        ? ViewMode.DEMO : ViewMode.CHARTING;
+    NavController navController = Navigation.findNavController(requireView());
+    navController.navigate(StepperFragmentDirections.actionLoadChart().setViewMode(viewMode));
   }
 
   @Override

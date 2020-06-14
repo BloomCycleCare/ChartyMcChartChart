@@ -9,6 +9,7 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -16,16 +17,18 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 
 public class StepperViewModel extends AndroidViewModel {
 
-  private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
-  private final Subject<Boolean> mTosCompleteSubject = BehaviorSubject.createDefault(false);
-
   private final ROCycleRepo mCycleRepo;
+  private final Map<TosItem, Boolean> mTosAgreements = new ConcurrentHashMap<>();
+
+  private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
+  private final Subject<ImmutableMap<TosItem, Boolean>> mTosAgreementSubject = BehaviorSubject.createDefault(ImmutableMap.copyOf(mTosAgreements));
 
   public StepperViewModel(@NonNull Application application) {
     super(application);
@@ -33,17 +36,7 @@ public class StepperViewModel extends AndroidViewModel {
     mCycleRepo = MyApplication.cast(application).cycleRepo(ViewMode.CHARTING);
 
     Flowable.combineLatest(
-        mTosCompleteSubject.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged()
-        .map(complete -> {
-          if (!complete) {
-            return ImmutableMap.of();
-          }
-          ImmutableMap.Builder<TosItem, Boolean> builder = ImmutableMap.builder();
-          for (TosItem tosItem : TosItem.values()) {
-            builder.put(tosItem, true);
-          }
-          return builder.build();
-        }),
+        mTosAgreementSubject.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mCycleRepo.getStream().map(cycles -> !cycles.isEmpty()),
         ViewState::create)
         .toObservable()
@@ -55,12 +48,17 @@ public class StepperViewModel extends AndroidViewModel {
         mViewStateSubject.toFlowable(BackpressureStrategy.BUFFER));
   }
 
+  public Observable<ViewState> viewStateStream() {
+    return mViewStateSubject;
+  }
+
   public Single<ViewState> currentViewState() {
     return mViewStateSubject.firstOrError();
   }
 
-  public void recordTosComplete() {
-    mTosCompleteSubject.onNext(true);
+  void recordTosAgreement(TosItem tosItem, boolean agreed) {
+    mTosAgreements.put(tosItem, agreed);
+    mTosAgreementSubject.onNext(ImmutableMap.copyOf(mTosAgreements));
   }
 
   @AutoValue

@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<androidx.core.widget.NestedScrollView xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
 <androidx.constraintlayout.widget.ConstraintLayout
-xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-android:orientation="vertical"
+    android:orientation="vertical"
 android:layout_width="match_parent"
 android:layout_height="700dp"
 android:padding="20dp">
@@ -51,60 +50,16 @@ android:padding="20dp">
     android:layout_height="wrap_content"
     />
 
-<TextView
-    android:id="@+id/tv_instruction_header"
-    android:text="Basic Instructions:"
-    android:layout_marginTop="20dp"
-    android:textStyle="bold"
-    app:layout_constraintTop_toBottomOf="@id/tv_status_header"
-    app:layout_constraintStart_toStartOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
-
-<com.bloomcyclecare.cmcc.utils.NonScrollListView
-    android:id="@+id/lv_instructions"
-    app:layout_constraintTop_toBottomOf="@id/tv_instruction_header"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content" />
-
-<TextView
-    android:id="@+id/tv_special_instruction_header"
-    android:text="Special Instructions:"
-    android:layout_marginTop="20dp"
-    android:textStyle="bold"
-    app:layout_constraintTop_toBottomOf="@id/lv_instructions"
-    app:layout_constraintStart_toStartOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
-
-<com.bloomcyclecare.cmcc.utils.NonScrollListView
-    android:id="@+id/lv_special_instructions"
-    app:layout_constraintTop_toBottomOf="@id/tv_special_instruction_header"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content" />
-
-<TextView
-    android:id="@+id/tv_ys_instruction_header"
-    android:text="Yellow Stamp Instructions:"
-    android:layout_marginTop="20dp"
-    android:textStyle="bold"
-    app:layout_constraintTop_toBottomOf="@id/lv_special_instructions"
-    app:layout_constraintStart_toStartOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content" />
-
-<com.bloomcyclecare.cmcc.utils.NonScrollListView
-    android:id="@+id/lv_ys_instructions"
-    app:layout_constraintTop_toBottomOf="@id/tv_ys_instruction_header"
-    app:layout_constraintStart_toStartOf="parent"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content" />
-
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/instruction_selection_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="20dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_status"
+        app:layout_constraintBottom_toBottomOf="parent"
+        tools:layout_editor_absoluteX="20dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

@@ -55,7 +55,7 @@ class RoomCycleRepo implements RWCycleRepo {
 
   @Override
   public Maybe<Cycle> getCurrentCycle() {
-    return cycleDao.getCurrentCycle();
+    return cycleDao.getCurrentCycle().subscribeOn(Schedulers.computation());
   }
 
   @Override
