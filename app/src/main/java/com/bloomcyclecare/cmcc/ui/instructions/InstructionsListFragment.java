@@ -54,7 +54,7 @@ public class InstructionsListFragment extends Fragment {
     Fragment fragment = new InstructionSelectionFragment();
     fragment.setArguments(requireArguments());
 
-    getChildFragmentManager().beginTransaction().add(R.id.instruction_selection_container, fragment).commit();
+    getChildFragmentManager().beginTransaction().replace(R.id.instruction_selection_container, fragment).commit();
     getChildFragmentManager().executePendingTransactions();
 
     mViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
