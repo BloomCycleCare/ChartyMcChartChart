@@ -6,23 +6,16 @@ import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
-import com.google.common.base.Function;
 
 import org.joda.time.LocalDate;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
-import io.reactivex.Completable;
-import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
@@ -37,16 +30,23 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
   private final BehaviorSubject<ViewState> mViewState = BehaviorSubject.create();
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  public InstructionsCrudViewModel(@NonNull Application application) {
+  public InstructionsCrudViewModel(@NonNull Application application, Instructions instructions) {
     super(application);
     mInstructionsRepo = MyApplication.cast(application).instructionsRepo();
 
+    if (instructions != null) {
+      startDateUpdates.onNext(instructions.startDate);
+    } else {
+      Timber.w("Null instructions!");
+    }
     // Connect subject for the current ViewState
     /*viewStateStream()
         .toObservable()
         .observeOn(Schedulers.computation())
         .doOnNext(vs -> Timber.v("Storing updated ViewState"))
         .subscribe(mViewState);*/
+
+
 
     // Pass any updates to the instructions to the repo
     mDisposables.add(mViewState
@@ -70,7 +70,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
         .subscribe());
   }
 
-  Completable updateStartDate(LocalDate startDate, Function<Set<Instructions>, Single<Boolean>> removeInstructionsPrompt) {
+  /*Completable updateStartDate(LocalDate startDate, Function<Set<Instructions>, Single<Boolean>> removeInstructionsPrompt) {
     return mViewState.flatMapCompletable(viewState -> {
       Instructions copyOfInstructionsBeingUpdate = new Instructions(viewState.instructions);
       copyOfInstructionsBeingUpdate.startDate = startDate;
@@ -126,7 +126,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
             }));
           });
     });
-  }
+  }*/
 
   @Override
   protected void onCleared() {
@@ -157,4 +157,19 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     }
   }
 
+  static class Factory implements ViewModelProvider.Factory {
+    private final Application application;
+    private final Instructions instructions;
+
+    Factory(Application application, Instructions instructions) {
+      this.application = application;
+      this.instructions = instructions;
+    }
+
+    @NonNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+      return (T) new InstructionsCrudViewModel(application, instructions);
+    }
+  }
 }

@@ -2,6 +2,10 @@ package com.bloomcyclecare.cmcc.ui.init.ftue.steps;
 
 public enum InitCycleType {
   UNKNOWN("", ""),
+  TYPICAL(
+      "First Day of Last Period",
+      "Something here saying select the first day of your last period"
+  ),
   POST_PARTUM(
       "Test Date",
       "Something here saying select the date of the positive pregnancy test"
@@ -9,10 +13,6 @@ public enum InitCycleType {
   PREGNANT(
     "Delivery Date",
     "Something here saying select the delivery date"
-  ),
-  OTHER(
-    "First Day of Last Period",
-    "Something here saying select the first day of your last period"
   );
 
   final String dialogTitle;

@@ -2,8 +2,8 @@
 <resources>
     <string-array name="reproductive_phase">
         <item>Make a selection</item>
+        <item>Typical Cycle</item>
         <item>Currently pregnant</item>
         <item>Postpartum before first period</item>
-        <item>Other</item>
     </string-array>
 </resources>

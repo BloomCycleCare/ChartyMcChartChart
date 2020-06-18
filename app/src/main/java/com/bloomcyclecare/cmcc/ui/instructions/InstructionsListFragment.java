@@ -8,6 +8,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.data.entities.Instructions;
+
+import org.parceler.Parcels;
 
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -33,7 +36,9 @@ public class InstructionsListFragment extends Fragment {
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
 
-    mViewModel = new ViewModelProvider(this).get(InstructionsCrudViewModel.class);
+    Instructions instructions = Parcels.unwrap(requireArguments().getParcelable(Instructions.class.getCanonicalName()));
+    InstructionsCrudViewModel.Factory factory = new InstructionsCrudViewModel.Factory(requireActivity().getApplication(), instructions);
+    mViewModel = new ViewModelProvider(this, factory).get(InstructionsCrudViewModel.class);
   }
 
   @Nullable
@@ -46,7 +51,11 @@ public class InstructionsListFragment extends Fragment {
     TextView status = view.findViewById(R.id.tv_status);
     status.setText("Unspecified");
 
+    Fragment fragment = new InstructionSelectionFragment();
+    fragment.setArguments(requireArguments());
 
+    getChildFragmentManager().beginTransaction().add(R.id.instruction_selection_container, fragment).commit();
+    getChildFragmentManager().executePendingTransactions();
 
     mViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       Timber.i("Updating ViewState for instructions starting %s", viewState.instructions.startDate);

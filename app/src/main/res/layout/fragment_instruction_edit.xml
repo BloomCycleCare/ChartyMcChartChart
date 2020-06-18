@@ -5,61 +5,60 @@
     android:layout_height="match_parent"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-<androidx.constraintlayout.widget.ConstraintLayout
-    android:orientation="vertical"
-android:layout_width="match_parent"
-android:layout_height="700dp"
-android:padding="20dp">
-
-<TextView
-    android:text="Start Date:"
-    android:id="@+id/tv_start_date_header"
-    app:layout_constraintTop_toTopOf="parent"
-    app:layout_constraintStart_toStartOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:textStyle="bold"
-    />
-<TextView
-    android:text="6 Nov 2910"
-    android:id="@+id/tv_start_date"
-    app:layout_constraintTop_toTopOf="@id/tv_start_date_header"
-    app:layout_constraintBottom_toBottomOf="@id/tv_start_date_header"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    />
-
-<TextView
-    android:text="Status:"
-    android:id="@+id/tv_status_header"
-    app:layout_constraintTop_toBottomOf="@id/tv_start_date_header"
-    app:layout_constraintStart_toStartOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_marginTop="20dp"
-    android:textStyle="bold"
-    />
-<TextView
-    android:text="Active"
-    android:id="@+id/tv_status"
-    app:layout_constraintTop_toTopOf="@id/tv_status_header"
-    app:layout_constraintBottom_toBottomOf="@id/tv_status_header"
-    app:layout_constraintEnd_toEndOf="parent"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    />
-
-    <androidx.fragment.app.FragmentContainerView
-        android:id="@+id/instruction_selection_container"
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:paddingTop="20dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_status"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:layout_editor_absoluteX="20dp" />
+        android:layout_height="700dp"
+        android:padding="20dp">
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:text="Start Date:"
+            android:id="@+id/tv_start_date_header"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            />
+        <TextView
+            android:text="6 Nov 2910"
+            android:id="@+id/tv_start_date"
+            app:layout_constraintTop_toTopOf="@id/tv_start_date_header"
+            app:layout_constraintBottom_toBottomOf="@id/tv_start_date_header"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            />
+
+        <TextView
+            android:text="Status:"
+            android:id="@+id/tv_status_header"
+            app:layout_constraintTop_toBottomOf="@id/tv_start_date_header"
+            app:layout_constraintStart_toStartOf="parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:textStyle="bold"
+            />
+        <TextView
+            android:text="Active"
+            android:id="@+id/tv_status"
+            app:layout_constraintTop_toTopOf="@id/tv_status_header"
+            app:layout_constraintBottom_toBottomOf="@id/tv_status_header"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            />
+
+        <androidx.fragment.app.FragmentContainerView
+            android:id="@+id/instruction_selection_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tv_status"
+            app:layout_constraintBottom_toBottomOf="parent"
+            tools:layout_editor_absoluteX="20dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.core.widget.NestedScrollView>

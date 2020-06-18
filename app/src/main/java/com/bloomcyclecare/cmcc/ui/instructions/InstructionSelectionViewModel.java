@@ -252,7 +252,6 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
   }
 
   static class Factory implements ViewModelProvider.Factory {
-
     private final Application application;
     private final Instructions instructions;
 
@@ -264,7 +263,11 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new InstructionSelectionViewModel(application, instructions.startDate, instructions);
+      LocalDate startDate = null;
+      if (instructions != null) {
+        startDate = instructions.startDate;
+      }
+      return (T) new InstructionSelectionViewModel(application, startDate, instructions);
     }
   }
 }
