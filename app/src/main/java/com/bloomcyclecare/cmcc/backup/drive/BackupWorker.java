@@ -4,7 +4,6 @@ import android.content.Context;
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
-import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.api.client.http.FileContent;
 import com.google.common.base.Charsets;

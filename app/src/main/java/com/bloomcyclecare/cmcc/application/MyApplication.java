@@ -9,7 +9,7 @@ import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
-import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
