@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 import android.os.Bundle;
 import android.view.ViewGroup;
 
-import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.utils.SmartFragmentStatePagerAdapter;
 import com.google.common.collect.Iterables;

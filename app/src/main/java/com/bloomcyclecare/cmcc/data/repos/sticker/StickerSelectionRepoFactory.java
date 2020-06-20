@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.sticker;
 
-import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;

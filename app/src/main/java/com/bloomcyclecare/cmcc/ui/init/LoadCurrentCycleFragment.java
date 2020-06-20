@@ -13,8 +13,8 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;

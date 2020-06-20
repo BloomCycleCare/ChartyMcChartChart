@@ -5,8 +5,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;

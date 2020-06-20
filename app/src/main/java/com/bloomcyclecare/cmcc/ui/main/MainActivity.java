@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.Menu;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.google.android.material.navigation.NavigationView;
 
 import java.util.HashSet;

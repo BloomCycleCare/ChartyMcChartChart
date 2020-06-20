@@ -5,7 +5,6 @@ import android.content.Intent;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;

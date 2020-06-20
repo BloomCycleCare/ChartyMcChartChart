@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.backup;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.AppState;

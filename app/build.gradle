@@ -163,6 +163,5 @@ dependencies {
 
     implementation 'com.stepstone.stepper:material-stepper:4.3.1'
     implementation project(path: ':utils')
-    implementation project(path: ':core')
 
 }

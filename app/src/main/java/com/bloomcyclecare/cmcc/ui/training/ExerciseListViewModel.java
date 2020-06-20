@@ -2,8 +2,8 @@ package com.bloomcyclecare.cmcc.ui.training;
 
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.exercise.RWExerciseRepo;
 import com.google.auto.value.AutoValue;

@@ -2,8 +2,8 @@ package com.bloomcyclecare.cmcc.ui.init.ftue.steps;
 
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;

@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos;
 
-import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 
 import java.util.Optional;

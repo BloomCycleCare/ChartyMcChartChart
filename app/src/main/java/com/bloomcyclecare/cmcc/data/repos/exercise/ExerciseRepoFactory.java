@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.exercise;
 
-import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 

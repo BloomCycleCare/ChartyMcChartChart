@@ -3,8 +3,8 @@ package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 import android.app.Application;
 import android.util.Range;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
+import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
