@@ -43,6 +43,15 @@ task clean(type: Delete) {
 }
 
 ext {
+    compileSdkVersion = 28
+    minSdkVersion = 24
+    targetSdkVersion = 28
+
+    rxjavaVersion = "3.0.0"
+    timberVersion = "4.7.1"
+    jodaVersion = "2.9.4"
+    parcelerVersion = '1.1.12'
+    appCompatVersion = '1.1.0'
     guavaVersion = '28.0-android'
     supportLibraryVersion = '28.0.0'
     firebaseVersion = '11.8.0'
