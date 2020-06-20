@@ -3,8 +3,8 @@ package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 import android.app.Activity;
 import android.app.Application;
 
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.application.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;

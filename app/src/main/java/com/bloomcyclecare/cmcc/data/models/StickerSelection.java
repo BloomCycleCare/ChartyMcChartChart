@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.models;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
 import com.google.common.base.Objects;

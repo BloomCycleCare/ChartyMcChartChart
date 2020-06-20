@@ -11,7 +11,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.jakewharton.rxbinding2.view.RxView;

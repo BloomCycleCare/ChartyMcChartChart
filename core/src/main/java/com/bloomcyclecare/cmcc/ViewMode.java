@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.application;
+package com.bloomcyclecare.cmcc;
 
 public enum ViewMode {
   CHARTING, DEMO, TRAINING

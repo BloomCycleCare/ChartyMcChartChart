@@ -46,8 +46,10 @@ ext {
     compileSdkVersion = 28
     minSdkVersion = 24
     targetSdkVersion = 28
+    sourceCompatibility = "8"
+    targetCompatibility = "8"
 
-    rxjavaVersion = "3.0.0"
+    rxjava2Version = "2.2.19"
     timberVersion = "4.7.1"
     jodaVersion = "2.9.4"
     parcelerVersion = '1.1.12'

@@ -5,9 +5,9 @@ import android.app.Application;
 import android.content.Intent;
 import android.net.Uri;
 
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.application.ViewMode;
-import com.bloomcyclecare.cmcc.data.backup.AppStateExporter;
+import com.bloomcyclecare.cmcc.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.models.Exercise;
 import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;

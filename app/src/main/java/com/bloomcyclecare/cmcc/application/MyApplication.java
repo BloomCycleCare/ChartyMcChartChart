@@ -5,6 +5,7 @@ import android.content.Intent;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.data.models.Exercise;

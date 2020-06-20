@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.backup;
+package com.bloomcyclecare.cmcc.backup;
 
 import com.bloomcyclecare.cmcc.data.models.AppState;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;

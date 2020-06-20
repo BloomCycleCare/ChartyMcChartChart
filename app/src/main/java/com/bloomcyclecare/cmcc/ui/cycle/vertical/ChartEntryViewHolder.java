@@ -6,7 +6,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.application.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 
