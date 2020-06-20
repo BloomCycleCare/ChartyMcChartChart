@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.data.models;
 
-import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.models.observation.Observation;
 import com.google.common.base.Strings;
 
 import org.joda.time.LocalDate;

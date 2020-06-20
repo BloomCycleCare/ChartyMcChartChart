@@ -3,8 +3,9 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
 
@@ -57,9 +58,9 @@ public abstract class RenderedEntry {
 
     int resourceId = R.drawable.sticker_grey;
     if (hasNonEmptyManualSelection) {
-      resourceId = manualSelection.sticker.resourceId;
+      resourceId = StickerUtil.resourceId(manualSelection.sticker);
     } else if (viewMode != ViewMode.TRAINING && (autoStickeringEnabled || viewMode == ViewMode.DEMO)) {
-      resourceId = autoSelection.sticker.resourceId;
+      resourceId = StickerUtil.resourceId(autoSelection.sticker);
     }
 
     String stickerText = "";

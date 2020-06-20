@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.instructions;
 
 import com.google.common.collect.ImmutableSet;
 

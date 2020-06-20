@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.models;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 

@@ -1,15 +1,9 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
-import androidx.room.TypeConverters;
-
 import com.bloomcyclecare.cmcc.data.db.Converters;
-import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
-import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
-import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
 
@@ -20,6 +14,12 @@ import org.parceler.ParcelConstructor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.PrimaryKey;
+import androidx.room.TypeConverters;
 
 @Parcel
 @Entity

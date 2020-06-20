@@ -5,7 +5,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
 import com.jakewharton.rxbinding2.widget.RxCompoundButton;
 
 import androidx.annotation.NonNull;

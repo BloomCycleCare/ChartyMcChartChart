@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.observation;
 
 public enum IntercourseTimeOfDay {
   NONE("None"), ANY("Any time of day"), END("End of day");

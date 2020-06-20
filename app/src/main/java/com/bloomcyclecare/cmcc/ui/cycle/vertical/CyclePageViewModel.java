@@ -6,9 +6,9 @@ import android.app.Application;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.application.MyApplication;
 import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.google.common.collect.ImmutableList;
 

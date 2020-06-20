@@ -2,7 +2,7 @@ package com.bloomcyclecare.cmcc.data.repos.sticker;
 
 import android.util.Range;
 
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.google.auto.value.AutoValue;
 
 import org.joda.time.LocalDate;

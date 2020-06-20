@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;

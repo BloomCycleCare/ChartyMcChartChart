@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.instructions;
 
 public enum YellowStampInstruction implements AbstractInstruction {
   YS_1_A(1, 'a', "Menstrual flow"),

@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/CMCC.iml" filepath="$PROJECT_DIR$/CMCC.iml" group="CMCC" />
       <module fileurl="file://$PROJECT_DIR$/ChartyMcChartChart.iml" filepath="$PROJECT_DIR$/ChartyMcChartChart.iml" group="ChartyMcChartChart" />
+      <module fileurl="file://$PROJECT_DIR$/core/ChartyMcChartChart-core.iml" filepath="$PROJECT_DIR$/core/ChartyMcChartChart-core.iml" group="ChartyMcChartChart/core" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" group="ChartyMcChartChart/app" />
       <module fileurl="file://$PROJECT_DIR$/core/core.iml" filepath="$PROJECT_DIR$/core/core.iml" group="ChartyMcChartChart/core" />
       <module fileurl="file://$PROJECT_DIR$/utils/utils.iml" filepath="$PROJECT_DIR$/utils/utils.iml" group="ChartyMcChartChart/utils" />

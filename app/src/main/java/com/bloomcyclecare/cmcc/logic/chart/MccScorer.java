@@ -2,10 +2,10 @@ package com.bloomcyclecare.cmcc.logic.chart;
 
 import android.util.Log;
 
-import com.bloomcyclecare.cmcc.data.domain.DischargeType;
-import com.bloomcyclecare.cmcc.data.domain.MucusModifier;
-import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.observation.DischargeType;
+import com.bloomcyclecare.cmcc.models.observation.MucusModifier;
+import com.bloomcyclecare.cmcc.models.observation.Observation;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
 import org.joda.time.LocalDate;

@@ -5,11 +5,11 @@ import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;

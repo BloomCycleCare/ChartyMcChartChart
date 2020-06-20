@@ -1,16 +1,17 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
-import com.bloomcyclecare.cmcc.data.domain.AbstractInstruction;
-import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
-import com.bloomcyclecare.cmcc.data.domain.Flow;
-import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.domain.Observation;
-import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
-import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.models.instructions.AbstractInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.models.observation.Flow;
+import com.bloomcyclecare.cmcc.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.models.observation.Observation;
+import com.bloomcyclecare.cmcc.models.stickering.StickerColor;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;

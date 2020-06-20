@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.instructions;
 
 public enum SpecialInstruction implements AbstractInstruction {
   BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS("Yellow stamps for seminal fluid while breastfeeding."),

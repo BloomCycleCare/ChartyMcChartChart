@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.entry;
 
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
 import com.google.common.base.Objects;
 
 import androidx.annotation.Nullable;

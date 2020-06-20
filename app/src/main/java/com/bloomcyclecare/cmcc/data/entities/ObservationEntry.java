@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.data.entities;
 
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
-import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.domain.Observation;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.models.observation.Observation;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.google.common.base.Objects;
 

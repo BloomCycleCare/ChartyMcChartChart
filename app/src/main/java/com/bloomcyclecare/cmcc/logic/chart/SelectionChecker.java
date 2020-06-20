@@ -1,6 +1,9 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
+import com.bloomcyclecare.cmcc.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.models.stickering.StickerColor;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.models.stickering.StickerText;
 
 import java.util.Optional;
 
@@ -52,7 +55,7 @@ public class SelectionChecker {
       return Optional.empty();
     }
     if (selection.sticker != expected.sticker) {
-      if (selection.sticker == StickerSelection.Sticker.RED) {
+      if (selection.sticker == Sticker.RED) {
         return Optional.of(Reason.RED_ONLY_ON_DAYS_OF_BLEEDING);
       }
       if (selection.sticker.color == StickerColor.GREEN) {
@@ -61,7 +64,7 @@ public class SelectionChecker {
         }
         return Optional.of(Reason.GREEN_ONLY_ON_DRY_DAY_OUTSIDE_COUNT);
       }
-      if (selection.sticker == StickerSelection.Sticker.WHITE_BABY) {
+      if (selection.sticker == Sticker.WHITE_BABY) {
         return Optional.of(Reason.WHITE_BABY_ONLY_ON_DAYS_OF_MUCUS);
       }
       if (selection.sticker.color == StickerColor.YELLOW) {
@@ -90,21 +93,21 @@ public class SelectionChecker {
       return Optional.empty();
     }
     if (selection.sticker != expected.sticker) {
-      if (expected.sticker == StickerSelection.Sticker.RED) {
+      if (expected.sticker == Sticker.RED) {
         return Optional.of(Hint.ALWAYS_RED_ON_DAYS_OF_BLEEDING);
       }
-      if (expected.sticker == StickerSelection.Sticker.GREEN_BABY) {
+      if (expected.sticker == Sticker.GREEN_BABY) {
         return Optional.of(Hint.ALWAYS_GREEN_BABY_ON_DRY_DAYS_WITHIN_COUNT);
       }
-      if (expected.sticker == StickerSelection.Sticker.GREEN) {
+      if (expected.sticker == Sticker.GREEN) {
         return Optional.of(Hint.ALWAYS_GREEN_ON_DRY_DAYS_WITHOUT_COUNT);
       }
-      if (expected.sticker == StickerSelection.Sticker.WHITE_BABY) {
+      if (expected.sticker == Sticker.WHITE_BABY) {
         return Optional.of(Hint.ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS);
       }
       // TODO: implement yellow stamp logic
     }
-    if (expected.text == StickerSelection.Text.P) {
+    if (expected.text == StickerText.P) {
       return Optional.of(Hint.ALWAYS_P_ON_PEAK_DAY);
     }
     return Optional.empty();

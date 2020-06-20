@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.observation;
 
 import android.os.Parcel;
 import android.os.Parcelable;

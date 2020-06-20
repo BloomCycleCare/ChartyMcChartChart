@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.logic.chart;
+package com.bloomcyclecare.cmcc.models.stickering;
 
 import com.bloomcyclecare.cmcc.R;
 

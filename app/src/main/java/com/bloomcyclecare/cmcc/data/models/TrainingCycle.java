@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.models;
 
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.logic.chart.StickerColor;
+import com.bloomcyclecare.cmcc.models.stickering.StickerColor;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.LinkedHashMap;

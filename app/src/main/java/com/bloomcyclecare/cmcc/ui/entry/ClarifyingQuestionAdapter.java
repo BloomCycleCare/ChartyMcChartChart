@@ -6,7 +6,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
 
 import java.util.ArrayList;
 import java.util.HashSet;

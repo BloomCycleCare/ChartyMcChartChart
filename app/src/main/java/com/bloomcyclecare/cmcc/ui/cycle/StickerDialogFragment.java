@@ -13,8 +13,11 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
+import com.bloomcyclecare.cmcc.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
 import org.parceler.Parcels;
@@ -120,17 +123,17 @@ public class StickerDialogFragment extends DialogFragment {
 
     Observable.combineLatest(
         RxAdapterView.itemSelections(stickerSpinner)
-            .map(index -> StickerSelection.Sticker.values()[index]),
+            .map(index -> Sticker.values()[index]),
         RxAdapterView.itemSelections(textSpinner)
             .map(index -> {
               if (viewMode == ViewMode.TRAINING) {
-                return Optional.<StickerSelection.Text>empty();
+                return Optional.<StickerText>empty();
               }
               if (index == 0) {
-                return Optional.<StickerSelection.Text>empty();
+                return Optional.<StickerText>empty();
               }
               String spinnerText = requireContext().getResources().getStringArray(R.array.sticker_text)[index];
-              StickerSelection.Text t = StickerSelection.Text.fromString(spinnerText);
+              StickerText t = StickerText.fromString(spinnerText);
               if (t == null) {
                 Timber.w("Unexpected null value for sticker text: %s", spinnerText);
               }
@@ -154,7 +157,7 @@ public class StickerDialogFragment extends DialogFragment {
         });
 
     mDisposables.add(selectionSubject.distinctUntilChanged().subscribe(selection -> {
-      stickerTextView.setBackground(requireContext().getDrawable(selection.sticker.resourceId));
+      stickerTextView.setBackground(requireContext().getDrawable(StickerUtil.resourceId(selection.sticker)));
       stickerTextView.setText(selection.text != null ? String.valueOf(selection.text.value) : "");
       if (previousSelection.isPresent() && expectedSelection.isPresent()) {
         SelectionChecker.Result result = SelectionChecker.check(previousSelection.get(), expectedSelection.get());

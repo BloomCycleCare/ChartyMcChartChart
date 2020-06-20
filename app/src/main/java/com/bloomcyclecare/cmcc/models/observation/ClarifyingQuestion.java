@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
+package com.bloomcyclecare.cmcc.models.observation;
 
 public enum ClarifyingQuestion {
   ESSENTIAL_SAMENESS("Essentially the same?", "Is today essentially the same as yesterday?"),

@@ -2,12 +2,12 @@ package com.bloomcyclecare.cmcc.ui.entry;
 
 
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
-import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.models.observation.IntercourseTimeOfDay;
 import com.google.common.collect.Iterables;
 
 import org.joda.time.LocalDate;

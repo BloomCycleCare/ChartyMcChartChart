@@ -1,14 +1,14 @@
 package com.bloomcyclecare.cmcc.renderer;
 
-import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
-import com.bloomcyclecare.cmcc.data.domain.SpecialInstruction;
-import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.models.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;

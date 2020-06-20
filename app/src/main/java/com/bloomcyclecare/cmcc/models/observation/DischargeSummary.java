@@ -1,7 +1,4 @@
-package com.bloomcyclecare.cmcc.data.domain;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
+package com.bloomcyclecare.cmcc.models.observation;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -16,6 +13,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 /**
  * Created by parkeroth on 4/24/17.

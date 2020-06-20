@@ -12,9 +12,9 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.domain.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;

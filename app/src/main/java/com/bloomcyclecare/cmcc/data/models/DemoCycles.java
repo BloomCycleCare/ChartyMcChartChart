@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.data.models;
 
-import com.bloomcyclecare.cmcc.data.domain.BasicInstruction;
-import com.bloomcyclecare.cmcc.data.domain.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;

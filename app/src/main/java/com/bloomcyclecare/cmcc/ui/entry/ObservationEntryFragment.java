@@ -15,9 +15,9 @@ import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.application.MyApplication;
-import com.bloomcyclecare.cmcc.data.domain.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.domain.Observation;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
+import com.bloomcyclecare.cmcc.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.models.observation.Observation;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
