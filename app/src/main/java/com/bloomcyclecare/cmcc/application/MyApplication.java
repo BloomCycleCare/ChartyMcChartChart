@@ -32,7 +32,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
@@ -97,7 +96,6 @@ public class MyApplication extends Application {
     super.onCreate();
     FirebaseApp.initializeApp(this);
     //FirebaseDatabase.getInstance().setPersistenceEnabled(true);
-    Security.addProvider(new BouncyCastleProvider());
     PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
 
     if (BuildConfig.DEBUG) {

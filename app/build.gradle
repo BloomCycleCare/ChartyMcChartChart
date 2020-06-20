@@ -79,7 +79,6 @@ dependencies {
     api "com.google.guava:guava:$rootProject.ext.guavaVersion"
     implementation "joda-time:joda-time:$rootProject.ext.jodaVersion"
 
-    implementation "org.bouncycastle:bcprov-jdk16:1.46"
     implementation "commons-codec:commons-codec:1.10"
 
     implementation 'com.google.android.material:material:1.1.0'

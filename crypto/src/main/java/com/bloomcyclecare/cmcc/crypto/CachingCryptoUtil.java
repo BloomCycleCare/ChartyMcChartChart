@@ -1,7 +1,5 @@
 package com.bloomcyclecare.cmcc.crypto;
 
-import android.util.Log;
-
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
@@ -21,9 +19,6 @@ import io.reactivex.functions.Function;
 
 public class CachingCryptoUtil implements CryptoUtil {
 
-  private static final boolean DEBUG = false;
-  private static final String TAG = CachingCryptoUtil.class.getSimpleName();
-
   private static final Cache<Integer, Object> OBJECT_CACHE =
       CacheBuilder.newBuilder().maximumSize(100).build();
 
@@ -41,7 +36,6 @@ public class CachingCryptoUtil implements CryptoUtil {
   public <T extends Cipherable> Single<T> decrypt(final String encryptedStr, SecretKey key, Class<T> clazz) {
     Object cachedObject = OBJECT_CACHE.getIfPresent(encryptedStr.hashCode());
     if (cachedObject != null) {
-      if (DEBUG) Log.v(TAG, "Served " + clazz.getName() + " from local cache");
       return Single.just((T) cachedObject);
     }
     return mDelegate.decrypt(encryptedStr, key, clazz).doOnSuccess(new Consumer<T>() {

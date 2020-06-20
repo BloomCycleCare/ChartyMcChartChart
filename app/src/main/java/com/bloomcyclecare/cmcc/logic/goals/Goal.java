@@ -1,7 +1,6 @@
 package com.bloomcyclecare.cmcc.logic.goals;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.crypto.Cipherable;
 
 import javax.crypto.SecretKey;
 
@@ -11,7 +10,7 @@ import androidx.annotation.NonNull;
  * Created by parkeroth on 2/28/18.
  */
 
-public class Goal implements Cipherable, Comparable<Goal> {
+public class Goal implements Comparable<Goal> {
 
   public transient String id;
   public transient Status status = Status.UNKNOWN;
@@ -26,21 +25,6 @@ public class Goal implements Cipherable, Comparable<Goal> {
 
   public GoalModel model() {
     return mModel;
-  }
-
-  @Override
-  public SecretKey getKey() {
-    return mKey;
-  }
-
-  @Override
-  public void swapKey(SecretKey key) {
-    mKey = key;
-  }
-
-  @Override
-  public boolean hasKey() {
-    return mKey != null;
   }
 
   public boolean isActive() {

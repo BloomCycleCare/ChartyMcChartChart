@@ -1,7 +1,5 @@
 package com.bloomcyclecare.cmcc.crypto;
 
-import android.util.Base64;
-
 import java.security.AlgorithmParameters;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -10,6 +8,7 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.InvalidParameterSpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
@@ -70,11 +69,11 @@ public class PbeCryptoUtil {
     AlgorithmParameters algParams = getAlgParams(params);
     EncryptedPrivateKeyInfo encInfo = new EncryptedPrivateKeyInfo(algParams, cipherBytes);
 
-    return Base64.encodeToString(encInfo.getEncoded(), Base64.NO_WRAP);
+    return Base64.getEncoder().encodeToString(encInfo.getEncoded());
   }
 
   public static PrivateKey unwrapPrivateKey(String password, String cipherText) throws Exception {
-    byte[] infoBytes = Base64.decode(cipherText, Base64.NO_WRAP);
+    byte[] infoBytes = Base64.getDecoder().decode(cipherText);
     EncryptedPrivateKeyInfo encInfo = new EncryptedPrivateKeyInfo(infoBytes);
     PBEParameterSpec parameterSpec =
         encInfo.getAlgParameters().getParameterSpec(PBEParameterSpec.class);

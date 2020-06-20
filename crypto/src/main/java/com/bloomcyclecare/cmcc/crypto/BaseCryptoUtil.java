@@ -1,10 +1,9 @@
 package com.bloomcyclecare.cmcc.crypto;
 
-import android.util.Log;
-
-import com.bloomcyclecare.cmcc.utils.GsonUtil;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -23,8 +22,7 @@ import io.reactivex.functions.Function;
 
 public class BaseCryptoUtil implements CryptoUtil {
 
-  private static final boolean DEBUG = false;
-  private static final String TAG = BaseCryptoUtil.class.getSimpleName();
+  private static final Gson GSON = new GsonBuilder().create();
 
   private final PrivateKey mPrivateKey;
   private final PublicKey mPublicKey;
@@ -39,12 +37,12 @@ public class BaseCryptoUtil implements CryptoUtil {
 
   @Override
   public <T extends Cipherable> Single<T> decrypt(String encryptedStr, final SecretKey key, final Class<T> clazz) {
-    if (DEBUG) Log.v(TAG, "Decrypting " + clazz.getSimpleName());
     return AesCryptoUtil.decryptRx(key, encryptedStr)
         .map(new Function<String, T>() {
           @Override
           public T apply(String decryptedStr) throws Exception {
-            T t = GsonUtil.getGsonInstance().fromJson(decryptedStr, clazz);
+
+            T t = GSON.fromJson(decryptedStr, clazz);
             t.swapKey(key);
             return t;
           }
@@ -53,7 +51,7 @@ public class BaseCryptoUtil implements CryptoUtil {
 
   @Override
   public Single<String> encrypt(Cipherable cipherable) {
-    return AesCryptoUtil.encryptRx(cipherable.getKey(), GsonUtil.getGsonInstance().toJson(cipherable));
+    return AesCryptoUtil.encryptRx(cipherable.getKey(), GSON.toJson(cipherable));
   }
 
   @Override

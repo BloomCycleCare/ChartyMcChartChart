@@ -1,6 +1,5 @@
 package com.bloomcyclecare.cmcc.data.db;
 
-import com.bloomcyclecare.cmcc.crypto.AesCryptoUtil;
 import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
@@ -60,16 +59,6 @@ public class Converters {
   @TypeConverter
   public String fromTimeOfDay(IntercourseTimeOfDay in) {
     return in.name();
-  }
-
-  @TypeConverter
-  public String fromSecretKey(SecretKey key) {
-    return AesCryptoUtil.serializeKey(key);
-  }
-
-  @TypeConverter
-  public SecretKey fromString(String in) {
-    return AesCryptoUtil.parseKey(in);
   }
 
   @TypeConverter

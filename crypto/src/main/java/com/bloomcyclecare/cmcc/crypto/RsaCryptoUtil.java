@@ -1,7 +1,5 @@
 package com.bloomcyclecare.cmcc.crypto;
 
-import android.util.Base64;
-
 import com.google.common.base.Strings;
 
 import org.bouncycastle.asn1.x509.X509Name;
@@ -20,6 +18,7 @@ import java.security.cert.Certificate;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Date;
 import java.util.concurrent.Callable;
 
@@ -57,7 +56,7 @@ public class RsaCryptoUtil {
         cipherOutputStream.close();
 
         byte[] vals = outputStream.toByteArray();
-        return Base64.encodeToString(vals, Base64.NO_WRAP);
+        return Base64.getEncoder().encodeToString(vals);
       }
     };
   }
@@ -71,7 +70,7 @@ public class RsaCryptoUtil {
       output.init(Cipher.DECRYPT_MODE, privateKey);
 
       CipherInputStream cipherInputStream = new CipherInputStream(
-          new ByteArrayInputStream(Base64.decode(cipherText, Base64.NO_WRAP)), output);
+          new ByteArrayInputStream(Base64.getDecoder().decode(cipherText)), output);
       ArrayList<Byte> values = new ArrayList<>();
       int nextByte;
       while ((nextByte = cipherInputStream.read()) != -1) {
@@ -108,13 +107,13 @@ public class RsaCryptoUtil {
       @Override
       public String call() throws Exception {
         X509EncodedKeySpec keySpec = new X509EncodedKeySpec(key.getEncoded());
-        return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
+        return Base64.getEncoder().encodeToString(keySpec.getEncoded());
       }
     };
   }
 
   public static PublicKey parsePublicKey(String keyStr) throws Exception {
-    byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
+    byte[] encodedKey = Base64.getDecoder().decode(keyStr);
     X509EncodedKeySpec keySpec = new X509EncodedKeySpec(encodedKey);
     KeyFactory factory = KeyFactory.getInstance("RSA");
     return factory.generatePublic(keySpec);
@@ -122,11 +121,11 @@ public class RsaCryptoUtil {
 
   public static String serializePrivateKey(PrivateKey key) throws Exception {
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(key.getEncoded());
-    return Base64.encodeToString(keySpec.getEncoded(), Base64.NO_WRAP);
+    return Base64.getEncoder().encodeToString(keySpec.getEncoded());
   }
 
   public static PrivateKey parsePrivateKey(String keyStr) throws Exception {
-    byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
+    byte[] encodedKey = Base64.getDecoder().decode(keyStr);
     PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(encodedKey);
     KeyFactory factory = KeyFactory.getInstance("RSA");
     return factory.generatePrivate(keySpec);

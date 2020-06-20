@@ -1,13 +1,12 @@
 package com.bloomcyclecare.cmcc.crypto;
 
-import android.util.Base64;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -48,11 +47,11 @@ public class AesCryptoUtil {
       public void subscribe(SingleEmitter<String> e) throws Exception {
         Cipher cipher = Cipher.getInstance(ALG);
         IvParameterSpec iv = new IvParameterSpec(createKey().getEncoded());
-        String ivStr = Base64.encodeToString(iv.getIV(), Base64.NO_WRAP);
+        String ivStr = Base64.getEncoder().encodeToString(iv.getIV());
         cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
 
         byte[] cipherBytes = cipher.doFinal(decryptedStr.getBytes(Charsets.UTF_8));
-        String cipherStr = Base64.encodeToString(cipherBytes, Base64.NO_WRAP);
+        String cipherStr = Base64.getEncoder().encodeToString(cipherBytes);
 
         e.onSuccess(ON_BAR.join(ivStr, cipherStr));
       }
@@ -65,8 +64,8 @@ public class AesCryptoUtil {
       public void subscribe(SingleEmitter<String> e) throws Exception {
         Preconditions.checkArgument(!Strings.isNullOrEmpty(encryptedStr));
         String[] parts = encryptedStr.split("\\|");
-        IvParameterSpec iv = new IvParameterSpec(Base64.decode(parts[0], Base64.NO_WRAP));
-        byte[] cipherBytes = Base64.decode(parts[1], Base64.NO_WRAP);
+        IvParameterSpec iv = new IvParameterSpec(Base64.getDecoder().decode(parts[0]));
+        byte[] cipherBytes = Base64.getDecoder().decode(parts[1]);
 
         Cipher cipher = Cipher.getInstance(ALG);
         cipher.init(Cipher.DECRYPT_MODE, new SecretKeySpec(key.getEncoded(), "AES"), iv);
@@ -92,7 +91,7 @@ public class AesCryptoUtil {
     return new Function<SecretKey, String>() {
       @Override
       public String apply(@NonNull SecretKey key) throws Exception {
-        return Base64.encodeToString(key.getEncoded(), Base64.NO_WRAP);
+        return Base64.getEncoder().encodeToString(key.getEncoded());
       }
     };
   }
@@ -110,7 +109,7 @@ public class AesCryptoUtil {
     return new Function<String, SecretKey>() {
       @Override
       public SecretKey apply(@NonNull String keyStr) throws Exception {
-        byte[] encodedKey = Base64.decode(keyStr, Base64.NO_WRAP);
+        byte[] encodedKey = Base64.getDecoder().decode(keyStr);
         return new SecretKeySpec(encodedKey, "AES");
       }
     };

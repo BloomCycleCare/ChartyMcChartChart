@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    api "com.google.guava:guava:$rootProject.ext.guavaVersion"
+    implementation "io.reactivex.rxjava2:rxjava:$rootProject.ext.rxjava2Version"
+    implementation "org.bouncycastle:bcprov-jdk16:1.46"
+    implementation "com.google.code.gson:gson:2.8.5"
+}
+
+sourceCompatibility = "8"
+targetCompatibility = "8"
