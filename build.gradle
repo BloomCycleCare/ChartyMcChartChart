@@ -46,8 +46,8 @@ ext {
     compileSdkVersion = 28
     minSdkVersion = 24
     targetSdkVersion = 28
-    sourceCompatibility = "8"
-    targetCompatibility = "8"
+    sourceCompatibility = JavaVersion.VERSION_1_8
+    targetCompatibility = JavaVersion.VERSION_1_8
 
     rxjava2Version = "2.2.19"
     timberVersion = "4.7.1"
@@ -57,4 +57,5 @@ ext {
     guavaVersion = '28.0-android'
     supportLibraryVersion = '28.0.0'
     firebaseVersion = '11.8.0'
+    navVersion = "2.3.0-alpha06"
 }
