@@ -13,7 +13,7 @@ import android.os.IBinder;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;

@@ -14,7 +14,7 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;

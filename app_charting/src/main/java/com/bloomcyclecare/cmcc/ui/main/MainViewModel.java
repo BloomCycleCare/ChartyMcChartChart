@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.ui.main;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;

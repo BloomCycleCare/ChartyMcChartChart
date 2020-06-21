@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.ui.init.ftue.steps;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableMap;

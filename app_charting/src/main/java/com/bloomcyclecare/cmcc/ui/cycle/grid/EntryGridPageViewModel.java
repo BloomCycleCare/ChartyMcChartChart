@@ -3,7 +3,9 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
@@ -88,7 +90,8 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             if (re.manualStickerSelection().isPresent()) {
               if (SelectionChecker.check(
                   re.manualStickerSelection().get(),
-                  StickerSelection.fromRenderableEntry(re, viewState.viewMode()))
+                  StickerSelection.create(Sticker.fromStickerColor(re.backgroundColor(), re.showBaby()),
+                      viewState.viewMode() == ViewMode.TRAINING ? null : StickerText.fromString(re.peakDayText())))
                   .ok()) {
                 entriesWithCorrectAnswer++;
               }

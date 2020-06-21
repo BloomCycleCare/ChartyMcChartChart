@@ -9,7 +9,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;

@@ -1,11 +1,11 @@
 package com.bloomcyclecare.cmcc.logic;
 
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.data.models.observation.DischargeType;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.Occurrences;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
@@ -210,7 +210,7 @@ public class ObservationTest {
   }
 
   private Observation createAndTestToString(String observationStr) throws Exception {
-    Observation observation = ObservationParser.parse(observationStr).orNull();
+    Observation observation = ObservationParser.parse(observationStr).orElse(null);
     assertEquals(observationStr, observation.toString().replace(" ", ""));
     return observation;
   }

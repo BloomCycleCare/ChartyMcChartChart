@@ -3,19 +3,19 @@ package com.bloomcyclecare.cmcc.ui.entry;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
-import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
-import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
-import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -89,7 +89,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .distinctUntilChanged()
         .map(observationStr -> {
           try {
-            return ErrorOr.forValue(ObservationParser.parse(observationStr).orNull());
+            return ErrorOr.forValue(ObservationParser.parse(observationStr).orElse(null));
           } catch (ObservationParser.InvalidObservationException ioe) {
             return ErrorOr.forError(ioe);
           }

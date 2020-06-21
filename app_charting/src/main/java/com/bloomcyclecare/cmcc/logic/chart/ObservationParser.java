@@ -8,7 +8,6 @@ import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.Occurrences;
 import com.bloomcyclecare.cmcc.utils.StringUtil;
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -19,6 +18,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
@@ -35,7 +35,7 @@ public class ObservationParser {
   @NonNull
   public static Optional<Observation> parse(String input) throws InvalidObservationException {
     if (Strings.isNullOrEmpty(input)) {
-      return Optional.absent();
+      return Optional.empty();
     }
 
     String sanitizedObservation = input.toUpperCase().replace(" ", "");

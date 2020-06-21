@@ -2,12 +2,12 @@ package com.bloomcyclecare.cmcc.ui.entry;
 
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.collect.Iterables;
 
 import org.joda.time.LocalDate;
@@ -87,7 +87,7 @@ public class EntryDetailViewModelTest {
   @Test
   public void testAskEssentialSamenessQuestion() throws Exception {
     mContext.shouldAskEssentialSamenessIfMucus = true;
-    mContext.entry.observationEntry.observation = ObservationParser.parse("6CX1").orNull();
+    mContext.entry.observationEntry.observation = ObservationParser.parse("6CX1").orElse(null);
     assertThat(mContext.entry.observationEntry.hasMucus()).isTrue();
     initModel();
 

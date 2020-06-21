@@ -5,12 +5,14 @@ import android.content.Intent;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.ViewModelFactory;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
@@ -25,6 +27,7 @@ import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.notifications.ChartingReceiver;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -114,7 +117,14 @@ public class ChartingApp extends Application {
     mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(db, FALLBACK_VIEW_MODE);
     mExerciseRepoFactory = new ExerciseRepoFactory(FALLBACK_VIEW_MODE);
     mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
-    mChartEntryRepoFactory = new ChartEntryRepoFactory(db, mStickerSelectionRepoFactory, FALLBACK_VIEW_MODE);
+    mChartEntryRepoFactory = new ChartEntryRepoFactory(db, mStickerSelectionRepoFactory, FALLBACK_VIEW_MODE, (observation) -> {
+      try {
+        return ObservationParser.parse(observation);
+      } catch (ObservationParser.InvalidObservationException ioe) {
+        Timber.w(ioe );
+        return java.util.Optional.empty();
+      }
+    });
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
 
