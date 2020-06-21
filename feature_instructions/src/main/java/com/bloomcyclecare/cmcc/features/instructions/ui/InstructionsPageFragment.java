@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.instructions;
+package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -6,8 +6,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.features.instructions.R;
 
 import org.parceler.Parcels;
 

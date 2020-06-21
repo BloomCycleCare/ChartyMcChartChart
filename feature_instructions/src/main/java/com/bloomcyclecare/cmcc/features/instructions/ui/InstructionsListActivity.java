@@ -1,12 +1,12 @@
-package com.bloomcyclecare.cmcc.ui.instructions;
+package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 
-import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.features.instructions.R;
 import com.google.common.base.Optional;
 
 import org.joda.time.LocalDate;
@@ -41,7 +41,7 @@ public class InstructionsListActivity extends AppCompatActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    setContentView(R.layout.activity_appointment_list);
+    setContentView(R.layout.activity_instructions_list);
 
     mViewModel = ViewModelProviders.of(this).get(InstructionsListViewModel.class);
 

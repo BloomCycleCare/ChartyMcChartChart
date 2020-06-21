@@ -14,6 +14,7 @@ import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ChartEntryRepoFactory;
@@ -60,7 +61,7 @@ import timber.log.Timber;
  * Created by parkeroth on 5/15/17.
  */
 
-public class ChartingApp extends Application {
+public class ChartingApp extends Application implements DataRepos {
 
   private static final ViewMode FALLBACK_VIEW_MODE = ViewMode.CHARTING;
 
@@ -221,6 +222,7 @@ public class ChartingApp extends Application {
     return mDriveSubject;
   }
 
+  @Override
   public RWInstructionsRepo instructionsRepo(ViewMode viewMode) {
     return mInstructionsRepoFactory.forViewMode(viewMode);
   }
@@ -230,10 +232,12 @@ public class ChartingApp extends Application {
     return instructionsRepo(ViewMode.CHARTING);
   }
 
+  @Override
   public RWCycleRepo cycleRepo(ViewMode viewMode) {
     return mCycleRepoFactory.forViewMode(viewMode);
   }
 
+  @Override
   public RWCycleRepo cycleRepo(Exercise exercise) {
     return mCycleRepoFactory.forExercise(exercise);
   }
@@ -243,10 +247,12 @@ public class ChartingApp extends Application {
     return cycleRepo(ViewMode.CHARTING);
   }
 
+  @Override
   public RWChartEntryRepo entryRepo(ViewMode viewMode) {
     return mChartEntryRepoFactory.forViewMode(viewMode);
   }
 
+  @Override
   public RWChartEntryRepo entryRepo(Exercise exercise) {
     return mChartEntryRepoFactory.forExercise(exercise);
   }
@@ -260,18 +266,22 @@ public class ChartingApp extends Application {
     return mPreferenceRepo;
   }
 
+  @Override
   public RWPregnancyRepo pregnancyRepo(ViewMode viewMode) {
     return mPregnancyRepoFactory.forViewMode(viewMode);
   }
 
+  @Override
   public RWExerciseRepo exerciseRepo(ViewMode viewMode) {
     return mExerciseRepoFactory.forViewMode(viewMode);
   }
 
+  @Override
   public RWStickerSelectionRepo stickerSelectionRepo(ViewMode viewMode) {
     return mStickerSelectionRepoFactory.forViewMode(viewMode);
   }
 
+  @Override
   public RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise) {
     return mStickerSelectionRepoFactory.forExercise(exercise);
   }
@@ -283,6 +293,10 @@ public class ChartingApp extends Application {
 
   public ShowcaseManager showcaseManager() {
     return mShowcaseManager;
+  }
+
+  public static DataRepos dataRepos(Application app) {
+    return cast(app);
   }
 
   public static ChartingApp cast(Application app) {

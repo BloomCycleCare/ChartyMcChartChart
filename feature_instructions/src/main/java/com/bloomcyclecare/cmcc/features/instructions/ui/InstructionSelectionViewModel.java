@@ -1,10 +1,10 @@
-package com.bloomcyclecare.cmcc.ui.instructions;
+package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
@@ -54,7 +54,7 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
 
   public InstructionSelectionViewModel(@NonNull Application application, LocalDate startDate, @Nullable Instructions instructions) {
     super(application);
-    mInstructionsRepo = ChartingApp.cast(application).instructionsRepo(ViewMode.CHARTING);
+    mInstructionsRepo = DataRepos.fromApp(application).instructionsRepo(ViewMode.CHARTING);
 
     for (BasicInstruction basicInstruction : BasicInstruction.values()) {
       instructionStates.put(basicInstruction, BehaviorSubject.create());

@@ -74,7 +74,7 @@
             android:name=".ui.profile.ProfileActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".ui.instructions.InstructionsListActivity"
+            android:name=".features.instructions.ui.InstructionsListActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
         <provider

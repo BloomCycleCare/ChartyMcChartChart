@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthActivity;
-import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
+import com.bloomcyclecare.cmcc.utils.ui.SimpleArrayAdapter;
 import com.google.api.services.drive.model.File;
 
 import java.util.List;

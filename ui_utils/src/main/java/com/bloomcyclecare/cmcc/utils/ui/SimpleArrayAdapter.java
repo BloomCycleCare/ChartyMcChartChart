@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.utils;
+package com.bloomcyclecare.cmcc.utils.ui;
 
 import android.content.Context;
 import android.util.SparseArray;

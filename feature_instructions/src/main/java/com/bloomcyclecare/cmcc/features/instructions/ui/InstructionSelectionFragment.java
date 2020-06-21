@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.instructions;
+package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
@@ -8,13 +8,13 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.AbstractInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
-import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
+import com.bloomcyclecare.cmcc.features.instructions.R;
+import com.bloomcyclecare.cmcc.utils.ui.SimpleArrayAdapter;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;

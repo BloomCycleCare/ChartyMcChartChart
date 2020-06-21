@@ -9,7 +9,7 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.utils.RxPrompt;
-import com.bloomcyclecare.cmcc.utils.SimpleArrayAdapter;
+import com.bloomcyclecare.cmcc.utils.ui.SimpleArrayAdapter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

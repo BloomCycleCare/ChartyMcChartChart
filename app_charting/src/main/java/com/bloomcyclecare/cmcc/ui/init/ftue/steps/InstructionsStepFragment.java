@@ -8,7 +8,7 @@ import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
-import com.bloomcyclecare.cmcc.ui.instructions.InstructionSelectionFragment;
+import com.bloomcyclecare.cmcc.features.instructions.ui.InstructionSelectionFragment;
 import com.stepstone.stepper.BlockingStep;
 import com.stepstone.stepper.StepperLayout;
 import com.stepstone.stepper.VerificationError;

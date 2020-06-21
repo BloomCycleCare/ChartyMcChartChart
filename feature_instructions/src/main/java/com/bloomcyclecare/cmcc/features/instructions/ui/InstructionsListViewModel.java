@@ -1,10 +1,10 @@
-package com.bloomcyclecare.cmcc.ui.instructions;
+package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.google.common.base.Optional;
@@ -39,9 +39,9 @@ public class InstructionsListViewModel extends AndroidViewModel {
   public InstructionsListViewModel(@NonNull Application application) {
     super(application);
 
-    ChartingApp myApp = ChartingApp.cast(application);
-    mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
-    mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
+    DataRepos repos = DataRepos.fromApp(application);
+    mInstructionsRepo = repos.instructionsRepo(ViewMode.CHARTING);
+    mCycleRepo = repos.cycleRepo(ViewMode.CHARTING);
   }
 
   Single<Boolean> isDirty() {
