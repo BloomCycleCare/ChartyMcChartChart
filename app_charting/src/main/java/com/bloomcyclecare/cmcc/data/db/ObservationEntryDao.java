@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
-import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 
 import androidx.room.Dao;
 

@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.instructions;
 
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.google.common.collect.Range;
 
 import org.joda.time.DateTime;

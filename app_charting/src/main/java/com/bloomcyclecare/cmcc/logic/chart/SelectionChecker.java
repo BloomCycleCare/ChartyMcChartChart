@@ -1,9 +1,9 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
-import com.bloomcyclecare.cmcc.models.stickering.Sticker;
-import com.bloomcyclecare.cmcc.models.stickering.StickerColor;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
-import com.bloomcyclecare.cmcc.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 
 import java.util.Optional;
 

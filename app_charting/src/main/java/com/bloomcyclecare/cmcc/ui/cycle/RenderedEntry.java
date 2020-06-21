@@ -2,9 +2,9 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;

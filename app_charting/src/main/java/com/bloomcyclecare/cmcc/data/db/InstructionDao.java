@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.db;
 
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 
 import java.util.List;
 

@@ -2,8 +2,8 @@ package com.bloomcyclecare.cmcc.data.repos.instructions;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.InstructionDao;
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.utils.TempStore;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.utils.TempStore;
 
 import org.joda.time.LocalDate;
 

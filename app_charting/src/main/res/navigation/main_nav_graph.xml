@@ -151,7 +151,7 @@
 
         <argument
             android:name="pregnancy"
-            app:argType="com.bloomcyclecare.cmcc.data.entities.WrappedPregnancy"
+            app:argType="com.bloomcyclecare.cmcc.data.models.pregnancy.WrappedPregnancy"
             app:nullable="true"
             android:defaultValue="@null" />
 

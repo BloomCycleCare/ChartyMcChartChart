@@ -1,10 +1,10 @@
 package com.bloomcyclecare.cmcc.data.db;
 
-import com.bloomcyclecare.cmcc.data.entities.Entry;
-import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
-import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Optional;
 

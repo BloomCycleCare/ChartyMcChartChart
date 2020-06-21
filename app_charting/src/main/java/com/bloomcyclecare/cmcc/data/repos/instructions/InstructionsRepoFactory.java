@@ -2,9 +2,9 @@ package com.bloomcyclecare.cmcc.data.repos.instructions;
 
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
-import com.bloomcyclecare.cmcc.models.charting.DemoCycles;
-import com.bloomcyclecare.cmcc.models.training.Exercise;
-import com.bloomcyclecare.cmcc.models.training.TrainingCycles;
+import com.bloomcyclecare.cmcc.data.models.charting.DemoCycles;
+import com.bloomcyclecare.cmcc.data.models.training.Exercise;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingCycles;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 
 import org.joda.time.LocalDate;

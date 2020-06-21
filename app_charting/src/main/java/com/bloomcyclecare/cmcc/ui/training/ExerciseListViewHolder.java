@@ -4,7 +4,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.models.training.Exercise;
+import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 
 import androidx.annotation.NonNull;
 import androidx.core.util.Consumer;

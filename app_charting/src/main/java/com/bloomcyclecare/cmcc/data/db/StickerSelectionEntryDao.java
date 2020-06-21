@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
-import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 
 import androidx.room.Dao;
 

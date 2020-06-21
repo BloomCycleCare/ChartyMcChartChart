@@ -2,9 +2,9 @@ package com.bloomcyclecare.cmcc.renderer;
 
 import android.content.Context;
 
-import com.bloomcyclecare.cmcc.models.charting.DemoCycles;
-import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
-import com.bloomcyclecare.cmcc.models.training.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.DemoCycles;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.google.common.collect.ImmutableMap;
 
 import org.junit.Test;

@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.utils;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 
 public class StickerUtil {
 

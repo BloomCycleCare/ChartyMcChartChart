@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.instructions;
 
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 
 import org.joda.time.LocalDate;
 

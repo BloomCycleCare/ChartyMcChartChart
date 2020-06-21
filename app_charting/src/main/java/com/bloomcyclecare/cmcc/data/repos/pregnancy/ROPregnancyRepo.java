@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.pregnancy;
 
-import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 
 import java.util.List;
 

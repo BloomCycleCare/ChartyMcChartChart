@@ -4,8 +4,8 @@ import android.util.Range;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.StickerSelectionEntryDao;
-import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.LocalDate;

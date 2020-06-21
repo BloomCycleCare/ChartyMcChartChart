@@ -1,15 +1,15 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
-import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
-import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
-import com.bloomcyclecare.cmcc.models.training.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;

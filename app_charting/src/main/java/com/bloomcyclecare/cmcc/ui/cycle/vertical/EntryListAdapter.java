@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.collect.Iterables;

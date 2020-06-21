@@ -1,22 +1,20 @@
 package com.bloomcyclecare.cmcc.data.db;
 
-import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
-import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
-import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
-import com.bloomcyclecare.cmcc.models.observation.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.models.observation.Observation;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.data.models.observation.Observation;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
-import com.bloomcyclecare.cmcc.utils.GsonUtil;
+import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.google.gson.reflect.TypeToken;
 
 import org.joda.time.LocalDate;
 
 import java.lang.reflect.Type;
 import java.util.List;
-
-import javax.crypto.SecretKey;
 
 import androidx.annotation.Nullable;
 import androidx.room.TypeConverter;

@@ -1,9 +1,9 @@
 package com.bloomcyclecare.cmcc.renderer;
 
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
-import com.bloomcyclecare.cmcc.models.training.TrainingEntry;
-import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 

@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.repos;
 
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.models.training.Exercise;
+import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 
 import java.util.Optional;
 

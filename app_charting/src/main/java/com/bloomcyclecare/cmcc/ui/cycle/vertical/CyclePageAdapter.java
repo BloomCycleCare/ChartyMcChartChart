@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.utils.SmartFragmentStatePagerAdapter;
 import com.google.common.collect.Iterables;
 

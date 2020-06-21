@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.cycle;
 
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 
 import org.joda.time.LocalDate;
 

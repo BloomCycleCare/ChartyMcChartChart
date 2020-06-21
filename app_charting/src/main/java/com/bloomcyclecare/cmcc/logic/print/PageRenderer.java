@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.logic.print;
 
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.models.stickering.StickerColor;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;

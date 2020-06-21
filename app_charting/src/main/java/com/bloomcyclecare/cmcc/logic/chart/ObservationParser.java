@@ -1,11 +1,11 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
-import com.bloomcyclecare.cmcc.models.observation.DischargeSummary;
-import com.bloomcyclecare.cmcc.models.observation.DischargeType;
-import com.bloomcyclecare.cmcc.models.observation.Flow;
-import com.bloomcyclecare.cmcc.models.observation.MucusModifier;
-import com.bloomcyclecare.cmcc.models.observation.Observation;
-import com.bloomcyclecare.cmcc.models.observation.Occurrences;
+import com.bloomcyclecare.cmcc.data.models.observation.DischargeSummary;
+import com.bloomcyclecare.cmcc.data.models.observation.DischargeType;
+import com.bloomcyclecare.cmcc.data.models.observation.Flow;
+import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
+import com.bloomcyclecare.cmcc.data.models.observation.Observation;
+import com.bloomcyclecare.cmcc.data.models.observation.Occurrences;
 import com.bloomcyclecare.cmcc.utils.StringUtil;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;

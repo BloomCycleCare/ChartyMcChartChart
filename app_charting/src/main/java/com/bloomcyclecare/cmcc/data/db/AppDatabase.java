@@ -1,13 +1,13 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
-import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.entities.Pregnancy;
-import com.bloomcyclecare.cmcc.data.entities.StickerSelectionEntry;
-import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
+import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;

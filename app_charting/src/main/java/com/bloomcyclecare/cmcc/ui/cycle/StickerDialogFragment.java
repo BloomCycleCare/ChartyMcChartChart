@@ -14,9 +14,9 @@ import android.widget.TextView;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
-import com.bloomcyclecare.cmcc.models.stickering.Sticker;
-import com.bloomcyclecare.cmcc.models.stickering.StickerSelection;
-import com.bloomcyclecare.cmcc.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 

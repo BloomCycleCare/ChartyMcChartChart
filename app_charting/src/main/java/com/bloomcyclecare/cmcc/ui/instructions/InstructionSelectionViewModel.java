@@ -4,11 +4,11 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.entities.Instructions;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
-import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
-import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;
-import com.bloomcyclecare.cmcc.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalDate;

@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
-import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.BatchingRepo;
 
 import org.joda.time.DateTime;
