@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.exercise;
 
-import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.models.training.Exercise;
 
 import java.util.List;
 

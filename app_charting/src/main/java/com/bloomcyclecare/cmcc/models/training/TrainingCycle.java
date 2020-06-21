@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.models;
+package com.bloomcyclecare.cmcc.models.training;
 
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.models.stickering.StickerColor;

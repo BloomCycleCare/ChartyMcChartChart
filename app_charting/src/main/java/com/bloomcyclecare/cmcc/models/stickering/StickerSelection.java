@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.models.stickering;
 
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.base.Objects;
 

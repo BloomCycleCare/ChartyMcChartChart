@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.backup;
 
-import com.bloomcyclecare.cmcc.data.models.AppState;
+import com.bloomcyclecare.cmcc.backup.models.AppState;
 import com.bloomcyclecare.cmcc.utils.GsonUtil;
 
 import java.io.BufferedReader;

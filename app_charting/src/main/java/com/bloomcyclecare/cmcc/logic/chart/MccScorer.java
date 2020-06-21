@@ -2,7 +2,7 @@ package com.bloomcyclecare.cmcc.logic.chart;
 
 import android.util.Log;
 
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.models.observation.DischargeType;
 import com.bloomcyclecare.cmcc.models.observation.MucusModifier;
 import com.bloomcyclecare.cmcc.models.observation.Observation;

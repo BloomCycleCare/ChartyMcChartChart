@@ -1,7 +1,7 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
 
 import java.util.List;
 

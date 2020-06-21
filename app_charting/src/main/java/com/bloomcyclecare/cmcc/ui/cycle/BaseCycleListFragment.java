@@ -10,7 +10,7 @@ import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.models.training.Exercise;
 import com.bloomcyclecare.cmcc.ui.init.UserInitActivity;
 
 import java.util.Optional;

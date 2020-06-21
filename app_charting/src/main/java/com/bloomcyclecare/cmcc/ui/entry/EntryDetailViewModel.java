@@ -7,7 +7,7 @@ import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.entities.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.entities.WellnessEntry;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;

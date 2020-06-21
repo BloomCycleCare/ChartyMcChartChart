@@ -8,7 +8,7 @@ import com.bloomcyclecare.cmcc.data.db.SymptomEntryDao;
 import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;

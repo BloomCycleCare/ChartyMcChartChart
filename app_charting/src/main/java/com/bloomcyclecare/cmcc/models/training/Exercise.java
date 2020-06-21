@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.models;
+package com.bloomcyclecare.cmcc.models.training;
 
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;

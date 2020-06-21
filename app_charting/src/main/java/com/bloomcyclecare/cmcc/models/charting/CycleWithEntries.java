@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.models;
+package com.bloomcyclecare.cmcc.models.charting;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 

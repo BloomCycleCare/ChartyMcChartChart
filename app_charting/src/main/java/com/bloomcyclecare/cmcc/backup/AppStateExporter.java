@@ -2,7 +2,7 @@ package com.bloomcyclecare.cmcc.backup;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.AppState;
+import com.bloomcyclecare.cmcc.backup.models.AppState;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;

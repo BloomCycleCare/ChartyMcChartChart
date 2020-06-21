@@ -2,8 +2,8 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
-import com.bloomcyclecare.cmcc.data.models.DemoCycles;
-import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.models.charting.DemoCycles;
+import com.bloomcyclecare.cmcc.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.RepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;

@@ -8,7 +8,7 @@ import android.net.Uri;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
-import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;

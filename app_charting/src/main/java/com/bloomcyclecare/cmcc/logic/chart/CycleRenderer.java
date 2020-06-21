@@ -2,7 +2,7 @@ package com.bloomcyclecare.cmcc.logic.chart;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.models.instructions.AbstractInstruction;
 import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;

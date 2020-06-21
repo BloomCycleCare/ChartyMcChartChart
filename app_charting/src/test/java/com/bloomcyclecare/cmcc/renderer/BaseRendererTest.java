@@ -2,9 +2,9 @@ package com.bloomcyclecare.cmcc.renderer;
 
 import com.bloomcyclecare.cmcc.data.entities.Cycle;
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.models.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
-import com.bloomcyclecare.cmcc.data.models.TrainingEntry;
+import com.bloomcyclecare.cmcc.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.models.instructions.SpecialInstruction;

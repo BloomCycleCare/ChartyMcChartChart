@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.renderer;
 
-import com.bloomcyclecare.cmcc.data.models.DemoCycles;
+import com.bloomcyclecare.cmcc.models.charting.DemoCycles;
 
 import org.junit.Test;
 

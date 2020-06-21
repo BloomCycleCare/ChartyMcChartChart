@@ -7,7 +7,7 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.Exercise;
+import com.bloomcyclecare.cmcc.models.training.Exercise;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;

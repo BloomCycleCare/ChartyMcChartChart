@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.renderer;
 
 import com.bloomcyclecare.cmcc.data.entities.Instructions;
-import com.bloomcyclecare.cmcc.data.models.DemoCycles;
-import com.bloomcyclecare.cmcc.data.models.TrainingCycle;
+import com.bloomcyclecare.cmcc.models.charting.DemoCycles;
+import com.bloomcyclecare.cmcc.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.models.instructions.BasicInstruction;
 import com.google.common.collect.ImmutableList;
 
