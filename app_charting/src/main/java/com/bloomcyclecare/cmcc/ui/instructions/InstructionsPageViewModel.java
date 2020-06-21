@@ -7,7 +7,7 @@ import com.bloomcyclecare.cmcc.data.entities.Instructions;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
-import org.joda.time.LocalDate;
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -16,40 +16,45 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
-import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
-import timber.log.Timber;
 
-public class InstructionsCrudViewModel extends AndroidViewModel {
-
-  final BehaviorSubject<LocalDate> startDateUpdates = BehaviorSubject.create();
+public class InstructionsPageViewModel extends AndroidViewModel {
 
   private final RWInstructionsRepo mInstructionsRepo;
 
   private final BehaviorSubject<ViewState> mViewState = BehaviorSubject.create();
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  public InstructionsCrudViewModel(@NonNull Application application, Instructions instructions) {
+  public InstructionsPageViewModel(@NonNull Application application, Instructions instructions) {
     super(application);
     mInstructionsRepo = ChartingApp.cast(application).instructionsRepo();
 
+    Flowable<Optional<Instructions>> instructionsStream = Flowable.just(Optional.empty());
     if (instructions != null) {
-      startDateUpdates.onNext(instructions.startDate);
-    } else {
-      Timber.w("Null instructions!");
+      instructionsStream = mInstructionsRepo.get(instructions.startDate).map(Optional::of);
     }
-    // Connect subject for the current ViewState
-    /*viewStateStream()
+
+    Flowable<Boolean> isActiveStream = instructionsStream.flatMapSingle(i -> {
+      if (!i.isPresent()) {
+        return Single.just(false);
+      }
+      return mInstructionsRepo.hasAnyAfter(i.get().startDate).map(v -> !v);
+    });
+
+    Flowable.combineLatest(
+        instructionsStream,
+        isActiveStream,
+        (i, isActive) -> i
+            .map(value -> new ViewState(DateUtil.toUiStr(value.startDate), isActive ? "current" : "previous"))
+            .orElseGet(() -> new ViewState("TBD", "TBD")))
         .toObservable()
-        .observeOn(Schedulers.computation())
-        .doOnNext(vs -> Timber.v("Storing updated ViewState"))
-        .subscribe(mViewState);*/
-
-
+        .subscribe(mViewState);
 
     // Pass any updates to the instructions to the repo
-    mDisposables.add(mViewState
+    /*mDisposables.add(mViewState
         .observeOn(Schedulers.computation())
         .distinctUntilChanged()
         .doOnNext(i -> Timber.v("Passing Instructions update to repo"))
@@ -67,7 +72,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
                 .andThen(mInstructionsRepo.insertOrUpdate(viewState.instructions));
           }
         })
-        .subscribe());
+        .subscribe());*/
   }
 
   /*Completable updateStartDate(LocalDate startDate, Function<Set<Instructions>, Single<Boolean>> removeInstructionsPrompt) {
@@ -142,18 +147,10 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
   public class ViewState {
     public String startDateStr;
     public String statusStr;
-    public String collisionPrompt = "";
 
-    public Instructions instructions;
-    @Deprecated
-    public Instructions initialInstructions;
-
-    private ViewState(Instructions instructions, Instructions initialInstructions, String collisionPrompt) {
-      this.instructions = instructions;
-      this.initialInstructions = initialInstructions;
-      this.collisionPrompt = collisionPrompt;
-
-      startDateStr = DateUtil.toUiStr(instructions.startDate);
+    private ViewState(String startDateStr, String statusStr) {
+      this.startDateStr = startDateStr;
+      this.statusStr = statusStr;
     }
   }
 
@@ -169,7 +166,7 @@ public class InstructionsCrudViewModel extends AndroidViewModel {
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new InstructionsCrudViewModel(application, instructions);
+      return (T) new InstructionsPageViewModel(application, instructions);
     }
   }
 }

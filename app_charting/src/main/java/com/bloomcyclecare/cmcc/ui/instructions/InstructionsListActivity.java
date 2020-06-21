@@ -276,7 +276,7 @@ public class InstructionsListActivity extends AppCompatActivity {
 
     @Override
     public Fragment getItem(int position) {
-      Fragment f = new InstructionsListFragment();
+      Fragment f = new InstructionsPageFragment();
       Bundle args = new Bundle();
       int index = mExtraAtFront ? position - 1 : position;
       if (index >= 0 && index < mInstructions.size()) {
