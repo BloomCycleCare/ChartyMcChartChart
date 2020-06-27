@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.main;
+package com.bloomcyclecare.cmcc.practitioner.ui.main;
 
 import android.app.Application;
 

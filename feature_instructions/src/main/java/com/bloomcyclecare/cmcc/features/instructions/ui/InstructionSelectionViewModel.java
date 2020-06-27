@@ -9,6 +9,7 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.features.instructions.data.InstructionDataDeps;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalDate;
@@ -54,7 +55,7 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
 
   public InstructionSelectionViewModel(@NonNull Application application, LocalDate startDate, @Nullable Instructions instructions) {
     super(application);
-    mInstructionsRepo = DataRepos.fromApp(application).instructionsRepo(ViewMode.CHARTING);
+    mInstructionsRepo = InstructionDataDeps.fromApp(application).instructionsRepo(ViewMode.CHARTING);
 
     for (BasicInstruction basicInstruction : BasicInstruction.values()) {
       instructionStates.put(basicInstruction, BehaviorSubject.create());

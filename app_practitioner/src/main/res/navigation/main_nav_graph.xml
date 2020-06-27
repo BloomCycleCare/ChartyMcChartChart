@@ -7,9 +7,19 @@
 
     <fragment
         android:id="@+id/main"
-        android:name="com.bloomcyclecare.cmcc.ui.main.MainFragment"
+        android:name="com.bloomcyclecare.cmcc.practitioner.ui.main.MainFragment"
         android:label="Main"
-        tools:layout="@layout/fragment_splash">
+        tools:layout="@layout/fragment_main">
+
+        <action
+            android:id="@+id/create_applink"
+            app:destination="@+id/applink"/>
     </fragment>
+
+    <fragment
+        android:id="@+id/applink"
+        android:name="com.bloomcyclecare.cmcc.practitioner.ui.applink.AppLinkFragment"
+        android:label="App Link"
+        tools:layout="@layout/fragment_applink"/>
 
 </navigation>

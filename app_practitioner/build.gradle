@@ -44,4 +44,7 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-reactivestreams:2.2.0"
     annotationProcessor "com.google.auto.value:auto-value:1.5.2"
     compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.4'
+    implementation project(path: ':feature_instructions')
+    implementation project(path: ':data')
+    implementation project(path: ':core')
 }

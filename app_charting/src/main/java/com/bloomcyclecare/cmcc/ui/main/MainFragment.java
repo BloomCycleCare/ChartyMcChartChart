@@ -11,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ui.main.MainFragmentDirections;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;

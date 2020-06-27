@@ -1,26 +1,19 @@
-package com.bloomcyclecare.cmcc.ui.main;
+package com.bloomcyclecare.cmcc.practitioner.ui.main;
 
 import android.os.Bundle;
-import android.view.Menu;
 
-import com.bloomcyclecare.cmcc.apps.practitioner.R;
+import com.bloomcyclecare.cmcc.practitioner.R;
 import com.google.android.material.navigation.NavigationView;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import androidx.annotation.Nullable;
-import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.fragment.NavHostFragment;
-import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 import io.reactivex.disposables.CompositeDisposable;
-import timber.log.Timber;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -40,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     setSupportActionBar(toolbar);
 
     mViewModel = new ViewModelProvider(this).get(MainViewModel.class);
+
+    configureNavigation();
   }
 
   private void configureNavigation() {
