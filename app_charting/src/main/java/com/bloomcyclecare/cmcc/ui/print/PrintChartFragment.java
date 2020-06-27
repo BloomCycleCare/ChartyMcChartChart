@@ -62,6 +62,7 @@ public class PrintChartFragment extends Fragment {
     View view = inflater.inflate(R.layout.fragment_print_chart, container, false);
 
     mMainViewModel.updateTitle("Select cycles to print");
+    mMainViewModel.updateSubtitle("");
 
     mRecyclerView = view.findViewById(R.id.recyclerview_cycle_entry);
     LinearLayoutManager layoutManager
