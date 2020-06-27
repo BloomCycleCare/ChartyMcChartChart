@@ -649,7 +649,7 @@ public class CycleRenderer {
     public abstract Optional<StickerSelection> manualStickerSelection();
     public abstract boolean hasObservation();
     public abstract Set<AbstractInstruction> fertilityReasons();
-    public abstract String entrySummary();
+    public abstract Optional<String> entrySummary();
     public abstract StickerColor backgroundColor();
     public abstract int entryNum();
     public abstract String dateSummary();
@@ -715,7 +715,7 @@ public class CycleRenderer {
 
     @AutoValue.Builder
     public abstract static class Builder {
-      public abstract Builder entrySummary(String entrySummary);
+      public abstract Builder entrySummary(Optional<String> entrySummary);
 
       public abstract Builder backgroundColor(StickerColor backgroundColor);
 

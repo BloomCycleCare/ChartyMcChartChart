@@ -9,6 +9,7 @@ import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
@@ -153,12 +154,13 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     return hasMucus() && observation.dischargeSummary.isPeakType();
   }
 
-  public String getListUiText() {
+  public Optional<String> getListUiText() {
     if (observation == null) {
-      return "No observation";
+      return Optional.empty();
     }
-    return String.format("%s %s", observation.toString(), intercourse ? "I" : "");
+    return Optional.of(String.format("%s %s", observation.toString(), intercourse ? "I" : ""));
   }
+
   @Override
   public boolean equals(Object o) {
     if (o instanceof ObservationEntry) {

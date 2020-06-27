@@ -283,7 +283,7 @@ public class PageRenderer {
         CycleRenderer.RenderableEntry entry = renderableEntries.get(i);
         List<String> lines = new ArrayList<>();
         lines.add(DateUtil.toPrintStr(entry.modificationContext().entry.entryDate));
-        List<String> summaryPieces = Lists.newArrayList(entry.entrySummary().split(" "));
+        List<String> summaryPieces = Lists.newArrayList(entry.entrySummary().orElse("---").split(" "));
         if (summaryPieces.size() > 0 && summaryPieces.get(summaryPieces.size() - 1).equals("I")) {
           summaryPieces.remove(summaryPieces.size() - 1);
         }

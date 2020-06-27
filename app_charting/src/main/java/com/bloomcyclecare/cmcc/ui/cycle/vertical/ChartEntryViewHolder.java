@@ -78,7 +78,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     public void bind(RenderedEntry re, ViewMode viewMode, boolean showcaseEntry, boolean showcaseStickerSelection) {
       mStickerView.setVisibility(View.VISIBLE);
 
-      mEntryDataTextView.setText(re.observationSummary());
+      mEntryDataTextView.setText(re.observationSummary().orElse("No observation"));
       mEntryNumTextView.setText(re.entryNum());
       mEntryDateTextView.setText(re.entryDateStr());
       mStickerView.setBackgroundResource(re.stickerBackgroundResource());

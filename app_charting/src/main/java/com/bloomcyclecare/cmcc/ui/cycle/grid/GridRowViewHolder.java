@@ -104,7 +104,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       if (viewMode != ViewMode.TRAINING) {
         parts.add(renderedEntry.entryDateShortStr());
       }
-      parts.add(renderedEntry.observationSummary());
+      parts.add(renderedEntry.observationSummary().orElse("---"));
       textView.setText(ON_NEW_LINE.join(parts));
 
       stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
