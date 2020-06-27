@@ -36,13 +36,16 @@ public class GoogleAuthHelper {
   }
 
   public static Intent getPromptIntent(Context context) {
+    return getClient(context).getSignInIntent();
+  }
+
+  public static GoogleSignInClient getClient(Context context) {
     GoogleSignInOptions signInOptions =
         new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
             .requestEmail()
             .requestScopes(new Scope(DriveScopes.DRIVE_FILE))
             .build();
-    GoogleSignInClient client = GoogleSignIn.getClient(context, signInOptions);
-    return client.getSignInIntent();
+    return GoogleSignIn.getClient(context, signInOptions);
   }
 
   public static void handlePromptResponse(int responseCode, Intent data, MaybeSubject<GoogleSignInAccount> accountSubject) {

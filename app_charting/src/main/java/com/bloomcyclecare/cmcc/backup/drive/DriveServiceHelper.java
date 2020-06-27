@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableList;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -28,6 +29,9 @@ import io.reactivex.schedulers.Schedulers;
 import timber.log.Timber;
 
 public class DriveServiceHelper {
+
+  public static final String FOLDER_NAME_MY_CHARTS = "My Charts";
+  public static final String FOLDER_NAME_BACKUPS = "Backups";
 
   private final Drive mDrive;
 
@@ -88,18 +92,25 @@ public class DriveServiceHelper {
     });
   }
 
-  public Single<File> getOrCreateFolder(String folderName) {
+  public Single<File> getOrCreateFolder(String folderName, @Nullable File parentFolder) {
     return getFolder(folderName).switchIfEmpty(Single.create(e -> {
       Timber.d("Creating 'My Charts' folder in Drive");
 
       File folderMetadata = new File();
       folderMetadata.setName(folderName);
       folderMetadata.setMimeType("application/vnd.google-apps.folder");
+      if (parentFolder != null) {
+        folderMetadata.setParents(ImmutableList.of(parentFolder.getId()));
+      }
 
       e.onSuccess(mDrive.files().create(folderMetadata)
           .setFields("id")
           .execute());
     })).subscribeOn(Schedulers.io());
+  }
+
+  public Single<File> getOrCreateFolder(String folderName) {
+    return getOrCreateFolder(folderName, null);
   }
 
   public Observable<File> getFilesInFolder(@NonNull File folder) {

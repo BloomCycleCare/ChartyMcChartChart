@@ -172,17 +172,17 @@
         android:label="Application Settings"
         tools:layout="@layout/fragment_settings"/>
 
+    <fragment
+        android:id="@+id/sharing"
+        android:name="com.bloomcyclecare.cmcc.ui.sharing.SharingFragment"
+        android:label="Sharing"
+        tools:layout="@layout/fragment_sharing"/>
 
     <activity
         android:id="@+id/instructions_list"
         android:name="com.bloomcyclecare.cmcc.features.instructions.ui.InstructionsListActivity"
         android:label="Instructions"
         tools:layout="@layout/activity_appointment_list"/>
-    <activity
-        android:id="@+id/sharing"
-        android:name="com.bloomcyclecare.cmcc.ui.drive.DriveAuthActivity"
-        android:label="Sharing"
-        tools:layout="@layout/activity_drive"/>
     <activity
         android:id="@+id/profile"
         android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
