@@ -184,7 +184,7 @@
         tools:layout="@layout/activity_appointment_list"/>
     <activity
         android:id="@+id/sharing"
-        android:name="com.bloomcyclecare.cmcc.ui.drive.DriveActivity"
+        android:name="com.bloomcyclecare.cmcc.ui.drive.DriveAuthActivity"
         android:label="Sharing"
         tools:layout="@layout/activity_drive"/>
     <activity

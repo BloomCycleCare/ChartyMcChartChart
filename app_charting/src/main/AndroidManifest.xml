@@ -13,7 +13,7 @@
         android:roundIcon="${roundIcon}"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ui.drive.DriveActivity" />
+        <activity android:name=".ui.drive.DriveAuthActivity" />
 
         <service android:name=".notifications.ChartingService" />
         <receiver

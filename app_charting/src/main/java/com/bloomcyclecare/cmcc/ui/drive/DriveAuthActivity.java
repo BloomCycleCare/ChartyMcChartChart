@@ -20,7 +20,7 @@ import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
-public class DriveActivity extends GoogleAuthActivity {
+public class DriveAuthActivity extends GoogleAuthActivity {
 
   ListView mFilesView;
   TextView mInfoTextView;
