@@ -26,6 +26,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
@@ -75,9 +76,8 @@ public class PregnancyDetailFragment extends Fragment {
   public boolean onOptionsItemSelected(MenuItem item) {
     switch (item.getItemId()) {
       case R.id.action_save:
-        mDisposables.add(mViewModel.onSave().subscribe(() -> {
-          NavHostFragment.findNavController(this).navigate(
-              PregnancyDetailFragmentDirections.actionSavePregnancyUpdates());
+        mDisposables.add(mViewModel.onSave().observeOn(AndroidSchedulers.mainThread()).subscribe(() -> {
+          NavHostFragment.findNavController(this).popBackStack();
         }, t -> Timber.e(t, "Error saving updates")));
         return true;
 

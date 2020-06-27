@@ -163,10 +163,6 @@
             android:id="@+id/action_view_cycle"
             app:destination="@id/chart_pager"/>
 
-        <action
-            android:id="@+id/action_save_pregnancy_updates"
-            app:destination="@id/pregnancy_list"/>
-
     </fragment>
 
 
