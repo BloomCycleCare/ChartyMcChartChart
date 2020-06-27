@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.print;
 
 import android.app.Activity;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -22,6 +23,7 @@ import com.google.common.collect.Lists;
 
 import org.parceler.Parcels;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,8 +42,8 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   private static final boolean DEBUG = true;
   private static final String TAG = CycleAdapter.class.getSimpleName();
 
-  private final Activity mActivity;
-  private final ImmutableList<ViewModel> mViewModels;
+  private final Context mContext;
+  private final ImmutableList<CycleWithEntries> mData;
   private final Set<Integer> mSelectedIndexes;
   private ImmutableSet<Integer> mBreakAfterIndexs;
 
@@ -49,50 +51,32 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     SELECTED_INDEXES, VIEW_MODELS
   }
 
-  @Nullable
-  public static CycleAdapter fromBundle(Activity activity, Bundle savedState) {
-    if (savedState == null
-        || !savedState.containsKey(BundleKey.VIEW_MODELS.name())
-        || !savedState.containsKey(BundleKey.SELECTED_INDEXES.name())) {
-      return null;
-    }
-    List<ViewModel> viewModels = savedState.getParcelableArrayList(BundleKey.VIEW_MODELS.name());
-    SortedSet<Integer> selectedIndexes = new TreeSet<>();
-    selectedIndexes.addAll(savedState.getIntegerArrayList(BundleKey.SELECTED_INDEXES.name()));
-    return new CycleAdapter(activity, viewModels, selectedIndexes);
-  }
-
-  public static CycleAdapter fromViewModels(Activity activity, List<ViewModel> viewModels) {
+  public static CycleAdapter create(Context context, List<CycleWithEntries> cyclesWithEntries) {
     // Initialize selected items with most recent cycles
     SortedSet<Integer> selectedIndexes = new TreeSet<>();
     int rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
-    for (int i=0; i < viewModels.size(); i++) {
-      ViewModel viewModel = viewModels.get(i);
-      rowsLeftBeforeNextBreak -= PageRenderer.numRows(viewModel.mNumEntries);
+    for (int i=0; i < cyclesWithEntries.size(); i++) {
+      CycleWithEntries cycleWithEntries = cyclesWithEntries.get(i);
+      rowsLeftBeforeNextBreak -= PageRenderer.numRows(cycleWithEntries.entries.size());
       if (rowsLeftBeforeNextBreak >= 0) {
         selectedIndexes.add(i);
       }
     }
-    return new CycleAdapter(activity, viewModels, selectedIndexes);
+    return new CycleAdapter(context, cyclesWithEntries, selectedIndexes);
   }
 
-  private CycleAdapter(Activity activity, List<ViewModel> viewModels, SortedSet<Integer> selectedIndexes) {
+  private CycleAdapter(Context context, List<CycleWithEntries> cyclesWithEntries, SortedSet<Integer> selectedIndexes) {
     if (DEBUG) Log.v(TAG, "Create CycleAdapter");
-    mActivity = activity;
-    mViewModels = ImmutableList.copyOf(viewModels);
+    mContext = context;
+    mData = ImmutableList.copyOf(cyclesWithEntries);
     mSelectedIndexes = selectedIndexes;
     updatePageBreaks();
-  }
-
-  public void fillBundle(Bundle bundle) {
-    bundle.putParcelableArrayList(BundleKey.VIEW_MODELS.name(), Lists.newArrayList(mViewModels));
-    bundle.putIntegerArrayList(BundleKey.SELECTED_INDEXES.name(), Lists.newArrayList(mSelectedIndexes));
   }
 
   public boolean hasValidSelection() {
     boolean selectionStarted = false;
     boolean selectionFinished = false;
-    for (int i=0; i < mViewModels.size(); i++) {
+    for (int i=0; i < mData.size(); i++) {
       if (mSelectedIndexes.contains(i)) {
         if (!selectionStarted) {
           selectionStarted = true;
@@ -109,10 +93,10 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     return true;
   }
 
-  public Set<Cycle> getSelectedCycles() {
-    Set<Cycle> cycles = new HashSet<>();
+  public List<Cycle> getSelectedCycles() {
+    List<Cycle> cycles = new ArrayList<>();
     for (Integer index : mSelectedIndexes) {
-      cycles.add(mViewModels.get(index).mCycle);
+      cycles.add(mData.get(index).cycle);
     }
     return cycles;
   }
@@ -131,7 +115,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
   @Override
   public CycleAdapterViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
     int layoutIdForListItem = R.layout.list_item_cycle_select;
-    LayoutInflater inflater = LayoutInflater.from(mActivity);
+    LayoutInflater inflater = LayoutInflater.from(mContext);
     boolean shouldAttachToParentImmediately = false;
 
     View view = inflater.inflate(layoutIdForListItem, parent, shouldAttachToParentImmediately);
@@ -150,8 +134,8 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
    */
   @Override
   public void onBindViewHolder(CycleAdapterViewHolder holder, int position) {
-    ViewModel viewModel = mViewModels.get(position);
-    holder.mCycleDataTextView.setText("Starting: " + DateUtil.toPrintUiStr(viewModel.mCycle.startDate));
+    CycleWithEntries cycleWithEntries = mData.get(position);
+    holder.mCycleDataTextView.setText("Starting: " + DateUtil.toPrintUiStr(cycleWithEntries.cycle.startDate));
     holder.mSelectBox.setChecked(mSelectedIndexes.contains(position));
     if (mBreakAfterIndexs.contains(position + 1)) {
       holder.showPageSeparator();
@@ -171,7 +155,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   private void updatePageBreaks() {
     int firstIndex = 0;
-    for (int i=0; i < mViewModels.size(); i++) {
+    for (int i=0; i < mData.size(); i++) {
       if (mSelectedIndexes.contains(i) && firstIndex < 0) {
         firstIndex = i;
         break;
@@ -179,8 +163,8 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
     }
     ImmutableSet.Builder<Integer> breakBuilder = ImmutableSet.builder();
     int rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
-    for (int i=firstIndex; i < mViewModels.size(); i++) {
-      rowsLeftBeforeNextBreak -= PageRenderer.numRows(mViewModels.get(i).mNumEntries);
+    for (int i=firstIndex; i < mData.size(); i++) {
+      rowsLeftBeforeNextBreak -= PageRenderer.numRows(mData.get(i).entries.size());
       if (rowsLeftBeforeNextBreak < 0) {
         breakBuilder.add(i);
         rowsLeftBeforeNextBreak = PageRenderer.numRowsPerPage();
@@ -192,7 +176,7 @@ public class CycleAdapter extends RecyclerView.Adapter<CycleAdapter.CycleAdapter
 
   @Override
   public int getItemCount() {
-    return mViewModels.size();
+    return mData.size();
   }
 
   public class CycleAdapterViewHolder extends RecyclerView.ViewHolder {

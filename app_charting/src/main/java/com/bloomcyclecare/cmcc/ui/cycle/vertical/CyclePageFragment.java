@@ -49,6 +49,12 @@ public class CyclePageFragment extends BaseCycleListFragment {
     return CyclePageFragmentDirections.actionToggleLayout().setViewMode(viewMode);
   }
 
+  @NonNull
+  @Override
+  protected NavDirections printAction(ViewMode viewMode) {
+    return CyclePageFragmentDirections.actionPrint(viewMode);
+  }
+
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);

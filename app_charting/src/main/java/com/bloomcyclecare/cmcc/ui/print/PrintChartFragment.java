@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
@@ -41,10 +42,16 @@ public class PrintChartFragment extends Fragment {
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private MainViewModel mMainViewModel;
+  private PrintChartViewModel mPrintChartViewModel;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+
+    ViewMode viewMode = PrintChartFragmentArgs.fromBundle(requireArguments()).getViewMode();
+
+    PrintChartViewModel.Factory factory = new PrintChartViewModel.Factory(requireActivity().getApplication(), viewMode);
+    mPrintChartViewModel = new ViewModelProvider(this, factory).get(PrintChartViewModel.class);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
   }
@@ -62,69 +69,31 @@ public class PrintChartFragment extends Fragment {
     mRecyclerView.setLayoutManager(layoutManager);
     mRecyclerView.setHasFixedSize(false);
 
-    ChartingApp myApp = ChartingApp.cast(requireActivity().getApplication());
-    RWCycleRepo cycleRepo = myApp.cycleRepo();
-    RWChartEntryRepo entryRepo = myApp.entryRepo();
-    RWInstructionsRepo instructionsRepo = myApp.instructionsRepo();
-
-    CycleAdapter adapter = CycleAdapter.fromBundle(requireActivity(), savedInstanceState);
-    if (adapter != null) {
-      mRecyclerView.setAdapter(adapter);
-    } else {
-      mDisposables.add(cycleRepo
-          .getStream()
-          .firstOrError()
-          .flatMapObservable(Observable::fromIterable)
-          .flatMap(cycle -> entryRepo
-              .getStreamForCycle(Flowable.just(cycle))
-              .firstOrError()
-              .map(entries -> new CycleAdapter.ViewModel(cycle, entries.size()))
-              .toObservable())
-          .sorted((o1, o2) -> o2.mCycle.startDate.compareTo(o1.mCycle.startDate))
-          .toList()
-          .observeOn(AndroidSchedulers.mainThread())
-          .subscribeOn(AndroidSchedulers.mainThread())
-          .subscribe(viewModels -> mRecyclerView.setAdapter(
-              CycleAdapter.fromViewModels(requireActivity(), viewModels))));
-    }
-
-    FloatingActionButton fab = view.findViewById(R.id.fab);
-    final Toast invalidSelectionToast =
-        Toast.makeText(requireActivity(), "Continuous selection required", Toast.LENGTH_LONG);
-    fab.setOnClickListener(new View.OnClickListener() {
-      @Override
-      public void onClick(View view) {
-        CycleAdapter adapter = getAdapter();
-
-        if (adapter == null) {
-          return;
-        }
-
-        if (!getAdapter().hasValidSelection()) {
-          invalidSelectionToast.show();
-          return;
-        }
-        Observable<CycleRenderer> renderers = Observable
-            .fromIterable(adapter.getSelectedCycles())
-            .sorted((c1, c2) -> c1.startDate.compareTo(c2.startDate))
-            .flatMap(cycle -> Single.zip(
-                entryRepo.getStreamForCycle(Flowable.just(cycle)).firstOrError(),
-                instructionsRepo.getAll().firstOrError(),
-                (entries, instructions) -> new CycleRenderer(cycle, Optional.empty(), entries, instructions))
-                .toObservable());
-
-        mDisposables.add(renderers.toList()
-            .map(r -> ChartPrinter.create(requireActivity(), r))
-            .flatMapObservable(ChartPrinter::print)
-            .flatMap(printJob -> pollPrintJob(printJob))
-            .toList()
-            .timeout(10, TimeUnit.SECONDS)
-            .subscribeOn(Schedulers.computation())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(jobs -> printJobComplete(), t -> printJobFailed()));
-      }
-    });
-
+    mDisposables.add(mPrintChartViewModel
+        .getCycles()
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribeOn(AndroidSchedulers.mainThread())
+        .subscribe(cyclesWithEntries -> {
+          CycleAdapter adapter = CycleAdapter.create(requireActivity(), cyclesWithEntries);
+          mRecyclerView.setAdapter(adapter);
+          FloatingActionButton fab = view.findViewById(R.id.fab);
+          fab.setOnClickListener(v -> {
+            if (!adapter.hasValidSelection()) {
+              Toast.makeText(requireActivity(), "Continuous selection required", Toast.LENGTH_LONG).show();
+              return;
+            }
+            Observable<CycleRenderer> renderers = mPrintChartViewModel.getRenderers(adapter.getSelectedCycles());
+            mDisposables.add(renderers.toList()
+                .map(r -> ChartPrinter.create(requireActivity(), r))
+                .flatMapObservable(ChartPrinter::print)
+                .flatMap(printJob -> pollPrintJob(printJob))
+                .toList()
+                .timeout(10, TimeUnit.SECONDS)
+                .subscribeOn(Schedulers.computation())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(jobs -> printJobComplete(), t -> printJobFailed()));
+          });
+        }));
     return view;
   }
 
@@ -142,9 +111,5 @@ public class PrintChartFragment extends Fragment {
         .ignoreElements()
         .doOnComplete(() -> Timber.i("Print job complete: %s", printJob.getId()))
         .andThen(Observable.just(printJob));
-  }
-
-  private CycleAdapter getAdapter() {
-    return (CycleAdapter) mRecyclerView.getAdapter();
   }
 }

@@ -119,7 +119,11 @@
         android:id="@+id/print_chart"
         android:name="com.bloomcyclecare.cmcc.ui.print.PrintChartFragment"
         android:label="Print Chart"
-        tools:layout="@layout/fragment_print_chart"/>
+        tools:layout="@layout/fragment_print_chart">
+        <argument
+            android:name="view_mode"
+            app:argType="com.bloomcyclecare.cmcc.ViewMode" />
+    </fragment>
 
     <fragment
         android:id="@+id/exercise_list"

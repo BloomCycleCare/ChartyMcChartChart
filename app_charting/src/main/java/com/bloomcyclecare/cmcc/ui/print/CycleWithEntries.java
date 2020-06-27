@@ -1,4 +1,7 @@
-package com.bloomcyclecare.cmcc.data.models.charting;
+package com.bloomcyclecare.cmcc.ui.print;
+
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 
 import java.util.List;
 

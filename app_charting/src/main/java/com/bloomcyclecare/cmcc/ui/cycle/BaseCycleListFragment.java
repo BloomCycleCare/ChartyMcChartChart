@@ -43,6 +43,9 @@ public abstract class BaseCycleListFragment extends Fragment {
   @NonNull
   protected abstract NavDirections toggleLayoutAction(ViewMode viewMode);
 
+  @NonNull
+  protected abstract NavDirections printAction(ViewMode viewMode);
+
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
@@ -67,14 +70,13 @@ public abstract class BaseCycleListFragment extends Fragment {
   private static void pruneMenuOptions(@NonNull Menu menu, @NonNull ViewMode viewMode) {
     boolean runningDebugBuild = BuildConfig.BUILD_TYPE.equals("debug");
     if (viewMode != ViewMode.CHARTING) {
-      menu.findItem(R.id.action_print).setVisible(false);
       menu.findItem(R.id.action_export).setVisible(false);
       menu.findItem(R.id.action_trigger_sync).setVisible(false);
     } else {
-      menu.findItem(R.id.action_print).setVisible(true);
       menu.findItem(R.id.action_export).setVisible(true);
       menu.findItem(R.id.action_trigger_sync).setVisible(runningDebugBuild);
     }
+    menu.findItem(R.id.action_print).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_clear_data).setVisible(runningDebugBuild);
@@ -120,6 +122,10 @@ public abstract class BaseCycleListFragment extends Fragment {
               dialog.dismiss();
             }))
             .create().show();
+
+      case R.id.action_print:
+        NavHostFragment.findNavController(this).navigate(printAction(mViewModel.currentViewMode()));
+        return true;
 
       default:
         return NavigationUI.onNavDestinationSelected(

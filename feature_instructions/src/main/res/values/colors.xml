@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimaryDark">#303F9F</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="entryRed">#E06666</color>
+    <color name="entryYellow">#FFD966</color>
+    <color name="entryGreen">#93C47D</color>
+    <color name="entryWhite">#FFFFFF</color>
+    <color name="entryGrey">#EEEEEE</color>
+
+    <color name="black_semi_transparent">#B2000000</color>
+    <color name="white">#fafafa</color>
+    <color name="white_pressed">#f1f1f1</color>
+
+    <color name="entry_separator">#dadada</color>
+    <color name="week_separator">#000000</color>
+</resources>
