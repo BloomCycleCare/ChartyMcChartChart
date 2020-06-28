@@ -173,10 +173,10 @@
         tools:layout="@layout/fragment_settings"/>
 
     <fragment
-        android:id="@+id/sharing"
-        android:name="com.bloomcyclecare.cmcc.ui.sharing.SharingFragment"
-        android:label="Sharing"
-        tools:layout="@layout/fragment_sharing"/>
+        android:id="@+id/cloud_publish"
+        android:name="com.bloomcyclecare.cmcc.ui.cloud.CloudPublishFragment"
+        android:label="Cloud Upload"
+        tools:layout="@layout/fragment_cloud_publish"/>
 
     <activity
         android:id="@+id/instructions_list"

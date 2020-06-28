@@ -10,6 +10,7 @@ import com.bloomcyclecare.cmcc.apps.ViewModelFactory;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;
+import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
@@ -61,7 +62,7 @@ import timber.log.Timber;
  * Created by parkeroth on 5/15/17.
  */
 
-public class ChartingApp extends Application implements DataRepos {
+public class ChartingApp extends Application implements DataRepos, WorkerManager.Provider {
 
   private static final ViewMode FALLBACK_VIEW_MODE = ViewMode.CHARTING;
 
@@ -80,6 +81,8 @@ public class ChartingApp extends Application implements DataRepos {
   private PreferenceRepo mPreferenceRepo;
   private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
   private ExerciseRepoFactory mExerciseRepoFactory;
+
+  private WorkerManager mWorkerManager;
 
   private final ShowcaseManager mShowcaseManager = new ShowcaseManager();
 
@@ -128,6 +131,8 @@ public class ChartingApp extends Application implements DataRepos {
     });
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
+
+    mWorkerManager = WorkerManager.create(getApplicationContext());
 
     mViewModelFactory = new ViewModelFactory();
 
@@ -305,5 +310,10 @@ public class ChartingApp extends Application implements DataRepos {
 
   public static ViewModelFactory viewModelFactory() {
     return mViewModelFactory;
+  }
+
+  @Override
+  public WorkerManager getWorkerManager() {
+    return mWorkerManager;
   }
 }

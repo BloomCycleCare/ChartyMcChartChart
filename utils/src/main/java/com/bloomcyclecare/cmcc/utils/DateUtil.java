@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.joda.time.ReadableInstant;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -27,6 +28,14 @@ public class DateUtil {
   private static final DateTimeFormatter NEW_UI_FORMAT = DateTimeFormat.forPattern("d MMM yyyy");
   private static final DateTimeFormatter PRINT_UI_FORMAT = DateTimeFormat.forPattern("d MMM");
   private static final DateTimeFormatter PRINT_FORMAT = DateTimeFormat.forPattern("MM/dd");
+  private static final DateTimeFormatter UI_TIME_FORMAT = DateTimeFormat.forPattern("EEE d MMM HH:mm:ss");
+
+  public static String toUiTimeStr(ReadableInstant instant) {
+    if (instant == null) {
+      return null;
+    }
+    return UI_TIME_FORMAT.print(instant);
+  }
 
   public static String toWireStr(LocalDate date) {
     if (date == null) {
