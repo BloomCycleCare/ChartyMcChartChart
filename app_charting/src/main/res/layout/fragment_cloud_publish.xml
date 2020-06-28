@@ -37,7 +37,8 @@
         android:text='Go to "My Charts" in Drive'
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_time_last_published" />
 
     <TextView
         android:id="@+id/tv_drive_account_status_heading"

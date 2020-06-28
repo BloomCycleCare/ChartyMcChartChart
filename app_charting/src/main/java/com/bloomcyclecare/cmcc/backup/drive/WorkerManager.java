@@ -106,7 +106,7 @@ public interface WorkerManager {
                 numCompletedRequests.incrementAndGet();
                 lastCompletedTimeMs.set(System.currentTimeMillis());
               }
-              statsSubject.onNext(ItemStats.create(numCompletedRequests.get(), numCompletedRequests.get(), lastCompletedTimeMs.get(), lastEncueueTimeMs.get()));
+              statsSubject.onNext(ItemStats.create(numEncueuedReqeusts.get(), numCompletedRequests.get(), lastCompletedTimeMs.get(), lastEncueueTimeMs.get()));
             };
             cleanupTasks.add(() -> {
               ld.removeObserver(o);

@@ -4,6 +4,9 @@ import android.os.Bundle;
 import android.text.Html;
 import android.text.method.LinkMovementMethod;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -11,6 +14,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
@@ -22,6 +26,8 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.Group;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.NavigationUI;
 
 import static android.text.Html.FROM_HTML_MODE_COMPACT;
 
@@ -45,6 +51,8 @@ public class CloudPublishFragment extends Fragment {
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     mCloudPublishViewModel = new ViewModelProvider(this).get(CloudPublishViewModel.class);
+
+    setHasOptionsMenu(true);
   }
 
   @Nullable
@@ -56,7 +64,7 @@ public class CloudPublishFragment extends Fragment {
     mSummaryTextView = view.findViewById(R.id.tv_account_status);
     mConnectButton = view.findViewById(R.id.button_connect_drive);
     mPublishEnabledSwitch = view.findViewById(R.id.publish_enabled_switch);
-    mTimeLastPublishedTextView = view.findViewById(R.id.tv_time_last_triggered);
+    mTimeLastPublishedTextView = view.findViewById(R.id.tv_time_last_published);
     mTimeLastTriggeredTextView = view.findViewById(R.id.tv_time_last_triggered);
     mNumOutstandingTextView = view.findViewById(R.id.tv_renders_outstanding);
     mStatsGroup = view.findViewById(R.id.stats_group);
@@ -69,6 +77,28 @@ public class CloudPublishFragment extends Fragment {
     mMainViewModel.updateSubtitle("");
 
     return view;
+  }
+
+  @Override
+  public void onCreateOptionsMenu(@NonNull Menu menu, @NonNull MenuInflater inflater) {
+    super.onCreateOptionsMenu(menu, inflater);
+    inflater.inflate(R.menu.menu_publish, menu);
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    switch (item.getItemId()) {
+      case R.id.action_share:
+        NavHostFragment.findNavController(this)
+            .navigate(CloudPublishFragmentDirections.actionShare(ViewMode.CHARTING));
+        return true;
+      case R.id.action_sync:
+        mCloudPublishViewModel.manualTriggerObserver().onNext(true);
+        return true;
+      default:
+        return NavigationUI.onNavDestinationSelected(
+            item, NavHostFragment.findNavController(this));
+    }
   }
 
   @Override

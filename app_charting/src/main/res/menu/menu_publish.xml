@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.bloomcyclecare.cmcc.ui.drive.DriveAuthActivity">
+    <item
+        android:id="@+id/action_sync"
+        android:icon="@drawable/ic_sync_white_24dp"
+        android:orderInCategory="1"
+        app:showAsAction="always"
+        android:title="Sync"/>
+    <item
+        android:id="@+id/action_share"
+        android:icon="@drawable/ic_baseline_share_white_24"
+        android:orderInCategory="1"
+        app:showAsAction="always"
+        android:title="Share"/>
+</menu>

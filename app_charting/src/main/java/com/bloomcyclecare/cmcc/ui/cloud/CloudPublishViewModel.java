@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -13,11 +14,13 @@ import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.ReadableInstant;
 import org.joda.time.Instant;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -25,6 +28,9 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.LiveData;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.RxWorker;
+import androidx.work.WorkRequest;
+import androidx.work.WorkerParameters;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
 import io.reactivex.ObservableEmitter;
@@ -33,14 +39,15 @@ import io.reactivex.Observer;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 public class CloudPublishViewModel extends AndroidViewModel {
 
-  private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
   private final Subject<Boolean> mPublishEnabledSubject = BehaviorSubject.create();
+  private final Subject<Boolean> mManualTriggerSubject = PublishSubject.create();
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
   private final Subject<Optional<WorkerManager.ItemStats>> mStatsSubject = BehaviorSubject.createDefault(Optional.empty());
 
@@ -54,37 +61,57 @@ public class CloudPublishViewModel extends AndroidViewModel {
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
 
-    Observable.merge(Observable.combineLatest(
+    Observable<OneTimeWorkRequest> workStream = mManualTriggerSubject
+        .map(t -> new OneTimeWorkRequest.Builder(NoopWorker.class).build());
+
+    Observable<Optional<String>> driveFolderLinkStream = mAccountSubject.distinctUntilChanged()
+        .flatMap(account -> {
+          if (!account.isPresent()) {
+            return Observable.just(Optional.empty());
+          }
+          DriveServiceHelper driveServiceHelper =
+              DriveServiceHelper.forAccount(account.get(), application);
+          return driveServiceHelper
+              .getOrCreateFolder(DriveServiceHelper.FOLDER_NAME_MY_CHARTS)
+              .map(myChartsFolder -> Optional.of(getDriveLink(myChartsFolder)))
+              .toObservable();
+        });
+
+    Observable.combineLatest(
         mAccountSubject.distinctUntilChanged(),
         mPublishEnabledSubject.distinctUntilChanged(),
         mStatsSubject.distinctUntilChanged(),
-        (account, publishEnabled, stats) -> {
+        driveFolderLinkStream.distinctUntilChanged(),
+        (account, publishEnabled, stats, driveFolderLink) -> {
           if (account.isPresent() && publishEnabled) {
-            maybeConnectWorkSteam();
-            DriveServiceHelper driveServiceHelper =
-                DriveServiceHelper.forAccount(account.get(), application);
+            maybeConnectWorkSteam(workStream);
             Optional<Integer> itemsOutstanding = stats.map(itemStats -> itemStats.numEncueuedRequests() - itemStats.numCompletedRequests());
-            Optional<ReadableInstant> lastEncueueTime = stats.map(itemStats -> new Instant(itemStats.lastEncueueTime()));
-            Optional<ReadableInstant> lastCompletedTime = stats.map(itemStats -> new Instant(stats.get().lastCompletedTime()));
-            return driveServiceHelper
-                .getOrCreateFolder(DriveServiceHelper.FOLDER_NAME_MY_CHARTS)
-                .map(myChartsFolder -> ViewState.create(
-                    account, Optional.of(getDriveLink(myChartsFolder)), true,
-                    itemsOutstanding, lastEncueueTime, lastCompletedTime))
-                .toObservable();
+            Optional<ReadableInstant> lastEncueueTime = stats.flatMap(itemStats -> {
+              if (itemStats.lastEncueueTime() == 0) {
+                return Optional.empty();
+              }
+              return Optional.of(new DateTime(itemStats.lastEncueueTime(), DateTimeZone.getDefault()));
+            });
+            Optional<ReadableInstant> lastCompletedTime = stats.flatMap(itemStats -> {
+              if (itemStats.lastCompletedTime() == 0) {
+                return Optional.empty();
+              }
+              return Optional.of(new DateTime(itemStats.lastCompletedTime(), DateTimeZone.getDefault()));
+            });
+            return ViewState.create(account, driveFolderLink, true, itemsOutstanding, lastEncueueTime, lastCompletedTime);
           }
           if (!disconnectWorkStream()) {
             Timber.v("No work stream to disconnect");
           } else {
             Timber.v("Work stream disconnected");
           }
-          return Single.just(ViewState.create(account, Optional.empty(), false, Optional.empty(), Optional.empty(), Optional.empty())).toObservable();
-        })).subscribe(mViewStateSubject);
+          return ViewState.create(account, Optional.empty(), false, Optional.empty(), Optional.empty(), Optional.empty());
+        }).subscribe(mViewStateSubject);
 
     checkAccount();
   }
 
-  private void maybeConnectWorkSteam() {
+  private void maybeConnectWorkSteam(Observable<OneTimeWorkRequest> workStream) {
     Optional<Observable<WorkerManager.ItemStats>> statsStream =
         mWorkerManager.getUpdateStream(WorkerManager.Item.PUBLISH);
     if (statsStream.isPresent()) {
@@ -92,8 +119,7 @@ public class CloudPublishViewModel extends AndroidViewModel {
       return;
     }
     Timber.d("Connecting work stream");
-    statsStream = mWorkerManager.register(WorkerManager.Item.PUBLISH, Observable.create(emitter -> {
-    }));
+    statsStream = mWorkerManager.register(WorkerManager.Item.PUBLISH, workStream);
     if (statsStream.isPresent()) {
       Timber.d("Work stream connected");
       statsStream.get().map(Optional::of).subscribe(mStatsSubject);
@@ -103,7 +129,11 @@ public class CloudPublishViewModel extends AndroidViewModel {
   }
 
   private boolean disconnectWorkStream() {
-    return mWorkerManager.cancel(WorkerManager.Item.PUBLISH);
+    if (mWorkerManager.cancel(WorkerManager.Item.PUBLISH)) {
+      mStatsSubject.onNext(Optional.empty());
+      return true;
+    }
+    return false;
   }
 
   public LiveData<ViewState> viewState() {
@@ -112,6 +142,10 @@ public class CloudPublishViewModel extends AndroidViewModel {
 
   public Observer<Boolean> publishEnabledObserver() {
     return mPublishEnabledSubject;
+  }
+
+  public Observer<Boolean> manualTriggerObserver() {
+    return mManualTriggerSubject;
   }
 
   public void signOut() {
@@ -143,5 +177,22 @@ public class CloudPublishViewModel extends AndroidViewModel {
 
   private static String getDriveLink(@NonNull File file) {
     return String.format("https://drive.google.com/drive/folders/%s", file.getId());
+  }
+
+  public static class NoopWorker extends  RxWorker {
+    /**
+     * @param appContext   The application {@link Context}
+     * @param workerParams Parameters to setup the internal state of this worker
+     */
+    public NoopWorker(@NonNull Context appContext, @NonNull WorkerParameters workerParams) {
+      super(appContext, workerParams);
+    }
+
+    @NonNull
+    @Override
+    public Single<Result> createWork() {
+      Timber.d("Creating work");
+      return Single.timer(10, TimeUnit.SECONDS).map(l -> Result.success());
+    }
   }
 }

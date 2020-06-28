@@ -176,7 +176,11 @@
         android:id="@+id/cloud_publish"
         android:name="com.bloomcyclecare.cmcc.ui.cloud.CloudPublishFragment"
         android:label="Cloud Upload"
-        tools:layout="@layout/fragment_cloud_publish"/>
+        tools:layout="@layout/fragment_cloud_publish">
+        <action
+            android:id="@+id/action_share"
+            app:destination="@id/print_chart" />
+    </fragment>
 
     <activity
         android:id="@+id/instructions_list"
