@@ -6,15 +6,20 @@ import android.content.Context;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
+import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Range;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.joda.time.ReadableInstant;
 import org.joda.time.Instant;
 
@@ -29,6 +34,7 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.LiveData;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.RxWorker;
+import androidx.work.WorkManager;
 import androidx.work.WorkRequest;
 import androidx.work.WorkerParameters;
 import io.reactivex.BackpressureStrategy;
@@ -37,6 +43,7 @@ import io.reactivex.ObservableEmitter;
 import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.Single;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
@@ -61,8 +68,14 @@ public class CloudPublishViewModel extends AndroidViewModel {
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
 
-    Observable<OneTimeWorkRequest> workStream = mManualTriggerSubject
-        .map(t -> new OneTimeWorkRequest.Builder(NoopWorker.class).build());
+    DataRepos dataRepos = DataRepos.fromApp(application);
+
+    Observable<OneTimeWorkRequest> workStream = Observable.mergeArray(
+        dataRepos.updateStream(30).toObservable(),
+        mManualTriggerSubject.map(t -> Range.singleton(LocalDate.now())))
+        .map(dateRange -> new OneTimeWorkRequest.Builder(PublishWorker.class)
+            .setInputData(PublishWorker.createInputData(dateRange))
+            .build());
 
     Observable<Optional<String>> driveFolderLinkStream = mAccountSubject.distinctUntilChanged()
         .flatMap(account -> {

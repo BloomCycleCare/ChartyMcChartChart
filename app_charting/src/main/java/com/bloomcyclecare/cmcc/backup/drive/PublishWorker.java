@@ -2,11 +2,14 @@ package com.bloomcyclecare.cmcc.backup.drive;
 
 import android.content.Context;
 
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.print.ChartPrinter;
 import com.bloomcyclecare.cmcc.logic.print.PageRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
+import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.model.File;
 import com.google.common.collect.Range;
@@ -51,10 +54,10 @@ public class PublishWorker extends RxWorker {
   }
 
   private Single<ChartPrinter> chartPrinter() {
-    ChartingApp myApp = ChartingApp.getInstance();
+    DataRepos dataRepos = DataRepos.fromApp(ChartingApp.getInstance());
     return Single.merge(Single.zip(
-        myApp.instructionsRepo().getAll().firstOrError(),
-        myApp.cycleRepo().getStream().firstOrError(),
+        dataRepos.instructionsRepo(ViewMode.CHARTING).getAll().firstOrError(),
+        dataRepos.cycleRepo(ViewMode.CHARTING).getStream().firstOrError(),
         (instructions, cycles) -> Observable.fromIterable(cycles)
             /*.filter(cycle -> {
               int daysInCycle = Days.daysBetween(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())).getDays();
@@ -65,7 +68,7 @@ public class PublishWorker extends RxWorker {
               return true;
             })*/
             .sorted((a, b) -> a.startDate.compareTo(b.startDate))
-            .flatMapSingle(cycle -> myApp.entryRepo()
+            .flatMapSingle(cycle -> dataRepos.entryRepo(ViewMode.CHARTING)
                 .getStreamForCycle(Flowable.just(cycle))
                 .doOnSubscribe(d -> Timber.d("Fetching entries for cycle"))
                 .firstOrError()
@@ -83,34 +86,30 @@ public class PublishWorker extends RxWorker {
         getInputData().getString(Params.END_DATE.name()));
 
     // TODO: incremental updates
+    // TODO: cache drive service
 
-    ChartingApp myApp = ChartingApp.getInstance();
-    if (!myApp.driveService().hasValue() || !myApp.driveService().getValue().isPresent()) {
-      Timber.w("Drive service not available");
-      return Single.just(Result.failure());
-    }
-    DriveServiceHelper driveService = myApp.driveService().getValue().get();
-    return chartPrinter()
-        .doOnSuccess(p -> Timber.d("Saving PDFs"))
-        .flatMap(ChartPrinter::savePDFs)
-        .observeOn(Schedulers.io())
-        .doOnSuccess(charts -> Timber.d("Uploading PDFs to Drive"))
-        .flatMap(savedCharts -> driveService.getOrCreateFolder("My Charts").flatMap(folder -> driveService
-            .clearFolder(folder, "pdf").andThen(Observable.fromIterable(savedCharts)
-                .flatMap(savedChart -> {
-                  File file = new File();
-                  file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
-                  FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
-                  return driveService
-                      .addFileToFolder(folder, file, mediaContent)
-                      .doOnSuccess(f -> savedChart.file.delete())
-                      .toObservable();
-                })
-                .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
-                .toList())))
-        .flatMap(files -> Single.just(Result.success()))
-        .doOnError(t -> Timber.w(t, "Problem with pubish"))
-        .subscribeOn(Schedulers.computation())
-        ;
+    return GoogleAuthHelper.googleAccount(mContext)
+        .map(account -> DriveServiceHelper.forAccount(account, mContext))
+        .flatMapSingle(driveService -> chartPrinter()
+            .doOnSuccess(p -> Timber.d("Saving PDFs"))
+            .flatMap(ChartPrinter::savePDFs)
+            .observeOn(Schedulers.io())
+            .doOnSuccess(charts -> Timber.d("Uploading PDFs to Drive"))
+            .flatMap(savedCharts -> driveService.getOrCreateFolder("My Charts").flatMap(folder -> driveService
+                .clearFolder(folder, "pdf").andThen(Observable.fromIterable(savedCharts)
+                    .flatMap(savedChart -> {
+                      File file = new File();
+                      file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
+                      FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
+                      return driveService
+                          .addFileToFolder(folder, file, mediaContent)
+                          .doOnSuccess(f -> savedChart.file.delete())
+                          .toObservable();
+                    })
+                    .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
+                    .toList())))
+            .flatMap(files -> Single.just(Result.success()))
+            .doOnError(t -> Timber.w(t, "Problem with pubish"))
+            .subscribeOn(Schedulers.computation()));
   }
 }

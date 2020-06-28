@@ -10,7 +10,11 @@ import com.bloomcyclecare.cmcc.data.repos.exercise.RWExerciseRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
+import com.google.common.collect.Range;
 
+import org.joda.time.LocalDate;
+
+import io.reactivex.Flowable;
 import timber.log.Timber;
 
 public interface DataRepos {
@@ -32,6 +36,8 @@ public interface DataRepos {
   RWStickerSelectionRepo stickerSelectionRepo(ViewMode viewMode);
 
   RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise);
+
+  Flowable<Range<LocalDate>> updateStream(int pauseWindowSecs);
 
   static DataRepos fromApp(Application application) {
     if (application instanceof DataRepos) {

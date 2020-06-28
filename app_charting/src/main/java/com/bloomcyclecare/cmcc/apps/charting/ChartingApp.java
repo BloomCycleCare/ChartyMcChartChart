@@ -140,70 +140,7 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     Intent chartingRestartIntent = new Intent(this, ChartingReceiver.class);
     sendBroadcast(chartingRestartIntent);
 
-
-    Flowable<UpdateTrigger> triggerStream = Flowable.merge(
-        cycleRepo(ViewMode.CHARTING).updateEvents()
-            .observeOn(Schedulers.computation())
-            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
-            .doOnNext(t -> Timber.v("New cycle update")) ,
-        entryRepo(ViewMode.CHARTING).updateEvents()
-            .observeOn(Schedulers.computation())
-            .flatMap(e -> cycleRepo(ViewMode.CHARTING)
-                .getCycleForDate(e.updateTarget).toSingle()
-                .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
-                .map(range -> new UpdateTrigger(e.updateTime, range))
-                .toFlowable())
-            .doOnNext(t -> Timber.v("New entry update")),
-        instructionsRepo(ViewMode.CHARTING).updateEvents()
-            .observeOn(Schedulers.computation())
-            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
-            .doOnNext(t -> Timber.v("New instruction update")))
-        .share();
-
-    Flowable<List<UpdateTrigger>> batchedTriggers = Flowable.merge(
-        triggerStream.doOnNext(t -> Timber.v("New update event"))
-            .buffer(Flowable.combineLatest(
-            // Watch the trigger stream
-            triggerStream,
-            // And a rebroadcast of the stream
-            triggerStream.delay(30, TimeUnit.SECONDS),
-            // Looking for when the rebroadcast == the trigger stream
-            (latest, delayed) -> latest.triggerTime == delayed.triggerTime)
-            .doOnNext(b -> Timber.v("Separator update: %b", b))
-            // Filter for only these cases
-            .filter(v -> v))
-            .doOnNext(t -> Timber.v("New update batch")),
-        mManualSyncTriggers.map(b -> ImmutableList.of(new UpdateTrigger(DateTime.now(), Range.singleton(LocalDate.now())))).toFlowable(BackpressureStrategy.BUFFER))
-        .share();
-
-    Flowable<Range<LocalDate>> mergedTrigger = batchedTriggers
-        .map(triggers -> {
-          LocalDate start = null;
-          LocalDate end = null;
-          for (UpdateTrigger trigger : triggers) {
-            if (trigger.dateRange.hasLowerBound() && (start == null || start.isAfter(trigger.dateRange.lowerEndpoint()))) {
-              start = trigger.dateRange.lowerEndpoint();
-            }
-            if (trigger.dateRange.hasUpperBound() && (end == null || end.isBefore(trigger.dateRange.upperEndpoint()))) {
-              end = trigger.dateRange.upperEndpoint();
-            }
-          }
-          if (start == null) {
-            throw new IllegalArgumentException();
-          }
-          return Range.closed(start, Optional.fromNullable(end).or(LocalDate.now()));
-        });
-
-    mDisposables.add(mergedTrigger
-        .compose(RxUtil.takeWhile(mPreferenceRepo.summaries(), PreferenceRepo.PreferenceSummary::backupEnabled))
-        .map(dateRange -> new OneTimeWorkRequest.Builder(PublishWorker.class)
-            .setInputData(PublishWorker.createInputData(dateRange))
-            .build())
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(request -> {
-          Timber.d("Received work request for publish");
-          WorkManager.getInstance(getApplicationContext()).enqueue(request);
-        }, t -> Timber.e(t, "Error creating publish request")));
+    Flowable<Range<LocalDate>> batchedTriggers = updateStream(30);
 
     mDisposables.add(batchedTriggers
         //.startWith(ImmutableList.<UpdateTrigger>of())
@@ -289,6 +226,62 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
   @Override
   public RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise) {
     return mStickerSelectionRepoFactory.forExercise(exercise);
+  }
+
+  @Override
+  public Flowable<Range<LocalDate>> updateStream(int pauseWindowSecs) {
+    Flowable<UpdateTrigger> triggerStream = Flowable.merge(
+        cycleRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
+            .doOnNext(t -> Timber.v("New cycle update")) ,
+        entryRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .flatMap(e -> cycleRepo(ViewMode.CHARTING)
+                .getCycleForDate(e.updateTarget).toSingle()
+                .map(cycle -> Range.closed(cycle.startDate, Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
+                .map(range -> new UpdateTrigger(e.updateTime, range))
+                .toFlowable())
+            .doOnNext(t -> Timber.v("New entry update")),
+        instructionsRepo(ViewMode.CHARTING).updateEvents()
+            .observeOn(Schedulers.computation())
+            .map(e -> new UpdateTrigger(e.updateTime, e.dateRange))
+            .doOnNext(t -> Timber.v("New instruction update")))
+        .share();
+
+    Flowable<List<UpdateTrigger>> batchedTriggers = Flowable.merge(
+        triggerStream.doOnNext(t -> Timber.v("New update event"))
+            .buffer(Flowable.combineLatest(
+                // Watch the trigger stream
+                triggerStream,
+                // And a rebroadcast of the stream
+                triggerStream.delay(pauseWindowSecs, TimeUnit.SECONDS),
+                // Looking for when the rebroadcast == the trigger stream
+                (latest, delayed) -> latest.triggerTime == delayed.triggerTime)
+                .doOnNext(b -> Timber.v("Separator update: %b", b))
+                // Filter for only these cases
+                .filter(v -> v))
+            .doOnNext(t -> Timber.v("New update batch")),
+        mManualSyncTriggers.map(b -> ImmutableList.of(new UpdateTrigger(DateTime.now(), Range.singleton(LocalDate.now())))).toFlowable(BackpressureStrategy.BUFFER))
+        .share();
+
+    return batchedTriggers
+        .map(triggers -> {
+          LocalDate start = null;
+          LocalDate end = null;
+          for (UpdateTrigger trigger : triggers) {
+            if (trigger.dateRange.hasLowerBound() && (start == null || start.isAfter(trigger.dateRange.lowerEndpoint()))) {
+              start = trigger.dateRange.lowerEndpoint();
+            }
+            if (trigger.dateRange.hasUpperBound() && (end == null || end.isBefore(trigger.dateRange.upperEndpoint()))) {
+              end = trigger.dateRange.upperEndpoint();
+            }
+          }
+          if (start == null) {
+            throw new IllegalArgumentException();
+          }
+          return Range.closed(start, Optional.fromNullable(end).or(LocalDate.now()));
+        });
   }
 
   @Deprecated
