@@ -58,6 +58,9 @@ public class CloudPublishFragment extends Fragment {
   @Nullable
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    mMainViewModel.updateTitle("Cloud Publish");
+    mMainViewModel.updateSubtitle("");
+
     View view = inflater.inflate(R.layout.fragment_cloud_publish, container, false);
 
     mDriveLinkTextView = view.findViewById(R.id.tv_drive_link);
@@ -69,12 +72,12 @@ public class CloudPublishFragment extends Fragment {
     mNumOutstandingTextView = view.findViewById(R.id.tv_renders_outstanding);
     mStatsGroup = view.findViewById(R.id.stats_group);
 
-    RxCompoundButton.checkedChanges(mPublishEnabledSwitch).subscribe(mCloudPublishViewModel.publishEnabledObserver());
 
     mCloudPublishViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
-    mMainViewModel.updateTitle("Cloud Publish");
-    mMainViewModel.updateSubtitle("");
+    RxCompoundButton.checkedChanges(mPublishEnabledSwitch)
+        .skipInitialValue()
+        .subscribe(mCloudPublishViewModel.publishEnabledObserver());
 
     return view;
   }

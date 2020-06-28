@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.ui.cloud;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.SharedPreferences;
 
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
@@ -32,6 +33,7 @@ import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.LiveData;
+import androidx.preference.PreferenceManager;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.RxWorker;
 import androidx.work.WorkManager;
@@ -52,6 +54,10 @@ import timber.log.Timber;
 
 public class CloudPublishViewModel extends AndroidViewModel {
 
+  private enum PrefKeys {
+    PUBLISH_ENABLED;
+  }
+
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
   private final Subject<Boolean> mPublishEnabledSubject = BehaviorSubject.create();
   private final Subject<Boolean> mManualTriggerSubject = PublishSubject.create();
@@ -59,6 +65,7 @@ public class CloudPublishViewModel extends AndroidViewModel {
   private final Subject<Optional<WorkerManager.ItemStats>> mStatsSubject = BehaviorSubject.createDefault(Optional.empty());
 
   private final Context mContext;
+  private final SharedPreferences mSharedPreferences;
   private final GoogleSignInClient mSigninClient;
   private final WorkerManager mWorkerManager;
 
@@ -67,9 +74,16 @@ public class CloudPublishViewModel extends AndroidViewModel {
     mContext = application.getApplicationContext();
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
+    mSharedPreferences = application.getSharedPreferences(
+        CloudPublishViewModel.class.getCanonicalName(), Context.MODE_PRIVATE);
+
+    mPublishEnabledSubject.onNext(
+        mSharedPreferences.getBoolean(PrefKeys.PUBLISH_ENABLED.name(), false));
+    mPublishEnabledSubject.subscribe(enabled -> {
+      mSharedPreferences.edit().putBoolean(PrefKeys.PUBLISH_ENABLED.name(), enabled).apply();
+    });
 
     DataRepos dataRepos = DataRepos.fromApp(application);
-
     Observable<OneTimeWorkRequest> workStream = Observable.mergeArray(
         dataRepos.updateStream(30).toObservable(),
         mManualTriggerSubject.map(t -> Range.singleton(LocalDate.now())))
