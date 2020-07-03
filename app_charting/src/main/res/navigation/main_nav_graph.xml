@@ -29,6 +29,10 @@
         <action
             android:id="@+id/action_load_chart"
             app:destination="@id/chart_pager" />
+        <action
+            android:id="@+id/action_restore_from_drive"
+            app:popUpTo="@id/main"
+            app:destination="@id/drive_restore" />
     </fragment>
 
     <fragment
@@ -187,6 +191,16 @@
         android:name="com.bloomcyclecare.cmcc.ui.backup.BackupFragment"
         android:label="Clound Backup"
         tools:layout="@layout/fragment_cloud_backup" />
+
+    <fragment
+        android:id="@+id/drive_restore"
+        android:name="com.bloomcyclecare.cmcc.ui.restore.RestoreFromDriveFragment"
+        android:label="Drive Restore"
+        tools:layout="@layout/fragment_drive_restore">
+        <action
+            android:id="@+id/action_show_chart"
+            app:destination="@id/chart_pager" />
+    </fragment>
 
     <activity
         android:id="@+id/instructions_list"

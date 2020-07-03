@@ -10,6 +10,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragment;
+import com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragmentDirections;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 import com.stepstone.stepper.Step;
 import com.stepstone.stepper.VerificationError;
@@ -25,6 +27,8 @@ import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.Group;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 import io.reactivex.disposables.CompositeDisposable;
 
 public class InitCycleStepFragment extends Fragment implements Step {
@@ -97,6 +101,14 @@ public class InitCycleStepFragment extends Fragment implements Step {
           datePickerDialog.show(requireActivity().getFragmentManager(), "tag");
         });
       }
+      mDatePromptButton.setText("Select Date");
+    } else {
+      mSelectionPromptText.setText("Alternatively if you previously configured Google Drive backups, click below to connect your Drive Account and restore your charts.");
+      mDatePromptButton.setText("Restore from Google Drive");
+      mDatePromptButton.setOnClickListener(v -> {
+        NavController navController = Navigation.findNavController(requireParentFragment().getView());
+        navController.navigate(StepperFragmentDirections.actionRestoreFromDrive());
+      });
     }
   }
 

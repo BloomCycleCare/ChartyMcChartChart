@@ -97,8 +97,6 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
     mDisposables.add(mCycleRepo.getCurrentCycle()
         .compose(tryUseLatestAsCurrent())
         .observeOn(AndroidSchedulers.mainThread())
-        .compose(tryRestoreFromDrive())
-        .observeOn(AndroidSchedulers.mainThread())
         .switchIfEmpty(runInitFlow())
         .observeOn(AndroidSchedulers.mainThread())
         .subscribeOn(Schedulers.computation())
@@ -125,57 +123,6 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
                   copyOfLatest.endDate = null;
                   return mCycleRepo.insertOrUpdate(copyOfLatest).andThen(Maybe.just(copyOfLatest));
                 })));
-  }
-
-  private MaybeTransformer<Cycle, Cycle> tryRestoreFromDrive() {
-    return upstream -> upstream.switchIfEmpty(
-        ChartingApp.getInstance().preferenceRepo().summaries().firstOrError()
-            .flatMapMaybe(summary -> {
-              if (!summary.backupEnabled()) {
-                Timber.i("Not restoring from Drive, backup disabled");
-                return Maybe.empty();
-              }
-              return ChartingApp.getInstance().driveService()
-                  .flatMapMaybe(driveHelper -> {
-                    if (!driveHelper.isPresent()) {
-                      Timber.i("Not restoring from Drive, service not available");
-                      return Maybe.empty();
-                    }
-                    return Maybe.just(driveHelper.get());
-                  })
-                  .flatMap(driveService -> driveService.getFolder("My Charts")
-                      .flatMap(folder -> driveService.getFilesInFolder(folder, "backup.chart"))
-                      .observeOn(AndroidSchedulers.mainThread())
-                      .flatMap(files -> {
-                        if (files.size() > 1) {
-                          Timber.w("Found several files! Bailing out of restore flow.");
-                          return Maybe.empty();
-                        }
-                        File backupFile = files.get(0);
-                        Timber.d("Prompting for restore");
-                        return promptRestoreFromDrive(backupFile).observeOn(Schedulers.io()).flatMapMaybe(doRestore -> {
-                          if (!doRestore) {
-                            return Maybe.empty();
-                          }
-                          Timber.d("Reading backup files from Drive");
-                          ByteArrayOutputStream out = new ByteArrayOutputStream();
-                          return driveService.downloadFile(files.get(0), out)
-                              .map(outputStream -> out.toByteArray())
-                              .toMaybe();
-                        });
-                      }))
-                  .observeOn(Schedulers.computation())
-                  .flatMap(bytes -> {
-                    Timber.d("Parsing backup file");
-                    ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-                    return AppStateParser.parse(() -> in).toMaybe();
-                  })
-                  .flatMap(appState -> {
-                    Timber.d("Importing app state");
-                    AppStateImporter importer = new AppStateImporter(ChartingApp.getInstance());
-                    return importer.importAppState(appState).andThen(mCycleRepo.getCurrentCycle());
-                  });
-            }).doOnSubscribe(d -> Timber.d("Trying restore from Drive")));
   }
 
   @AutoValue
@@ -320,34 +267,6 @@ public class LoadCurrentCycleFragment extends SplashFragment implements UserInit
               e.onSuccess(false);
               dialog.dismiss();
             }
-          })
-          .create().show();
-    });
-  }
-
-  private Single<Boolean> promptRestoreFromDrive(File file) {
-    StringBuilder content = new StringBuilder();
-    content.append("Would you like to restore your data from Google Drive?<br/><br/>");
-    content.append(String.format("<b>Last backup was taken on:</b> %s", file.getModifiedTime()));
-    if (file.getProperties() != null) {
-      content.append("<br/><br/>");
-      content.append("<b>Properties:</b>");
-      for (Map.Entry<String, String> entry : file.getProperties().entrySet()) {
-        content.append(String.format("<br/>%s: %s", entry.getKey(), entry.getValue()));
-      }
-    }
-    return Single.create(e -> {
-      new AlertDialog.Builder(getActivity())
-          //set message, title, and icon
-          .setTitle("Restore from Drive?")
-          .setMessage(Html.fromHtml(content.toString()))
-          .setPositiveButton("Yes", (dialog, whichButton) -> {
-            e.onSuccess(true);
-            dialog.dismiss();
-          })
-          .setNegativeButton("No", (dialog, which) -> {
-            e.onSuccess(false);
-            dialog.dismiss();
           })
           .create().show();
     });

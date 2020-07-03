@@ -47,8 +47,10 @@ public class InstructionsStepFragment extends Fragment implements BlockingStep {
       Fragment fragment = new InstructionSelectionFragment();
       fragment.setArguments(args);
 
-      getChildFragmentManager().beginTransaction().add(R.id.fragment_container, fragment).commit();
-      getChildFragmentManager().executePendingTransactions();
+      if (isAdded()) {
+        getChildFragmentManager().beginTransaction().add(R.id.fragment_container, fragment).commit();
+        getChildFragmentManager().executePendingTransactions();
+      }
     }));
 
     return view;
