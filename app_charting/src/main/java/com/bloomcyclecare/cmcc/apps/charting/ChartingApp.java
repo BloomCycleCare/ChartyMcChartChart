@@ -134,6 +134,8 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 
+
+
     mViewModelFactory = new ViewModelFactory();
 
     Timber.i("Sending charting reminder restart intent");

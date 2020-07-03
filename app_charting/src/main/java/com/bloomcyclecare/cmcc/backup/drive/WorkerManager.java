@@ -33,6 +33,8 @@ public interface WorkerManager {
   Optional<Observable<ItemStats>> register(
       Item item, Observable<OneTimeWorkRequest> workStream, Runnable onSuccess, Consumer<String> onError);
 
+  boolean manualTrigger(Item item, OneTimeWorkRequest workRequest);
+
   Optional<Observable<ItemStats>> getUpdateStream(Item item);
 
   boolean cancel(Item item);
@@ -92,13 +94,14 @@ public interface WorkerManager {
         Timber.w("Work stream already registered for items: %s", item.name());
         return Optional.empty();
       }
+      Subject<OneTimeWorkRequest> manualTriggers = PublishSubject.create();
       Subject<ItemStats> statsSubject = BehaviorSubject.create();
       Set<Runnable> cleanupTasks = Sets.newConcurrentHashSet();
       AtomicInteger numEncueuedReqeusts = new AtomicInteger();
       AtomicInteger numCompletedRequests = new AtomicInteger();
       AtomicLong lastEncueueTimeMs = new AtomicLong();
       AtomicLong lastCompletedTimeMs = new AtomicLong();
-      Disposable d = workStream
+      Disposable d = Observable.mergeArray(workStream, manualTriggers)
           .doOnNext(r -> Timber.d("New request for item: %s", item.name()))
           .observeOn(AndroidSchedulers.mainThread())  // observeForever must be on main thread
           .subscribe(request -> {
@@ -120,8 +123,18 @@ public interface WorkerManager {
             });
             ld.observeForever(o);
           }, t -> Timber.e(t, "Error in work stream for itesm: %s", item.name()));
-      mRegistrations.put(item, Registration.create(statsSubject, cleanupTasks, d));
+      mRegistrations.put(item, Registration.create(statsSubject, cleanupTasks, manualTriggers, d));
       return Optional.of(statsSubject);
+    }
+
+    @Override
+    public boolean manualTrigger(Item item, OneTimeWorkRequest workRequest) {
+      Registration registration = mRegistrations.get(item);
+      if (registration == null) {
+        return false;
+      }
+      registration.manualTriggerSubject().onNext(workRequest);
+      return true;
     }
 
     @Override
@@ -168,10 +181,11 @@ public interface WorkerManager {
 
       abstract Observable<ItemStats> statsSubject();
       abstract Set<Runnable> cleanupTasks();
+      abstract Subject<OneTimeWorkRequest> manualTriggerSubject();
       abstract Disposable disposable();
 
-      public static Registration create(Observable<ItemStats> statsSubject, Set<Runnable> cleanupTasks, Disposable disposable) {
-        return new AutoValue_WorkerManager_Impl_Registration(statsSubject, cleanupTasks, disposable);
+      public static Registration create(Observable<ItemStats> statsSubject, Set<Runnable> cleanupTasks, Subject<OneTimeWorkRequest> manualTriggerSubject, Disposable disposable) {
+        return new AutoValue_WorkerManager_Impl_Registration(statsSubject, cleanupTasks, manualTriggerSubject, disposable);
       }
 
     }

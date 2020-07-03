@@ -20,6 +20,7 @@ import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
 import androidx.work.RxWorker;
 import androidx.work.WorkerParameters;
 import io.reactivex.Flowable;
@@ -36,6 +37,12 @@ public class PublishWorker extends RxWorker {
   private enum Params {
     START_DATE,
     END_DATE
+  }
+
+  public static OneTimeWorkRequest forDateRange(Range<LocalDate> dateRange) {
+    return new OneTimeWorkRequest.Builder(PublishWorker.class)
+        .setInputData(PublishWorker.createInputData(dateRange))
+        .build();
   }
 
   public static Data createInputData(Range<LocalDate> dateRange) {

@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.cloud;
+package com.bloomcyclecare.cmcc.ui.publish;
 
 import android.os.Bundle;
 import android.text.Html;
@@ -31,9 +31,9 @@ import androidx.navigation.ui.NavigationUI;
 
 import static android.text.Html.FROM_HTML_MODE_COMPACT;
 
-public class CloudPublishFragment extends Fragment {
+public class PublishFragment extends Fragment {
 
-  private CloudPublishViewModel mCloudPublishViewModel;
+  private PublishViewModel mPublishViewModel;
   private MainViewModel mMainViewModel;
 
   private Switch mPublishEnabledSwitch;
@@ -50,7 +50,7 @@ public class CloudPublishFragment extends Fragment {
     super.onCreate(savedInstanceState);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-    mCloudPublishViewModel = new ViewModelProvider(this).get(CloudPublishViewModel.class);
+    mPublishViewModel = new ViewModelProvider(this).get(PublishViewModel.class);
 
     setHasOptionsMenu(true);
   }
@@ -73,11 +73,11 @@ public class CloudPublishFragment extends Fragment {
     mStatsGroup = view.findViewById(R.id.stats_group);
 
 
-    mCloudPublishViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
+    mPublishViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
     RxCompoundButton.checkedChanges(mPublishEnabledSwitch)
         .skipInitialValue()
-        .subscribe(mCloudPublishViewModel.publishEnabledObserver());
+        .subscribe(mPublishViewModel.publishEnabledObserver());
 
     return view;
   }
@@ -93,10 +93,10 @@ public class CloudPublishFragment extends Fragment {
     switch (item.getItemId()) {
       case R.id.action_share:
         NavHostFragment.findNavController(this)
-            .navigate(CloudPublishFragmentDirections.actionShare(ViewMode.CHARTING));
+            .navigate(PublishFragmentDirections.actionShare(ViewMode.CHARTING));
         return true;
       case R.id.action_sync:
-        mCloudPublishViewModel.manualTriggerObserver().onNext(true);
+        mPublishViewModel.manualTriggerObserver().onNext(true);
         return true;
       default:
         return NavigationUI.onNavDestinationSelected(
@@ -106,11 +106,11 @@ public class CloudPublishFragment extends Fragment {
 
   @Override
   public void onResume() {
-    mCloudPublishViewModel.checkAccount();
+    mPublishViewModel.checkAccount();
     super.onResume();
   }
 
-  private void render(CloudPublishViewModel.ViewState viewState) {
+  private void render(PublishViewModel.ViewState viewState) {
     boolean hasAccount = viewState.account().isPresent();
 
     // Configure publish enable switch
@@ -122,7 +122,7 @@ public class CloudPublishFragment extends Fragment {
     // Configure sign in/out button
     mConnectButton.setText(hasAccount ? "Sign Out" : "Sign In");
     if (hasAccount) {
-      mConnectButton.setOnClickListener(v -> mCloudPublishViewModel.signOut());
+      mConnectButton.setOnClickListener(v -> mPublishViewModel.signOut());
     } else {
       mConnectButton.setOnClickListener(v -> {
         startActivityForResult(GoogleAuthHelper.getPromptIntent(requireContext()), 1);
