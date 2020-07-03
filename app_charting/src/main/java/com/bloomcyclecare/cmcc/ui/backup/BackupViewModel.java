@@ -5,6 +5,8 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.widget.Toast;
 
+import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
+import com.bloomcyclecare.cmcc.backup.drive.DriveFeaturePrefs;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
@@ -35,6 +37,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import io.reactivex.Single;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
@@ -42,9 +45,7 @@ import timber.log.Timber;
 
 public class BackupViewModel extends AndroidViewModel {
 
-  private enum PrefKeys {
-    PUBLISH_ENABLED;
-  }
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
   private final Subject<Boolean> mPublishEnabledSubject = BehaviorSubject.create();
@@ -53,37 +54,35 @@ public class BackupViewModel extends AndroidViewModel {
   private final Subject<Optional<WorkerManager.ItemStats>> mStatsSubject = BehaviorSubject.createDefault(Optional.empty());
 
   private final Context mContext;
-  private final SharedPreferences mSharedPreferences;
   private final GoogleSignInClient mSigninClient;
   private final WorkerManager mWorkerManager;
+  private final DriveFeaturePrefs mDriveFeaturePrefs;
 
   public BackupViewModel(@NonNull Application application) {
     super(application);
     mContext = application.getApplicationContext();
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
-    mSharedPreferences = application.getSharedPreferences(
-        BackupViewModel.class.getCanonicalName(), Context.MODE_PRIVATE);
+    mDriveFeaturePrefs = new DriveFeaturePrefs(BackupWorker.class, application);
 
-    mPublishEnabledSubject.onNext(
-        mSharedPreferences.getBoolean(PrefKeys.PUBLISH_ENABLED.name(), false));
-    mPublishEnabledSubject.subscribe(enabled -> {
-      mSharedPreferences.edit().putBoolean(PrefKeys.PUBLISH_ENABLED.name(), enabled).apply();
-    });
+    mPublishEnabledSubject.onNext(mDriveFeaturePrefs.getEnabled());
+    mDisposables.add(mPublishEnabledSubject.subscribe(mDriveFeaturePrefs::setEnabled));
+
+    mDisposables.add(mManualTriggerSubject.subscribe(b -> {
+      if (mWorkerManager.manualTrigger(WorkerManager.Item.BACKUP, BackupWorker.forDateRange(Range.singleton(LocalDate.now())))) {
+        Toast.makeText(mContext, "Manual Backup Triggered", Toast.LENGTH_SHORT).show();
+      } else {
+        Toast.makeText(mContext, "Error Triggering Backup", Toast.LENGTH_SHORT).show();
+      }
+    }));
 
     maybeReconnectStats();
 
     DataRepos dataRepos = DataRepos.fromApp(application);
-    Observable<OneTimeWorkRequest> workStream = Observable.mergeArray(
-        dataRepos
-            .updateStream(30)
-            .toObservable(),
-        mManualTriggerSubject
-            .map(t -> Range.singleton(LocalDate.now()))
-            .doOnNext(r -> Timber.d("Manual trigger registered")))
-        .map(dateRange -> new OneTimeWorkRequest.Builder(PublishWorker.class)
-            .setInputData(PublishWorker.createInputData(dateRange))
-            .build());
+    Observable<OneTimeWorkRequest> workStream = dataRepos
+        .updateStream(30)
+        .toObservable()
+        .map(BackupWorker::forDateRange);
 
     Observable<Optional<String>> driveFolderLinkStream = mAccountSubject.distinctUntilChanged()
         .flatMap(account -> {
@@ -134,20 +133,20 @@ public class BackupViewModel extends AndroidViewModel {
 
   private void maybeReconnectStats() {
     Optional<Observable<WorkerManager.ItemStats>> statsStream =
-        mWorkerManager.getUpdateStream(WorkerManager.Item.PUBLISH);
+        mWorkerManager.getUpdateStream(WorkerManager.Item.BACKUP);
     statsStream.ifPresent(itemStatsObservable -> itemStatsObservable.map(Optional::of)
         .subscribe(mStatsSubject));
   }
 
   private void maybeConnectWorkSteam(Observable<OneTimeWorkRequest> workStream) {
     Optional<Observable<WorkerManager.ItemStats>> statsStream =
-        mWorkerManager.getUpdateStream(WorkerManager.Item.PUBLISH);
+        mWorkerManager.getUpdateStream(WorkerManager.Item.BACKUP);
     if (statsStream.isPresent()) {
       Timber.v("Work stream already active");
       return;
     }
     Timber.d("Connecting work stream");
-    statsStream = mWorkerManager.register(WorkerManager.Item.PUBLISH, workStream, () -> {
+    statsStream = mWorkerManager.register(WorkerManager.Item.BACKUP, workStream, () -> {
       Timber.d("Toasting publish success");
       Toast.makeText(mContext, "Chart Published", Toast.LENGTH_SHORT).show();
     }, message -> {});
@@ -160,7 +159,7 @@ public class BackupViewModel extends AndroidViewModel {
   }
 
   private boolean disconnectWorkStream() {
-    if (mWorkerManager.cancel(WorkerManager.Item.PUBLISH)) {
+    if (mWorkerManager.cancel(WorkerManager.Item.BACKUP)) {
       mStatsSubject.onNext(Optional.empty());
       return true;
     }

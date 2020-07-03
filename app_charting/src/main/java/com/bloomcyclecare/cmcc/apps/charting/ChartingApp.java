@@ -2,12 +2,14 @@ package com.bloomcyclecare.cmcc.apps.charting;
 
 import android.app.Application;
 import android.content.Intent;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.ViewModelFactory;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
+import com.bloomcyclecare.cmcc.backup.drive.DriveFeaturePrefs;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
@@ -134,26 +136,29 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 
+    DriveFeaturePrefs publishPrefs = new DriveFeaturePrefs(PublishWorker.class, this);
+    if (publishPrefs.getEnabled()) {
+      Timber.i("Registered Drive publish worker");
+      mWorkerManager.register(WorkerManager.Item.PUBLISH, dataRepos(this)
+          .updateStream(30)
+          .map(PublishWorker::forDateRange)
+          .toObservable(), () -> Toast.makeText(getApplicationContext(), "Publish Complete", Toast.LENGTH_SHORT).show(), error -> {});
+    }
 
+    DriveFeaturePrefs backupPrefs = new DriveFeaturePrefs(BackupWorker.class, this);
+    if (backupPrefs.getEnabled()) {
+      Timber.i("Registered Drive backup worker");
+      mWorkerManager.register(WorkerManager.Item.BACKUP, dataRepos(this)
+          .updateStream(30)
+          .map(BackupWorker::forDateRange)
+          .toObservable(), () -> Toast.makeText(getApplicationContext(), "Backup Complete", Toast.LENGTH_SHORT).show(), error -> {});
+    }
 
     mViewModelFactory = new ViewModelFactory();
 
     Timber.i("Sending charting reminder restart intent");
     Intent chartingRestartIntent = new Intent(this, ChartingReceiver.class);
     sendBroadcast(chartingRestartIntent);
-
-    Flowable<Range<LocalDate>> batchedTriggers = updateStream(30);
-
-    mDisposables.add(batchedTriggers
-        //.startWith(ImmutableList.<UpdateTrigger>of())
-        .compose(RxUtil.onceAvailable(driveService()))
-        .map(trigger -> new OneTimeWorkRequest.Builder(BackupWorker.class).build())
-        .compose(RxUtil.takeWhile(mPreferenceRepo.summaries(), PreferenceRepo.PreferenceSummary::backupEnabled))
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(request -> {
-          Timber.d("Received work request for backup");
-          WorkManager.getInstance(getApplicationContext()).enqueue(request);
-        }, t -> Timber.e("Error creating backup request")));
 
     mDisposables.add(mDriveSubject.subscribe(
         s -> Timber.d("DriveServiceHelper initialized."),

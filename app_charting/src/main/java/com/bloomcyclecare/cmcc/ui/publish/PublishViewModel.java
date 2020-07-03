@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.widget.Toast;
 
+import com.bloomcyclecare.cmcc.backup.drive.DriveFeaturePrefs;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
@@ -43,10 +44,6 @@ import timber.log.Timber;
 
 public class PublishViewModel extends AndroidViewModel {
 
-  private enum PrefKeys {
-    PUBLISH_ENABLED;
-  }
-
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
@@ -56,7 +53,6 @@ public class PublishViewModel extends AndroidViewModel {
   private final Subject<Optional<WorkerManager.ItemStats>> mStatsSubject = BehaviorSubject.createDefault(Optional.empty());
 
   private final Context mContext;
-  private final SharedPreferences mSharedPreferences;
   private final GoogleSignInClient mSigninClient;
   private final WorkerManager mWorkerManager;
 
@@ -65,14 +61,11 @@ public class PublishViewModel extends AndroidViewModel {
     mContext = application.getApplicationContext();
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
-    mSharedPreferences = application.getSharedPreferences(
-        PublishViewModel.class.getCanonicalName(), Context.MODE_PRIVATE);
 
-    mPublishEnabledSubject.onNext(
-        mSharedPreferences.getBoolean(PrefKeys.PUBLISH_ENABLED.name(), false));
-    mDisposables.add(mPublishEnabledSubject.subscribe(enabled -> {
-      mSharedPreferences.edit().putBoolean(PrefKeys.PUBLISH_ENABLED.name(), enabled).apply();
-    }));
+    DriveFeaturePrefs prefs = new DriveFeaturePrefs(PublishWorker.class, application);
+
+    mPublishEnabledSubject.onNext(prefs.getEnabled());
+    mDisposables.add(mPublishEnabledSubject.subscribe(prefs::setEnabled));
 
     mDisposables.add(mManualTriggerSubject.subscribe(b -> {
       if (mWorkerManager.manualTrigger(WorkerManager.Item.PUBLISH, PublishWorker.forDateRange(Range.singleton(LocalDate.now())))) {

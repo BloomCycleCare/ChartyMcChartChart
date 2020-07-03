@@ -34,7 +34,7 @@ import static android.text.Html.FROM_HTML_MODE_COMPACT;
 
 public class BackupFragment extends Fragment {
 
-  private PublishViewModel mPublishViewModel;
+  private BackupViewModel mBackupViewModel;
   private MainViewModel mMainViewModel;
 
   private Switch mPublishEnabledSwitch;
@@ -51,7 +51,7 @@ public class BackupFragment extends Fragment {
     super.onCreate(savedInstanceState);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
-    mPublishViewModel = new ViewModelProvider(this).get(PublishViewModel.class);
+    mBackupViewModel = new ViewModelProvider(this).get(BackupViewModel.class);
 
     setHasOptionsMenu(true);
   }
@@ -74,11 +74,11 @@ public class BackupFragment extends Fragment {
     mStatsGroup = view.findViewById(R.id.stats_group);
 
 
-    mPublishViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
+    mBackupViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
     RxCompoundButton.checkedChanges(mPublishEnabledSwitch)
         .skipInitialValue()
-        .subscribe(mPublishViewModel.publishEnabledObserver());
+        .subscribe(mBackupViewModel.publishEnabledObserver());
 
     return view;
   }
@@ -93,7 +93,7 @@ public class BackupFragment extends Fragment {
   public boolean onOptionsItemSelected(@NonNull MenuItem item) {
     switch (item.getItemId()) {
       case R.id.action_sync:
-        mPublishViewModel.manualTriggerObserver().onNext(true);
+        mBackupViewModel.manualTriggerObserver().onNext(true);
         return true;
       default:
         return NavigationUI.onNavDestinationSelected(
@@ -103,11 +103,11 @@ public class BackupFragment extends Fragment {
 
   @Override
   public void onResume() {
-    mPublishViewModel.checkAccount();
+    mBackupViewModel.checkAccount();
     super.onResume();
   }
 
-  private void render(PublishViewModel.ViewState viewState) {
+  private void render(BackupViewModel.ViewState viewState) {
     boolean hasAccount = viewState.account().isPresent();
 
     // Configure publish enable switch
@@ -119,7 +119,7 @@ public class BackupFragment extends Fragment {
     // Configure sign in/out button
     mConnectButton.setText(hasAccount ? "Sign Out" : "Sign In");
     if (hasAccount) {
-      mConnectButton.setOnClickListener(v -> mPublishViewModel.signOut());
+      mConnectButton.setOnClickListener(v -> mBackupViewModel.signOut());
     } else {
       mConnectButton.setOnClickListener(v -> {
         startActivityForResult(GoogleAuthHelper.getPromptIntent(requireContext()), 1);
