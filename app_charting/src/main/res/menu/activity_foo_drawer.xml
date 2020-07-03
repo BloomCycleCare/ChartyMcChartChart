@@ -22,23 +22,15 @@
             android:id="@+id/pregnancy_list"
             android:icon="@drawable/ic_pregnant_woman_black_24dp"
             android:title="Pregnancies" />
-        <item
-            android:id="@+id/exercise_list"
-            android:icon="@drawable/ic_school_black_24dp"
-            android:title="Training" />
-        <item
-            android:id="@+id/cloud_publish"
-            android:icon="@drawable/ic_baseline_cloud_upload_24"
-            android:title="Cloud Publish" />
-        <item
-            android:id="@+id/app_backup"
-            android:icon="@drawable/ic_baseline_settings_backup_restore_24"
-            android:title="App Backup" />
     </group>
 
     <group
         android:id="@+id/nav_group_reference"
         android:checkableBehavior="single">
+        <item
+            android:id="@+id/exercise_list"
+            android:icon="@drawable/ic_school_black_24dp"
+            android:title="Training" />
         <item
             android:id="@+id/nav_reference"
             android:icon="@drawable/ic_library_books_black_24dp"
@@ -48,6 +40,14 @@
     <group
         android:id="@+id/nav_group_last"
         android:checkableBehavior="single">
+        <item
+            android:id="@+id/cloud_publish"
+            android:icon="@drawable/ic_baseline_cloud_upload_24"
+            android:title="Cloud Publish" />
+        <item
+            android:id="@+id/app_backup"
+            android:icon="@drawable/ic_baseline_settings_backup_restore_24"
+            android:title="App Backup" />
         <item
             android:id="@+id/settings"
             android:icon="@drawable/ic_settings_black_24dp"
