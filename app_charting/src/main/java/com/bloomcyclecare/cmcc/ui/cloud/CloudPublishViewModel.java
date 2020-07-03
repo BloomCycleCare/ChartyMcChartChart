@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.ui.cloud;
 import android.app.Application;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
@@ -146,7 +147,10 @@ public class CloudPublishViewModel extends AndroidViewModel {
       return;
     }
     Timber.d("Connecting work stream");
-    statsStream = mWorkerManager.register(WorkerManager.Item.PUBLISH, workStream);
+    statsStream = mWorkerManager.register(WorkerManager.Item.PUBLISH, workStream, () -> {
+      Timber.d("Toasting publish success");
+      Toast.makeText(mContext, "Chart Published", Toast.LENGTH_SHORT).show();
+    }, message -> {});
     if (statsStream.isPresent()) {
       Timber.d("Work stream connected");
       statsStream.get().map(Optional::of).subscribe(mStatsSubject);

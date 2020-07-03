@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
@@ -29,7 +30,8 @@ import timber.log.Timber;
 
 public interface WorkerManager {
 
-  Optional<Observable<ItemStats>> register(Item item, Observable<OneTimeWorkRequest> workStream);
+  Optional<Observable<ItemStats>> register(
+      Item item, Observable<OneTimeWorkRequest> workStream, Runnable onSuccess, Consumer<String> onError);
 
   Optional<Observable<ItemStats>> getUpdateStream(Item item);
 
@@ -83,7 +85,8 @@ public interface WorkerManager {
     }
 
     @Override
-    public Optional<Observable<ItemStats>> register(Item item, Observable<OneTimeWorkRequest> workStream) {
+    public Optional<Observable<ItemStats>> register(
+        Item item, Observable<OneTimeWorkRequest> workStream, Runnable onSuccess, Consumer<String> onError) {
       Timber.d("Registering work stream for item: %s", item.name());
       if (mRegistrations.containsKey(item)) {
         Timber.w("Work stream already registered for items: %s", item.name());
@@ -106,6 +109,7 @@ public interface WorkerManager {
             Observer<WorkInfo> o = workInfo -> {
               Timber.v("Publishing WorkInfo for item: %s", item.name());
               if (workInfo.getState().isFinished()) {
+                onSuccess.run();
                 numCompletedRequests.incrementAndGet();
                 lastCompletedTimeMs.set(System.currentTimeMillis());
               }
