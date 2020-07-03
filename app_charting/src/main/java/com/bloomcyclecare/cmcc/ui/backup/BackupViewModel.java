@@ -56,17 +56,18 @@ public class BackupViewModel extends AndroidViewModel {
   private final Context mContext;
   private final GoogleSignInClient mSigninClient;
   private final WorkerManager mWorkerManager;
-  private final DriveFeaturePrefs mDriveFeaturePrefs;
 
   public BackupViewModel(@NonNull Application application) {
     super(application);
     mContext = application.getApplicationContext();
     mWorkerManager = WorkerManager.fromApp(application);
     mSigninClient = GoogleAuthHelper.getClient(mContext);
-    mDriveFeaturePrefs = new DriveFeaturePrefs(BackupWorker.class, application);
 
-    mPublishEnabledSubject.onNext(mDriveFeaturePrefs.getEnabled());
-    mDisposables.add(mPublishEnabledSubject.subscribe(mDriveFeaturePrefs::setEnabled));
+    DriveFeaturePrefs prefs = new DriveFeaturePrefs(BackupWorker.class, application);
+    mStatsSubject.onNext(Optional.of(prefs.createStats()));
+
+    mPublishEnabledSubject.onNext(prefs.getEnabled());
+    mDisposables.add(mPublishEnabledSubject.subscribe(prefs::setEnabled));
 
     mDisposables.add(mManualTriggerSubject.subscribe(b -> {
       if (mWorkerManager.manualTrigger(WorkerManager.Item.BACKUP, BackupWorker.forDateRange(Range.singleton(LocalDate.now())))) {
@@ -105,6 +106,7 @@ public class BackupViewModel extends AndroidViewModel {
         (account, publishEnabled, stats, driveFolderLink) -> {
           if (account.isPresent() && publishEnabled) {
             maybeConnectWorkSteam(workStream);
+            stats.ifPresent(prefs::updateStats);
             Optional<Integer> itemsOutstanding = stats.map(itemStats -> itemStats.numEncueuedRequests() - itemStats.numCompletedRequests());
             Optional<ReadableInstant> lastEncueueTime = stats.flatMap(itemStats -> {
               if (itemStats.lastEncueueTime() == 0) {

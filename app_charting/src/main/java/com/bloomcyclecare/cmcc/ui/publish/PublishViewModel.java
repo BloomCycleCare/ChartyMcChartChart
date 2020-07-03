@@ -63,6 +63,7 @@ public class PublishViewModel extends AndroidViewModel {
     mSigninClient = GoogleAuthHelper.getClient(mContext);
 
     DriveFeaturePrefs prefs = new DriveFeaturePrefs(PublishWorker.class, application);
+    mStatsSubject.onNext(Optional.of(prefs.createStats()));
 
     mPublishEnabledSubject.onNext(prefs.getEnabled());
     mDisposables.add(mPublishEnabledSubject.subscribe(prefs::setEnabled));
@@ -104,6 +105,7 @@ public class PublishViewModel extends AndroidViewModel {
         (account, publishEnabled, stats, driveFolderLink) -> {
           if (account.isPresent() && publishEnabled) {
             maybeConnectWorkSteam(workStream);
+            stats.ifPresent(prefs::updateStats);
             Optional<Integer> itemsOutstanding = stats.map(itemStats -> itemStats.numEncueuedRequests() - itemStats.numCompletedRequests());
             Optional<ReadableInstant> lastEncueueTime = stats.flatMap(itemStats -> {
               if (itemStats.lastEncueueTime() == 0) {
