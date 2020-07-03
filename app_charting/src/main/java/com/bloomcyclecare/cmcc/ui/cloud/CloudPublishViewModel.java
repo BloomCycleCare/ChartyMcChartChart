@@ -8,45 +8,32 @@ import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
 import com.bloomcyclecare.cmcc.data.repos.DataRepos;
-import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
-import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.ReadableInstant;
-import org.joda.time.Instant;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.LiveData;
-import androidx.preference.PreferenceManager;
+import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.work.OneTimeWorkRequest;
 import androidx.work.RxWorker;
-import androidx.work.WorkManager;
-import androidx.work.WorkRequest;
 import androidx.work.WorkerParameters;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Observable;
-import io.reactivex.ObservableEmitter;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.Observer;
 import io.reactivex.Single;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
@@ -83,10 +70,16 @@ public class CloudPublishViewModel extends AndroidViewModel {
       mSharedPreferences.edit().putBoolean(PrefKeys.PUBLISH_ENABLED.name(), enabled).apply();
     });
 
+    maybeReconnectStats();
+
     DataRepos dataRepos = DataRepos.fromApp(application);
     Observable<OneTimeWorkRequest> workStream = Observable.mergeArray(
-        dataRepos.updateStream(30).toObservable(),
-        mManualTriggerSubject.map(t -> Range.singleton(LocalDate.now())))
+        dataRepos
+            .updateStream(30)
+            .toObservable(),
+        mManualTriggerSubject
+            .map(t -> Range.singleton(LocalDate.now()))
+            .doOnNext(r -> Timber.d("Manual trigger registered")))
         .map(dateRange -> new OneTimeWorkRequest.Builder(PublishWorker.class)
             .setInputData(PublishWorker.createInputData(dateRange))
             .build());
@@ -136,6 +129,13 @@ public class CloudPublishViewModel extends AndroidViewModel {
         }).subscribe(mViewStateSubject);
 
     checkAccount();
+  }
+
+  private void maybeReconnectStats() {
+    Optional<Observable<WorkerManager.ItemStats>> statsStream =
+        mWorkerManager.getUpdateStream(WorkerManager.Item.PUBLISH);
+    statsStream.ifPresent(itemStatsObservable -> itemStatsObservable.map(Optional::of)
+        .subscribe(mStatsSubject));
   }
 
   private void maybeConnectWorkSteam(Observable<OneTimeWorkRequest> workStream) {

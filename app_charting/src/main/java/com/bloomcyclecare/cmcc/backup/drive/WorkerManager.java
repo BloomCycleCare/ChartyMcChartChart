@@ -22,6 +22,7 @@ import androidx.work.WorkManager;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
@@ -88,7 +89,7 @@ public interface WorkerManager {
         Timber.w("Work stream already registered for items: %s", item.name());
         return Optional.empty();
       }
-      Subject<ItemStats> statsSubject = PublishSubject.create();
+      Subject<ItemStats> statsSubject = BehaviorSubject.create();
       Set<Runnable> cleanupTasks = Sets.newConcurrentHashSet();
       AtomicInteger numEncueuedReqeusts = new AtomicInteger();
       AtomicInteger numCompletedRequests = new AtomicInteger();
