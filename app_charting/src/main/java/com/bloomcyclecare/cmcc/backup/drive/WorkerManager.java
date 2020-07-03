@@ -20,6 +20,7 @@ import androidx.work.OneTimeWorkRequest;
 import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
 import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
@@ -95,6 +96,7 @@ public interface WorkerManager {
       AtomicLong lastCompletedTimeMs = new AtomicLong();
       Disposable d = workStream
           .doOnNext(r -> Timber.d("New request for item: %s", item.name()))
+          .observeOn(AndroidSchedulers.mainThread())  // observeForever must be on main thread
           .subscribe(request -> {
             mWorkManager.enqueue(request);
             numEncueuedReqeusts.incrementAndGet();

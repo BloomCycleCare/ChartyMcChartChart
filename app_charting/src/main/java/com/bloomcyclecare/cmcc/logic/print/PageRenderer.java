@@ -18,6 +18,7 @@ import androidx.annotation.NonNull;
 import io.reactivex.Observable;
 import io.reactivex.ObservableSource;
 import io.reactivex.annotations.Nullable;
+import timber.log.Timber;
 
 /**
  * Created by parkeroth on 12/23/17.
@@ -95,6 +96,7 @@ public class PageRenderer {
   private static ObservableSource<RenderedRow> createCycleRows(CycleRenderer renderer) {
     CycleRenderer.RenderableCycle renderableCycle = renderer.render();
     if (renderableCycle.stats().daysWithAnObservation() == 0) {
+      Timber.d("Skipping renderer without observations");
       return Observable.empty();
     }
     List<CycleRenderer.RenderableEntry> renderableEntries = renderableCycle.entries();

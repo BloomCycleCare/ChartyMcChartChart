@@ -95,20 +95,27 @@ public class PublishWorker extends RxWorker {
             .flatMap(ChartPrinter::savePDFs)
             .observeOn(Schedulers.io())
             .doOnSuccess(charts -> Timber.d("Uploading PDFs to Drive"))
-            .flatMap(savedCharts -> driveService.getOrCreateFolder("My Charts").flatMap(folder -> driveService
-                .clearFolder(folder, "pdf").andThen(Observable.fromIterable(savedCharts)
-                    .flatMap(savedChart -> {
-                      File file = new File();
-                      file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
-                      FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
-                      return driveService
-                          .addFileToFolder(folder, file, mediaContent)
-                          .doOnSuccess(f -> savedChart.file.delete())
-                          .toObservable();
-                    })
-                    .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
-                    .toList())))
-            .flatMap(files -> Single.just(Result.success()))
+            .flatMap(savedCharts -> {
+              if (savedCharts.isEmpty()) {
+                Timber.d("No charts to upload, bailing out");
+                return Single.just(Result.success());
+              }
+              return driveService.getOrCreateFolder("My Charts")
+                  .flatMap(folder -> driveService.clearFolder(folder, "pdf")
+                      .andThen(Observable.fromIterable(savedCharts)
+                          .flatMap(savedChart -> {
+                            File file = new File();
+                            file.setName(String.format("chart_starting_%s.pdf", DateUtil.toFileStr(savedChart.firstCycle.startDate)));
+                            FileContent mediaContent = new FileContent("application/pdf", savedChart.file);
+                            return driveService
+                                .addFileToFolder(folder, file, mediaContent)
+                                .doOnSuccess(f -> savedChart.file.delete())
+                                .toObservable();
+                          })
+                          .sorted((f1, f2) -> f1.getName().compareTo(f2.getName()))
+                          .toList()))
+                  .map(files -> Result.success());
+            })
             .doOnError(t -> Timber.w(t, "Problem with pubish"))
             .subscribeOn(Schedulers.computation()));
   }
