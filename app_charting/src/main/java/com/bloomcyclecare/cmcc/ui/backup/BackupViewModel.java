@@ -105,7 +105,9 @@ public class BackupViewModel extends AndroidViewModel {
         driveFolderLinkStream.distinctUntilChanged(),
         (account, publishEnabled, stats, driveFolderLink) -> {
           if (account.isPresent() && publishEnabled) {
-            maybeConnectWorkSteam(workStream);
+            if (maybeConnectWorkSteam(workStream)) {
+              mManualTriggerSubject.onNext(true);
+            }
             stats.ifPresent(prefs::updateStats);
             Optional<Integer> itemsOutstanding = stats.map(itemStats -> itemStats.numEncueuedRequests() - itemStats.numCompletedRequests());
             Optional<ReadableInstant> lastEncueueTime = stats.flatMap(itemStats -> {
@@ -140,12 +142,12 @@ public class BackupViewModel extends AndroidViewModel {
         .subscribe(mStatsSubject));
   }
 
-  private void maybeConnectWorkSteam(Observable<OneTimeWorkRequest> workStream) {
+  private boolean maybeConnectWorkSteam(Observable<OneTimeWorkRequest> workStream) {
     Optional<Observable<WorkerManager.ItemStats>> statsStream =
         mWorkerManager.getUpdateStream(WorkerManager.Item.BACKUP);
     if (statsStream.isPresent()) {
       Timber.v("Work stream already active");
-      return;
+      return false;
     }
     Timber.d("Connecting work stream");
     statsStream = mWorkerManager.register(WorkerManager.Item.BACKUP, workStream, () -> {
@@ -155,9 +157,10 @@ public class BackupViewModel extends AndroidViewModel {
     if (statsStream.isPresent()) {
       Timber.d("Work stream connected");
       statsStream.get().map(Optional::of).subscribe(mStatsSubject);
-      return;
+      return true;
     }
     Timber.w("Failed to connect publish stream!");
+    return false;
   }
 
   private boolean disconnectWorkStream() {
