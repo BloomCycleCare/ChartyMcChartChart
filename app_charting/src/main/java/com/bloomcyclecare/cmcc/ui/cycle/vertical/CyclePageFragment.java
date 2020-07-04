@@ -55,6 +55,12 @@ public class CyclePageFragment extends BaseCycleListFragment {
     return CyclePageFragmentDirections.actionPrint(viewMode);
   }
 
+  @NonNull
+  @Override
+  protected NavDirections reinitAction() {
+    return CyclePageFragmentDirections.actionReinitApp();
+  }
+
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);

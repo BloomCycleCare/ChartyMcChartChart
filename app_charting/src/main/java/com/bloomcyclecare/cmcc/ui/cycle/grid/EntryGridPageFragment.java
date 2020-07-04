@@ -62,6 +62,12 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
     return EntryGridPageFragmentDirections.actionPrint(viewMode);
   }
 
+  @NonNull
+  @Override
+  protected NavDirections reinitAction() {
+    return EntryGridPageFragmentDirections.actionReinitApp();
+  }
+
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);

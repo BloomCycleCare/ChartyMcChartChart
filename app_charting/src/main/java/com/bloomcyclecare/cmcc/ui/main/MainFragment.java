@@ -53,6 +53,7 @@ public class MainFragment extends Fragment {
     mStatusView = view.findViewById(R.id.splash_status_tv);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+    mMainViewModel.updateSubtitle("");
 
     return view;
   }

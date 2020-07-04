@@ -11,7 +11,6 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
-import com.bloomcyclecare.cmcc.ui.init.UserInitActivity;
 
 import java.util.Optional;
 
@@ -20,8 +19,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.NavDirections;
+import androidx.navigation.Navigation;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
@@ -45,6 +46,9 @@ public abstract class BaseCycleListFragment extends Fragment {
 
   @NonNull
   protected abstract NavDirections printAction(ViewMode viewMode);
+
+  @NonNull
+  protected abstract NavDirections reinitAction();
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -112,16 +116,18 @@ public abstract class BaseCycleListFragment extends Fragment {
             .setTitle("Confirm Clear Data")
             .setMessage("Are you sure you want to permanently clear all your data?")
             .setPositiveButton("Yes", (dialog, which) -> {
-              mDisposables.add(mViewModel.clearData().subscribe(() -> {
-                startActivity(new Intent(requireContext(), UserInitActivity.class));
-                requireActivity().finish();
-                dialog.dismiss();
-              }));
+              mDisposables.add(mViewModel.clearData()
+                  .observeOn(AndroidSchedulers.mainThread())
+                  .subscribe(() -> {
+                    Navigation.findNavController(requireView()).navigate(reinitAction());
+                    dialog.dismiss();
+                  }));
             })
             .setNegativeButton("No", ((dialog, which) -> {
               dialog.dismiss();
             }))
             .create().show();
+        return true;
 
       case R.id.action_print:
         NavHostFragment.findNavController(this).navigate(printAction(mViewModel.currentViewMode()));

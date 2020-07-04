@@ -60,11 +60,6 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".ui.init.UserInitActivity"
-            android:noHistory="true"
-            android:theme="@style/AppTheme.NoActionBar">
-        </activity>
-        <activity
             android:name=".ui.entry.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
             android:theme="@style/AppTheme.NoActionBar"
