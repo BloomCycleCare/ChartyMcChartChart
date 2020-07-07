@@ -46,7 +46,6 @@
             android:layout_marginTop="20dp"
             android:layout_marginBottom="10dp"
             android:text="Sticker: "
-            app:layout_constraintBottom_toTopOf="@id/buttons"
             app:layout_constraintEnd_toStartOf="@id/sticker_selector_spinner"
             app:layout_constraintHorizontal_bias="0.0"
             app:layout_constraintStart_toStartOf="parent"
