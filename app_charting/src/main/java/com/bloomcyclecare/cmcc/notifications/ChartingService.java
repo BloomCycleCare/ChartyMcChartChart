@@ -81,15 +81,12 @@ public class ChartingService extends Service {
         .distinctUntilChanged()
         .doOnComplete(() -> clearNotificationAndTerminate(manager))
         .subscribe(yesterdayHasObservation -> {
-          Timber.d("Showing notification");
-          Notification notification = createNotification(this, "Input entry for yesterday");
-          if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForeground(R.string.charting_reminder, notification);
-          } else {
-            manager.notify(R.string.charting_reminder, notification);
-          }
           if (yesterdayHasObservation) {
             clearNotificationAndTerminate(manager);
+          } else {
+            Timber.d("Showing notification");
+            Notification notification = createNotification(this, "Input entry for yesterday");
+            manager.notify(R.string.charting_reminder, notification);
           }
         }, t -> {
           Timber.e(t);
