@@ -12,10 +12,10 @@ import android.os.Build;
 import android.os.IBinder;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
@@ -139,6 +139,7 @@ public class ChartingService extends Service {
         .setContentText(text)
         .setOnlyAlertOnce(true)
         .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+        .setAutoCancel(true)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
         new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
