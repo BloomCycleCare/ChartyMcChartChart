@@ -139,7 +139,6 @@ public class ChartingService extends Service {
         .setContentText(text)
         .setOnlyAlertOnce(true)
         .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
-        .setAutoCancel(true)
         .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
         new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
