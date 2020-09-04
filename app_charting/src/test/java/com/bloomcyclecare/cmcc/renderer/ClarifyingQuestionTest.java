@@ -1,12 +1,13 @@
 package com.bloomcyclecare.cmcc.renderer;
 
-import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -34,7 +35,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     entries.put(TrainingEntry.forText("8BCX1"), false);
     entries.put(TrainingEntry.forText("H"), true);
     entries.put(TrainingEntry.forText("M"), true);
-    entries.put(TrainingEntry.forText("L6x1"), true);
+    entries.put(TrainingEntry.forText("L6cx1"), true);
     entries.put(TrainingEntry.forText("2x1"), true);
     entries.put(TrainingEntry.forText("0AD"), true);
     entries.put(TrainingEntry.forText("0AD"), true);
@@ -67,7 +68,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     entries.put(TrainingEntry.forText("8BCX1"), false);
     entries.put(TrainingEntry.forText("H"), false);
     entries.put(TrainingEntry.forText("M"), false);
-    entries.put(TrainingEntry.forText("L6x1"), false);
+    entries.put(TrainingEntry.forText("L6cx1"), false);
     entries.put(TrainingEntry.forText("2x1"), false);
     entries.put(TrainingEntry.forText("0AD"), false);
     entries.put(TrainingEntry.forText("0AD"), false);
@@ -95,7 +96,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     entries.put(TrainingEntry.forText("8BCX1"), false);
     entries.put(TrainingEntry.forText("H"), false);
     entries.put(TrainingEntry.forText("M"), false);
-    entries.put(TrainingEntry.forText("L6x1"), false);
+    entries.put(TrainingEntry.forText("L6cx1"), false);
     entries.put(TrainingEntry.forText("2x1"), false);
     entries.put(TrainingEntry.forText("0AD"), false);
     entries.put(TrainingEntry.forText("0AD"), false);
@@ -131,7 +132,13 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
     for (Map.Entry<TrainingEntry, Boolean> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
-      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null, null));
+      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate, observation -> {
+        try {
+          return ObservationParser.parse(observation);
+        } catch (Exception e) {
+          throw new IllegalStateException(e);
+        }
+      }), null, null, null));
       tests.add(renderableEntry -> {
         StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert

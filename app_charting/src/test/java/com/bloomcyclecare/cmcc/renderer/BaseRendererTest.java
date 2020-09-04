@@ -1,15 +1,17 @@
 package com.bloomcyclecare.cmcc.renderer;
 
-import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.OptionalStringSubject;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
-import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -43,7 +45,13 @@ public abstract class BaseRendererTest {
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
     for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
-      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate), null, null, null));
+      chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate, observation -> {
+        try {
+          return ObservationParser.parse(observation);
+        } catch (Exception e) {
+          throw new IllegalStateException(e);
+        }
+      }), null, null, null));
       Optional<TrainingCycle.StickerExpectations> stickerExpectations = anEntry.getValue();
       if (stickerExpectations.isPresent()) {
         tests.add(renderableEntry -> {
@@ -63,7 +71,8 @@ public abstract class BaseRendererTest {
           if (stickerExpectations.get().shouldHaveIntercourse) {
             baseAssert
                 .withMessage("intercourse")
-                .that(renderableEntry.entrySummary()).endsWith("I");
+                .about(OptionalStringSubject.optionals())
+                .that(renderableEntry.entrySummary()).value().endsWith("I");
           }
           return true;
         });
