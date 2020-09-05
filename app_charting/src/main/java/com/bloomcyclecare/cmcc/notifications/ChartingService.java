@@ -139,7 +139,10 @@ public class ChartingService extends Service {
         .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
         new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+    PendingIntent dismissIntent = PendingIntent.getBroadcast(context, 0,
+        new Intent(context, ReminderReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
     builder.setContentIntent(contentIntent);
+    builder.setDeleteIntent(dismissIntent);
     return builder.build();
   }
 
