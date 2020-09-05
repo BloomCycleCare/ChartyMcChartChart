@@ -20,6 +20,7 @@ import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.ui.main.MainActivity;
+import com.google.common.base.Strings;
 
 import org.joda.time.DateTime;
 
@@ -31,23 +32,50 @@ import timber.log.Timber;
 
 public class ChartingService extends Service {
 
+  public enum Action {
+    SET_REMINDER
+  }
+
   private static final String CHANNEL_ID = "charting_reminder";
   private static final String CHANNEL_NAME = "Charting Reminder";
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
 
+  private NotificationManager notificationManager;
+
   @Override
   public void onCreate() {
     super.onCreate();
     Timber.i("Creating service");
-    ChartingApp myApp = ChartingApp.cast(getApplication());
 
-    initNotificationChannel(this);
+    notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    initNotificationChannel();
 
-    RWChartEntryRepo entryRepo = myApp.entryRepo(ViewMode.CHARTING);
-    RWCycleRepo cycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
-    PreferenceRepo preferenceRepo = myApp.preferenceRepo();
-    NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    // TODO: fix this to handle turning the notification back on via preferences
+    mDisposables.add(stopStreamForApp(ChartingApp.cast(getApplication()))
+        .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
+        .takeUntil(shouldStop -> shouldStop)
+        .doOnNext(v -> Timber.d("Shutting down charting reminder"))
+        .distinctUntilChanged()
+        .doOnComplete(this::clearNotificationAndTerminate)
+        .subscribe(yesterdayHasObservation -> {
+          if (yesterdayHasObservation) {
+            clearNotificationAndTerminate();
+          } else {
+            Timber.d("Showing notification");
+            Notification notification = createNotification(this, "Input entry for yesterday");
+            notificationManager.notify(R.string.charting_reminder, notification);
+          }
+        }, t -> {
+          Timber.e(t);
+          clearNotificationAndTerminate();
+        }));
+  }
+
+  private Flowable<Boolean> stopStreamForApp(ChartingApp app) {
+    RWChartEntryRepo entryRepo = app.entryRepo(ViewMode.CHARTING);
+    RWCycleRepo cycleRepo = app.cycleRepo(ViewMode.CHARTING);
+    PreferenceRepo preferenceRepo = app.preferenceRepo();
     Flowable<Boolean> entryStopStream = entryRepo
         .getLatestN(2)
         .map(entries -> {
@@ -69,34 +97,31 @@ public class ChartingService extends Service {
     Flowable<Boolean> preferenceDisableStream = preferenceRepo
         .summaries()
         .map(summary -> !summary.enableChartingReminder());
-    Flowable<Boolean> stopStream = Flowable.combineLatest(
+    return Flowable.combineLatest(
         entryStopStream.doOnNext(v -> { if (v) Timber.d("Entry stop"); }),
         preferenceDisableStream.doOnNext(v -> { if (v) Timber.d("Preference stop"); }),
         (a, b) -> a || b);
-    // TODO: fix this to handle turning the notification back on via preferences
-    mDisposables.add(stopStream
-        .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
-        .takeUntil(shouldStop -> shouldStop)
-        .doOnNext(v -> Timber.d("Shutting down charting reminder"))
-        .distinctUntilChanged()
-        .doOnComplete(() -> clearNotificationAndTerminate(manager))
-        .subscribe(yesterdayHasObservation -> {
-          if (yesterdayHasObservation) {
-            clearNotificationAndTerminate(manager);
-          } else {
-            Timber.d("Showing notification");
-            Notification notification = createNotification(this, "Input entry for yesterday");
-            manager.notify(R.string.charting_reminder, notification);
-          }
-        }, t -> {
-          Timber.e(t);
-          clearNotificationAndTerminate(manager);
-        }));
   }
 
-  private void clearNotificationAndTerminate(NotificationManager manager) {
+  @Override
+  public int onStartCommand(Intent intent, int flags, int startId) {
+    Timber.d("onStartCommand: action=%s", intent.getAction());
+    if (!Strings.isNullOrEmpty(intent.getAction())) {
+      switch (Action.valueOf(intent.getAction())) {
+        case SET_REMINDER:
+          clearNotificationAndTerminate();
+          break;
+        default:
+          Timber.w("Fallthrough for action=%s", intent.getAction());
+      }
+    }
+    return START_STICKY;
+  }
+
+
+  private void clearNotificationAndTerminate() {
     Timber.d("Canceling notification");
-    manager.cancel(R.string.charting_reminder);
+    notificationManager.cancel(R.string.charting_reminder);
     scheduleRestart(DateTime.now().plusMinutes(30));
     Timber.i("Stopping reminder service");
     stopSelf();
@@ -109,11 +134,6 @@ public class ChartingService extends Service {
         this, 0, restartIntent, PendingIntent.FLAG_UPDATE_CURRENT);
     AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
     am.set(AlarmManager.RTC_WAKEUP, restartTime.getMillis(), pi);
-  }
-
-  @Override
-  public int onStartCommand(Intent intent, int flags, int startId) {
-    return START_STICKY;
   }
 
   @Nullable
@@ -146,13 +166,11 @@ public class ChartingService extends Service {
     return builder.build();
   }
 
-  private static void initNotificationChannel(Context context) {
+  private void initNotificationChannel() {
     Timber.d("Initializing notification channel");
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
       return;
     }
-    NotificationManager notificationManager =
-        (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
     if (notificationManager == null) {
       Timber.w("NotificaitonManager is null!");
       return;

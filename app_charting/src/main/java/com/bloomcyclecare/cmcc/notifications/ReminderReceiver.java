@@ -10,5 +10,8 @@ public class ReminderReceiver extends BroadcastReceiver {
   @Override
   public void onReceive(Context context, Intent intent) {
     Timber.i("Received reminder broadcast");
+    Intent i = new Intent(context, ChartingService.class);
+    i.setAction(ChartingService.Action.SET_REMINDER.name());
+    context.startService(i);
   }
 }
