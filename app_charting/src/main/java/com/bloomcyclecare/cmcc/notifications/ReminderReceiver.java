@@ -6,11 +6,12 @@ import android.content.Intent;
 
 import timber.log.Timber;
 
-public class ChartingReceiver extends BroadcastReceiver {
-
+public class ReminderReceiver extends BroadcastReceiver {
   @Override
   public void onReceive(Context context, Intent intent) {
-    Timber.i("Received intent to start charting reminder");
-    context.startService(new Intent(context, ChartingService.class));
+    Timber.i("Received reminder broadcast");
+    Intent i = new Intent(context, ChartingService.class);
+    i.setAction(ChartingService.Action.SET_REMINDER.name());
+    context.startService(i);
   }
 }

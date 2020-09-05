@@ -19,6 +19,9 @@
         <receiver
             android:name=".notifications.ChartingReceiver"
             android:exported="true" />
+        <receiver
+            android:name=".notifications.ReminderReceiver"
+            android:exported="true" />
 
         <service android:name=".notifications.SyncService" />
         <receiver
