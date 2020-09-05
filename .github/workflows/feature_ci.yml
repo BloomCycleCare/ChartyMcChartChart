@@ -11,8 +11,6 @@ jobs:
   test:
     name: Run Unit Tests
     runs-on: self-hosted
-    container:
-      image: docker://fabernovel/android:api-29-v1.1.0
 
     steps:
     - uses: actions/checkout@v1
