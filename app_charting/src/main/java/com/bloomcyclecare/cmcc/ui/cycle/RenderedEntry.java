@@ -4,9 +4,9 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
@@ -36,14 +36,15 @@ public abstract class RenderedEntry {
 
   public abstract boolean canNavigateToDetailActivity();
   public abstract boolean canPromptForStickerSelection();
+  public abstract boolean canSelectYellowStamps();
   public abstract boolean hasObservation();
 
   @NonNull public abstract CycleRenderer.EntryModificationContext entryModificationContext();
   @NonNull public abstract Optional<StickerSelection> expectedStickerSelection();
   @NonNull public abstract Optional<StickerSelection> manualStickerSelection();
 
-  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, String stickerText, String pocSummaryText, String essentialSamenessSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
-    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, stickerText, pocSummaryText, essentialSamenessSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, hasObservation, entryModificationContext, expectedStickerSelection, manualStickerSelection);
+  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, String stickerText, String pocSummaryText, String essentialSamenessSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean canSelectYellowStamps, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
+    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, stickerText, pocSummaryText, essentialSamenessSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, canSelectYellowStamps, hasObservation, entryModificationContext, expectedStickerSelection, manualStickerSelection);
   }
 
   @NonNull
@@ -92,7 +93,6 @@ public abstract class RenderedEntry {
         (viewMode == ViewMode.CHARTING && !autoStickeringEnabled)
         || (viewMode == ViewMode.TRAINING && !Strings.isNullOrEmpty(re.trainingMarker()));
 
-
     return create(
         String.valueOf(re.entryNum()),
         re.modificationContext().entry.entryDate,
@@ -108,6 +108,7 @@ public abstract class RenderedEntry {
         showWeekTransition,
         canNavigateToDetailActivity,
         canPromptForStickerSelection,
+        re.canSelectYellowStamps(),
         entry.hasObservation(),
         re.modificationContext(),
         expectedStickerSelection,

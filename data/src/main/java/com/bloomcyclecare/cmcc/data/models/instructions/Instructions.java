@@ -10,6 +10,7 @@ import org.parceler.ParcelConstructor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import androidx.annotation.NonNull;
@@ -82,6 +83,10 @@ public class Instructions {
   }
 
   public boolean anyActive(BasicInstruction... basicInstructions) {
+    return anyActive(Arrays.asList(basicInstructions));
+  }
+
+  public boolean anyActive(Collection<BasicInstruction> basicInstructions) {
     for (BasicInstruction i : basicInstructions) {
       if (isActive(i)) {
         return true;

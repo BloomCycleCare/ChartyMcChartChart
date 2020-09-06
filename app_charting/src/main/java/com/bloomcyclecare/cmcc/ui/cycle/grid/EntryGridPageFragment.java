@@ -92,7 +92,8 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
         }
       });
       fragment.setArguments(StickerDialogFragment.fillArgs(
-          new Bundle(), re.expectedStickerSelection().orElse(null), re.manualStickerSelection(), mViewModel.currentViewMode()));
+          new Bundle(), re.expectedStickerSelection().orElse(null), re.manualStickerSelection(),
+          mViewModel.currentViewMode(), re.canSelectYellowStamps()));
       fragment.show(getChildFragmentManager(), "tag");
     }, re -> {// Text click
       if (mViewModel.currentViewMode() != ViewMode.CHARTING) {

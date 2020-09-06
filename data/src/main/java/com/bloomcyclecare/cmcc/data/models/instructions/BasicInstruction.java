@@ -80,6 +80,8 @@ public enum BasicInstruction implements AbstractInstruction {
   }
 
   public static ImmutableSet<BasicInstruction> postPeakYellowBasicInstructions = ImmutableSet.of(K_2, K_3, K_4);
+  public static ImmutableSet<BasicInstruction> yellowBasicInstructions =
+      ImmutableSet.<BasicInstruction>builder().addAll(postPeakYellowBasicInstructions).add(K_1).build();
   public static ImmutableSet<BasicInstruction> suppressableByPrePeakYellow = ImmutableSet.of(D_2, D_3, D_4, D_5);
   public static ImmutableSet<BasicInstruction> suppressableByPostPeakYellow = ImmutableSet.of(D_5);
 }
