@@ -9,8 +9,8 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
@@ -137,7 +137,8 @@ public class EntryListFragment extends Fragment {
             return;
           }
           fragment.setArguments(StickerDialogFragment.fillArgs(
-              new Bundle(), re.expectedStickerSelection().get(), re.manualStickerSelection(), mViewModel.viewMode()));
+              new Bundle(), re.expectedStickerSelection().get(), re.manualStickerSelection(),
+              mViewModel.viewMode(), re.canSelectYellowStamps()));
           fragment.show(getChildFragmentManager(), "tag");
         },
         ChartingApp.cast(requireActivity().getApplication()).showcaseManager());

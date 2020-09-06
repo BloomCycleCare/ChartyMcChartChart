@@ -17,7 +17,8 @@ public class SelectionChecker {
     P_ONLY_ON_PEAK_DAY,
     INCORRECT_COUNT,
     TEXT_INPUT_REQUIRED,
-    NOT_YET_SUPPORTED
+    NOT_YET_SUPPORTED,
+    YELLOW_STAMPS_NOT_ENABLED
   }
 
   public enum Hint {
@@ -26,6 +27,7 @@ public class SelectionChecker {
     ALWAYS_GREEN_ON_DRY_DAYS_WITHOUT_COUNT,
     ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS,
     ALWAYS_P_ON_PEAK_DAY,
+    NEVER_YELLOW_STAMPS_UNLESS_ENABLED
   }
 
   public static class Result {

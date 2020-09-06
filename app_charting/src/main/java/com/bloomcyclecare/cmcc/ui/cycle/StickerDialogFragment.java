@@ -13,15 +13,17 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
-import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
 import org.parceler.Parcels;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 import androidx.annotation.NonNull;
@@ -41,14 +43,16 @@ public class StickerDialogFragment extends DialogFragment {
   private enum Args {
     EXPECTED_SELECTION,
     PREVIOUS_SELECTION,
-    VIEW_MODE
+    VIEW_MODE,
+    CAN_SELECT_YELLOW_STAMPS
   }
 
   public static Bundle fillArgs(
-      Bundle args, StickerSelection expectedSelection, Optional<StickerSelection> previousSelection, ViewMode viewMode) {
+      Bundle args, StickerSelection expectedSelection, Optional<StickerSelection> previousSelection, ViewMode viewMode, boolean canSelectYellowStamps) {
     args.putInt(Args.VIEW_MODE.name(), viewMode.ordinal());
     args.putParcelable(
         StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(expectedSelection));
+    args.putBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name(), canSelectYellowStamps);
     previousSelection.ifPresent(selection -> args.putParcelable(
         Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
     return args;
@@ -99,17 +103,27 @@ public class StickerDialogFragment extends DialogFragment {
 
     TextView stickerTextView = view.findViewById(R.id.sticker);
 
-    Spinner stickerSpinner = view.findViewById(R.id.sticker_selector_spinner);
-    ArrayAdapter<CharSequence> stickerAdapter = ArrayAdapter.createFromResource(getActivity(),
-        R.array.sticker, android.R.layout.simple_spinner_item);
+    boolean yellowStickersEnabled = requireArguments().getBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name());
+    Timber.d("Yellow stickers enabled: %b", yellowStickersEnabled);
+    List<String> adapterValues = new ArrayList<>();
+    for (String option : getResources().getStringArray(R.array.sticker)) {
+      if (!option.startsWith("Yellow") || yellowStickersEnabled) {
+        adapterValues.add(option);
+      } else {
+        Timber.v("Suppressing option %s", option);
+      }
+    }
+    ArrayAdapter<String> stickerAdapter = new ArrayAdapter(requireContext(),
+        android.R.layout.simple_spinner_item, android.R.id.text1, adapterValues);
     stickerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+    Spinner stickerSpinner = view.findViewById(R.id.sticker_selector_spinner);
     stickerSpinner.setAdapter(stickerAdapter);
     if (previousSelection.isPresent()) {
       stickerSpinner.setSelection(previousSelection.get().sticker.ordinal());
     }
 
     Spinner textSpinner = view.findViewById(R.id.text_selector_spinner);
-    ArrayAdapter<CharSequence> textAdapter = ArrayAdapter.createFromResource(getActivity(),
+    ArrayAdapter<CharSequence> textAdapter = ArrayAdapter.createFromResource(requireContext(),
         R.array.sticker_text, android.R.layout.simple_spinner_item);
     textAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     textSpinner.setAdapter(textAdapter);

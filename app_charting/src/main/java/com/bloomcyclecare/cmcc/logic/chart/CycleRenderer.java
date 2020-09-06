@@ -1,10 +1,10 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
-import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.AbstractInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
@@ -662,6 +662,7 @@ public class CycleRenderer {
     public abstract String pocSummary();
     public abstract EntryModificationContext modificationContext();
     public abstract String trainingMarker();
+    public abstract boolean canSelectYellowStamps();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
@@ -699,6 +700,10 @@ public class CycleRenderer {
           .modificationContext(state.entryModificationContext())
           .essentialSamenessSummary(essentialSamenessSummary)
           .trainingMarker(state.entry.marker)
+          .canSelectYellowStamps(
+              state.instructions.anyActive(BasicInstruction.yellowBasicInstructions)
+              || !state.instructions.yellowStampInstructions.isEmpty()
+              || state.instructions.specialInstructions.contains(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS))
           .build();
       return renderableEntry;
     }
@@ -746,6 +751,8 @@ public class CycleRenderer {
       public abstract Builder hasObservation(boolean hasObservation);
 
       public abstract Builder manualStickerSelection(Optional<StickerSelection> manualStickerSelection);
+
+      public abstract Builder canSelectYellowStamps(boolean canSelectYellowStamps);
 
       public abstract RenderableEntry build();
     }
