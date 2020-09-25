@@ -209,6 +209,12 @@ public class ObservationTest {
     }
   }
 
+  @Test
+  public void fromString_10DLx2() throws Exception {
+    Observation observation = createAndTestToString("10DLX2");
+    assertEquals(observation.dischargeSummary.mType, DischargeType.DAMP_W_LUB);
+  }
+
   private Observation createAndTestToString(String observationStr) throws Exception {
     Observation observation = ObservationParser.parse(observationStr).orElse(null);
     assertEquals(observationStr, observation.toString().replace(" ", ""));
