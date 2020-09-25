@@ -49,6 +49,10 @@ public class DischargeSummary {
       code.append(mType.getCode());
     }
     for (MucusModifier modifier : mModifiers) {
+      if (modifier == MucusModifier.L && mType != null && mType.isLubricative()) {
+        // This is a hack...
+        continue;
+      }
       code.append(modifier.name());
     }
     return code.length() > 0 ? Optional.of(code.toString()) : Optional.absent();
