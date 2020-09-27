@@ -109,6 +109,10 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
         .subscribe());
   }
 
+  public ViewState currentViewState() {
+    return mViewState.getValue();
+  }
+
   public LiveData<ViewState> viewState() {
     return LiveDataReactiveStreams.fromPublisher(mViewState.toFlowable(BackpressureStrategy.BUFFER));
   }

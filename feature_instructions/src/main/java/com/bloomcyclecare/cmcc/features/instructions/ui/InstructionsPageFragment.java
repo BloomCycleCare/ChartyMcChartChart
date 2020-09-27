@@ -1,10 +1,12 @@
 package com.bloomcyclecare.cmcc.features.instructions.ui;
 
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.features.instructions.R;
@@ -56,12 +58,32 @@ public class InstructionsPageFragment extends Fragment {
 
     TextView summary = view.findViewById(R.id.tv_summary);
     summary.setText("TBD");
+    configureOnSummaryClick(summary);
 
     mSelectionViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       summary.setText(viewState.serializedInstructions);
     });
 
     return view;
+  }
+
+  private void configureOnSummaryClick(TextView textView) {
+    Context context = requireContext();
+    textView.setOnClickListener(v -> {
+      String text = mSelectionViewModel.currentViewState().serializedInstructions;
+      int sdk = android.os.Build.VERSION.SDK_INT;
+      if (sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
+        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context
+            .getSystemService(context.CLIPBOARD_SERVICE);
+        clipboard.setText(text);
+      } else {
+        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context
+            .getSystemService(context.CLIPBOARD_SERVICE);
+        android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
+        clipboard.setPrimaryClip(clip);
+      }
+      Toast.makeText(context, "Coppied to clipboard", Toast.LENGTH_SHORT).show();
+    });
   }
 
   @Override
