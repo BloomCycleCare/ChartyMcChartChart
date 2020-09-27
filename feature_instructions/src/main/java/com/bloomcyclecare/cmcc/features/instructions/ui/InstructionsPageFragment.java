@@ -18,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 public class InstructionsPageFragment extends Fragment {
 
   InstructionsPageViewModel mViewModel;
+  InstructionSelectionViewModel mSelectionViewModel;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -26,6 +27,10 @@ public class InstructionsPageFragment extends Fragment {
     Instructions instructions = Parcels.unwrap(requireArguments().getParcelable(Instructions.class.getCanonicalName()));
     InstructionsPageViewModel.Factory factory = new InstructionsPageViewModel.Factory(requireActivity().getApplication(), instructions);
     mViewModel = new ViewModelProvider(this, factory).get(InstructionsPageViewModel.class);
+
+    InstructionSelectionViewModel.Factory selectionFactory =
+        new InstructionSelectionViewModel.Factory(requireActivity().getApplication(), instructions);
+    mSelectionViewModel = new ViewModelProvider(this, selectionFactory).get(InstructionSelectionViewModel.class);
   }
 
   @Nullable
@@ -47,6 +52,13 @@ public class InstructionsPageFragment extends Fragment {
     mViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       startDate.setText(viewState.startDateStr);
       status.setText(viewState.statusStr);
+    });
+
+    TextView summary = view.findViewById(R.id.tv_summary);
+    summary.setText("TBD");
+
+    mSelectionViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
+      summary.setText(viewState.serializedInstructions);
     });
 
     return view;

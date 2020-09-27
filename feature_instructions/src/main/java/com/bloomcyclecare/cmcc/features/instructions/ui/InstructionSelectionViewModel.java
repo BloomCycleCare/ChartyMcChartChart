@@ -3,12 +3,13 @@ package com.bloomcyclecare.cmcc.features.instructions.ui;
 import android.app.Application;
 
 import com.bloomcyclecare.cmcc.ViewMode;
-import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
-import com.bloomcyclecare.cmcc.data.repos.DataRepos;
-import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.repos.DataRepos;
+import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.serialization.InstructionsSerializer;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalDate;
@@ -231,11 +232,13 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
     public String collisionPrompt = "";
 
     public Instructions instructions;
+    public String serializedInstructions;
     @Deprecated
     public Instructions initialInstructions;
 
     private ViewState(Instructions instructions, Instructions initialInstructions, String collisionPrompt) {
       this.instructions = instructions;
+      this.serializedInstructions = InstructionsSerializer.encode(instructions, true);
       this.initialInstructions = initialInstructions;
       this.collisionPrompt = collisionPrompt;
     }

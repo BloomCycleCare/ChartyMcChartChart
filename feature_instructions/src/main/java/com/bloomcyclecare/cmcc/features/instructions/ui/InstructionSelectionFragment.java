@@ -8,9 +8,9 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.AbstractInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.features.instructions.R;
@@ -44,7 +44,7 @@ public class InstructionSelectionFragment extends Fragment {
         Parcels.unwrap(requireArguments().getParcelable(Instructions.class.getCanonicalName()));
     InstructionSelectionViewModel.Factory factory =
         new InstructionSelectionViewModel.Factory(requireActivity().getApplication(), instructions);
-    mViewModel = new ViewModelProvider(this, factory).get(InstructionSelectionViewModel.class);
+    mViewModel = new ViewModelProvider(requireParentFragment(), factory).get(InstructionSelectionViewModel.class);
   }
 
   @Nullable
