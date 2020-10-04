@@ -17,4 +17,9 @@
         android:orderInCategory="100"
         android:title="Insert After"
         app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_apply_summary"
+        android:orderInCategory="101"
+        android:title="Apply Summary"
+        app:showAsAction="never"/>
 </menu>

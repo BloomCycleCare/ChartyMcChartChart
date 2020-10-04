@@ -2,8 +2,13 @@ package com.bloomcyclecare.cmcc.features.instructions.ui;
 
 import android.app.DatePickerDialog;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.features.instructions.R;
@@ -23,7 +28,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentStatePagerAdapter;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Completable;
 import io.reactivex.Single;
@@ -43,7 +48,7 @@ public class InstructionsListActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_instructions_list);
 
-    mViewModel = ViewModelProviders.of(this).get(InstructionsListViewModel.class);
+    mViewModel = new ViewModelProvider(this).get(InstructionsListViewModel.class);
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
@@ -74,6 +79,7 @@ public class InstructionsListActivity extends AppCompatActivity {
       mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
         @Override
         public void onPageSelected(int position) {
+          mViewModel.setFocusedInstructions(mPagerAdapter.get(position));
           int adjustedPosition = position;
           if (!mPagerAdapter.extraAtFront()) {
             adjustedPosition++;
@@ -249,6 +255,30 @@ public class InstructionsListActivity extends AppCompatActivity {
           }));
       return true;
     }
+    if (id == R.id.action_apply_summary) {
+      mDisposables.add(mViewModel.currentViewState().subscribe(viewState -> {
+        View view =
+            LayoutInflater.from(this).inflate(R.layout.dialog_apply_instruction_summary, null);
+        AlertDialog dialog = new AlertDialog.Builder(this)
+            .setTitle("Apply Instruction Summary")
+            .setView(view)
+            .setPositiveButton("Confirm", null)
+            .setNegativeButton("Cancel", (d, which) -> d.dismiss())
+            .create();
+        dialog.setOnShowListener(d -> {
+          Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+          button.setOnClickListener(v -> {
+            EditText input = view.findViewById(R.id.dialog_input);
+            String text = input.getText().toString();
+            mDisposables.add(mViewModel.applyUpdate(text).subscribe(optionalError -> {
+              d.dismiss();
+              Toast.makeText(this, "Update applied", Toast.LENGTH_SHORT).show();
+            }));
+          });
+        });
+        dialog.show();
+      }));
+    }
 
     return super.onOptionsItemSelected(item);
   }
@@ -291,7 +321,11 @@ public class InstructionsListActivity extends AppCompatActivity {
     }
 
     public Instructions get(int index) {
-      return mInstructions.get(index - (mExtraAtFront ? 1 : 0));
+      int shiftedIndex = index - (mExtraAtFront ? 1 : 0);
+      if (shiftedIndex < 0) {
+        return null;
+      }
+      return mInstructions.get(shiftedIndex);
     }
 
     public Optional<Integer> getIndex(@Nullable Instructions instructions) {

@@ -16,11 +16,12 @@ import org.parceler.Parcels;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import io.reactivex.disposables.CompositeDisposable;
 
 public class InstructionsPageFragment extends Fragment {
 
+  CompositeDisposable mDisposables = new CompositeDisposable();
   InstructionsPageViewModel mViewModel;
-  InstructionSelectionViewModel mSelectionViewModel;
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -29,10 +30,6 @@ public class InstructionsPageFragment extends Fragment {
     Instructions instructions = Parcels.unwrap(requireArguments().getParcelable(Instructions.class.getCanonicalName()));
     InstructionsPageViewModel.Factory factory = new InstructionsPageViewModel.Factory(requireActivity().getApplication(), instructions);
     mViewModel = new ViewModelProvider(this, factory).get(InstructionsPageViewModel.class);
-
-    InstructionSelectionViewModel.Factory selectionFactory =
-        new InstructionSelectionViewModel.Factory(requireActivity().getApplication(), instructions);
-    mSelectionViewModel = new ViewModelProvider(this, selectionFactory).get(InstructionSelectionViewModel.class);
   }
 
   @Nullable
@@ -44,6 +41,9 @@ public class InstructionsPageFragment extends Fragment {
     startDate.setText("TBD");
     TextView status = view.findViewById(R.id.tv_status);
     status.setText("TBD");
+    TextView summary = view.findViewById(R.id.tv_summary);
+    summary.setText("TBD");
+    configureOnSummaryClick(summary);
 
     Fragment fragment = new InstructionSelectionFragment();
     fragment.setArguments(requireArguments());
@@ -54,14 +54,7 @@ public class InstructionsPageFragment extends Fragment {
     mViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       startDate.setText(viewState.startDateStr);
       status.setText(viewState.statusStr);
-    });
-
-    TextView summary = view.findViewById(R.id.tv_summary);
-    summary.setText("TBD");
-    configureOnSummaryClick(summary);
-
-    mSelectionViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
-      summary.setText(viewState.serializedInstructions);
+      summary.setText(viewState.summaryStr);
     });
 
     return view;
@@ -70,19 +63,20 @@ public class InstructionsPageFragment extends Fragment {
   private void configureOnSummaryClick(TextView textView) {
     Context context = requireContext();
     textView.setOnClickListener(v -> {
-      String text = mSelectionViewModel.currentViewState().serializedInstructions;
-      int sdk = android.os.Build.VERSION.SDK_INT;
-      if (sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
-        android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context
-            .getSystemService(context.CLIPBOARD_SERVICE);
-        clipboard.setText(text);
-      } else {
-        android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context
-            .getSystemService(context.CLIPBOARD_SERVICE);
-        android.content.ClipData clip = android.content.ClipData.newPlainText("label", text);
-        clipboard.setPrimaryClip(clip);
-      }
-      Toast.makeText(context, "Coppied to clipboard", Toast.LENGTH_SHORT).show();
+      mDisposables.add(mViewModel.currentSummary().subscribe(summaryStr -> {
+        int sdk = android.os.Build.VERSION.SDK_INT;
+        if (sdk < android.os.Build.VERSION_CODES.HONEYCOMB) {
+          android.text.ClipboardManager clipboard = (android.text.ClipboardManager) context
+              .getSystemService(context.CLIPBOARD_SERVICE);
+          clipboard.setText(summaryStr);
+        } else {
+          android.content.ClipboardManager clipboard = (android.content.ClipboardManager) context
+              .getSystemService(context.CLIPBOARD_SERVICE);
+          android.content.ClipData clip = android.content.ClipData.newPlainText("label", summaryStr);
+          clipboard.setPrimaryClip(clip);
+        }
+        Toast.makeText(context, "Coppied to clipboard", Toast.LENGTH_SHORT).show();
+      }));
     });
   }
 

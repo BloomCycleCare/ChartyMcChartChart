@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.serialization.InstructionsSerializer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
 import java.util.Optional;
@@ -45,94 +46,23 @@ public class InstructionsPageViewModel extends AndroidViewModel {
       return mInstructionsRepo.hasAnyAfter(i.get().startDate).map(v -> !v);
     });
 
+    Flowable<String> summaryStream = instructionsStream.map(i -> {
+      if (!i.isPresent()) {
+        return "";
+      }
+      return InstructionsSerializer.encode(i.get(), true);
+    });
+
     Flowable.combineLatest(
         instructionsStream,
         isActiveStream,
-        (i, isActive) -> i
-            .map(value -> new ViewState(DateUtil.toUiStr(value.startDate), isActive ? "current" : "previous"))
-            .orElseGet(() -> new ViewState("TBD", "TBD")))
+        summaryStream,
+        (i, isActive, summary) -> i
+            .map(value -> new ViewState(DateUtil.toUiStr(value.startDate), isActive ? "current" : "previous", summary))
+            .orElseGet(() -> new ViewState("TBD", "TBD", "TBD")))
         .toObservable()
         .subscribe(mViewState);
-
-    // Pass any updates to the instructions to the repo
-    /*mDisposables.add(mViewState
-        .observeOn(Schedulers.computation())
-        .distinctUntilChanged()
-        .doOnNext(i -> Timber.v("Passing Instructions update to repo"))
-        .flatMapCompletable(viewState -> {
-          if (viewState.instructions.startDate.equals(viewState.initialInstructions.startDate)) {
-            Timber.v("Updating existing instructions.");
-            return mInstructionsRepo.insertOrUpdate(viewState.instructions);
-          } else {
-            Timber.v("Dropping entry for %s", viewState.initialInstructions.startDate);
-            Timber.v("Inserting entry for %s", viewState.instructions.startDate);
-            //initialInstructions.onNext(viewState.instructions);
-            return mInstructionsRepo
-                .delete(viewState.initialInstructions)
-                .toCompletable()
-                .andThen(mInstructionsRepo.insertOrUpdate(viewState.instructions));
-          }
-        })
-        .subscribe());*/
   }
-
-  /*Completable updateStartDate(LocalDate startDate, Function<Set<Instructions>, Single<Boolean>> removeInstructionsPrompt) {
-    return mViewState.flatMapCompletable(viewState -> {
-      Instructions copyOfInstructionsBeingUpdate = new Instructions(viewState.instructions);
-      copyOfInstructionsBeingUpdate.startDate = startDate;
-      return mInstructionsRepo
-          .getAll()
-          .firstOrError()
-          .flatMapCompletable(instructions -> {
-            Set<Instructions> instructionsToDrop = new HashSet<>();
-            if (startDate.isBefore(viewState.instructions.startDate)) {
-              List<Instructions> instructionsSortedDesc = new ArrayList<>(instructions);
-              Collections.sort(instructionsSortedDesc, (a, b) -> b.startDate.compareTo(a.startDate));
-              int instructionsBetween = 0;
-              for (Instructions existingInstruction : instructionsSortedDesc) {
-                if (existingInstruction.startDate.isAfter(viewState.instructions.startDate)) {
-                  continue;
-                }
-                instructionsBetween++;
-                if (existingInstruction.startDate.isAfter(startDate) && instructionsBetween > 1) {
-                  instructionsToDrop.add(existingInstruction);
-                }
-              }
-            } else {
-              for (Instructions existingInstruction : instructions) {
-                if (!existingInstruction.startDate.isAfter(viewState.instructions.startDate)) {
-                  continue;
-                }
-                if (existingInstruction.startDate.isAfter(startDate)) {
-                  continue;
-                }
-                instructionsToDrop.add(existingInstruction);
-              }
-            }
-            Single<Boolean> continueUpdate = Single.just(true);
-            if (!instructionsToDrop.isEmpty()) {
-              continueUpdate = removeInstructionsPrompt
-                  .apply(instructionsToDrop)
-                  .flatMap(Single::just);
-            }
-            return continueUpdate.flatMapCompletable(c -> {
-              if (!c) {
-                return Completable.complete();
-              }
-              List<Completable> actions = new ArrayList<>();
-              actions.add(mInstructionsRepo.insertOrUpdate(copyOfInstructionsBeingUpdate));
-              instructionsToDrop.add(viewState.instructions);
-              for (Instructions i : instructionsToDrop) {
-                actions.add(mInstructionsRepo.delete(i).toCompletable());
-              }
-              return Completable.concat(actions);
-            }).andThen(Completable.defer(() -> {
-              startDateUpdates.onNext(startDate);
-              return Completable.complete();
-            }));
-          });
-    });
-  }*/
 
   @Override
   protected void onCleared() {
@@ -144,14 +74,19 @@ public class InstructionsPageViewModel extends AndroidViewModel {
     return LiveDataReactiveStreams.fromPublisher(mViewState.toFlowable(BackpressureStrategy.BUFFER));
   }
 
+  public Single<String> currentSummary() {
+    return mViewState.firstOrError().map(viewState -> viewState.summaryStr);
+  }
 
-  public class ViewState {
+  public static class ViewState {
     public String startDateStr;
     public String statusStr;
+    public String summaryStr;
 
-    private ViewState(String startDateStr, String statusStr) {
+    private ViewState(String startDateStr, String statusStr, String summaryStr) {
       this.startDateStr = startDateStr;
       this.statusStr = statusStr;
+      this.summaryStr = summaryStr;
     }
   }
 

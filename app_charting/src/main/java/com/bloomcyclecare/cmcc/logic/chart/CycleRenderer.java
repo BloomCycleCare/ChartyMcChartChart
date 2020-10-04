@@ -60,7 +60,7 @@ public class CycleRenderer {
   }
 
   public RenderableCycle render() {
-    Timber.v("Rendering cycle %s", mCycle);
+    Timber.v("Rendering cycle starting %s", mCycle.startDateStr);
 
     Set<LocalDate> daysWithAnObservation = new HashSet<>();
     TreeSet<LocalDate> entriesEvaluated = new TreeSet<>();

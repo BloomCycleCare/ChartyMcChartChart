@@ -45,6 +45,10 @@ public class InstructionsSerializer {
   }
 
   public static Instructions decode(String encoded) {
+    return decode(LocalDate.now(), encoded);
+  }
+
+  public static Instructions decode(LocalDate startDate, String encoded) {
     String sanitized = encoded.replaceAll("\\s+","").replace('0', '=');
     byte[] bytes = BASE_32.decode(sanitized);
 
@@ -66,7 +70,7 @@ public class InstructionsSerializer {
       throw new IllegalStateException();
     }
 
-    return new Instructions(LocalDate.now(), basicInstructions, specialInstructions, yellowStampInstructions);
+    return new Instructions(startDate, basicInstructions, specialInstructions, yellowStampInstructions);
   }
 
   private static <I extends Enum<I>> int fillBitSet(BitSet bitSet, int offset, Class<I> enumType, Function<I, Boolean> fn) {
