@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.logic;
+package com.bloomcyclecare.cmcc.logic.chart;
 
 import org.joda.time.LocalDate;
 
