@@ -9,7 +9,6 @@ import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
-import com.bloomcyclecare.cmcc.data.serialization.InstructionsSerializer;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalDate;
@@ -134,6 +133,7 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
           }
           return activeBasicInstructions;
         }).distinctUntilChanged();
+
     List<Observable<ToggleState<SpecialInstruction>>> dedupedSpecialActiveUpdates = new ArrayList<>();
     for (BehaviorSubject<ToggleState<SpecialInstruction>> state : specialInstructionStates.values()) {
       dedupedSpecialActiveUpdates.add(state.distinctUntilChanged());
@@ -149,7 +149,8 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
             }
           }
           return activeInstructions;
-        }).distinctUntilChanged();
+        }).distinctUntilChanged().doOnNext(v -> Timber.v("New special"));
+
     List<Observable<ToggleState<YellowStampInstruction>>> dedupedYellowStampActiveUpdates = new ArrayList<>();
     for (BehaviorSubject<ToggleState<YellowStampInstruction>> state : yellowStampInstructionStates.values()) {
       dedupedYellowStampActiveUpdates.add(state.distinctUntilChanged());
@@ -165,7 +166,8 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
             }
           }
           return activeInstructions;
-        }).distinctUntilChanged();
+        }).distinctUntilChanged().doOnNext(v -> Timber.v("New yellow stamps"));
+
     Observable<List<Pair<BasicInstruction, BasicInstruction>>> collisionStream = activeStream
         .map(activeInstructions -> {
           Set<BasicInstruction> entriesToDrop = new HashSet<>();
@@ -185,14 +187,14 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
             }
           }
           return collisions;
-        });
-    return Flowable.combineLatest(
-        initialInstructions.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged().doOnNext(v -> Timber.v("New initial instruction")),
-        activeStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New activeItemUpdate")),
-        activeSpecialStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New special")),
-        activeYellowStampStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New yellow stamps")),
+        }).distinctUntilChanged().doOnNext(v -> Timber.v("New activeItemUpdate")).cache();
+
+    Flowable<Instructions> iStream = Flowable.combineLatest(
+        activeStream.toFlowable(BackpressureStrategy.BUFFER),
+        activeSpecialStream.toFlowable(BackpressureStrategy.BUFFER),
+        activeYellowStampStream.toFlowable(BackpressureStrategy.BUFFER),
         collisionStream.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("New collisions")),
-        (initialInstructions, activeInstructionSet, activeSpecialInstructionSet, activeYellowStampSet, collisions) -> {
+        (activeInstructionSet, activeSpecialInstructionSet, activeYellowStampSet, collisions) -> {
           Set<BasicInstruction> instructionsToDeactivate = new HashSet<>();
           for (Pair<BasicInstruction, BasicInstruction> collision : collisions) {
             instructionsToDeactivate.add(collision.second);
@@ -205,9 +207,17 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
               activeBasicInstructions.add(activeBasicInstruction);
             }
           }
-          Instructions instructions = new Instructions(startDate, activeBasicInstructions, new ArrayList<>(activeSpecialInstructionSet), new ArrayList<>(activeYellowStampSet));
-          return new ViewState(instructions, initialInstructions, collisionPrompt);
-        });
+          return new Instructions(startDate, activeBasicInstructions, new ArrayList<>(activeSpecialInstructionSet), new ArrayList<>(activeYellowStampSet));
+        }).distinctUntilChanged().doOnNext(v -> Timber.v("New Instructions")).cache();
+
+    Flowable<String> collisionPrompt = collisionStream.map(collisions -> collisions.isEmpty()
+        ? "" : String.format("%s and %s cannot both be active!", collisions.get(0).first, collisions.get(0).second)).toFlowable(BackpressureStrategy.BUFFER);
+
+    return Flowable.combineLatest(
+        initialInstructions.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged().doOnNext(v -> Timber.v("New initial instruction")),
+        iStream,
+        collisionPrompt,
+        (initialInstructions, instructions, cPrompt) -> new ViewState(instructions, initialInstructions, cPrompt));
   }
 
   void updateInstruction(BasicInstruction basicInstruction, boolean isActive) {
@@ -236,13 +246,13 @@ public class InstructionSelectionViewModel extends AndroidViewModel {
     public String collisionPrompt = "";
 
     public Instructions instructions;
-    public String serializedInstructions;
+    public Instructions.DiffResult diff;
     @Deprecated
     public Instructions initialInstructions;
 
     private ViewState(Instructions instructions, Instructions initialInstructions, String collisionPrompt) {
       this.instructions = instructions;
-      this.serializedInstructions = InstructionsSerializer.encode(instructions, true);
+      this.diff = initialInstructions == null ? Instructions.DiffResult.forInstruction(instructions) : initialInstructions.diff(instructions);
       this.initialInstructions = initialInstructions;
       this.collisionPrompt = collisionPrompt;
     }

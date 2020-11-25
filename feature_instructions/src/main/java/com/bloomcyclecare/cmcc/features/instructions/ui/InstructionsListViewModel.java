@@ -96,7 +96,7 @@ public class InstructionsListViewModel extends AndroidViewModel {
   }
 
   void setFocusedInstructions(Instructions instructions) {
-    mFocusedInstructions.onNext(Optional.of(instructions));
+    mFocusedInstructions.onNext(Optional.fromNullable(instructions));
   }
 
   Single<Optional<String>> applyUpdate(@NonNull String text) {

@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.features.instructions.ui;
 
+import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -32,6 +33,7 @@ import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.functions.BiConsumer;
+import timber.log.Timber;
 
 public class InstructionSelectionFragment extends Fragment {
 
@@ -96,6 +98,7 @@ public class InstructionSelectionFragment extends Fragment {
         InstructionViewHolder<BasicInstruction> holder =
             adapter.holderForItem(new InstructionContainer<>(basicInstruction));
         holder.setChecked(viewState.instructions.isActive(basicInstruction));
+        holder.updateDiff(viewState.diff);
       }
       if (!Strings.isNullOrEmpty(viewState.collisionPrompt)) {
         new AlertDialog.Builder(getActivity())
@@ -108,11 +111,13 @@ public class InstructionSelectionFragment extends Fragment {
         InstructionViewHolder<SpecialInstruction> holder =
             specialAdapter.holderForItem(new InstructionContainer<>(instruction));
         holder.setChecked(viewState.instructions.isActive(instruction));
+        holder.updateDiff(viewState.diff);
       }
       for (YellowStampInstruction instruction : YellowStampInstruction.values()) {
         InstructionViewHolder<YellowStampInstruction> holder =
             ysAdapter.holderForItem(new InstructionContainer<>(instruction));
         holder.setChecked(viewState.instructions.isActive(instruction));
+        holder.updateDiff(viewState.diff);
       }
     });
 
@@ -173,6 +178,8 @@ public class InstructionSelectionFragment extends Fragment {
 
   private static class InstructionViewHolder<I extends AbstractInstruction> extends SimpleArrayAdapter.SimpleViewHolder<InstructionContainer<I>> {
 
+    private final Context mContext;
+    private final View mView;
     private final TextView mKey;
     private final TextView mText;
     private final SwitchCompat mSwitch;
@@ -181,6 +188,8 @@ public class InstructionSelectionFragment extends Fragment {
 
     public InstructionViewHolder(View view, BiConsumer<I, Boolean> toggleConsumer) {
       super(view);
+      mContext = view.getContext();
+      mView = view;
       mKey = view.findViewById(R.id.tv_instruction_key);
       mText = view.findViewById(R.id.tv_instruction_text);
       mSwitch = view.findViewById(R.id.switch_instruction);
@@ -207,6 +216,21 @@ public class InstructionSelectionFragment extends Fragment {
       if (mSwitch.isChecked() != checked) {
         mSwitch.setChecked(checked);
       }
+    }
+
+    void updateDiff(Instructions.DiffResult diffResult) {
+      if (diffResult.instructionsRemoved.contains(mBoundInstruction.instruction)) {
+        Timber.v("Setting %s to red", mBoundInstruction.instruction.section());
+        mText.setBackgroundResource(R.color.entryRed);
+        return;
+      }
+      if (diffResult.instructionsAdded.contains(mBoundInstruction.instruction)) {
+        Timber.v("Setting %s to green", mBoundInstruction.instruction.section());
+        mText.setBackgroundResource(R.color.entryGreen);
+        return;
+      }
+      Timber.v("Clearing %s", mBoundInstruction.instruction.section());
+      //mText.setBackgroundResource(R.color.entryGrey);
     }
   }
 }

@@ -322,7 +322,7 @@ public class InstructionsListActivity extends AppCompatActivity {
 
     public Instructions get(int index) {
       int shiftedIndex = index - (mExtraAtFront ? 1 : 0);
-      if (shiftedIndex < 0) {
+      if (shiftedIndex < 0 || shiftedIndex >= mInstructions.size()) {
         return null;
       }
       return mInstructions.get(shiftedIndex);
