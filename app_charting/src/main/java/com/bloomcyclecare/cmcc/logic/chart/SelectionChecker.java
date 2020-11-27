@@ -9,6 +9,16 @@ import java.util.Optional;
 
 public class SelectionChecker {
 
+  private final StickerSelection expected;
+
+  public static SelectionChecker create(StickerSelection expected) {
+    return new SelectionChecker(expected);
+  }
+
+  private SelectionChecker(StickerSelection expected) {
+    this.expected = expected;
+  }
+
   public enum Reason {
     RED_ONLY_ON_DAYS_OF_BLEEDING,
     GREEN_ONLY_ON_DRY_DAY_OUTSIDE_COUNT,
@@ -18,6 +28,7 @@ public class SelectionChecker {
     INCORRECT_COUNT,
     TEXT_INPUT_REQUIRED,
     NOT_YET_SUPPORTED,
+    NO_STICKER_SELECTED,
     YELLOW_STAMPS_NOT_ENABLED
   }
 
@@ -27,6 +38,7 @@ public class SelectionChecker {
     ALWAYS_GREEN_ON_DRY_DAYS_WITHOUT_COUNT,
     ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS,
     ALWAYS_P_ON_PEAK_DAY,
+    NO_TEXT_NEEDED,
     NEVER_YELLOW_STAMPS_UNLESS_ENABLED
   }
 
@@ -46,13 +58,18 @@ public class SelectionChecker {
     public boolean ok() {
       return !reason.isPresent();
     }
+
+    @Override
+    public String toString() {
+      return String.format("Reason: %s Hint: %s", reason, hint);
+    }
   }
 
-  public static Result check(StickerSelection selection, StickerSelection expected) {
-    return new Result(expected, selection, getReason(selection, expected), getHint(selection, expected));
+  public Result check(StickerSelection selection) {
+    return new Result(expected, selection, getReason(selection), getHint(selection));
   }
 
-  private static Optional<Reason> getReason(StickerSelection selection, StickerSelection expected) {
+  private Optional<Reason> getReason(StickerSelection selection) {
     if (selection.equals(expected)) {
       return Optional.empty();
     }
@@ -73,7 +90,11 @@ public class SelectionChecker {
         // TODO: implement yellow stamp logic
         return Optional.of(Reason.NOT_YET_SUPPORTED);
       }
-      throw new IllegalStateException();
+      if (selection.sticker.color == StickerColor.GREY) {
+        return Optional.of(Reason.NO_STICKER_SELECTED);
+      }
+      throw new IllegalStateException(
+          String.format("Unmatched color difference for selection %s", selection.sticker.name()));
     } else {
       if (selection.text == null) {
         return Optional.of(Reason.TEXT_INPUT_REQUIRED);
@@ -90,7 +111,7 @@ public class SelectionChecker {
     }
   }
 
-  private static Optional<Hint> getHint(StickerSelection selection, StickerSelection expected) {
+  private Optional<Hint> getHint(StickerSelection selection) {
     if (selection.equals(expected)) {
       return Optional.empty();
     }
@@ -108,6 +129,9 @@ public class SelectionChecker {
         return Optional.of(Hint.ALWAYS_WHITE_BABY_ON_DAYS_WITH_MUCUS);
       }
       // TODO: implement yellow stamp logic
+    }
+    if (expected.text == null) {
+      return Optional.of(Hint.NO_TEXT_NEEDED);
     }
     if (expected.text == StickerText.P) {
       return Optional.of(Hint.ALWAYS_P_ON_PEAK_DAY);

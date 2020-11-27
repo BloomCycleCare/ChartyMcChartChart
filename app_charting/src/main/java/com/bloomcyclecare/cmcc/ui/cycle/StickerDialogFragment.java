@@ -174,7 +174,8 @@ public class StickerDialogFragment extends DialogFragment {
       stickerTextView.setBackground(requireContext().getDrawable(StickerUtil.resourceId(selection.sticker)));
       stickerTextView.setText(selection.text != null ? String.valueOf(selection.text.value) : "");
       if (previousSelection.isPresent() && expectedSelection.isPresent()) {
-        SelectionChecker.Result result = SelectionChecker.check(previousSelection.get(), expectedSelection.get());
+        SelectionChecker.Result result =
+            SelectionChecker.create(expectedSelection.get()).check(previousSelection.get());
         if (!result.ok() && selection.equals(previousSelection.get())) {
           renderIncorrectResult(result);
           // TODO: show reason and hint showcase once the library supports dialogs
@@ -192,7 +193,7 @@ public class StickerDialogFragment extends DialogFragment {
         renderEmptySelect();
         return;
       }
-      resultConsumer.accept(SelectionChecker.check(selection, expectedSelection.get()));
+      resultConsumer.accept(SelectionChecker.create(expectedSelection.get()).check(selection));
       dismiss();
     });
 

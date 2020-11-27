@@ -1,6 +1,5 @@
 package com.bloomcyclecare.cmcc.data.models.stickering;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.google.common.base.Objects;
 
@@ -16,6 +15,8 @@ public class StickerSelection {
 
   public Sticker sticker;
   @Nullable public StickerText text;
+
+  private StickerSelection() {}
 
   public static StickerSelection create(Sticker sticker, StickerText text) {
     StickerSelection stickerSelection = new StickerSelection();
