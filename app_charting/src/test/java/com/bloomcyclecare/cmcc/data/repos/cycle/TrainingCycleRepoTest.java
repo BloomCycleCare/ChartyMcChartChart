@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.repos.cycle;
 
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.google.common.collect.ImmutableList;
@@ -99,16 +100,16 @@ public class TrainingCycleRepoTest {
 
   private static List<TrainingCycle> trainingCycles() {
     TrainingCycle cycle1 = TrainingCycle.withInstructions(Instructions.createBasicInstructions(LocalDate.now()));
-    cycle1.addEntry(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    cycle1.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
-    cycle1.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
+    cycle1.addEntry(TrainingEntry.forText("H"), StickerExpectations.redSticker());
+    cycle1.addEntry(TrainingEntry.forText("M"), StickerExpectations.redSticker());
+    cycle1.addEntry(TrainingEntry.forText("M"), StickerExpectations.redSticker());
 
     TrainingCycle cycle2 = TrainingCycle.withInstructions(Instructions.createBasicInstructions(LocalDate.now()));
-    cycle2.addEntry(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
-    cycle2.addEntry(TrainingEntry.forText("M"), TrainingCycle.StickerExpectations.redSticker());
+    cycle2.addEntry(TrainingEntry.forText("H"), StickerExpectations.redSticker());
+    cycle2.addEntry(TrainingEntry.forText("M"), StickerExpectations.redSticker());
 
     TrainingCycle cycle3 = TrainingCycle.withInstructions(Instructions.createBasicInstructions(LocalDate.now()));
-    cycle3.addEntry(TrainingEntry.forText("H"), TrainingCycle.StickerExpectations.redSticker());
+    cycle3.addEntry(TrainingEntry.forText("H"), StickerExpectations.redSticker());
 
     return ImmutableList.of(cycle1, cycle2, cycle3);
   }

@@ -1,15 +1,16 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
-import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
@@ -48,13 +49,13 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
     }
     TreeMap<LocalDate, ChartEntry> initialEntries = new TreeMap<>();
     for (TrainingCycle trainingCycle : trainingCycles) {
-      for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> mapEntry
+      for (Map.Entry<TrainingEntry, Optional<StickerExpectations>> mapEntry
           : trainingCycle.entries().entrySet()) {
         TrainingEntry trainingEntry = mapEntry.getKey();
         int numEntriesRemaining = numEntries - initialEntries.size();
         LocalDate entryDate = LocalDate.now().minusDays(numEntriesRemaining - 1);
         ObservationEntry observationEntry = trainingEntry.asChartEntry(entryDate, observationParser);
-        StickerSelection stickerSelection = mapEntry.getValue().map(StickerSelection::fromExpectations).orElse(null);
+        StickerSelection stickerSelection = mapEntry.getValue().map(e -> e.stickerSelection).orElse(null);
         ChartEntry entry = new ChartEntry(entryDate, observationEntry,
             WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate),
             populateStickerSelections ? stickerSelection : null);

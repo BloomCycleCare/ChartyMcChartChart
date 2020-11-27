@@ -1,6 +1,5 @@
 package com.bloomcyclecare.cmcc.data.models.stickering;
 
-import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.google.common.base.Objects;
 
 import org.parceler.Parcel;
@@ -27,12 +26,6 @@ public class StickerSelection {
 
   public static StickerSelection empty() {
     return create(GREY, null);
-  }
-
-  public static StickerSelection fromExpectations(TrainingCycle.StickerExpectations expectations) {
-    return create(
-        Sticker.fromStickerColor(expectations.backgroundColor, expectations.shouldHaveBaby),
-        StickerText.fromString(expectations.peakText));
   }
 
   public boolean hasSticker() {

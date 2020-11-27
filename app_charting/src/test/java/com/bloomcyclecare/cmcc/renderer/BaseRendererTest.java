@@ -7,7 +7,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
@@ -40,11 +40,11 @@ public abstract class BaseRendererTest {
 
   @Deprecated
   void runTest(
-      ImmutableMap<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries, Instructions instructions) throws Exception {
+      ImmutableMap<TrainingEntry, Optional<StickerExpectations>> entries, Instructions instructions) throws Exception {
     int numEntries = entries.size();
     List<ChartEntry> chartEntries = new ArrayList<>(numEntries);
     List<Predicate<CycleRenderer.RenderableEntry>> tests = new ArrayList<>(numEntries);
-    for (Map.Entry<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> anEntry : entries.entrySet()) {
+    for (Map.Entry<TrainingEntry, Optional<StickerExpectations>> anEntry : entries.entrySet()) {
       LocalDate entryDate = CYCLE_START_DATE.plusDays(chartEntries.size());
       chartEntries.add(new ChartEntry(entryDate, anEntry.getKey().asChartEntry(entryDate, observation -> {
         try {
@@ -53,31 +53,22 @@ public abstract class BaseRendererTest {
           throw new IllegalStateException(e);
         }
       }), null, null, null));
-      Optional<TrainingCycle.StickerExpectations> stickerExpectations = anEntry.getValue();
-      if (stickerExpectations.isPresent()) {
-        tests.add(renderableEntry -> {
-          StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
+      Optional<StickerExpectations> stickerExpectations = anEntry.getValue();
+      stickerExpectations.ifPresent(expectations -> tests.add(renderableEntry -> {
+        StandardSubjectBuilder baseAssert = assertWithMessage(
+            String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
+        baseAssert
+            .withMessage("stickerSelection")
+            .that(renderableEntry.expectedStickerSelection())
+            .isEqualTo(expectations.stickerSelection);
+        if (expectations.shouldHaveIntercourse) {
           baseAssert
-              .withMessage("backgroundColor")
-              .that(renderableEntry.expectedStickerSelection().sticker.color)
-              .isEqualTo(stickerExpectations.get().backgroundColor);
-          baseAssert
-              .withMessage("showBaby")
-              .that(renderableEntry.expectedStickerSelection().sticker.hasBaby)
-              .isEqualTo(stickerExpectations.get().shouldHaveBaby);
-          baseAssert
-              .withMessage("peakDayText")
-              .that(Optional.ofNullable(renderableEntry.expectedStickerSelection().text).map(StickerText::toString).orElse(""))
-              .isEqualTo(stickerExpectations.get().peakText);
-          if (stickerExpectations.get().shouldHaveIntercourse) {
-            baseAssert
-                .withMessage("intercourse")
-                .about(OptionalStringSubject.optionals())
-                .that(renderableEntry.entrySummary()).value().endsWith("I");
-          }
-          return true;
-        });
-      }
+              .withMessage("intercourse")
+              .about(OptionalStringSubject.optionals())
+              .that(renderableEntry.entrySummary()).value().endsWith("I");
+        }
+        return true;
+      }));
     }
     Cycle cycle = new Cycle("", CYCLE_START_DATE, null, null);
 

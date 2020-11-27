@@ -1,7 +1,6 @@
 package com.bloomcyclecare.cmcc.data.models.training;
 
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.google.common.collect.ImmutableMap;
 
 import java.util.LinkedHashMap;
@@ -51,51 +50,4 @@ public class TrainingCycle {
     return ImmutableMap.copyOf(entries);
   }
 
-  public static class StickerExpectations {
-
-    public final StickerColor backgroundColor;
-    public boolean shouldHaveBaby = false;
-    public boolean shouldHaveIntercourse = false;
-    // TODO: refactor this to use StickerText
-    public String peakText = "";
-
-    private StickerExpectations(StickerColor backgroundColor) {
-      this.backgroundColor = backgroundColor;
-    }
-
-    public static StickerExpectations redSticker() {
-      return new StickerExpectations(StickerColor.RED);
-    }
-
-    public static StickerExpectations greenSticker() {
-      return new StickerExpectations(StickerColor.GREEN);
-    }
-
-    public static StickerExpectations yellowSticker() {
-      return new StickerExpectations(StickerColor.YELLOW);
-    }
-
-    public static StickerExpectations whiteSticker() {
-      return new StickerExpectations(StickerColor.WHITE);
-    }
-
-    public static StickerExpectations greySticker() {
-      return new StickerExpectations(StickerColor.GREY);
-    }
-
-    public StickerExpectations withPeakText(String text) {
-      peakText = text;
-      return this;
-    }
-
-    public StickerExpectations withBaby() {
-      shouldHaveBaby = true;
-      return this;
-    }
-
-    public StickerExpectations withIntercourse() {
-      shouldHaveIntercourse = true;
-      return this;
-    }
-  }
 }

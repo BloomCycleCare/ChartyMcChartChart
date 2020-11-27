@@ -11,7 +11,6 @@ import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
@@ -768,35 +767,24 @@ public class CycleRenderer {
     }
 
     private Sticker getSticker() {
-      StickerColor color;
-      if (!hasInstructions) {
-        color = StickerColor.GREY;
-      } else if (!hasObservation) {
-        color = StickerColor.GREY;
-      } else if (hasBleeding) {
-        color = StickerColor.RED;
-      } else if (!hasMucus) {
-        color = StickerColor.GREEN;
-      } else if (!infertilityReasons.isEmpty()) {
-        color = StickerColor.YELLOW;
-      } else if (hasPostPeakYellowInstructions
+      if (!hasInstructions || !hasObservation) {
+        return Sticker.GREY;
+      }
+      if (hasBleeding) {
+        return Sticker.RED;
+      }
+      if (!hasMucus) {
+        return fertilityReasons.isEmpty() ? Sticker.GREEN : Sticker.GREEN_BABY;
+      }
+      if (!infertilityReasons.isEmpty()) {
+        return fertilityReasons.isEmpty() ? Sticker.YELLOW : Sticker.YELLOW_BABY;
+      }
+      if (hasPostPeakYellowInstructions
           && peakDayOffset.isPostPeak()
-          && !peakDayOffset.isPostPeakPlusExclusive(3)) {
-        color = StickerColor.YELLOW;
-      } else {
-        color = StickerColor.WHITE;
+              && !peakDayOffset.isPostPeakPlusExclusive(3)) {
+        return Sticker.YELLOW_BABY;
       }
-
-      boolean showBaby;
-      if (!hasObservation) {
-        showBaby = false;
-      } else if (fertilityReasons.isEmpty()) {
-        showBaby = infertilityReasons.isEmpty();
-      } else {
-        showBaby = !hasBleeding;
-      }
-
-      return Sticker.fromStickerColor(color, showBaby);
+      return  Sticker.WHITE_BABY;
     }
 
     @Nullable

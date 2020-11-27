@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.renderer;
 import android.content.Context;
 
 import com.bloomcyclecare.cmcc.data.models.charting.DemoCycles;
-import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
+import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.google.common.collect.ImmutableMap;
 
@@ -64,35 +64,35 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
 
   @Test
   public void testNoBabiesOrNumbersIfEmpty() throws Exception {
-    ImmutableMap.Builder<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries = ImmutableMap.builder();
-    entries.put(TrainingEntry.forText("H"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
-    entries.put(TrainingEntry.forText("H"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
-    entries.put(TrainingEntry.forText("M"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
-    entries.put(TrainingEntry.forText("M"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
-    entries.put(TrainingEntry.forText("L2AD"), Optional.of(TrainingCycle.StickerExpectations.redSticker()));
-    entries.put(TrainingEntry.forText("2AD").intercourse(), Optional.of(TrainingCycle.StickerExpectations.greenSticker().withIntercourse()));
-    entries.put(TrainingEntry.forText("2AD"), Optional.of(TrainingCycle.StickerExpectations.greenSticker()));
+    ImmutableMap.Builder<TrainingEntry, Optional<StickerExpectations>> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("H"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("H"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("M"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("M"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("L2AD"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("2AD").intercourse(), Optional.of(StickerExpectations.greenSticker().withIntercourse()));
+    entries.put(TrainingEntry.forText("2AD"), Optional.of(StickerExpectations.greenSticker()));
 
-    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
-    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
-    entries.put(TrainingEntry.forText("6cx1"), Optional.of(TrainingCycle.StickerExpectations.whiteSticker().withBaby()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+    entries.put(TrainingEntry.forText("6cx1"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
     runTest(entries.build(), BASIC_INSTRUCTIONS);
   }
 
   @Test
   public void testFoo() throws Exception {
-    ImmutableMap.Builder<TrainingEntry, Optional<TrainingCycle.StickerExpectations>> entries = ImmutableMap.builder();
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText(""), Optional.of(TrainingCycle.StickerExpectations.greySticker()));
-    entries.put(TrainingEntry.forText("0AD"), Optional.of(TrainingCycle.StickerExpectations.greenSticker()));
+    ImmutableMap.Builder<TrainingEntry, Optional<StickerExpectations>> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText(""), Optional.of(StickerExpectations.greySticker()));
+    entries.put(TrainingEntry.forText("0AD"), Optional.of(StickerExpectations.greenSticker()));
 
     runTest(entries.build(), BASIC_INSTRUCTIONS);
   }
