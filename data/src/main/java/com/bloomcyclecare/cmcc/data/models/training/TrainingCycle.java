@@ -56,6 +56,7 @@ public class TrainingCycle {
     public final StickerColor backgroundColor;
     public boolean shouldHaveBaby = false;
     public boolean shouldHaveIntercourse = false;
+    // TODO: refactor this to use StickerText
     public String peakText = "";
 
     private StickerExpectations(StickerColor backgroundColor) {

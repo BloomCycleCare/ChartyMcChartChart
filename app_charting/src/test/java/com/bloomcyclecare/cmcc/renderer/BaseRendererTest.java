@@ -7,6 +7,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
@@ -58,15 +59,15 @@ public abstract class BaseRendererTest {
           StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
           baseAssert
               .withMessage("backgroundColor")
-              .that(renderableEntry.backgroundColor())
+              .that(renderableEntry.expectedStickerSelection().sticker.color)
               .isEqualTo(stickerExpectations.get().backgroundColor);
           baseAssert
               .withMessage("showBaby")
-              .that(renderableEntry.showBaby())
+              .that(renderableEntry.expectedStickerSelection().sticker.hasBaby)
               .isEqualTo(stickerExpectations.get().shouldHaveBaby);
           baseAssert
               .withMessage("peakDayText")
-              .that(renderableEntry.peakDayText())
+              .that(Optional.ofNullable(renderableEntry.expectedStickerSelection().text).map(StickerText::toString).orElse(""))
               .isEqualTo(stickerExpectations.get().peakText);
           if (stickerExpectations.get().shouldHaveIntercourse) {
             baseAssert

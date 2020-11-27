@@ -10,8 +10,10 @@ import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
@@ -33,6 +35,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.core.util.Pair;
 import timber.log.Timber;
 
@@ -116,7 +119,7 @@ public class CycleRenderer {
         daysOfMucus.add(e.entryDate);
       }
       daysOfIntercourse.put(e.entryDate, e.observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE);
-      boolean todayHasMucus = false;
+      state.todayHasMucus = false;
       state.todayHasBlood = false;
       state.todaysFlow = null;
       if (e.observationEntry.observation == null) {
@@ -124,13 +127,13 @@ public class CycleRenderer {
       } else {
         daysWithAnObservation.add(e.entryDate);
         Observation observation = e.observationEntry.observation;
-        todayHasMucus = observation.hasMucus();
+        state.todayHasMucus = observation.hasMucus();
         state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
         if (observation.flow != null) {
           state.todaysFlow = observation.flow;
           hasHadLegitFlow |= observation.flow.isLegit();
         }
-        if (todayHasMucus) {
+        if (state.todayHasMucus) {
           consecutiveDaysOfMucus++;
           if (consecutiveDaysOfMucus >= 3) {
             lastDayOfThreeOrMoreDaysOfMucus = e.entryDate;
@@ -202,7 +205,7 @@ public class CycleRenderer {
         state.fertilityReasons.add(BasicInstruction.D_1);
       }
       if (state.instructions.isActive(BasicInstruction.D_2)
-          && todayHasMucus
+          && state.todayHasMucus
           && !state.isPostPeakPlus(3)) {
         state.fertilityReasons.add(BasicInstruction.D_2);
         state.countOfThreeReasons.put(BasicInstruction.D_2, CountOfThreeReason.PEAK_DAY);
@@ -231,7 +234,7 @@ public class CycleRenderer {
       }
 
       // Basic Instruction infertility reasons (section E)
-      if (!todayHasMucus && !state.isInMenstrualFlow && state.isPrePeak()) {
+      if (!state.todayHasMucus && !state.isInMenstrualFlow && state.isPrePeak()) {
         if (state.instructions.isActive(BasicInstruction.E_1)) {
           state.infertilityReasons.add(BasicInstruction.E_1);
         }
@@ -243,7 +246,7 @@ public class CycleRenderer {
           && state.isExactlyPostPeakPlus(4)) {
         state.infertilityReasons.add(BasicInstruction.E_3);
       }
-      if (!todayHasMucus && state.isPostPeakPlus(4)) {
+      if (!state.todayHasMucus && state.isPostPeakPlus(4)) {
         if (state.instructions.isActive(BasicInstruction.E_4)) {
           state.infertilityReasons.add(BasicInstruction.E_4);
         }
@@ -254,7 +257,7 @@ public class CycleRenderer {
           state.infertilityReasons.add(BasicInstruction.E_6);
         }
       }
-      if (!todayHasMucus && state.isInMenstrualFlow && (
+      if (!state.todayHasMucus && state.isInMenstrualFlow && (
           (state.todaysFlow != null && !state.todaysFlow.isLegit()) || state.todayHasBlood)) {
         state.infertilityReasons.add(BasicInstruction.E_7);
       }
@@ -379,7 +382,7 @@ public class CycleRenderer {
   public static class State {
     public Cycle cycle;
     public Optional<Cycle> previousCycle;
-    public ChartEntry entry;
+    @Deprecated public ChartEntry entry;
     public LocalDate entryDate;
     public Instructions instructions;
     public int entryNum;
@@ -393,6 +396,7 @@ public class CycleRenderer {
     public Optional<LocalDate> firstPointOfChangeToward;
     public Optional<LocalDate> mostRecentPointOfChangeToward;
     public Optional<LocalDate> mostRecentPointOfChangeAway;
+    public boolean todayHasMucus;
     public boolean hasHadAnyMucus;
     public int consecutiveDaysOfMucus;
     public boolean hadIntercourseYesterday;
@@ -454,25 +458,6 @@ public class CycleRenderer {
       infertilityReasons.add(suppressionReason);
     }
 
-    String peakDayText() {
-      if (!entry.hasObservation()) {
-        return "";
-      }
-      if (isPeakDay()) {
-        return "P";
-      }
-      if (fertilityReasons.isEmpty()) {
-        return "";
-      }
-      if (effectiveCountOfThree.first == null || effectiveCountOfThree.first == 0) {
-        return "";
-      }
-      if (effectiveCountOfThree.first > 0) {
-        return String.valueOf(effectiveCountOfThree.first);
-      }
-      return "";
-    }
-
     String getInstructionSummary() {
       if (entry.observationEntry.observation == null) {
         return "Please provide an observation by clicking edit below.";
@@ -512,30 +497,6 @@ public class CycleRenderer {
       return ON_DOUBLE_NEW_LINE.join(instructionSummaryLines);
     }
 
-    StickerColor getBackgroundColor() {
-      if (instructions == null) {
-        return StickerColor.GREY;
-      }
-      Observation observation = entry.observationEntry.observation;
-      if (observation == null) {
-        return StickerColor.GREY;
-      }
-      if (observation.hasBlood()) {
-        return StickerColor.RED;
-      }
-      if (!observation.hasMucus()) {
-        return StickerColor.GREEN;
-      }
-      // All entries have mucus at this point
-      if (!infertilityReasons.isEmpty()) {
-        return StickerColor.YELLOW;
-      }
-      if (instructions.anyActive(BasicInstruction.K_2, BasicInstruction.K_3, BasicInstruction.K_4)
-          && isPostPeak() && !isPostPeakPlus(4)) {
-        return StickerColor.YELLOW;
-      }
-      return StickerColor.WHITE;
-    }
 
     boolean shouldAskEssentialSameness() {
       if (instructions == null) {
@@ -555,16 +516,6 @@ public class CycleRenderer {
       return instructions.isActive(BasicInstruction.G_1) && isExactlyPostPeakPlus(3);
     }
 
-    boolean shouldShowBaby() {
-      if (!entry.hasObservation()) {
-        return false;
-      }
-      if (fertilityReasons.isEmpty()) {
-        return infertilityReasons.isEmpty();
-      }
-      return !entry.observationEntry.hasBlood();
-    }
-
     EntryModificationContext entryModificationContext() {
       EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
       modificationContext.hasPreviousCycle = false;
@@ -574,6 +525,21 @@ public class CycleRenderer {
       modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
       modificationContext.shouldAskDoublePeakQuestions = shouldAskDoublePeakQuestions();
       return modificationContext;
+    }
+
+    StickerSelectionContext stickerSelectionContext() {
+      boolean hasInstructions = instructions != null;
+      return new StickerSelectionContext(
+          Optional.ofNullable(effectiveCountOfThree).map(p -> p.first).orElse(-1),
+          PeakDayOffset.create(mostRecentPeakDay, entryDate),
+          hasInstructions,
+          entry.hasObservation(),
+          todaysFlow != null || todayHasBlood,
+          todayHasMucus,
+          hasInstructions && instructions.anyActive(
+              BasicInstruction.K_2, BasicInstruction.K_3, BasicInstruction.K_4),
+          fertilityReasons,
+          infertilityReasons);
     }
   }
 
@@ -646,23 +612,22 @@ public class CycleRenderer {
 
   @AutoValue
   public static abstract class RenderableEntry {
-    public abstract Optional<StickerSelection> manualStickerSelection();
     public abstract boolean hasObservation();
     public abstract Set<AbstractInstruction> fertilityReasons();
     public abstract Optional<String> entrySummary();
-    public abstract StickerColor backgroundColor();
     public abstract int entryNum();
     public abstract String dateSummary();
     public abstract String dateSummaryShort();
-    public abstract String peakDayText();
     public abstract String instructionSummary();
     public abstract String essentialSamenessSummary();
-    public abstract boolean showBaby();
     public abstract IntercourseTimeOfDay intercourseTimeOfDay();
     public abstract String pocSummary();
     public abstract EntryModificationContext modificationContext();
     public abstract String trainingMarker();
     public abstract boolean canSelectYellowStamps();
+    public abstract StickerSelectionContext stickerSelectionContext();
+    public abstract StickerSelection expectedStickerSelection();
+    public abstract Optional<StickerSelection> manualStickerSelection();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
@@ -682,7 +647,8 @@ public class CycleRenderer {
       } else {
         essentialSamenessSummary = "";
       }
-      RenderableEntry renderableEntry = builder()
+      StickerSelectionContext stickerSelectionContext = state.stickerSelectionContext();
+      return builder()
           .manualStickerSelection(Optional.ofNullable(state.entry.stickerSelection))
           .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
@@ -690,9 +656,6 @@ public class CycleRenderer {
           .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
           .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
-          .backgroundColor(state.getBackgroundColor())
-          .showBaby(state.shouldShowBaby())
-          .peakDayText(state.peakDayText())
           .intercourseTimeOfDay(Optional.ofNullable(state.entry.observationEntry.intercourseTimeOfDay)
               .orElse(IntercourseTimeOfDay.NONE))
           .pocSummary(pocSummary)
@@ -704,8 +667,9 @@ public class CycleRenderer {
               state.instructions.anyActive(BasicInstruction.yellowBasicInstructions)
               || !state.instructions.yellowStampInstructions.isEmpty()
               || state.instructions.specialInstructions.contains(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS))
+          .stickerSelectionContext(stickerSelectionContext)
+          .expectedStickerSelection(stickerSelectionContext.expectedSelection())
           .build();
-      return renderableEntry;
     }
 
     @NonNull
@@ -722,19 +686,13 @@ public class CycleRenderer {
     public abstract static class Builder {
       public abstract Builder entrySummary(Optional<String> entrySummary);
 
-      public abstract Builder backgroundColor(StickerColor backgroundColor);
-
       public abstract Builder entryNum(int entryNum);
 
       public abstract Builder dateSummary(String dateSummary);
 
-      public abstract Builder peakDayText(String peakDayText);
-
       public abstract Builder instructionSummary(String instructionSummary);
 
       public abstract Builder essentialSamenessSummary(String essentialSamenessSummary);
-
-      public abstract Builder showBaby(boolean showBaby);
 
       public abstract Builder intercourseTimeOfDay(IntercourseTimeOfDay intercourseTimeOfDay);
 
@@ -753,6 +711,10 @@ public class CycleRenderer {
       public abstract Builder manualStickerSelection(Optional<StickerSelection> manualStickerSelection);
 
       public abstract Builder canSelectYellowStamps(boolean canSelectYellowStamps);
+
+      public abstract Builder expectedStickerSelection(StickerSelection stickerSelection);
+
+      public abstract Builder stickerSelectionContext(StickerSelectionContext context);
 
       public abstract RenderableEntry build();
     }
@@ -775,6 +737,114 @@ public class CycleRenderer {
     public EntryModificationContext(@NonNull Cycle cycle, @NonNull ChartEntry entry) {
       this.cycle = cycle;
       this.entry = entry;
+    }
+  }
+
+  public static class StickerSelectionContext {
+    public final int countOfThree;
+    public final PeakDayOffset peakDayOffset;
+    public final boolean hasInstructions;
+    public final boolean hasObservation;
+    public final boolean hasBleeding;
+    public final boolean hasMucus;
+    public final boolean hasPostPeakYellowInstructions;
+    public final Set<AbstractInstruction> fertilityReasons;
+    public final Set<AbstractInstruction> infertilityReasons;
+
+    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean hasPostPeakYellowInstructions, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
+      this.countOfThree = countOfThree;
+      this.peakDayOffset = peakDayOffset;
+      this.hasInstructions = hasInstructions;
+      this.hasObservation = hasObservation;
+      this.hasBleeding = hasBleeding;
+      this.hasMucus = hasMucus;
+      this.hasPostPeakYellowInstructions = hasPostPeakYellowInstructions;
+      this.fertilityReasons = fertilityReasons;
+      this.infertilityReasons = infertilityReasons;
+    }
+
+    StickerSelection expectedSelection() {
+      return StickerSelection.create(getSticker(), getStickerText());
+    }
+
+    private Sticker getSticker() {
+      StickerColor color;
+      if (!hasInstructions) {
+        color = StickerColor.GREY;
+      } else if (!hasObservation) {
+        color = StickerColor.GREY;
+      } else if (hasBleeding) {
+        color = StickerColor.RED;
+      } else if (!hasMucus) {
+        color = StickerColor.GREEN;
+      } else if (!infertilityReasons.isEmpty()) {
+        color = StickerColor.YELLOW;
+      } else if (hasPostPeakYellowInstructions
+          && peakDayOffset.isPostPeak()
+          && !peakDayOffset.isPostPeakPlusExclusive(3)) {
+        color = StickerColor.YELLOW;
+      } else {
+        color = StickerColor.WHITE;
+      }
+
+      boolean showBaby;
+      if (!hasObservation) {
+        showBaby = false;
+      } else if (fertilityReasons.isEmpty()) {
+        showBaby = infertilityReasons.isEmpty();
+      } else {
+        showBaby = !hasBleeding;
+      }
+
+      return Sticker.fromStickerColor(color, showBaby);
+    }
+
+    @Nullable
+    private StickerText getStickerText() {
+      if (!hasObservation) {
+        return null;
+      }
+      if (peakDayOffset.isPeakDay()) {
+        return StickerText.P;
+      }
+      if (fertilityReasons.isEmpty()) {
+        return null;
+      }
+      if (countOfThree > 0) {
+        return StickerText.fromString(String.valueOf(countOfThree));
+      }
+      return null;
+    }
+  }
+
+  @Parcel
+  public static class PeakDayOffset {
+    final int offset;
+
+    public static PeakDayOffset create(Optional<LocalDate> mostRecentPeakDay, LocalDate entryDate) {
+      return new PeakDayOffset(
+          mostRecentPeakDay.map(pd -> Days.daysBetween(pd, entryDate).getDays()).orElse(-1));
+    }
+
+    @ParcelConstructor
+    public PeakDayOffset(int offset) {
+      this.offset = offset;
+    }
+
+    boolean isPeakDay() {
+      return offset == 0;
+    }
+
+    boolean isPrePeak() {
+      return offset <= 0;
+    }
+
+    boolean isPostPeak() {
+      return isPostPeakPlusExclusive(0);
+    }
+
+    boolean isPostPeakPlusExclusive(int v) {
+      return offset > v;
     }
   }
 }

@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.logic.print;
 
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
@@ -12,6 +13,7 @@ import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.TreeSet;
 
 import androidx.annotation.NonNull;
@@ -250,11 +252,13 @@ public class PageRenderer {
             break;
         }
 
-        textLines[1] = entry.peakDayText();
+        textLines[1] = Optional.ofNullable(entry.expectedStickerSelection().text)
+            .map(StickerText::toString)
+            .orElse("");
 
         List<String> classes = new ArrayList<>();
-        classes.add(getColorClass(entry.backgroundColor()));
-        if (entry.showBaby()) {
+        classes.add(getColorClass(entry.expectedStickerSelection().sticker.color));
+        if (entry.expectedStickerSelection().sticker.hasBaby) {
           classes.add("baby");
         }
 

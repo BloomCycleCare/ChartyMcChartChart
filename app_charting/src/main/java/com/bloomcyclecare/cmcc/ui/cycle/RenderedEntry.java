@@ -3,9 +3,7 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
-import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.google.auto.value.AutoValue;
@@ -54,8 +52,8 @@ public abstract class RenderedEntry {
     StickerSelection manualSelection = re.manualStickerSelection().orElse(null);
     boolean hasNonEmptyManualSelection = manualSelection != null && !manualSelection.equals(StickerSelection.empty());
     Optional<StickerSelection> expectedStickerSelection = re.hasObservation()
-        ? Optional.of(StickerSelection.create(Sticker.fromStickerColor(re.backgroundColor(), re.showBaby()),
-        viewMode == ViewMode.TRAINING ? null : StickerText.fromString(re.peakDayText())))
+        ? Optional.of(StickerSelection.create(re.expectedStickerSelection().sticker,
+        viewMode == ViewMode.TRAINING ? null : re.expectedStickerSelection().text))
         : Optional.empty();
     Optional<StickerSelection> manualStickerSelection = hasNonEmptyManualSelection
         ? re.manualStickerSelection() : Optional.empty();
