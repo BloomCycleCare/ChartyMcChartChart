@@ -612,7 +612,6 @@ public class CycleRenderer {
   @AutoValue
   public static abstract class RenderableEntry {
     public abstract boolean hasObservation();
-    public abstract Set<AbstractInstruction> fertilityReasons();
     public abstract Optional<String> entrySummary();
     public abstract int entryNum();
     public abstract String dateSummary();
@@ -651,7 +650,6 @@ public class CycleRenderer {
           .manualStickerSelection(Optional.ofNullable(state.entry.stickerSelection))
           .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
-          .fertilityReasons(state.fertilityReasons)
           .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
           .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
@@ -702,8 +700,6 @@ public class CycleRenderer {
       public abstract Builder trainingMarker(String trainingMarker);
 
       public abstract Builder dateSummaryShort(String dateSummaryShort);
-
-      public abstract Builder fertilityReasons(Set<AbstractInstruction> fertilityReasons);
 
       public abstract Builder hasObservation(boolean hasObservation);
 
