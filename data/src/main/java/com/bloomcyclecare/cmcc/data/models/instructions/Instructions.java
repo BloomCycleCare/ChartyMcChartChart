@@ -60,6 +60,10 @@ public class Instructions {
     this(that.startDate, that.activeItems, that.specialInstructions, that.yellowStampInstructions);
   }
 
+  public Instructions copyOf() {
+    return new Instructions(this);
+  }
+
   public Instructions addInstructions(BasicInstruction... instructions) {
     activeItems.addAll(Arrays.asList(instructions));
     return this;
@@ -67,6 +71,11 @@ public class Instructions {
 
   public Instructions addInstructions(YellowStampInstruction... instructions) {
     yellowStampInstructions.addAll(Arrays.asList(instructions));
+    return this;
+  }
+
+  public Instructions addInstructions(SpecialInstruction... instructions) {
+    specialInstructions.addAll(Arrays.asList(instructions));
     return this;
   }
 
