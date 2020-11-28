@@ -17,6 +17,7 @@ import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
@@ -331,12 +332,24 @@ public class CycleRenderer {
       }
 
       // Super special infertility instructions...
-      if (state.instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)
-          && Optional.ofNullable(state.previousEntry).map(pe -> pe.observationEntry.intercourse).orElse(false)
-          && state.entry.observationEntry.observation != null
-          && state.entry.observationEntry.observation.dischargeSummary.isPeakType()
-          && state.entry.observationEntry.isEssentiallyTheSame) {
-        state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
+      if (state.instructions.isActive(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS)) {
+        if (state.hadIntercourseYesterday
+            && state.entry.observationEntry.observation != null
+            && state.entry.observationEntry.observation.dischargeSummary.isPeakType()
+            && state.entry.observationEntry.isEssentiallyTheSame) {
+          state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
+        }
+        if (state.countOfThreeReasons.containsKey(BasicInstruction.D_5)) {
+          int count = state.countsOfThree.get(state.countOfThreeReasons.get(BasicInstruction.D_5));
+          int previousIndex = entriesEvaluated.size() - count - 2;
+          if (previousIndex >= 0) {
+            ChartEntry pe = Iterators.get(mEntries.iterator(), previousIndex);
+            ChartEntry cse = Iterators.get(mEntries.iterator(), previousIndex + 1);
+            if (pe.observationEntry.intercourse && cse.observationEntry.isEssentiallyTheSame) {
+              state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS);
+            }
+          }
+        }
       }
 
       for (Map.Entry<AbstractInstruction, CountOfThreeReason> mapEntry : state.countOfThreeReasons.entrySet()) {
