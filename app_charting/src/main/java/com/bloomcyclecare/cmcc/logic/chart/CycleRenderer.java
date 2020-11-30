@@ -271,7 +271,7 @@ public class CycleRenderer {
           || state.entryDate.isBefore(effectivePointOfChange.get()))) {
         state.suppressBasicInstructions(BasicInstruction.suppressableByPrePeakYellow, BasicInstruction.K_1);
       }
-      if (state.isPostPeakPlus(4)) {
+      if (state.isPostPeak()) {
         if (state.instructions.isActive(BasicInstruction.K_2)) {
           state.suppressBasicInstructions(BasicInstruction.suppressableByPostPeakYellow, BasicInstruction.K_2);
         }
@@ -540,16 +540,13 @@ public class CycleRenderer {
     }
 
     StickerSelectionContext stickerSelectionContext() {
-      boolean hasInstructions = instructions != null;
       return new StickerSelectionContext(
           Optional.ofNullable(effectiveCountOfThree).map(p -> p.first).orElse(-1),
           PeakDayOffset.create(mostRecentPeakDay, entryDate),
-          hasInstructions,
+          instructions != null,
           entry.hasObservation(),
           todaysFlow != null || todayHasBlood,
           todayHasMucus,
-          hasInstructions && instructions.anyActive(
-              BasicInstruction.K_2, BasicInstruction.K_3, BasicInstruction.K_4),
           fertilityReasons,
           infertilityReasons);
     }
@@ -755,18 +752,16 @@ public class CycleRenderer {
     public final boolean hasObservation;
     public final boolean hasBleeding;
     public final boolean hasMucus;
-    public final boolean hasPostPeakYellowInstructions;
     public final Set<AbstractInstruction> fertilityReasons;
     public final Set<AbstractInstruction> infertilityReasons;
 
-    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean hasPostPeakYellowInstructions, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
+    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
       this.countOfThree = countOfThree;
       this.peakDayOffset = peakDayOffset;
       this.hasInstructions = hasInstructions;
       this.hasObservation = hasObservation;
       this.hasBleeding = hasBleeding;
       this.hasMucus = hasMucus;
-      this.hasPostPeakYellowInstructions = hasPostPeakYellowInstructions;
       this.fertilityReasons = fertilityReasons;
       this.infertilityReasons = infertilityReasons;
     }
@@ -787,11 +782,6 @@ public class CycleRenderer {
       }
       if (!infertilityReasons.isEmpty()) {
         return fertilityReasons.isEmpty() ? Sticker.YELLOW : Sticker.YELLOW_BABY;
-      }
-      if (hasPostPeakYellowInstructions
-          && peakDayOffset.isPostPeak()
-              && !peakDayOffset.isPostPeakPlusExclusive(3)) {
-        return Sticker.YELLOW_BABY;
       }
       return  Sticker.WHITE_BABY;
     }
