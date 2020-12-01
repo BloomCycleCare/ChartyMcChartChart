@@ -771,19 +771,7 @@ public class CycleRenderer {
     }
 
     private Sticker getSticker() {
-      if (!hasInstructions || !hasObservation) {
-        return Sticker.GREY;
-      }
-      if (hasBleeding) {
-        return Sticker.RED;
-      }
-      if (!hasMucus) {
-        return fertilityReasons.isEmpty() ? Sticker.GREEN : Sticker.GREEN_BABY;
-      }
-      if (!infertilityReasons.isEmpty()) {
-        return fertilityReasons.isEmpty() ? Sticker.YELLOW : Sticker.YELLOW_BABY;
-      }
-      return  Sticker.WHITE_BABY;
+      return StickerSelector.select(this).sticker;
     }
 
     @Nullable

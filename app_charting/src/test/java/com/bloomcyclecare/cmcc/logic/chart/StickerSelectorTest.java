@@ -355,4 +355,48 @@ public class StickerSelectorTest {
     assertThat(selectResult.matchedCriteria).containsExactly(
         "doesn't have bleeding", "has mucus", "has active special instructions", "is fertile");
   }
+
+  @Test
+  public void testSelect_expectGrey() {
+    StickerSelector.SelectResult selectResult;
+
+    CycleRenderer.StickerSelectionContext missingInstructions = new CycleRenderer.StickerSelectionContext(
+        -1,
+        null,
+        false,
+        true,
+        false,
+        false,
+        ImmutableSet.of(),
+        ImmutableSet.of());
+    selectResult = StickerSelector.select(missingInstructions);
+    assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
+    assertThat(selectResult.matchedCriteria).containsExactly("doesn't have instructions");
+
+    CycleRenderer.StickerSelectionContext missingObservation = new CycleRenderer.StickerSelectionContext(
+        -1,
+        null,
+        true,
+        false,
+        false,
+        false,
+        ImmutableSet.of(),
+        ImmutableSet.of());
+    selectResult = StickerSelector.select(missingObservation);
+    assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
+    assertThat(selectResult.matchedCriteria).containsExactly("doesn't have observation");
+
+    CycleRenderer.StickerSelectionContext missingBoth = new CycleRenderer.StickerSelectionContext(
+        -1,
+        null,
+        false,
+        false,
+        false,
+        false,
+        ImmutableSet.of(),
+        ImmutableSet.of());
+    selectResult = StickerSelector.select(missingBoth);
+    assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
+    assertThat(selectResult.matchedCriteria).containsExactly("doesn't have observation AND doesn't have instructions");
+  }
 }
