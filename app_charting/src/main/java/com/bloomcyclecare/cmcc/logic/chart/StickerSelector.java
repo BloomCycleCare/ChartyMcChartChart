@@ -41,37 +41,6 @@ public class StickerSelector {
   static final String INFERTILE_NEGATIVE_EXPLANATION = "No special instructions apply to warrant yellow stamps";
 
   private static final Node TREE = new ParentNode(
-      c -> !c.fertilityReasons.isEmpty(), "is", "isn't", "fertile",
-      c -> FERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.fertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
-      c -> FERTILE_NEGATIVE_EXPLANATION,
-      new ParentNode(c -> c.hasBleeding, "has", "doesn't have", "bleeding",
-          c -> BLEEDING_POSITIVE_EXPLANATION,
-          c -> BLEEDING_NEGATIVE_EXPLANATION,
-          LEAF_NODES.get(Sticker.RED),
-          new ParentNode(
-              c -> c.hasMucus, "has", "doesn't have", "mucus",
-              c -> MUCUS_POSITIVE_EXPLANATION,
-              c -> MUCUS_NEGATIVE_EXPLANATION,
-              new ParentNode(
-                  c -> !c.infertilityReasons.isEmpty(), "has", "doesn't have", "active special instructions",
-                  c -> INFERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.infertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
-                  c -> INFERTILE_NEGATIVE_EXPLANATION,
-                  LEAF_NODES.get(Sticker.YELLOW_BABY),
-                  LEAF_NODES.get(Sticker.WHITE_BABY)
-              ),
-              LEAF_NODES.get(Sticker.GREEN_BABY)
-          )
-      ),
-      new ParentNode(
-          c -> c.hasMucus, "has", "doesn't have", "mucus",
-          c -> MUCUS_POSITIVE_EXPLANATION,
-          c -> MUCUS_NEGATIVE_EXPLANATION,
-          LEAF_NODES.get(Sticker.YELLOW),
-          LEAF_NODES.get(Sticker.GREEN)
-      )
-  );
-
-  /*private static final Node TREE = new ParentNode(
       c -> c.hasBleeding, "has", "doesn't have", "bleeding",
       c -> BLEEDING_POSITIVE_EXPLANATION,
       c -> BLEEDING_NEGATIVE_EXPLANATION,
@@ -101,7 +70,7 @@ public class StickerSelector {
               LEAF_NODES.get(Sticker.GREEN)
           )
       )
-  );*/
+  );
 
   public static SelectResult select(CycleRenderer.StickerSelectionContext context) {
     SelectResult result = new SelectResult();

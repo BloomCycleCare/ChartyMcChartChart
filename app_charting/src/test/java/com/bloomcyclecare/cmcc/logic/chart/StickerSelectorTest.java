@@ -20,7 +20,7 @@ public class StickerSelectorTest {
         true,
         true,
         false,
-        ImmutableSet.of(BasicInstruction.D_1),
+        ImmutableSet.of(),
         ImmutableSet.of());
     StickerSelector.CheckResult checkResult;
 
@@ -30,10 +30,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.GREEN, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has bleeding");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_1.description());
+    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.BLEEDING_POSITIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.GREEN_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -49,10 +48,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.YELLOW, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has bleeding");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_1.description());
+    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.BLEEDING_POSITIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.YELLOW_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -62,8 +60,7 @@ public class StickerSelectorTest {
 
     StickerSelector.SelectResult selectResult = StickerSelector.select(context);
     assertThat(selectResult.sticker).isEqualTo(Sticker.RED);
-    assertThat(selectResult.matchedCriteria).containsExactly(
-        "is fertile", "has bleeding");
+    assertThat(selectResult.matchedCriteria).containsExactly("has bleeding");
   }
 
   @Test
@@ -91,9 +88,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.WHITE_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_NEGATIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.YELLOW, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -103,20 +100,20 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.YELLOW_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_NEGATIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.RED, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have bleeding");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.BLEEDING_NEGATIVE_EXPLANATION);
 
     StickerSelector.SelectResult selectResult = StickerSelector.select(context);
     assertThat(selectResult.sticker).isEqualTo(Sticker.GREEN);
     assertThat(selectResult.matchedCriteria).containsExactly(
-        "doesn't have mucus", "isn't fertile");
+        "doesn't have bleeding", "doesn't have mucus", "isn't fertile");
   }
 
   @Test
@@ -151,10 +148,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.YELLOW, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_5.description());
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_NEGATIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.YELLOW_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -183,7 +179,7 @@ public class StickerSelectorTest {
         true,
         false,
         true,
-        ImmutableSet.of(BasicInstruction.D_5),
+        ImmutableSet.of(),
         ImmutableSet.of());
     StickerSelector.CheckResult checkResult;
 
@@ -193,10 +189,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.GREEN, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_5.description());
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_POSITIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.GREEN_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -206,10 +201,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.YELLOW, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have active special instructions");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_5.description());
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.INFERTILE_NEGATIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.YELLOW_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -226,7 +220,7 @@ public class StickerSelectorTest {
     StickerSelector.SelectResult selectResult = StickerSelector.select(context);
     assertThat(selectResult.sticker).isEqualTo(Sticker.WHITE_BABY);
     assertThat(selectResult.matchedCriteria).containsExactly(
-        "is fertile", "doesn't have bleeding", "has mucus", "doesn't have active special instructions");
+        "doesn't have bleeding", "has mucus", "doesn't have active special instructions");
   }
 
   @Test
@@ -254,15 +248,16 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.GREEN_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_POSITIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.WHITE_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has active special instructions");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.INFERTILE_POSITIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.K_1.description());
 
     checkResult = StickerSelector.check(Sticker.YELLOW_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
@@ -272,14 +267,14 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.RED, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today isn't fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today doesn't have bleeding");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.FERTILE_NEGATIVE_EXPLANATION);
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.BLEEDING_NEGATIVE_EXPLANATION);
 
     StickerSelector.SelectResult selectResult = StickerSelector.select(context);
     assertThat(selectResult.sticker).isEqualTo(Sticker.YELLOW);
     assertThat(selectResult.matchedCriteria).containsExactly(
-        "has mucus", "isn't fertile");
+        "doesn't have bleeding", "has mucus", "has active special instructions", "isn't fertile");
   }
 
   @Test
@@ -301,10 +296,9 @@ public class StickerSelectorTest {
 
     checkResult = StickerSelector.check(Sticker.GREEN, context);
     assertThat(checkResult.errorMessage).isPresent();
-    assertThat(checkResult.errorMessage.get()).contains("today is fertile");
+    assertThat(checkResult.errorMessage.get()).contains("today has mucus");
     assertThat(checkResult.errorExplanation).isPresent();
-    assertThat(checkResult.errorExplanation.get()).contains(StickerSelector.FERTILE_POSITIVE_EXPLANATION);
-    assertThat(checkResult.errorExplanation.get()).contains(BasicInstruction.D_5.description());
+    assertThat(checkResult.errorExplanation.get()).isEqualTo(StickerSelector.MUCUS_POSITIVE_EXPLANATION);
 
     checkResult = StickerSelector.check(Sticker.GREEN_BABY, context);
     assertThat(checkResult.errorMessage).isPresent();
