@@ -9,6 +9,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -106,15 +107,6 @@ public class CycleRenderer {
           pointsOfChangeAway.add(e.entryDate);
         }
       }
-      state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
-          : Optional.of(pointsOfChangeToward.first());
-      state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
-          : Optional.of(pointsOfChangeToward.last());
-      state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
-          : Optional.of(pointsOfChangeAway.last());
-      if (e.observationEntry.unusualBleeding) {
-        daysOfUnusualBleeding.add(e.entryDate);
-      }
       if (e.observationEntry.hasMucus()) {
         daysOfMucus.add(e.entryDate);
       }
@@ -128,7 +120,9 @@ public class CycleRenderer {
         daysWithAnObservation.add(e.entryDate);
         Observation observation = e.observationEntry.observation;
         state.todayHasMucus = observation.hasMucus();
-        state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
+        state.todayHasBlood = (
+            observation.dischargeSummary != null && observation.dischargeSummary.hasBlood()
+            || observation.additionalOccurrences.containsKey(MucusModifier.B));
         if (observation.flow != null) {
           state.todaysFlow = observation.flow;
           hasHadLegitFlow |= observation.flow.isLegit();
@@ -145,9 +139,24 @@ public class CycleRenderer {
           consecutiveDaysOfMucus = 0;
         }
       }
+      state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeToward.first());
+      state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeToward.last());
+      state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeAway.last());
       state.hasHadLegitFlow = hasHadLegitFlow;
       if (state.todayHasBlood || state.todaysFlow != null) {
         daysOfFlow.add(e.entryDate);
+      }
+      state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
+      state.allPreviousDaysHaveHadBlood =
+          entriesEvaluated.headSet(yesterday).size() == daysOfFlow.headSet(yesterday).size();
+
+      if (state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
+        daysOfUnusualBleeding.add(e.entryDate);
+      } else if (state.todaysFlow != null && !state.isInMenstrualFlow && !e.observationEntry.isEssentiallyTheSame) {
+        daysOfUnusualBleeding.add(e.entryDate);
       }
       if (peakDays.isEmpty()) {
         state.firstPeakDay = Optional.empty();
@@ -184,10 +193,6 @@ public class CycleRenderer {
             CountOfThreeReason.POINT_OF_CHANGE,
             Days.daysBetween(pointsOfChangeAway.last().minusDays(1), e.entryDate).getDays());
       }
-
-      state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
-      state.allPreviousDaysHaveHadBlood =
-          entriesEvaluated.headSet(yesterday).size() == daysOfFlow.headSet(yesterday).size();
 
       // Step 2: Evaluate fertility reasons
       Instructions instructions = null;
@@ -547,6 +552,7 @@ public class CycleRenderer {
           entry.hasObservation(),
           todaysFlow != null || todayHasBlood,
           todayHasMucus,
+          isInMenstrualFlow,
           fertilityReasons,
           infertilityReasons);
     }
@@ -752,16 +758,18 @@ public class CycleRenderer {
     public final boolean hasObservation;
     public final boolean hasBleeding;
     public final boolean hasMucus;
+    public final boolean inFlow;
     public final Set<AbstractInstruction> fertilityReasons;
     public final Set<AbstractInstruction> infertilityReasons;
 
-    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
+    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean inFlow, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
       this.countOfThree = countOfThree;
       this.peakDayOffset = peakDayOffset;
       this.hasInstructions = hasInstructions;
       this.hasObservation = hasObservation;
       this.hasBleeding = hasBleeding;
       this.hasMucus = hasMucus;
+      this.inFlow = inFlow;
       this.fertilityReasons = fertilityReasons;
       this.infertilityReasons = infertilityReasons;
     }

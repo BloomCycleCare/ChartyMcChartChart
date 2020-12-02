@@ -28,6 +28,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   public boolean firstDay;
   public boolean positivePregnancyTest;
   public boolean pointOfChange;
+  @Deprecated
   public boolean unusualBleeding;
   public boolean unusualStress;
   public boolean unusualBuildup;

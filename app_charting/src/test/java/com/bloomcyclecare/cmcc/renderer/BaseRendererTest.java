@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.logic.chart.StickerSelector;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -59,6 +60,7 @@ public abstract class BaseRendererTest {
             String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert
             .withMessage("stickerSelection")
+            .withMessage("Matched Criteria: " + StickerSelector.select(renderableEntry.stickerSelectionContext()).matchedCriteria)
             .that(renderableEntry.expectedStickerSelection())
             .isEqualTo(expectations.stickerSelection);
         if (expectations.shouldHaveIntercourse) {

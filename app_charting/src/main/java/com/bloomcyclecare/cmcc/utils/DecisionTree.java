@@ -43,7 +43,24 @@ public class DecisionTree {
     private final Function<CycleRenderer.StickerSelectionContext, String> positiveExplanation;
     private final Function<CycleRenderer.StickerSelectionContext, String> negativeExplanation;
 
-    public Criteria(
+    public static Criteria create(
+        Predicate<CycleRenderer.StickerSelectionContext> predicate,
+        Function<CycleRenderer.StickerSelectionContext, String> positiveReason,
+        Function<CycleRenderer.StickerSelectionContext, String> negativeReason,
+        Function<CycleRenderer.StickerSelectionContext, String> positiveExplanation,
+        Function<CycleRenderer.StickerSelectionContext, String> negativeExplanation) {
+      return new Criteria(predicate, positiveReason, negativeReason, positiveExplanation, negativeExplanation);
+    }
+
+    public static Criteria and(Criteria criteriaA, Criteria criteriaB) {
+      return new And(criteriaA, criteriaB);
+    }
+
+    public static Criteria or(Criteria criteriaA, Criteria criteriaB) {
+      return new Or(criteriaA, criteriaB);
+    }
+
+    Criteria(
         Predicate<CycleRenderer.StickerSelectionContext> predicate,
         Function<CycleRenderer.StickerSelectionContext, String> positiveReason,
         Function<CycleRenderer.StickerSelectionContext, String> negativeReason,
@@ -72,8 +89,7 @@ public class DecisionTree {
   }
 
   public static class And extends Criteria {
-
-    public And(Criteria criteriaA, Criteria criteriaB) {
+    And(Criteria criteriaA, Criteria criteriaB) {
       super(
           c -> criteriaA.predicate.test(c) && criteriaB.predicate.test(c),
           c -> String.format("%s AND %s", criteriaA.positiveReason.apply(c), criteriaB.positiveReason.apply(c)),
@@ -96,6 +112,33 @@ public class DecisionTree {
               return String.format("%s AND %s", criteriaA.negativeExplanation.apply(c), criteriaB.negativeExplanation.apply(c));
             }
           });
+    }
+  }
+
+  public static class Or extends Criteria {
+    Or(Criteria criteriaA, Criteria criteriaB) {
+      super(
+          c -> criteriaA.predicate.test(c) || criteriaB.predicate.test(c),
+          c -> {
+            if (criteriaA.predicate.test(c)) {
+              return criteriaA.positiveReason.apply(c);
+            } else if (criteriaB.predicate.test(c)) {
+              return criteriaB.positiveReason.apply(c);
+            } else {
+              throw new IllegalStateException();
+            }
+          },
+          c -> String.format("Neither %s NOR %s", criteriaA.positiveReason.apply(c), criteriaB.positiveReason.apply(c)),
+          c -> {
+            if (criteriaA.predicate.test(c)) {
+              return criteriaA.positiveExplanation.apply(c);
+            } else if (criteriaB.predicate.test(c)) {
+              return criteriaB.positiveExplanation.apply(c);
+            } else {
+              throw new IllegalStateException();
+            }
+          },
+          c -> String.format("%s AND %s", criteriaA.negativeExplanation.apply(c), criteriaB.negativeExplanation.apply(c)));
     }
   }
 

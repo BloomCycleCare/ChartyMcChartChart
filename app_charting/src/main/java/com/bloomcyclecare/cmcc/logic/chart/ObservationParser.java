@@ -32,6 +32,15 @@ public class ObservationParser {
   private static final Set<MucusModifier> MODIFIERS_NOT_REQUIRING_DISCHARGE_TYPE =
       ImmutableSet.of(MucusModifier.P);
 
+  private static Optional<Flow> getFlow(String input) {
+    for (Flow f : Flow.values()) {
+      if (input.startsWith(f.name())) {
+        return Optional.of(f);
+      }
+    }
+    return Optional.empty();
+  }
+
   @NonNull
   public static Optional<Observation> parse(String input) throws InvalidObservationException {
     try {
@@ -41,13 +50,7 @@ public class ObservationParser {
 
       String sanitizedObservation = input.toUpperCase().replace(" ", "");
 
-      Flow flow = null;
-      for (Flow f : Flow.values()) {
-        if (sanitizedObservation.startsWith(f.name())) {
-          flow = f;
-          break;
-        }
-      }
+      Flow flow = getFlow(sanitizedObservation).orElse(null);
       String observationWithoutFlow = (flow == null)
           ? sanitizedObservation : StringUtil.consumePrefix(sanitizedObservation, flow.name());
       if (flow == Flow.H || flow == Flow.M) {
@@ -160,6 +163,23 @@ public class ObservationParser {
               "No additional info should follow extra occurrences");
         }
       }
+      /*if (!remainder.isEmpty()) {
+        Optional<Flow> additionalFlow = getFlow(sanitizedObservation);
+        if (additionalFlow.isPresent()) {
+          remainder = StringUtil.consumePrefix(remainder, additionalFlow.get().name());
+        } else {
+          MucusModifier additionalModifier = null;
+          for (MucusModifier m : MucusModifier.VALUES_INDICATING_BLEEDING) {
+            if (remainder.startsWith(m.name())) {
+              additionalModifier = m;
+              break;
+            }
+          }
+          if (additionalModifier != null) {
+            remainder = StringUtil.consumePrefix(remainder, additionalModifier.name());
+          }
+        }
+      }*/
       if (!remainder.isEmpty()) {
         throw new InvalidObservationException("Extra info after occurrences.");
       }
