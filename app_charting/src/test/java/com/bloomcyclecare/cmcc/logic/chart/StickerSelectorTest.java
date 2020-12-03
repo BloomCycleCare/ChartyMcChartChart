@@ -1,8 +1,8 @@
 package com.bloomcyclecare.cmcc.logic.chart;
 
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.InstructionSet;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
-import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
 
@@ -19,8 +19,8 @@ public class StickerSelectorTest {
       true,
       false,
       true,
-      ImmutableSet.of(BasicInstruction.D_1),
-      ImmutableSet.of());
+      InstructionSet.of(BasicInstruction.D_1),
+      InstructionSet.of());
 
   @Test
   public void testCheck_expectRed() {
@@ -76,8 +76,8 @@ public class StickerSelectorTest {
       false,
       false,
       false,
-      ImmutableSet.of(),
-      ImmutableSet.of(BasicInstruction.E_1));
+      InstructionSet.of(),
+      InstructionSet.of(BasicInstruction.E_1));
 
   @Test
   public void testCheck_expectGreen() {
@@ -139,8 +139,8 @@ public class StickerSelectorTest {
       false,
       false,
       false,
-      ImmutableSet.of(BasicInstruction.D_5),
-      ImmutableSet.of());
+      InstructionSet.of(BasicInstruction.D_5),
+      InstructionSet.of());
 
   @Test
   public void testCheck_expectGreenBaby() {
@@ -199,8 +199,8 @@ public class StickerSelectorTest {
       false,
       true,
       false,
-      ImmutableSet.of(BasicInstruction.D_5),
-      ImmutableSet.of());
+      InstructionSet.of(BasicInstruction.D_5),
+      InstructionSet.of());
 
   @Test
   public void testCheck_expectWhiteBaby() {
@@ -249,8 +249,8 @@ public class StickerSelectorTest {
       false,
       true,
       false,
-      ImmutableSet.of(),
-      ImmutableSet.of(BasicInstruction.K_1));
+      InstructionSet.of(),
+      InstructionSet.of(BasicInstruction.K_1));
 
   @Test
   public void testCheck_expectYellow() {
@@ -312,8 +312,8 @@ public class StickerSelectorTest {
       false,
       true,
       false,
-      ImmutableSet.of(BasicInstruction.D_5),
-      ImmutableSet.of(BasicInstruction.K_1));
+      InstructionSet.of(BasicInstruction.D_5),
+      InstructionSet.of(BasicInstruction.K_1));
 
   @Test
   public void testCheck_expectYellowBaby() {
@@ -367,8 +367,8 @@ public class StickerSelectorTest {
         false,
         false,
         false,
-        ImmutableSet.of(),
-        ImmutableSet.of());
+        InstructionSet.of(),
+        InstructionSet.of());
     selectResult = StickerSelector.select(missingInstructions);
     assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
     assertThat(selectResult.matchedCriteria).containsExactly("doesn't have instructions");
@@ -381,8 +381,8 @@ public class StickerSelectorTest {
         false,
         false,
         false,
-        ImmutableSet.of(),
-        ImmutableSet.of());
+        InstructionSet.of(),
+        InstructionSet.of());
     selectResult = StickerSelector.select(missingObservation);
     assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
     assertThat(selectResult.matchedCriteria).containsExactly("doesn't have observation");
@@ -395,8 +395,8 @@ public class StickerSelectorTest {
         false,
         false,
         false,
-        ImmutableSet.of(),
-        ImmutableSet.of());
+        InstructionSet.of(),
+        InstructionSet.of());
     selectResult = StickerSelector.select(missingBoth);
     assertThat(selectResult.sticker).isEqualTo(Sticker.GREY);
     assertThat(selectResult.matchedCriteria).containsExactly("doesn't have observation AND doesn't have instructions");

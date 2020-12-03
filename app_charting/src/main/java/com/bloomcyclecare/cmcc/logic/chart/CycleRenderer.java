@@ -4,6 +4,7 @@ import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.AbstractInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
+import com.bloomcyclecare.cmcc.data.models.instructions.InstructionSet;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
@@ -419,9 +420,9 @@ public class CycleRenderer {
     public boolean hadIntercourseYesterday;
     public Map<CountOfThreeReason, Integer> countsOfThree = new HashMap<>();
 
-    public Set<AbstractInstruction> fertilityReasons = new HashSet<>();
+    public InstructionSet fertilityReasons = new InstructionSet();
+    public InstructionSet infertilityReasons = new InstructionSet();
     public Map<AbstractInstruction, AbstractInstruction> suppressedFertilityReasons = new HashMap<>();
-    public Set<AbstractInstruction> infertilityReasons = new HashSet<>();
 
     public Map<AbstractInstruction, CountOfThreeReason> countOfThreeReasons = new HashMap<>();
     public Pair<Integer, AbstractInstruction> effectiveCountOfThree = Pair.create(null, null);
@@ -751,6 +752,7 @@ public class CycleRenderer {
     }
   }
 
+  @Parcel
   public static class StickerSelectionContext {
     public final int countOfThree;
     public final PeakDayOffset peakDayOffset;
@@ -759,10 +761,11 @@ public class CycleRenderer {
     public final boolean hasBleeding;
     public final boolean hasMucus;
     public final boolean inFlow;
-    public final Set<AbstractInstruction> fertilityReasons;
-    public final Set<AbstractInstruction> infertilityReasons;
+    public final InstructionSet fertilityReasons;
+    public final InstructionSet infertilityReasons;
 
-    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean inFlow, Set<AbstractInstruction> fertilityReasons, Set<AbstractInstruction> infertilityReasons) {
+    @ParcelConstructor
+    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean inFlow, InstructionSet fertilityReasons, InstructionSet infertilityReasons) {
       this.countOfThree = countOfThree;
       this.peakDayOffset = peakDayOffset;
       this.hasInstructions = hasInstructions;
