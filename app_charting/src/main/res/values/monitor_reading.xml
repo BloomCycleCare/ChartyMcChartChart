@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="monitor_reading">
+        <item>None</item>
+        <item>Low</item>
+        <item>High</item>
+        <item>Peak</item>
+    </string-array>
+</resources>

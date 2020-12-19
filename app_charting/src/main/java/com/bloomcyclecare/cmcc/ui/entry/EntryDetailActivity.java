@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
@@ -66,7 +66,8 @@ public class EntryDetailActivity extends AppCompatActivity {
     if (DEBUG) Log.v(TAG, "onCreate: Start");
 
     Intent intent = getIntent();
-    CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
+    CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(
+        intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
 
     mViewModel = ViewModelProviders.of(this).get(EntryDetailViewModel.class);
     mViewModel.initialize(entryModifyContext);
@@ -269,9 +270,12 @@ public class EntryDetailActivity extends AppCompatActivity {
           fragment = new ObservationEntryFragment();
           break;
         case 1:
-          fragment = new WellnessEntryFragment();
+          fragment = new MarquetteEntryFragment();
           break;
         case 2:
+          fragment = new WellnessEntryFragment();
+          break;
+        case 3:
           fragment = new SymptomEntryFragment();
           break;
       }
@@ -286,8 +290,9 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public int getCount() {
-      // TODO: change to 3 when we're ready to show wellness and symptom stuff
-      return 1;
+      // TODO: change to 4 when we're ready to show wellness and symptom stuff
+      // TODO: conditionally activate mm fragment
+      return 2;
     }
 
     @Override
@@ -296,8 +301,10 @@ public class EntryDetailActivity extends AppCompatActivity {
         case 0:
           return "Observation";
         case 1:
-          return "Wellness";
+          return "Marquette";
         case 2:
+          return "Wellness";
+        case 3:
           return "Symptoms";
       }
       return null;

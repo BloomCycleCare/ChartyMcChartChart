@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/cycle_day_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:text="Monitor Day:"
+        android:textStyle="bold"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/textView8"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:text="0"
+        app:layout_constraintBottom_toBottomOf="@+id/cycle_day_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toEndOf="@+id/cycle_day_header"
+        app:layout_constraintTop_toTopOf="@+id/cycle_day_header" />
+
+    <ImageView
+        android:id="@+id/iv_observation"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginTop="16dp"
+        android:paddingEnd="10dp"
+        app:layout_constraintStart_toStartOf="@+id/cycle_day_header"
+        app:layout_constraintTop_toBottomOf="@+id/cycle_day_header"
+        app:srcCompat="@drawable/ic_assignment_black_24dp"
+        tools:ignore="ContentDescription" />
+
+    <TextView
+        android:id="@+id/monitor_reading_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Monitor Reading:"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toEndOf="@+id/iv_observation"
+        app:layout_constraintTop_toTopOf="@+id/iv_observation" />
+
+    <RelativeLayout
+        android:id="@+id/monitor_reading_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="8dp"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintBottom_toBottomOf="@+id/monitor_reading_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/monitor_reading_header"
+        app:layout_constraintTop_toTopOf="@+id/monitor_reading_header">
+
+        <Spinner
+            android:id="@+id/monitor_reading_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/lh_result_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="LH Test:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintStart_toStartOf="@+id/monitor_reading_header"
+        app:layout_constraintTop_toBottomOf="@+id/monitor_reading_header" />
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="4dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintBottom_toBottomOf="@+id/lh_result_header"
+        app:layout_constraintEnd_toEndOf="@+id/monitor_reading_container"
+        app:layout_constraintStart_toStartOf="@+id/monitor_reading_container"
+        app:layout_constraintTop_toTopOf="@+id/lh_result_header" >
+        <Spinner
+            android:padding="2dp"
+            android:id="@+id/lh_result_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+    </RelativeLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>
