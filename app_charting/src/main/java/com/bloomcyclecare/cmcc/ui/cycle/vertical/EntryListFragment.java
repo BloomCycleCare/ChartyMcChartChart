@@ -137,7 +137,7 @@ public class EntryListFragment extends Fragment {
             return;
           }
           fragment.setArguments(StickerDialogFragment.fillArgs(
-              new Bundle(), re.expectedStickerSelection().get(), re.manualStickerSelection(),
+              new Bundle(), re.stickerSelectionContext(), re.manualStickerSelection(),
               mViewModel.viewMode(), re.canSelectYellowStamps()));
           fragment.show(getChildFragmentManager(), "tag");
         },

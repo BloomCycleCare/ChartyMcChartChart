@@ -777,7 +777,7 @@ public class CycleRenderer {
       this.infertilityReasons = infertilityReasons;
     }
 
-    StickerSelection expectedSelection() {
+    public StickerSelection expectedSelection() {
       return StickerSelection.create(getSticker(), getStickerText());
     }
 

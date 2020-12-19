@@ -9,14 +9,14 @@ import java.util.Optional;
 
 public class SelectionChecker {
 
-  private final StickerSelection expected;
+  private final CycleRenderer.StickerSelectionContext context;
 
-  public static SelectionChecker create(StickerSelection expected) {
-    return new SelectionChecker(expected);
+  public static SelectionChecker create(CycleRenderer.StickerSelectionContext context) {
+    return new SelectionChecker(context);
   }
 
-  private SelectionChecker(StickerSelection expected) {
-    this.expected = expected;
+  private SelectionChecker(CycleRenderer.StickerSelectionContext context) {
+    this.context = context;
   }
 
   public enum Reason {
@@ -66,19 +66,20 @@ public class SelectionChecker {
   }
 
   public Result check(StickerSelection selection) {
+    StickerSelection expected = context.expectedSelection();
     return new Result(expected, selection, getReason(selection), getHint(selection));
   }
 
   private Optional<Reason> getReason(StickerSelection selection) {
-    if (selection.equals(expected)) {
+    if (selection.equals(context.expectedSelection())) {
       return Optional.empty();
     }
-    if (selection.sticker != expected.sticker) {
+    if (selection.sticker != context.expectedSelection().sticker) {
       if (selection.sticker == Sticker.RED) {
         return Optional.of(Reason.RED_ONLY_ON_DAYS_OF_BLEEDING);
       }
       if (selection.sticker.color == StickerColor.GREEN) {
-        if (selection.sticker.hasBaby && !expected.sticker.hasBaby) {
+        if (selection.sticker.hasBaby && !context.expectedSelection().sticker.hasBaby) {
           return Optional.of(Reason.GREEN_BABY_ONLY_ON_DRY_DAY_WITHIN_COUNT);
         }
         return Optional.of(Reason.GREEN_ONLY_ON_DRY_DAY_OUTSIDE_COUNT);
@@ -112,6 +113,7 @@ public class SelectionChecker {
   }
 
   private Optional<Hint> getHint(StickerSelection selection) {
+    StickerSelection expected = context.expectedSelection();
     if (selection.equals(expected)) {
       return Optional.empty();
     }

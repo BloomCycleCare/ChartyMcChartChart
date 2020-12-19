@@ -89,7 +89,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
               StickerSelection expected = StickerSelection.create(
                   re.expectedStickerSelection().sticker,
                   viewState.viewMode() == ViewMode.TRAINING ? null : re.expectedStickerSelection().text);
-              if (SelectionChecker.create(expected).check(re.manualStickerSelection().get()).ok()) {
+              if (SelectionChecker.create(re.stickerSelectionContext()).check(re.manualStickerSelection().get()).ok()) {
                 entriesWithCorrectAnswer++;
               }
             }

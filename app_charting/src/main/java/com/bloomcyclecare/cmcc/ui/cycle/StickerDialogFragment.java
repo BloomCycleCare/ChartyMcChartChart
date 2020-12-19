@@ -16,6 +16,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
@@ -41,17 +42,17 @@ import static android.view.View.GONE;
 public class StickerDialogFragment extends DialogFragment {
 
   private enum Args {
-    EXPECTED_SELECTION,
+    SELECTION_CONTEXT,
     PREVIOUS_SELECTION,
     VIEW_MODE,
     CAN_SELECT_YELLOW_STAMPS
   }
 
   public static Bundle fillArgs(
-      Bundle args, StickerSelection expectedSelection, Optional<StickerSelection> previousSelection, ViewMode viewMode, boolean canSelectYellowStamps) {
+      Bundle args, CycleRenderer.StickerSelectionContext selectionContext, Optional<StickerSelection> previousSelection, ViewMode viewMode, boolean canSelectYellowStamps) {
     args.putInt(Args.VIEW_MODE.name(), viewMode.ordinal());
     args.putParcelable(
-        StickerDialogFragment.Args.EXPECTED_SELECTION.name(), Parcels.wrap(expectedSelection));
+        Args.SELECTION_CONTEXT.name(), Parcels.wrap(selectionContext));
     args.putBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name(), canSelectYellowStamps);
     previousSelection.ifPresent(selection -> args.putParcelable(
         Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
@@ -159,8 +160,9 @@ public class StickerDialogFragment extends DialogFragment {
     Button mButtonCancel = view.findViewById(R.id.button_cancel);
     mButtonCancel.setOnClickListener(v -> dismiss());
 
-    Optional<StickerSelection> expectedSelectionArg = Optional.ofNullable(
-        Parcels.unwrap(requireArguments().getParcelable(Args.EXPECTED_SELECTION.name())));
+    CycleRenderer.StickerSelectionContext selectionContext = Parcels.unwrap(
+        requireArguments().getParcelable(Args.SELECTION_CONTEXT.name()));
+    Optional<StickerSelection> expectedSelectionArg = Optional.ofNullable(selectionContext.expectedSelection());
     Timber.d("Expected selection: %s", expectedSelectionArg);
 
     Optional<StickerSelection> expectedSelection = viewMode != ViewMode.TRAINING
@@ -175,7 +177,7 @@ public class StickerDialogFragment extends DialogFragment {
       stickerTextView.setText(selection.text != null ? String.valueOf(selection.text.value) : "");
       if (previousSelection.isPresent() && expectedSelection.isPresent()) {
         SelectionChecker.Result result =
-            SelectionChecker.create(expectedSelection.get()).check(previousSelection.get());
+            SelectionChecker.create(selectionContext).check(previousSelection.get());
         if (!result.ok() && selection.equals(previousSelection.get())) {
           renderIncorrectResult(result);
           // TODO: show reason and hint showcase once the library supports dialogs
@@ -193,7 +195,7 @@ public class StickerDialogFragment extends DialogFragment {
         renderEmptySelect();
         return;
       }
-      resultConsumer.accept(SelectionChecker.create(expectedSelection.get()).check(selection));
+      resultConsumer.accept(SelectionChecker.create(selectionContext).check(selection));
       dismiss();
     });
 
