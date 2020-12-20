@@ -34,7 +34,15 @@ public class MeasurementEntry extends Entry {
 
   @Override
   public List<String> getSummaryLines() {
-    return ImmutableList.of("TODO");
+    ImmutableList.Builder<String> lines = ImmutableList.builder();
+    if (monitorReading != MonitorReading.UNKNOWN) {
+      lines.add(String.format("Monitor Reading: %s", monitorReading.name()));
+    }
+    if (lhTestResult != LHTestResult.NONE) {
+      lines.add(String.format("LH Test Result: %s", lhTestResult.name()));
+    }
+    List<String> summary = lines.build();
+    return !summary.isEmpty() ? summary : ImmutableList.of("No measurements");
   }
 
   public static MeasurementEntry emptyEntry(LocalDate entryDate) {
