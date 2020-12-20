@@ -270,7 +270,7 @@ public class EntryDetailActivity extends AppCompatActivity {
           fragment = new ObservationEntryFragment();
           break;
         case 1:
-          fragment = new MarquetteEntryFragment();
+          fragment = new MeasurementEntryFragment();
           break;
         case 2:
           fragment = new WellnessEntryFragment();
@@ -301,7 +301,7 @@ public class EntryDetailActivity extends AppCompatActivity {
         case 0:
           return "Observation";
         case 1:
-          return "Marquette";
+          return "Measurement";
         case 2:
           return "Wellness";
         case 3:
