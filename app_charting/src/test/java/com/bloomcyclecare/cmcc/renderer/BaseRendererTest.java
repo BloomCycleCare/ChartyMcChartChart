@@ -51,7 +51,7 @@ public abstract class BaseRendererTest {
         } catch (Exception e) {
           throw new IllegalStateException(e);
         }
-      }), null, null, null));
+      }), null, null, null, null));
       Optional<TrainingCycle.StickerExpectations> stickerExpectations = anEntry.getValue();
       if (stickerExpectations.isPresent()) {
         tests.add(renderableEntry -> {

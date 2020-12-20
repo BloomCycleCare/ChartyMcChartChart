@@ -249,6 +249,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
+    measurementEntries.onNext(context.entry.measurementEntry);
   }
 
   LiveData<ViewState> viewStates() {
