@@ -126,6 +126,8 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="8dp"
                 android:gravity="right"
+                app:layout_constraintTop_toTopOf="@id/tv_peak_day"
+                app:layout_constraintBottom_toBottomOf="@id/tv_peak_day"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -168,6 +170,8 @@
                 android:id="@+id/spinner_intercourse"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                app:layout_constraintTop_toTopOf="@id/tv_intercourse"
+                app:layout_constraintBottom_toBottomOf="@id/tv_intercourse"
                 app:layout_constraintStart_toEndOf="@id/tv_intercourse"
                 />
 
@@ -178,6 +182,8 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="8dp"
                 android:gravity="right"
+                app:layout_constraintTop_toTopOf="@id/spinner_intercourse"
+                app:layout_constraintBottom_toBottomOf="@id/spinner_intercourse"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -221,6 +227,8 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="8dp"
                 android:gravity="right"
+                app:layout_constraintTop_toTopOf="@id/tv_point_of_change"
+                app:layout_constraintBottom_toBottomOf="@id/tv_point_of_change"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -265,6 +273,8 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="8dp"
                 android:gravity="right"
+                app:layout_constraintTop_toTopOf="@id/tv_new_cycle"
+                app:layout_constraintBottom_toBottomOf="@id/tv_new_cycle"
                 app:layout_constraintEnd_toEndOf="parent"/>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
@@ -309,6 +319,8 @@
                 android:layout_gravity="center_vertical"
                 android:layout_marginEnd="8dp"
                 android:gravity="right"
+                app:layout_constraintTop_toTopOf="@id/tv_pregnancy_test"
+                app:layout_constraintBottom_toBottomOf="@id/tv_pregnancy_test"
                 app:layout_constraintEnd_toEndOf="parent" />
 
         </androidx.constraintlayout.widget.ConstraintLayout>

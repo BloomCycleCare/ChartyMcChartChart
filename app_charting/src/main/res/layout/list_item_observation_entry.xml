@@ -63,7 +63,6 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginEnd="8dp"
-            android:gravity="right"
             android:paddingStart="16dp"
             android:paddingBottom="8dp"
             android:text="10CK AD"
