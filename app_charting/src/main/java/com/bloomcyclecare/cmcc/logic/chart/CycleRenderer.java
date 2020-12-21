@@ -706,7 +706,8 @@ public class CycleRenderer {
               state.instructions.anyActive(BasicInstruction.yellowBasicInstructions)
               || !state.instructions.yellowStampInstructions.isEmpty()
               || state.instructions.specialInstructions.contains(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS))
-          .monitorReading(Optional.ofNullable(state.entry.measurementEntry.monitorReading)
+          .monitorReading(Optional.ofNullable(state.entry.measurementEntry)
+              .map(me -> me.monitorReading)
               .flatMap(r -> r == MonitorReading.UNKNOWN ? Optional.empty() : Optional.of(r)))
           .build();
       return renderableEntry;

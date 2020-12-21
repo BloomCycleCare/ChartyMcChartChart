@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.collect.Iterables;
@@ -14,6 +15,8 @@ import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import io.reactivex.Flowable;
 
 import static com.google.common.truth.Truth.assertThat;
 
@@ -25,7 +28,15 @@ public class EntryDetailViewModelTest {
 
   @Before
   public void setUp() {
+
+    PreferenceRepo.PreferenceSummary mockPreferenceSummary = Mockito.mock(PreferenceRepo.PreferenceSummary.class);
+
+    PreferenceRepo mockPreferenceRepo = Mockito.mock(PreferenceRepo.class);
+    Mockito.when(mockPreferenceRepo.summaries()).thenReturn(Flowable.just(mockPreferenceSummary));
+
     ChartingApp mockApplication = Mockito.mock(ChartingApp.class);
+    Mockito.when(mockApplication.preferenceRepo()).thenReturn(mockPreferenceRepo);
+
     mViewModel = new EntryDetailViewModel(mockApplication);
 
     Cycle cycle = new Cycle("test", LocalDate.now(), null, null);
