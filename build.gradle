@@ -55,9 +55,9 @@ task clean(type: Delete) {
 }
 
 ext {
-    compileSdkVersion = 28
+    compileSdkVersion = 30
     minSdkVersion = 24
-    targetSdkVersion = 28
+    targetSdkVersion = 30
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
@@ -65,9 +65,11 @@ ext {
     timberVersion = "4.7.1"
     jodaVersion = "2.9.4"
     parcelerVersion = '1.1.12'
-    appCompatVersion = '1.1.0'
+    appCompatVersion = '1.2.0'
     guavaVersion = '28.0-android'
     supportLibraryVersion = '28.0.0'
     firebaseVersion = '11.8.0'
-    navVersion = "2.3.0-alpha06"
+    navVersion = "2.3.2"
+
+    junitVersion = "4.13.1"
 }

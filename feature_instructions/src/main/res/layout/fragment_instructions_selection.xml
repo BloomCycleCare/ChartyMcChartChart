@@ -15,7 +15,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <com.bloomcyclecare.cmcc.utils.NonScrollListView
+        <com.bloomcyclecare.cmcc.utils.ui.NonScrollListView
             android:id="@+id/lv_instructions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -28,7 +28,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <com.bloomcyclecare.cmcc.utils.NonScrollListView
+        <com.bloomcyclecare.cmcc.utils.ui.NonScrollListView
             android:id="@+id/lv_special_instructions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
@@ -41,7 +41,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
 
-        <com.bloomcyclecare.cmcc.utils.NonScrollListView
+        <com.bloomcyclecare.cmcc.utils.ui.NonScrollListView
             android:id="@+id/lv_ys_instructions"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />

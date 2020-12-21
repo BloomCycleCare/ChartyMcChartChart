@@ -39,23 +39,23 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'androidx.appcompat:appcompat:1.1.0'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    testImplementation 'junit:junit:4.13.1'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     api "com.google.guava:guava:$rootProject.ext.guavaVersion"
     implementation "joda-time:joda-time:$rootProject.ext.jodaVersion"
     implementation "com.jakewharton.timber:timber:$rootProject.ext.timberVersion"
+    implementation "androidx.appcompat:appcompat:$rootProject.ext.appCompatVersion"
 
-    implementation 'org.parceler:parceler-api:1.1.12'
-    annotationProcessor 'org.parceler:parceler:1.1.12'
+    implementation "org.parceler:parceler-api:$rootProject.ext.parcelerVersion"
+    annotationProcessor "org.parceler:parceler:$rootProject.ext.parcelerVersion"
     compileOnly 'com.jakewharton.auto.value:auto-value-annotations:1.4'
     annotationProcessor "com.google.auto.value:auto-value:1.5.2"
 
     implementation "com.google.code.gson:gson:2.8.5"
 
-    def room_version = "2.2.5"
+    def room_version = "2.2.6"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version" // use kapt for Kotlin
     implementation "androidx.room:room-rxjava2:$room_version"
