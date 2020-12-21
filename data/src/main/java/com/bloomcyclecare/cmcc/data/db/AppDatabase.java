@@ -4,10 +4,10 @@ package com.bloomcyclecare.cmcc.data.db;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.google.common.collect.ImmutableList;
 
 import java.util.List;
@@ -105,14 +105,20 @@ public abstract class AppDatabase extends RoomDatabase {
             database.execSQL("CREATE INDEX IF NOT EXISTS `index_Cycle_pregnancyId` ON `Cycle` (`pregnancyId`)");
         }
     };
-    private static final Migration MIGRATION_14_15 = new Migration(14, 14) {
+    private static final Migration MIGRATION_14_15 = new Migration(14, 15) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {
             database.execSQL("CREATE TABLE IF NOT EXISTS `StickerSelectionEntry` (`entryDate` TEXT NOT NULL, `selection` TEXT, PRIMARY KEY(`entryDate`))");
         }
     };
+    private static final Migration MIGRATION_16_15 = new Migration(16, 15) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("DROP TABLE `MeasurementEntry`");
+        }
+    };
 
     public static List<Migration> MIGRATIONS = ImmutableList.of(
         MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11,
-        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15);
+        MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15, MIGRATION_16_15);
 }

@@ -1,8 +1,9 @@
 package com.bloomcyclecare.cmcc.utils;
 
+import com.google.common.base.Preconditions;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.core.util.Preconditions;
 
 public class ErrorOr<T> {
 

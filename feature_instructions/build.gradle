@@ -29,14 +29,16 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation 'androidx.appcompat:appcompat:1.1.0'
     implementation 'androidx.coordinatorlayout:coordinatorlayout:1.1.0'
-    implementation 'androidx.constraintlayout:constraintlayout:2.0.1'
-    testImplementation 'junit:junit:4.12'
-    androidTestImplementation 'androidx.test.ext:junit:1.1.1'
-    androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'com.google.android.material:material:1.2.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+
+    testImplementation "junit:junit:$rootProject.ext.junitVersion"
+    androidTestImplementation 'androidx.test.ext:junit:1.1.2'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
     api "com.google.guava:guava:$rootProject.ext.guavaVersion"
+    implementation "androidx.appcompat:appcompat:$rootProject.ext.appCompatVersion"
     implementation "joda-time:joda-time:$rootProject.ext.jodaVersion"
     implementation "com.jakewharton.timber:timber:$rootProject.ext.timberVersion"
     implementation "io.reactivex.rxjava2:rxjava:$rootProject.ext.rxjava2Version"

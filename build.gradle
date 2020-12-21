@@ -7,7 +7,7 @@ buildscript {
         maven { url "http://jcenter.bintray.com"}
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.0.0'
+        classpath 'com.android.tools.build:gradle:4.1.1'
         classpath 'com.google.gms:google-services:4.2.0'
         classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
         classpath 'com.google.firebase:perf-plugin:1.2.1'
@@ -19,6 +19,18 @@ buildscript {
         // in the individual module build.gradle files
 
         //classpath 'com.android.tools.build:gradle:3.0.1'
+    }
+}
+
+plugins {
+    id "org.sonarqube" version "3.0"
+}
+
+sonarqube {
+    properties {
+        property "sonar.projectKey", "BloomCycleCare_ChartyMcChartChart"
+        property "sonar.organization", "bloomcyclecare"
+        property "sonar.host.url", "https://sonarcloud.io"
     }
 }
 
@@ -43,9 +55,9 @@ task clean(type: Delete) {
 }
 
 ext {
-    compileSdkVersion = 28
+    compileSdkVersion = 30
     minSdkVersion = 24
-    targetSdkVersion = 28
+    targetSdkVersion = 30
     sourceCompatibility = JavaVersion.VERSION_1_8
     targetCompatibility = JavaVersion.VERSION_1_8
 
@@ -53,9 +65,11 @@ ext {
     timberVersion = "4.7.1"
     jodaVersion = "2.9.4"
     parcelerVersion = '1.1.12'
-    appCompatVersion = '1.1.0'
+    appCompatVersion = '1.2.0'
     guavaVersion = '28.0-android'
     supportLibraryVersion = '28.0.0'
     firebaseVersion = '11.8.0'
-    navVersion = "2.3.0-alpha06"
+    navVersion = "2.3.2"
+
+    junitVersion = "4.13.1"
 }

@@ -206,7 +206,7 @@
         android:id="@+id/instructions_list"
         android:name="com.bloomcyclecare.cmcc.features.instructions.ui.InstructionsListActivity"
         android:label="Instructions"
-        tools:layout="@layout/activity_appointment_list"/>
+        tools:layout="@layout/activity_instructions_list"/>
     <activity
         android:id="@+id/profile"
         android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"

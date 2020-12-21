@@ -1,11 +1,10 @@
-package com.bloomcyclecare.cmcc.logic;
+package com.bloomcyclecare.cmcc.logic.chart;
 
 import com.bloomcyclecare.cmcc.data.models.observation.DischargeType;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.Occurrences;
-import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.google.common.collect.ImmutableSet;
 
 import org.junit.Test;
