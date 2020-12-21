@@ -7,6 +7,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
@@ -663,6 +664,7 @@ public class CycleRenderer {
     public abstract EntryModificationContext modificationContext();
     public abstract String trainingMarker();
     public abstract boolean canSelectYellowStamps();
+    public abstract Optional<MonitorReading> monitorReading();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
@@ -704,6 +706,8 @@ public class CycleRenderer {
               state.instructions.anyActive(BasicInstruction.yellowBasicInstructions)
               || !state.instructions.yellowStampInstructions.isEmpty()
               || state.instructions.specialInstructions.contains(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS))
+          .monitorReading(Optional.ofNullable(state.entry.measurementEntry.monitorReading)
+              .flatMap(r -> r == MonitorReading.UNKNOWN ? Optional.empty() : Optional.of(r)))
           .build();
       return renderableEntry;
     }
@@ -753,6 +757,8 @@ public class CycleRenderer {
       public abstract Builder manualStickerSelection(Optional<StickerSelection> manualStickerSelection);
 
       public abstract Builder canSelectYellowStamps(boolean canSelectYellowStamps);
+
+      public abstract Builder monitorReading(Optional<MonitorReading> monitorReading);
 
       public abstract RenderableEntry build();
     }
