@@ -23,7 +23,7 @@ public class PreferenceRepo {
     DEFAULT_TO_GRID,
     AUTO_STICKERING,
     ENABLE_LH_TEST_MEASUREMENTS,
-    ENABLE_CLEAR_BLUE_MACHINE_MEASUREMENTS
+    ENABLE_CLEARBLUE_MACHINE_MEASUREMENTS
   }
 
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
@@ -111,7 +111,7 @@ public class PreferenceRepo {
     }
 
     public boolean clearblueMachineMeasurementEnabled() {
-      return mPrefs.getBoolean(Key.ENABLE_CLEAR_BLUE_MACHINE_MEASUREMENTS.name(), false);
+      return mPrefs.getBoolean(Key.ENABLE_CLEARBLUE_MACHINE_MEASUREMENTS.name(), false);
     }
 
     private Single<Boolean> doTheStuff(Key togglePref, Key promptPref, Callable<Single<Boolean>> promptSupplier) {

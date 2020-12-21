@@ -1,11 +1,14 @@
 package com.bloomcyclecare.cmcc.ui.entry;
 
+import android.app.Application;
 import android.graphics.Color;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.measurement.LHTestResult;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
+import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.LiveData;
@@ -27,7 +30,8 @@ public class MeasurementEntryViewModel extends ViewModel {
   private final Subject<MeasurementEntry> measurementEntries;
   private final Flowable<ViewState> viewStates;
 
-  public MeasurementEntryViewModel(MeasurementEntry initialEntry) {
+  public MeasurementEntryViewModel(
+      ChartingApp application, MeasurementEntry initialEntry) {
     measurementEntries = BehaviorSubject.createDefault(initialEntry);
 
     Observable.combineLatest(
@@ -44,7 +48,15 @@ public class MeasurementEntryViewModel extends ViewModel {
             .onErrorReturnItem(LHTestResult.NONE),
         MeasurementEntry::new).subscribe(measurementEntries);
 
-    viewStates = measurementEntries.map(ViewState::new).toFlowable(BackpressureStrategy.BUFFER);
+    PreferenceRepo.PreferenceSummary prefSummary = application.preferenceRepo().currentSummary();
+    boolean showMonitorReading =
+        prefSummary.clearblueMachineMeasurementEnabled() || initialEntry.monitorReading != MonitorReading.UNKNOWN;
+    boolean showLHTestResult =
+        prefSummary.lhTestMeasurementEnabled() || initialEntry.lhTestResult != LHTestResult.NONE;
+
+    viewStates = measurementEntries
+        .map(measurement -> new ViewState(measurement, showMonitorReading, showLHTestResult))
+        .toFlowable(BackpressureStrategy.BUFFER);
   }
 
   Observable<MeasurementEntry> measurements() {
@@ -58,9 +70,21 @@ public class MeasurementEntryViewModel extends ViewModel {
   public static class ViewState {
 
     private final MeasurementEntry measurementEntry;
+    private final boolean showMonitorReading;
+    private final boolean showLHTestReading;
 
-    public ViewState(MeasurementEntry measurementEntry) {
+    public ViewState(MeasurementEntry measurementEntry, boolean showMonitorReading, boolean showLHTestResult) {
       this.measurementEntry = measurementEntry;
+      this.showLHTestReading = showLHTestResult;
+      this.showMonitorReading = showMonitorReading;
+    }
+
+    public boolean showMonitorReading() {
+      return showMonitorReading;
+    }
+
+    public boolean showLHTestResult() {
+      return showLHTestReading;
     }
 
     public int lhTestResultPosition() {
@@ -98,16 +122,18 @@ public class MeasurementEntryViewModel extends ViewModel {
 
   static class Factory implements ViewModelProvider.Factory {
 
+    private final ChartingApp application;
     private final MeasurementEntry initialEntry;
 
-    Factory(MeasurementEntry initialEntry) {
+    Factory(Application application, MeasurementEntry initialEntry) {
       this.initialEntry = initialEntry;
+      this.application = ChartingApp.cast(application);
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new MeasurementEntryViewModel(initialEntry);
+      return (T) new MeasurementEntryViewModel(application, initialEntry);
     }
   }
 }

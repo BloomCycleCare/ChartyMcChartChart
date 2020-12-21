@@ -35,7 +35,9 @@ public class MeasurementEntryFragment extends Fragment {
         Parcels.unwrap(requireArguments().getParcelable(
             CycleRenderer.EntryModificationContext.class.getCanonicalName()));
     MeasurementEntryViewModel.Factory factory =
-        new MeasurementEntryViewModel.Factory(modificationContext.entry.measurementEntry);
+        new MeasurementEntryViewModel.Factory(
+            requireActivity().getApplication(),
+            modificationContext.entry.measurementEntry);
     mViewModel =
         new ViewModelProvider(requireActivity(), factory).get(MeasurementEntryViewModel.class);
 
@@ -52,12 +54,14 @@ public class MeasurementEntryFragment extends Fragment {
         requireActivity(), R.array.monitor_reading, android.R.layout.simple_spinner_item);
     monitorReadingAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     monitorReadingSpinner.setAdapter(monitorReadingAdapter);
+    View monitorReadingGroup = view.findViewById(R.id.monitor_reading_group);
 
     Spinner lhResultSpinner = view.findViewById(R.id.lh_result_value);
     ArrayAdapter<CharSequence> lhResultAdapter = ArrayAdapter.createFromResource(
         requireActivity(), R.array.lh_result, android.R.layout.simple_spinner_item);
     lhResultAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
     lhResultSpinner.setAdapter(lhResultAdapter);
+    View lhResultGroup = view.findViewById(R.id.lh_result_group);
 
     // Render view state updates from model
     AtomicBoolean viewStateRendered = new AtomicBoolean();
@@ -76,6 +80,9 @@ public class MeasurementEntryFragment extends Fragment {
         Timber.v("Updating lh test result spinner to %s", viewState.lhTestResultPosition());
         lhResultSpinner.setSelection(viewState.lhTestResultPosition());
       }
+
+      monitorReadingGroup.setVisibility(viewState.showMonitorReading() ? View.VISIBLE : View.GONE);
+      lhResultGroup.setVisibility(viewState.showLHTestResult() ? View.VISIBLE : View.GONE);
 
       // Connect views to view model
       if (viewStateRendered.compareAndSet(false, true)) {
