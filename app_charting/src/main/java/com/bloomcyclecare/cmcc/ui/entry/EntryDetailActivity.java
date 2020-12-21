@@ -86,7 +86,8 @@ public class EntryDetailActivity extends AppCompatActivity {
      * may be best to switch to a
      * {@link FragmentStatePagerAdapter}.
      */
-    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), entryModifyContext);
+    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(
+        getSupportFragmentManager(), entryModifyContext, mViewModel.showMeasurementPage());
 
     // Set up the ViewPager with the sections adapter.
     /**
@@ -251,10 +252,12 @@ public class EntryDetailActivity extends AppCompatActivity {
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
     private final CycleRenderer.EntryModificationContext mEntryModificationContext;
+    private final boolean shouldShowMeasurementPage;
 
-    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext) {
+    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage) {
       super(fm);
       mEntryModificationContext = entryModificationContext;
+      this.shouldShowMeasurementPage = shouldShowMeasurementPage;
     }
 
     @Override
@@ -291,8 +294,10 @@ public class EntryDetailActivity extends AppCompatActivity {
     @Override
     public int getCount() {
       // TODO: change to 4 when we're ready to show wellness and symptom stuff
-      // TODO: conditionally activate mm fragment
-      return 2;
+      if (shouldShowMeasurementPage) {
+        return 2;
+      }
+      return 1;
     }
 
     @Override

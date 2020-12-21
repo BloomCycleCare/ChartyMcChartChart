@@ -49,6 +49,10 @@ public class MeasurementEntry extends Entry {
     return new MeasurementEntry(entryDate, MonitorReading.UNKNOWN, LHTestResult.NONE);
   }
 
+  public boolean isEmpty() {
+    return monitorReading == MonitorReading.UNKNOWN && lhTestResult == LHTestResult.NONE;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

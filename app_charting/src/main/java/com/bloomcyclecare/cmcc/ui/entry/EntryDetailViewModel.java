@@ -68,6 +68,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
+  private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
 
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
@@ -86,6 +87,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
         timeOfDayUpdates.onNext(IntercourseTimeOfDay.NONE);
       }
     }));
+
+    // Hook up when to show measurement page
+    Single.zip(
+        myApp.preferenceRepo().summaries().firstOrError()
+            .map(summary -> summary.lhTestMeasurementEnabled() || summary.clearblueMachineMeasurementEnabled()),
+        mEntryContext.map(context -> !context.entry.measurementEntry.isEmpty()),
+        (enabledInSettings, entryHasMeasurement) -> enabledInSettings || entryHasMeasurement)
+        .subscribe(shouldShowMeasurementPage);
 
     Flowable<ErrorOr<Observation>> errorOrObservationStream = observationUpdates
         .toFlowable(BackpressureStrategy.DROP)
@@ -250,6 +259,10 @@ public class EntryDetailViewModel extends AndroidViewModel {
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
     measurementEntries.onNext(context.entry.measurementEntry);
+  }
+
+  boolean showMeasurementPage() {
+    return shouldShowMeasurementPage.getValue();
   }
 
   LiveData<ViewState> viewStates() {

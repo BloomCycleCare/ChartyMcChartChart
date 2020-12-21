@@ -21,7 +21,9 @@ public class PreferenceRepo {
     ENABLE_PUBLISH_CHARTS_TO_DRIVE,
     DEFAULT_TO_DEMO,
     DEFAULT_TO_GRID,
-    AUTO_STICKERING
+    AUTO_STICKERING,
+    ENABLE_LH_TEST_MEASUREMENTS,
+    ENABLE_CLEAR_BLUE_MACHINE_MEASUREMENTS
   }
 
   private  final BehaviorSubject<PreferenceSummary> mSummarySubject = BehaviorSubject.create();
@@ -102,6 +104,14 @@ public class PreferenceRepo {
 
     public boolean enableChartingReminder() {
       return mPrefs.getBoolean(Key.CHARTING_REMINDER.name(), false);
+    }
+
+    public boolean lhTestMeasurementEnabled() {
+      return mPrefs.getBoolean(Key.ENABLE_LH_TEST_MEASUREMENTS.name(), false);
+    }
+
+    public boolean clearblueMachineMeasurementEnabled() {
+      return mPrefs.getBoolean(Key.ENABLE_CLEAR_BLUE_MACHINE_MEASUREMENTS.name(), false);
     }
 
     private Single<Boolean> doTheStuff(Key togglePref, Key promptPref, Callable<Single<Boolean>> promptSupplier) {
