@@ -25,10 +25,6 @@ android {
         targetCompatibility = rootProject.ext.targetCompatibility
     }
 
-    lintOptions {
-        abortOnError false
-    }
-
     packagingOptions {
         exclude 'META-INF/DEPENDENCIES'
     }
