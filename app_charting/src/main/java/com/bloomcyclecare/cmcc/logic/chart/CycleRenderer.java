@@ -8,6 +8,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.InstructionSet;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
@@ -108,11 +109,20 @@ public class CycleRenderer {
           pointsOfChangeAway.add(e.entryDate);
         }
       }
+      state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeToward.first());
+      state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeToward.last());
+      state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
+          : Optional.of(pointsOfChangeAway.last());
+      if (e.observationEntry.unusualBleeding) {
+        daysOfUnusualBleeding.add(e.entryDate);
+      }
       if (e.observationEntry.hasMucus()) {
         daysOfMucus.add(e.entryDate);
       }
       daysOfIntercourse.put(e.entryDate, e.observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE);
-      state.todayHasMucus = false;
+      boolean todayHasMucus = false;
       state.todayHasBlood = false;
       state.todaysFlow = null;
       if (e.observationEntry.observation == null) {
@@ -120,10 +130,8 @@ public class CycleRenderer {
       } else {
         daysWithAnObservation.add(e.entryDate);
         Observation observation = e.observationEntry.observation;
-        state.todayHasMucus = observation.hasMucus();
-        state.todayHasBlood = (
-            observation.dischargeSummary != null && observation.dischargeSummary.hasBlood()
-            || observation.additionalOccurrences.containsKey(MucusModifier.B));
+        todayHasMucus = observation.hasMucus();
+        state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
         if (observation.flow != null) {
           state.todaysFlow = observation.flow;
           hasHadLegitFlow |= observation.flow.isLegit();
@@ -645,6 +653,7 @@ public class CycleRenderer {
     public abstract StickerSelectionContext stickerSelectionContext();
     public abstract StickerSelection expectedStickerSelection();
     public abstract Optional<StickerSelection> manualStickerSelection();
+    public abstract Optional<MonitorReading> monitorReading();
 
     // TODO: add EoD / any time of day accounting for double peak Q's
 
@@ -685,6 +694,9 @@ public class CycleRenderer {
               || state.instructions.specialInstructions.contains(SpecialInstruction.BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS))
           .stickerSelectionContext(stickerSelectionContext)
           .expectedStickerSelection(stickerSelectionContext.expectedSelection())
+          .monitorReading(Optional.ofNullable(state.entry.measurementEntry)
+              .map(me -> me.monitorReading)
+              .flatMap(r -> r == MonitorReading.UNKNOWN ? Optional.empty() : Optional.of(r)))
           .build();
     }
 
@@ -729,6 +741,8 @@ public class CycleRenderer {
       public abstract Builder expectedStickerSelection(StickerSelection stickerSelection);
 
       public abstract Builder stickerSelectionContext(StickerSelectionContext context);
+
+      public abstract Builder monitorReading(Optional<MonitorReading> monitorReading);
 
       public abstract RenderableEntry build();
     }

@@ -3,16 +3,16 @@ package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 import android.app.Application;
 import android.util.Range;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 
@@ -43,6 +43,7 @@ class EntryListViewModel extends AndroidViewModel {
 
   private final Subject<ViewState> mViewState = BehaviorSubject.create();
   private final Subject<ScrollState> mScrollEventsFromUI = BehaviorSubject.create();
+  public final Subject<Boolean> mShowMachineReadings = BehaviorSubject.create();
 
   private final RWStickerSelectionRepo mStickerSelectionRepo;
   private final ViewMode mViewMode;
@@ -79,14 +80,15 @@ class EntryListViewModel extends AndroidViewModel {
         scrollStateFlowable.distinctUntilChanged().doOnNext(ss -> Timber.v("Got new ScrollState")),
         autoStickeringStream.distinctUntilChanged(),
         instructionsRepo.getAll(),
-        (renderableCycle, scrollState, autoStickeringEnabled, instructionsList) -> {
+        mShowMachineReadings.toFlowable(BackpressureStrategy.BUFFER),
+        (renderableCycle, scrollState, autoStickeringEnabled, instructionsList, showMachineReadings) -> {
           boolean showcaseStickerSelection = false;
           Optional<LocalDate> entryShowcaseDate = Optional.empty();
           boolean inhibitShowcase = cycle.endDate != null/* || instructionsList.isEmpty()*/;
 
           List<RenderedEntry> renderedEntries = new ArrayList<>();
           for (CycleRenderer.RenderableEntry re : renderableCycle.entries()) {
-            RenderedEntry renderedEntry = RenderedEntry.create(re, autoStickeringEnabled, viewMode);
+            RenderedEntry renderedEntry = RenderedEntry.create(re, autoStickeringEnabled, viewMode, showMachineReadings);
             if (!inhibitShowcase && renderedEntry.hasObservation()) {
               showcaseStickerSelection = true;
               entryShowcaseDate = Optional.of(renderedEntry.entryDate());

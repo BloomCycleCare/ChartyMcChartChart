@@ -53,6 +53,8 @@ public class CycleListViewModel extends AndroidViewModel {
   private final Subject<RWStickerSelectionRepo> mStickerSelectionRepoSubject = BehaviorSubject.create();
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
   private final Subject<Boolean> mToggles = PublishSubject.create();
+  private final Subject<Boolean> mShowMonitorReadingsToggles = BehaviorSubject.create();
+  private final Subject<Boolean> mShowMonitorReadings = BehaviorSubject.create();
 
   private final Activity mActivity;
   private final ChartingApp mApplication;
@@ -82,6 +84,13 @@ public class CycleListViewModel extends AndroidViewModel {
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
     Optional<Exercise> exercise = Exercise.forID(exerciseID.orElse(Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES));
+
+    mShowMonitorReadingsToggles
+        .scan(1, (v, t) -> ++v)
+        .doOnNext(i -> Timber.v("SHOW: %d", i))
+        .map(i -> i % 2 == 0)
+        .doOnNext(v -> Timber.v("Show monitor readings %b", v))
+        .subscribe(mShowMonitorReadings);
 
     viewModeStream.flatMap(viewMode -> {
       if (viewMode == ViewMode.TRAINING && !exerciseID.isPresent()) {
@@ -123,9 +132,12 @@ public class CycleListViewModel extends AndroidViewModel {
       return Flowable.combineLatest(
           renderableCycleStream,
           autoStickeringStream,
+          mApplication.preferenceRepo().summaries()
+              .map(PreferenceRepo.PreferenceSummary::clearblueMachineMeasurementEnabled),
+          showMonitorReadings(),
           stickerSelectionStream,
-          (renderableCycles, autoStickeringEnabled, stickerSelections) -> ViewState.create(
-              viewMode, renderableCycles, autoStickeringEnabled, stickerSelections))
+          (renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections) -> ViewState.create(
+              viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections))
           .toObservable();
     }).subscribe(mViewStateSubject);
   }
@@ -136,6 +148,14 @@ public class CycleListViewModel extends AndroidViewModel {
 
   public ViewMode currentViewMode() {
     return mViewStateSubject.blockingFirst().viewMode();
+  }
+
+  public ViewState currentViewState() {
+    return mViewStateSubject.blockingFirst();
+  }
+
+  public Flowable<Boolean> showMonitorReadings() {
+    return mShowMonitorReadings.toFlowable(BackpressureStrategy.BUFFER);
   }
 
   public Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
@@ -155,12 +175,18 @@ public class CycleListViewModel extends AndroidViewModel {
     public abstract ViewMode viewMode();
     public abstract List<CycleRenderer.RenderableCycle> renderableCycles();
     public abstract boolean autoStickeringEnabled();
+    public abstract boolean monitorReadingsEnabled();
+    public abstract boolean showMonitorReadings();
     public abstract Map<LocalDate, StickerSelection> stickerSelections();
 
-    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, Map<LocalDate, StickerSelection> stickerSelections) {
-      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, stickerSelections);
+    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, boolean monitorReadingsEnabled, boolean showMonitorReadings, Map<LocalDate, StickerSelection> stickerSelections) {
+      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections);
     }
 
+  }
+
+  public void toggleShowMonitorReadings() {
+    mShowMonitorReadingsToggles.onNext(true);
   }
 
   public void toggleViewMode() {
