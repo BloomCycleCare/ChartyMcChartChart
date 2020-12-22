@@ -11,7 +11,6 @@ import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
-import com.bloomcyclecare.cmcc.data.models.observation.MucusModifier;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -122,7 +121,7 @@ public class CycleRenderer {
         daysOfMucus.add(e.entryDate);
       }
       daysOfIntercourse.put(e.entryDate, e.observationEntry.intercourseTimeOfDay != IntercourseTimeOfDay.NONE);
-      boolean todayHasMucus = false;
+      state.todayHasMucus = false;
       state.todayHasBlood = false;
       state.todaysFlow = null;
       if (e.observationEntry.observation == null) {
@@ -130,7 +129,7 @@ public class CycleRenderer {
       } else {
         daysWithAnObservation.add(e.entryDate);
         Observation observation = e.observationEntry.observation;
-        todayHasMucus = observation.hasMucus();
+        state.todayHasMucus = observation.hasMucus();
         state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
         if (observation.flow != null) {
           state.todaysFlow = observation.flow;
