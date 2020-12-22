@@ -40,7 +40,6 @@
             </intent-filter>
             <intent-filter>
                 <data
-                    android:host="*"
                     android:mimeType="*/*"
                     android:pathPattern=".*\\.chart"
                     android:scheme="content" />
