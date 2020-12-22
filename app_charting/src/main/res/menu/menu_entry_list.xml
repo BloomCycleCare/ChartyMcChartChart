@@ -30,6 +30,17 @@
     <item
         android:id="@+id/action_toggle_demo"
         android:orderInCategory="2"
+        android:checkable="true"
+        android:checkableBehavior="all"
+        app:actionViewClass="android.widget.CheckBox"
         app:showAsAction="never"
-        android:title="Demo Mode On/Off"/>
+        android:title="Demo Mode"/>
+    <item
+        android:id="@+id/action_show_monitor_readings"
+        android:orderInCategory="2"
+        android:checkable="true"
+        android:checkableBehavior="all"
+        app:actionViewClass="android.widget.CheckBox"
+        app:showAsAction="never"
+        android:title="Monitor Readings"/>
 </menu>

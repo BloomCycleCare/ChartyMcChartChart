@@ -13,8 +13,8 @@ import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
+import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
@@ -66,7 +66,8 @@ public class EntryDetailActivity extends AppCompatActivity {
     if (DEBUG) Log.v(TAG, "onCreate: Start");
 
     Intent intent = getIntent();
-    CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
+    CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(
+        intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
 
     mViewModel = ViewModelProviders.of(this).get(EntryDetailViewModel.class);
     mViewModel.initialize(entryModifyContext);
@@ -85,7 +86,8 @@ public class EntryDetailActivity extends AppCompatActivity {
      * may be best to switch to a
      * {@link FragmentStatePagerAdapter}.
      */
-    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager(), entryModifyContext);
+    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(
+        getSupportFragmentManager(), entryModifyContext, mViewModel.showMeasurementPage());
 
     // Set up the ViewPager with the sections adapter.
     /**
@@ -250,10 +252,12 @@ public class EntryDetailActivity extends AppCompatActivity {
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
     private final CycleRenderer.EntryModificationContext mEntryModificationContext;
+    private final boolean shouldShowMeasurementPage;
 
-    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext) {
+    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage) {
       super(fm);
       mEntryModificationContext = entryModificationContext;
+      this.shouldShowMeasurementPage = shouldShowMeasurementPage;
     }
 
     @Override
@@ -269,9 +273,12 @@ public class EntryDetailActivity extends AppCompatActivity {
           fragment = new ObservationEntryFragment();
           break;
         case 1:
-          fragment = new WellnessEntryFragment();
+          fragment = new MeasurementEntryFragment();
           break;
         case 2:
+          fragment = new WellnessEntryFragment();
+          break;
+        case 3:
           fragment = new SymptomEntryFragment();
           break;
       }
@@ -286,7 +293,10 @@ public class EntryDetailActivity extends AppCompatActivity {
 
     @Override
     public int getCount() {
-      // TODO: change to 3 when we're ready to show wellness and symptom stuff
+      // TODO: change to 4 when we're ready to show wellness and symptom stuff
+      if (shouldShowMeasurementPage) {
+        return 2;
+      }
       return 1;
     }
 
@@ -296,8 +306,10 @@ public class EntryDetailActivity extends AppCompatActivity {
         case 0:
           return "Observation";
         case 1:
-          return "Wellness";
+          return "Measurement";
         case 2:
+          return "Wellness";
+        case 3:
           return "Symptoms";
       }
       return null;

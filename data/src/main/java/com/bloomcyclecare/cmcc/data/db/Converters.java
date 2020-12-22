@@ -3,12 +3,14 @@ package com.bloomcyclecare.cmcc.data.db;
 import com.bloomcyclecare.cmcc.data.models.instructions.BasicInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
+import com.bloomcyclecare.cmcc.data.models.measurement.LHTestResult;
+import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
-import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.google.gson.reflect.TypeToken;
 
 import org.joda.time.LocalDate;
@@ -103,5 +105,25 @@ public class Converters {
   public List<YellowStampInstruction> toYellowStampInstructionList(String wire) {
     Type type = new TypeToken<List<YellowStampInstruction>>() {}.getType();
     return GsonUtil.getGsonInstance().fromJson(wire, type);
+  }
+
+  @TypeConverter
+  public String fromMonitorReading(MonitorReading in) {
+    return in.name();
+  }
+
+  @TypeConverter
+  public MonitorReading toMonitorReading(String in) {
+    return MonitorReading.valueOf(in);
+  }
+
+  @TypeConverter
+  public String fromLHTestResult(LHTestResult in) {
+    return in.name();
+  }
+
+  @TypeConverter
+  public LHTestResult toLHTestResult(String in) {
+    return LHTestResult.valueOf(in);
   }
 }

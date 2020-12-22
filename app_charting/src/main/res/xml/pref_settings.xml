@@ -23,6 +23,19 @@
             android:key="CHARTING_REMINDER"
             android:title="Enable charting reminder"/>
     </PreferenceCategory>
+    <PreferenceCategory
+        android:title="Measurements"
+        android:key="pref_key_measurements">
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="ENABLE_LH_TEST_MEASUREMENTS"
+            android:title="Enable LH test strips"/>
+        <SwitchPreferenceCompat
+            android:defaultValue="true"
+            android:key="ENABLE_CLEARBLUE_MACHINE_MEASUREMENTS"
+            android:title="Enable Clearblue machine"/>
+
+    </PreferenceCategory>
     <!-- TODO: enable once we're ready
     <PreferenceCategory
         android:title="Backup &amp; Export"

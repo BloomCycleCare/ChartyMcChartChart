@@ -5,6 +5,7 @@ import android.app.Application;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
@@ -62,9 +63,12 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
   final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
 
+  final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
+
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
+  private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
 
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
@@ -83,6 +87,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
         timeOfDayUpdates.onNext(IntercourseTimeOfDay.NONE);
       }
     }));
+
+    // Hook up when to show measurement page
+    Single.zip(
+        myApp.preferenceRepo().summaries().firstOrError()
+            .map(summary -> summary.lhTestMeasurementEnabled() || summary.clearblueMachineMeasurementEnabled()),
+        mEntryContext.map(context -> !context.entry.measurementEntry.isEmpty()),
+        (enabledInSettings, entryHasMeasurement) -> enabledInSettings || entryHasMeasurement)
+        .subscribe(shouldShowMeasurementPage);
 
     Flowable<ErrorOr<Observation>> errorOrObservationStream = observationUpdates
         .toFlowable(BackpressureStrategy.DROP)
@@ -180,10 +192,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
         wellnessEntryStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New wellness entry")),
+        measurementEntries.toFlowable(BackpressureStrategy.BUFFER)
+            //.distinctUntilChanged()
+            .doOnNext(i -> Timber.v("New measurement entry")),
         clarifyingQuestionRenderUpdates,
-        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, clarifyingQuestionUpdates) -> {
-          ViewState state = new ViewState(entryContext,
-              ChartEntry.withoutStickerSelection(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry), observationError);
+        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, clarifyingQuestionUpdates) -> {
+          ViewState state = new ViewState(
+              entryContext,
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, null),
+              observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
 
@@ -241,6 +258,11 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
+    measurementEntries.onNext(context.entry.measurementEntry);
+  }
+
+  boolean showMeasurementPage() {
+    return shouldShowMeasurementPage.getValue();
   }
 
   LiveData<ViewState> viewStates() {

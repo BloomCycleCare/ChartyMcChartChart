@@ -3,12 +3,13 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 import android.util.Range;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
+import com.bloomcyclecare.cmcc.data.db.MeasurementEntryDao;
 import com.bloomcyclecare.cmcc.data.db.ObservationEntryDao;
 import com.bloomcyclecare.cmcc.data.db.SymptomEntryDao;
 import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -36,13 +37,15 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   private final ObservationEntryDao observationEntryDao;
   private final WellnessEntryDao wellnessEntryDao;
   private final SymptomEntryDao symptomEntryDao;
+  private final MeasurementEntryDao measurementEntryDao;
   private final RWStickerSelectionRepo stickerSelectionRepo;
-  private AtomicBoolean batchUpdate = new AtomicBoolean();
+  private final AtomicBoolean batchUpdate = new AtomicBoolean();
 
   RoomChartEntryRepo(AppDatabase db, RWStickerSelectionRepo stickerSelectionRepo) {
     observationEntryDao = db.observationEntryDao();
     wellnessEntryDao = db.wellnessEntryDao();
     symptomEntryDao = db.symptomEntryDao();
+    measurementEntryDao = db.measurementEntryDao();
     this.stickerSelectionRepo = stickerSelectionRepo;
   }
 
@@ -85,12 +88,13 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.getAllEntries(),
         wellnessEntryDao.getAllEntries(),
         symptomEntryDao.getAllEntries(),
+        measurementEntryDao.getAllEntries(),
         stickerSelectionRepo.getSelections().firstOrError(),
-        (observationEntries, wellnessEntries, symptomEntries, stickerSelections) -> {
+        (observationEntries, wellnessEntries, symptomEntries, measurementEntries, stickerSelections) -> {
           List<ChartEntry> out = new ArrayList<>(observationEntries.size());
           for (ObservationEntry observationEntry : observationEntries.values()) {
             LocalDate date = observationEntry.getDate();
-            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date), stickerSelections.get(date)));
+            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date), measurementEntries.get(date), stickerSelections.get(date)));
           }
           return out;
         });
@@ -129,11 +133,12 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             observationEntryDao.getIndexedStream(pair.first, pair.second),
             wellnessEntryDao.getIndexedStream(pair.first, pair.second),
             symptomEntryDao.getIndexedStream(pair.first, pair.second),
+            measurementEntryDao.getIndexedStream(pair.first, pair.second),
             stickerSelectionRepo.getSelections(Range.create(pair.first, pair.second)),
-            (observationStream, wellnessStream, symptomStream, stickerSelections) -> {
+            (observationStream, wellnessStream, symptomStream, measurementStream, stickerSelections) -> {
               List<ChartEntry> out = new ArrayList<>();
               for (LocalDate d : DateUtil.daysBetween(pair.first, pair.second, false)) {
-                out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), stickerSelections.get(d)));
+                out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), measurementStream.get(d), stickerSelections.get(d)));
               }
               return out;
             }));
@@ -145,6 +150,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.insert(entry.observationEntry),
         wellnessEntryDao.insert(entry.wellnessEntry),
         stickerSelectionRepo.recordSelection(entry.stickerSelection, entry.entryDate),
+        measurementEntryDao.insert(entry.measurementEntry),
         symptomEntryDao.insert(entry.symptomEntry))
         .doOnComplete(() -> maybeSendUpdate(entry));
   }
@@ -155,6 +161,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.deleteAll(),
         wellnessEntryDao.deleteAll(),
         stickerSelectionRepo.deleteAll(),
+        measurementEntryDao.deleteAll(),
         symptomEntryDao.deleteAll())
         .doOnSubscribe(s -> Timber.i("Deleting all entries"))
         .doOnComplete(() -> Timber.i("Done deleting all entries"));
@@ -166,6 +173,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         observationEntryDao.delete(entry.observationEntry),
         wellnessEntryDao.delete(entry.wellnessEntry),
         stickerSelectionRepo.delete(entry.entryDate),
+        measurementEntryDao.delete(entry.measurementEntry),
         symptomEntryDao.delete(entry.symptomEntry))
         .doOnComplete(() -> maybeSendUpdate(entry));
   }
@@ -177,7 +185,8 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             observationEntryDao.getStream(entryDate),
             wellnessEntryDao.getStream(entryDate),
             symptomEntryDao.getStream(entryDate),
+            measurementEntryDao.getStream(entryDate),
             stickerSelectionRepo.getSelectionStream(entryDate),
-            (d, o, w, s, ss) -> new ChartEntry(d, o, w, s, ss.orElse(null)));
+            (d, o, w, s, m, ss) -> new ChartEntry(d, o, w, s, m, ss.orElse(null)));
   }
 }

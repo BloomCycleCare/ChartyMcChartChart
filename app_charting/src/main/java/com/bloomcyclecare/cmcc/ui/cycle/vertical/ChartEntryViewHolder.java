@@ -24,8 +24,8 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     private final TextView mEntryDateTextView;
     private final TextView mEntryDataTextView;
     private final TextView mEntryPeakTextView;
-    private final TextView mSymptomGoalSummaryView;
-    private final TextView mPocSummaryTextView;
+    private final TextView mLeftSummary;
+    private final TextView mRightSummary;
     private final View mStickerView;
     private final View mSeparator;
     private final View mStrikeView;
@@ -50,8 +50,8 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mEntryDateTextView = itemView.findViewById(R.id.tv_entry_date);
       mEntryDataTextView = itemView.findViewById(R.id.tv_entry_data);
       mEntryPeakTextView = itemView.findViewById(R.id.tv_peak_day);
-      mPocSummaryTextView = itemView.findViewById(R.id.tv_tv_poc_summary);
-      mSymptomGoalSummaryView = itemView.findViewById(R.id.tv_goal_symptom_summary);
+      mRightSummary = itemView.findViewById(R.id.tv_right_summary);
+      mLeftSummary = itemView.findViewById(R.id.tv_left_summary);
       mStickerView = itemView.findViewById(R.id.baby_image_view);
       mSeparator = itemView.findViewById(R.id.separator);
       mStrikeView = itemView.findViewById(R.id.strike_through);
@@ -84,9 +84,9 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mStickerView.setBackgroundResource(re.stickerBackgroundResource());
       mStrikeView.setVisibility(re.showStickerStrike() ? View.VISIBLE : View.GONE);
       mEntryPeakTextView.setText(re.stickerText());
-      mPocSummaryTextView.setText(re.pocSummaryText());
-      mSymptomGoalSummaryView.setText(re.essentialSamenessSummary());
-      mSymptomGoalSummaryView.setVisibility(View.VISIBLE);
+      mLeftSummary.setText(re.leftSummary());
+      mLeftSummary.setVisibility(View.VISIBLE);
+      mRightSummary.setText(re.rightSummary());
 
       if (re.showWeekTransition()) {
         mSeparator.setBackgroundColor(mContext.getColor(R.color.week_separator));

@@ -1,6 +1,5 @@
 package com.bloomcyclecare.cmcc.ui.cycle;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -8,8 +7,8 @@ import android.view.MenuItem;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 
 import java.util.Optional;
@@ -62,7 +61,7 @@ public abstract class BaseCycleListFragment extends Fragment {
   @Override
   public void onPrepareOptionsMenu(@NonNull Menu menu) {
     super.onPrepareOptionsMenu(menu);
-    pruneMenuOptions(menu, mViewModel.currentViewMode());
+    pruneMenuOptions(menu, mViewModel.currentViewState());
   }
 
   @Override
@@ -71,18 +70,22 @@ public abstract class BaseCycleListFragment extends Fragment {
     inflater.inflate(R.menu.menu_entry_list, menu);
   }
 
-  private static void pruneMenuOptions(@NonNull Menu menu, @NonNull ViewMode viewMode) {
+  private static void pruneMenuOptions(@NonNull Menu menu, @NonNull CycleListViewModel.ViewState viewState) {
+    ViewMode viewMode = viewState.viewMode();
     boolean runningDebugBuild = BuildConfig.BUILD_TYPE.equals("debug");
     if (viewMode != ViewMode.CHARTING) {
       menu.findItem(R.id.action_export).setVisible(false);
       menu.findItem(R.id.action_trigger_sync).setVisible(false);
+      menu.findItem(R.id.action_show_monitor_readings).setVisible(false);
     } else {
       menu.findItem(R.id.action_export).setVisible(true);
       menu.findItem(R.id.action_trigger_sync).setVisible(runningDebugBuild);
+      menu.findItem(R.id.action_show_monitor_readings).setVisible(viewState.monitorReadingsEnabled());
     }
     menu.findItem(R.id.action_print).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
+    menu.findItem(R.id.action_toggle_demo).setChecked(viewMode == ViewMode.DEMO);
     menu.findItem(R.id.action_clear_data).setVisible(runningDebugBuild);
   }
 
@@ -131,6 +134,11 @@ public abstract class BaseCycleListFragment extends Fragment {
 
       case R.id.action_print:
         NavHostFragment.findNavController(this).navigate(printAction(mViewModel.currentViewMode()));
+        return true;
+
+      case R.id.action_show_monitor_readings:
+        mViewModel.toggleShowMonitorReadings();
+        item.setChecked(!item.isChecked());
         return true;
 
       default:
