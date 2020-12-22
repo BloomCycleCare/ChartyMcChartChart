@@ -105,8 +105,10 @@ public class ChartingService extends Service {
 
   @Override
   public int onStartCommand(Intent intent, int flags, int startId) {
-    Timber.d("onStartCommand: action=%s", intent.getAction());
-    if (!Strings.isNullOrEmpty(intent.getAction())) {
+    if (intent == null) {
+      Timber.w("Received null intent");
+    } else if (!Strings.isNullOrEmpty(intent.getAction())) {
+      Timber.d("onStartCommand: action=%s", intent.getAction());
       switch (Action.valueOf(intent.getAction())) {
         case SET_REMINDER:
           clearNotificationAndTerminate();
