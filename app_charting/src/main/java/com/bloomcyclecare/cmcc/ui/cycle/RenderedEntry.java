@@ -53,7 +53,8 @@ public abstract class RenderedEntry {
   @NonNull
   public static RenderedEntry create(@NonNull CycleRenderer.RenderableEntry re,
                                      boolean autoStickeringEnabled,
-                                     @NonNull ViewMode viewMode) {
+                                     @NonNull ViewMode viewMode,
+                                     boolean showMonitorReading) {
     StickerSelection manualSelection = re.manualStickerSelection().orElse(null);
     boolean hasNonEmptyManualSelection = manualSelection != null && !manualSelection.equals(StickerSelection.empty());
     Optional<StickerSelection> expectedStickerSelection = re.hasObservation()
@@ -101,7 +102,7 @@ public abstract class RenderedEntry {
     if (!ess.isEmpty()) {
       leftSummaryItems.add(ess);
     }
-    if (re.monitorReading().isPresent()) {
+    if (showMonitorReading && re.monitorReading().isPresent()) {
       leftSummaryItems.add(re.monitorReading().get().name());
     }
     String leftSummary = Joiner.on("|").join(leftSummaryItems);

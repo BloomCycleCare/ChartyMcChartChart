@@ -2,16 +2,16 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
@@ -65,7 +65,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             List<RenderedEntry> renderedEntries = new ArrayList<>(rc.entries().size());
             for (CycleRenderer.RenderableEntry re : rc.entries()) {
               renderedEntries.add(RenderedEntry.create(
-                  re, cycleListViewState.autoStickeringEnabled(), cycleListViewState.viewMode()));
+                  re, cycleListViewState.autoStickeringEnabled(), cycleListViewState.viewMode(), false));
             }
             lofl.add(renderedEntries);
           }

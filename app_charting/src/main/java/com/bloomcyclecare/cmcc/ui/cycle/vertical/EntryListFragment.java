@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.google.common.collect.Maps;
@@ -26,6 +27,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -77,6 +79,9 @@ public class EntryListFragment extends Fragment {
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(
         getActivity().getApplication(), viewMode, cycle);
     mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
+
+    CycleListViewModel cycleViewModel = new ViewModelProvider(getParentFragment()).get(CycleListViewModel.class);
+    cycleViewModel.showMonitorReadings().toObservable().subscribe(mViewModel.mShowMachineReadings);
 
     Timber.v("Created Fragment for cycle starting %s", cycle.startDateStr);
   }
