@@ -63,7 +63,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             List<RenderedEntry> renderedEntries = new ArrayList<>(rc.entries().size());
             for (CycleRenderer.RenderableEntry re : rc.entries()) {
               renderedEntries.add(RenderedEntry.create(
-                  re, cycleListViewState.autoStickeringEnabled(), cycleListViewState.viewMode()));
+                  re, cycleListViewState.autoStickeringEnabled(), cycleListViewState.viewMode(), false));
             }
             lofl.add(renderedEntries);
           }
