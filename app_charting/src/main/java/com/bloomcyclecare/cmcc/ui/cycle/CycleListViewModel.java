@@ -5,17 +5,17 @@ import android.app.Application;
 import android.content.Intent;
 import android.net.Uri;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
+import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
-import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Charsets;
@@ -24,6 +24,8 @@ import com.google.common.io.Files;
 import org.joda.time.LocalDate;
 
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -174,7 +176,8 @@ public class CycleListViewModel extends AndroidViewModel {
           if (!path.exists()) {
             path.mkdir();
           }
-          File file = new File(path, "cmcc_export.chart");
+          String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
+          File file = new File(path, "cmcc_export_" + date + ".json");
 
           Files.write(json, file, Charsets.UTF_8);
 

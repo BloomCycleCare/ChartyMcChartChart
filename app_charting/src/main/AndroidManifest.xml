@@ -40,21 +40,8 @@
             </intent-filter>
             <intent-filter>
                 <data
-                    android:mimeType="*/*"
-                    android:pathPattern=".*\\.chart"
+                    android:mimeType="application/json"
                     android:scheme="content" />
-
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-            </intent-filter>
-            <intent-filter>
-                <data
-                    android:host="*"
-                    android:mimeType="*/*"
-                    android:pathPattern=".*\\.chart"
-                    android:scheme="file" />
 
                 <action android:name="android.intent.action.VIEW" />
 
