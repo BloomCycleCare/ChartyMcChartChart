@@ -16,4 +16,8 @@
 
     <color name="entry_separator">#dadada</color>
     <color name="week_separator">#000000</color>
+
+    <color name="clear_blue_low">#BC8CBB</color>
+    <color name="clear_blue_high">#745AA0</color>
+    <color name="clear_blue_peak">#3B0770</color>
 </resources>
