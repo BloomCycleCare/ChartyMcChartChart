@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 public class StickerSelector {
@@ -46,8 +47,11 @@ public class StickerSelector {
 
   static final String FLOW_POSITIVE_REASON = "is in menstrual flow";
   static final String FLOW_NEGATIVE_REASON = "isn't in menstrual flow";
-  static final String FLOW_POSITIVE_EXPLANATION = "TODO: explain";
-  static final String FLOW_NEGATIVE_EXPLANATION = "TODO: explain";
+  static final String FLOW_POSITIVE_EXPLANATION = "Observation was part of uninterrupted flow at start of cycle";
+  static final String FLOW_NEGATIVE_EXPLANATION = "Observation was not part of uninterrupted flow at the start of cycle";
+
+  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ALWAYS_LOG = (b, c) -> true;
+  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ONLY_LOG_NEGATIVE = (b, c) -> !b;
 
   private static final DecisionTree.Node TREE = new DecisionTree.ParentNode(
       DecisionTree.Criteria.and(
@@ -66,7 +70,7 @@ public class StickerSelector {
               c -> ""
           )
       ),
-      false,
+      ONLY_LOG_NEGATIVE,
       new DecisionTree.ParentNode(
           DecisionTree.Criteria.or(
               DecisionTree.Criteria.create(
@@ -84,7 +88,7 @@ public class StickerSelector {
                   c -> FERTILE_NEGATIVE_EXPLANATION
               )
           ),
-          true,
+          ALWAYS_LOG,
           new DecisionTree.ParentNode(
               DecisionTree.Criteria.create(
                   c -> c.hasBleeding,
@@ -93,7 +97,7 @@ public class StickerSelector {
                   c -> BLEEDING_POSITIVE_EXPLANATION,
                   c -> BLEEDING_NEGATIVE_EXPLANATION
               ),
-              true,
+              ALWAYS_LOG,
               LEAF_NODES.get(Sticker.RED),
               new DecisionTree.ParentNode(
                   DecisionTree.Criteria.create(
@@ -103,7 +107,7 @@ public class StickerSelector {
                       c -> MUCUS_POSITIVE_EXPLANATION,
                       c -> MUCUS_NEGATIVE_EXPLANATION
                   ),
-                  true,
+                  ALWAYS_LOG,
                   new DecisionTree.ParentNode(
                       DecisionTree.Criteria.create(
                           c -> !c.infertilityReasons.isEmpty(),
@@ -112,7 +116,7 @@ public class StickerSelector {
                           c -> INFERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.infertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
                           c -> INFERTILE_NEGATIVE_EXPLANATION
                       ),
-                      true,
+                      (b, c) -> c.hasSpecialInstructions,
                       LEAF_NODES.get(Sticker.YELLOW_BABY),
                       LEAF_NODES.get(Sticker.WHITE_BABY)
                   ),
@@ -127,90 +131,13 @@ public class StickerSelector {
                   c -> MUCUS_POSITIVE_EXPLANATION,
                   c -> MUCUS_NEGATIVE_EXPLANATION
               ),
-              true,
+              ALWAYS_LOG,
               LEAF_NODES.get(Sticker.YELLOW),
               LEAF_NODES.get(Sticker.GREEN)
           )
       ),
       LEAF_NODES.get(Sticker.GREY)
   );
-
-  /*private static final DecisionTree.Node TREE = new DecisionTree.ParentNode(
-      DecisionTree.Criteria.and(
-          DecisionTree.Criteria.create(
-              c -> c.hasObservation,
-              c -> "has observation",
-              c -> "doesn't have observation",
-              c -> "",
-              c -> ""
-          ),
-          DecisionTree.Criteria.create(
-              c -> c.hasInstructions,
-              c -> "has instructions",
-              c -> "doesn't have instructions",
-              c -> "",
-              c -> ""
-          )
-      ),
-      false,
-      new DecisionTree.ParentNode(
-          DecisionTree.Criteria.create(
-              c -> c.hasBleeding,
-              c -> "has bleeding",
-              c -> "doesn't have bleeding",
-              c -> BLEEDING_POSITIVE_EXPLANATION,
-              c -> BLEEDING_NEGATIVE_EXPLANATION
-          ),
-          true,
-          LEAF_NODES.get(Sticker.RED),
-          new DecisionTree.ParentNode(
-              DecisionTree.Criteria.create(
-                  c -> c.hasMucus,
-                  c -> "has mucus",
-                  c -> "doesn't have mucus",
-                  c -> MUCUS_POSITIVE_EXPLANATION,
-                  c -> MUCUS_NEGATIVE_EXPLANATION
-              ),
-              true,
-              new DecisionTree.ParentNode(
-                  DecisionTree.Criteria.create(
-                      c -> !c.infertilityReasons.isEmpty(),
-                      c -> "has active special instructions",
-                      c -> "doesn't have active special instructions",
-                      c -> INFERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.infertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
-                      c -> INFERTILE_NEGATIVE_EXPLANATION
-                  ),
-                  true,
-                  new DecisionTree.ParentNode(
-                      DecisionTree.Criteria.create(
-                          c -> !c.fertilityReasons.isEmpty(),
-                          c -> "is fertile",
-                          c -> "isn't fertile",
-                          c -> FERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.fertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
-                          c -> FERTILE_NEGATIVE_EXPLANATION
-                      ),
-                      true,
-                      LEAF_NODES.get(Sticker.YELLOW_BABY),
-                      LEAF_NODES.get(Sticker.YELLOW)
-                  ),
-                  LEAF_NODES.get(Sticker.WHITE_BABY)
-              ),
-              new DecisionTree.ParentNode(
-                  DecisionTree.Criteria.create(
-                      c -> !c.fertilityReasons.isEmpty(),
-                      c -> "is fertile",
-                      c -> "isn't fertile",
-                      c -> FERTILE_POSITIVE_EXPLANATION + Joiner.on(", ").join(c.fertilityReasons.stream().map(AbstractInstruction::description).collect(Collectors.toList())),
-                      c -> FERTILE_NEGATIVE_EXPLANATION
-                  ),
-                  true,
-                  LEAF_NODES.get(Sticker.GREEN_BABY),
-                  LEAF_NODES.get(Sticker.GREEN)
-              )
-          )
-      ),
-      LEAF_NODES.get(Sticker.GREY)
-  );*/
 
   public static SelectResult select(CycleRenderer.StickerSelectionContext context) {
     SelectResult result = new SelectResult();
@@ -230,9 +157,8 @@ public class StickerSelector {
       return CheckResult.ok(expectedResult.sticker);
     }
 
-    Set<DecisionTree.Node> ancestors = DecisionTree.ancestors(LEAF_NODES.get(expectedResult.sticker));
+    Set<DecisionTree.ParentNode> ancestors = DecisionTree.ancestors(LEAF_NODES.get(expectedResult.sticker));
     DecisionTree.Node currentNode = LEAF_NODES.get(selection);
-
     DecisionTree.ParentNode parentNode = null;
     boolean pathDir = false;
     while (!ancestors.contains(currentNode) && currentNode.parent().isPresent()) {
@@ -254,13 +180,15 @@ public class StickerSelector {
         String.format("Can't be %s, today %s",
             selection.name(),
             parentNode.critera.getReason(!pathDir, context)),
-        parentNode.explanation(context));
+        parentNode.critera.getExplanation(!pathDir, context),
+        String.format("Today %s", Joiner.on(", ").join(expectedResult.matchedCriteria)));
   }
 
   public static class CheckResult {
     Sticker expected;
     Optional<String> errorMessage = Optional.empty();
     Optional<String> errorExplanation = Optional.empty();
+    Optional<String> hint = Optional.empty();
 
     static CheckResult ok(Sticker expected) {
       CheckResult result = new CheckResult();
@@ -268,11 +196,12 @@ public class StickerSelector {
       return result;
     }
 
-    static CheckResult incorrect(Sticker expected, String errorMessage, String errorExplanation) {
+    static CheckResult incorrect(Sticker expected, String errorMessage, String errorExplanation, String hint) {
       CheckResult result = new CheckResult();
       result.expected = expected;
       result.errorMessage = Optional.of(errorMessage);
       result.errorExplanation = Optional.of(errorExplanation);
+      result.hint = Optional.of(hint);
       return result;
     }
 

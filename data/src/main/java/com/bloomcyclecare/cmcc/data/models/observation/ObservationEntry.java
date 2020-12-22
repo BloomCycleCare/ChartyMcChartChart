@@ -56,9 +56,6 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     this.firstDay = firstDay;
     this.positivePregnancyTest = positivePregnancyTest;
     this.pointOfChange = pointOfChange;
-    if (unusualBleeding && (observation == null || !observation.hasBlood())) {
-      throw new IllegalArgumentException();
-    }
     this.unusualBleeding = unusualBleeding;
     this.intercourseTimeOfDay = intercourseTimeOfDay;
     this.isEssentiallyTheSame = isEssentiallyTheSame;

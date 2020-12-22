@@ -546,14 +546,16 @@ public class CycleRenderer {
     }
 
     StickerSelectionContext stickerSelectionContext() {
+      boolean hasInstructions = instructions != null;
       return new StickerSelectionContext(
           Optional.ofNullable(effectiveCountOfThree).map(p -> p.first).orElse(-1),
           PeakDayOffset.create(mostRecentPeakDay, entryDate),
-          instructions != null,
+          hasInstructions,
           entry.hasObservation(),
           todaysFlow != null || todayHasBlood,
           todayHasMucus,
           isInMenstrualFlow,
+          hasInstructions && instructions.specialInstructions.size() + instructions.yellowStampInstructions.size() > 0,
           fertilityReasons,
           infertilityReasons);
     }
@@ -761,11 +763,12 @@ public class CycleRenderer {
     public final boolean hasBleeding;
     public final boolean hasMucus;
     public final boolean inFlow;
+    public final boolean hasSpecialInstructions;
     public final InstructionSet fertilityReasons;
     public final InstructionSet infertilityReasons;
 
     @ParcelConstructor
-    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean inFlow, InstructionSet fertilityReasons, InstructionSet infertilityReasons) {
+    public StickerSelectionContext(int countOfThree, PeakDayOffset peakDayOffset, boolean hasInstructions, boolean hasObservation, boolean hasBleeding, boolean hasMucus, boolean inFlow, boolean hasSpecialInstructions, InstructionSet fertilityReasons, InstructionSet infertilityReasons) {
       this.countOfThree = countOfThree;
       this.peakDayOffset = peakDayOffset;
       this.hasInstructions = hasInstructions;
@@ -773,6 +776,7 @@ public class CycleRenderer {
       this.hasBleeding = hasBleeding;
       this.hasMucus = hasMucus;
       this.inFlow = inFlow;
+      this.hasSpecialInstructions = hasSpecialInstructions;
       this.fertilityReasons = fertilityReasons;
       this.infertilityReasons = infertilityReasons;
     }

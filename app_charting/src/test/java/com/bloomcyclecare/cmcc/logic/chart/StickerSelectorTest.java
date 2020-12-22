@@ -19,6 +19,7 @@ public class StickerSelectorTest {
       true,
       false,
       true,
+      true,
       InstructionSet.of(BasicInstruction.D_1),
       InstructionSet.of());
 
@@ -76,6 +77,7 @@ public class StickerSelectorTest {
       false,
       false,
       false,
+      true,
       InstructionSet.of(),
       InstructionSet.of(BasicInstruction.E_1));
 
@@ -139,6 +141,7 @@ public class StickerSelectorTest {
       false,
       false,
       false,
+      true,
       InstructionSet.of(BasicInstruction.D_5),
       InstructionSet.of());
 
@@ -199,6 +202,7 @@ public class StickerSelectorTest {
       false,
       true,
       false,
+      true,
       InstructionSet.of(BasicInstruction.D_5),
       InstructionSet.of());
 
@@ -249,6 +253,7 @@ public class StickerSelectorTest {
       false,
       true,
       false,
+      true,
       InstructionSet.of(),
       InstructionSet.of(BasicInstruction.K_1));
 
@@ -312,6 +317,7 @@ public class StickerSelectorTest {
       false,
       true,
       false,
+      true,
       InstructionSet.of(BasicInstruction.D_5),
       InstructionSet.of(BasicInstruction.K_1));
 
@@ -367,6 +373,7 @@ public class StickerSelectorTest {
         false,
         false,
         false,
+        true,
         InstructionSet.of(),
         InstructionSet.of());
     selectResult = StickerSelector.select(missingInstructions);
@@ -381,6 +388,7 @@ public class StickerSelectorTest {
         false,
         false,
         false,
+        true,
         InstructionSet.of(),
         InstructionSet.of());
     selectResult = StickerSelector.select(missingObservation);
@@ -395,6 +403,7 @@ public class StickerSelectorTest {
         false,
         false,
         false,
+        true,
         InstructionSet.of(),
         InstructionSet.of());
     selectResult = StickerSelector.select(missingBoth);

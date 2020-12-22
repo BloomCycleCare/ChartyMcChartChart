@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -15,12 +16,12 @@ import javax.annotation.Nullable;
 
 public class DecisionTree {
 
-  public static Set<Node> ancestors(Node node) {
-    Set<Node> out = new HashSet<>();
+  public static Set<ParentNode> ancestors(Node node) {
+    Set<ParentNode> out = new HashSet<>();
     Node currentNode = node;
     while (currentNode.parent().isPresent()) {
+      out.add(currentNode.parent().get());
       currentNode = currentNode.parent().get();
-      out.add(currentNode);
     }
     return out;
   }
@@ -147,35 +148,42 @@ public class DecisionTree {
     public Criteria critera;
     public Node branchTrue;
     public Node branchFalse;
-    private final boolean logPositiveMatch;
+    private final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> shouldLogFn;
 
     @Nullable
     private ParentNode parent;
 
     public ParentNode(
         Criteria criteria,
-        boolean logPositiveMatch,
+        BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> shouldLogFn,
         Node branchTrue,
         Node branchFalse) {
       this.parent = null;
       this.branchTrue = branchTrue;
       this.branchFalse = branchFalse;
       this.critera = criteria;
-      this.logPositiveMatch = logPositiveMatch;
+      this.shouldLogFn = shouldLogFn;
 
       branchTrue.setParent(this);
       branchFalse.setParent(this);
     }
 
-    public Sticker select(CycleRenderer.StickerSelectionContext context, List<String> matchedCriteria) {
-      if (critera.predicate.test(context)) {
-        if (logPositiveMatch) {
-          matchedCriteria.add(critera.positiveReason.apply(context));
-        }
-        return branchTrue.select(context, matchedCriteria);
+    public String getReason(CycleRenderer.StickerSelectionContext context, BiFunction<Boolean, String, String> decorator) {
+      boolean branch = critera.predicate.test(context);
+      if (!shouldLogFn.apply(branch, context)) {
+        return null;
       }
-      matchedCriteria.add(critera.negativeReason.apply(context));
-      return branchFalse.select(context, matchedCriteria);
+      return decorator.apply(branch, critera.getReason(branch, context));
+    }
+
+    public Sticker select(CycleRenderer.StickerSelectionContext context, List<String> matchedCriteria) {
+      boolean branch = critera.predicate.test(context);
+      if (shouldLogFn.apply(branch, context)) {
+        matchedCriteria.add(critera.getReason(branch, context));
+      }
+      return branch
+          ? branchTrue.select(context, matchedCriteria)
+          : branchFalse.select(context, matchedCriteria);
     }
 
     public String explanation(CycleRenderer.StickerSelectionContext context) {
