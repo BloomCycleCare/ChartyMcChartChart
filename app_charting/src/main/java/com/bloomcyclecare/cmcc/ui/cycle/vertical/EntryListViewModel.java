@@ -34,6 +34,7 @@ import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
@@ -60,12 +61,15 @@ class EntryListViewModel extends AndroidViewModel {
     mViewMode = viewMode;
 
     Flowable<CycleRenderer.RenderableCycle> cycleStream  = cycleListViewModel.viewStateStream().map(vs -> {
+      if (vs.viewMode() != viewMode) {
+        throw new IllegalStateException(String.format("View model in wrong view mode %s != %s", vs.viewMode().name(), viewMode.name()));
+      }
       for (CycleRenderer.RenderableCycle rc : vs.renderableCycles()) {
         if (rc.cycle().equals(cycle)) {
           return rc;
         }
       }
-      throw new IllegalStateException();
+      throw new IllegalStateException("Couldn't find renderable cycle for cycle starting " + cycle.startDate);
     });
 
     Flowable<ScrollState> scrollStateFlowable = mScrollEventsFromUI
@@ -107,6 +111,8 @@ class EntryListViewModel extends AndroidViewModel {
         })
         .toObservable()
         .subscribeOn(Schedulers.computation())
+        .doOnError(t -> Timber.i("ViewState raised exception, suppressing: %s", t.getMessage()))
+        .onErrorResumeNext(Observable.empty())
         .subscribe(mViewState);
   }
 

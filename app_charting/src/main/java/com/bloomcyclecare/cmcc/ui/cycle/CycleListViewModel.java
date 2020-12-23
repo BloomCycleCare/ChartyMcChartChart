@@ -79,7 +79,9 @@ public class CycleListViewModel extends AndroidViewModel {
           } else {
             return ViewMode.CHARTING;
           }
-        }).cache();
+        })
+        .doOnNext(vm -> Timber.d("Switching to ViewMode = %s", vm.name()))
+        .cache();
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 

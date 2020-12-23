@@ -3,12 +3,12 @@ package com.bloomcyclecare.cmcc.ui.cycle.vertical;
 import android.app.Activity;
 import android.app.Application;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.google.common.collect.ImmutableList;
 
@@ -57,7 +57,7 @@ public class CyclePageViewModel extends AndroidViewModel {
     mApplication = ChartingApp.cast(application);
 
     cycleListViewModel.viewStateStream()
-        .flatMap(viewState ->  Flowable.combineLatest(
+        .switchMap(viewState ->  Flowable.combineLatest(
             currentPageUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
             subtitleStream(viewState.viewMode(), Flowable.just(viewState.renderableCycles())).distinctUntilChanged().onErrorReturnItem("ERROR!"),
             Flowable.just(viewState.renderableCycles()),
@@ -124,7 +124,7 @@ public class CyclePageViewModel extends AndroidViewModel {
         .toFlowable(BackpressureStrategy.DROP)
         .subscribeOn(Schedulers.computation())
         .observeOn(AndroidSchedulers.mainThread())
-        .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
+        .doOnNext(viewState -> Timber.d("Publishing new ViewState %s", viewState.viewMode.name())));
   }
 
   @VisibleForTesting
