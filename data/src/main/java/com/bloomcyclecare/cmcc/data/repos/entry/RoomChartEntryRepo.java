@@ -147,11 +147,11 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   @Override
   public Completable insert(ChartEntry entry) {
     return Completable.mergeArray(
-        observationEntryDao.insert(entry.observationEntry),
-        wellnessEntryDao.insert(entry.wellnessEntry),
+        observationEntryDao.insertNullable(entry.observationEntry),
+        wellnessEntryDao.insertNullable(entry.wellnessEntry),
         stickerSelectionRepo.recordSelection(entry.stickerSelection, entry.entryDate),
-        measurementEntryDao.insert(entry.measurementEntry),
-        symptomEntryDao.insert(entry.symptomEntry))
+        measurementEntryDao.insertNullable(entry.measurementEntry),
+        symptomEntryDao.insertNullable(entry.symptomEntry))
         .doOnComplete(() -> maybeSendUpdate(entry));
   }
 
