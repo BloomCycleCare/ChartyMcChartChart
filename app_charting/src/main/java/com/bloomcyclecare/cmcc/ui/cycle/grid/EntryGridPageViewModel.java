@@ -14,6 +14,7 @@ import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 
 import org.joda.time.LocalDate;
 
@@ -59,7 +60,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         .toObservable()
         .map(cycleListViewState -> {
           List<List<RenderedEntry>> lofl = new ArrayList<>(cycleListViewState.renderableCycles().size());
-          for (CycleRenderer.RenderableCycle rc : cycleListViewState.renderableCycles()) {
+          List<CycleRenderer.RenderableCycle> renderableCycles = cycleListViewState.viewMode() == ViewMode.TRAINING
+              ? cycleListViewState.renderableCycles()
+              : Lists.reverse(cycleListViewState.renderableCycles());
+          for (CycleRenderer.RenderableCycle rc : renderableCycles) {
             List<RenderedEntry> renderedEntries = new ArrayList<>(rc.entries().size());
             for (CycleRenderer.RenderableEntry re : rc.entries()) {
               renderedEntries.add(RenderedEntry.create(
