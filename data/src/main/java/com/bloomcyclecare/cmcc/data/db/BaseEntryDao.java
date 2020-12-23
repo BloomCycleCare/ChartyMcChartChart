@@ -2,9 +2,9 @@ package com.bloomcyclecare.cmcc.data.db;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Optional;
 
@@ -14,6 +14,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+
+import javax.annotation.Nullable;
 
 import androidx.arch.core.util.Function;
 import androidx.room.Dao;
@@ -123,6 +125,13 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   public abstract Completable insert(E entry);
+
+  public Completable insertNullable(@Nullable E entry) {
+    if (entry == null) {
+      return Completable.complete();
+    }
+    return insert(entry);
+  }
 
   @Delete
   public abstract Completable delete(E entry);
