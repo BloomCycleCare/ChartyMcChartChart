@@ -117,10 +117,12 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
     }
 
     RecyclerView rowRecyclerView = view.findViewById(R.id.rv_grid_rows);
-    rowRecyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
+    LinearLayoutManager llm = new LinearLayoutManager(requireContext());
+    rowRecyclerView.setLayoutManager(llm);
     rowRecyclerView.setAdapter(mGridRowAdapter);
 
     mViewModel.viewStates().observe(getViewLifecycleOwner(), viewState -> {
+      llm.setStackFromEnd(viewState.viewMode() != ViewMode.TRAINING);
       mGridRowAdapter.updateData(
           viewState.renderedEntries(),
           viewState.viewMode());

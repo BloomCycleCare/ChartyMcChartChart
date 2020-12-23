@@ -75,9 +75,11 @@ public class EntryListFragment extends Fragment {
     Bundle arguments = getArguments();
     Cycle cycle = Parcels.unwrap(arguments.getParcelable(Extras.CURRENT_CYCLE.name()));
 
+    CycleListViewModel cycleListViewModel = new ViewModelProvider(getParentFragment()).get(CycleListViewModel.class);
+
     ViewMode viewMode = ViewMode.values()[arguments.getInt(Extras.VIEW_MODE.name())];
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(
-        getActivity().getApplication(), viewMode, cycle);
+        getActivity().getApplication(), cycleListViewModel, viewMode, cycle);
     mViewModel = ViewModelProviders.of(this, factory).get(EntryListViewModel.class);
 
     CycleListViewModel cycleViewModel = new ViewModelProvider(getParentFragment()).get(CycleListViewModel.class);
@@ -162,7 +164,7 @@ public class EntryListFragment extends Fragment {
   }
 
   private void render(EntryListViewModel.ViewState viewState) {
-    Timber.v("Rendering ViewState for cycle %s", viewState.cycle.startDate);
+    Timber.d("Rendering ViewState for cycle %s", viewState.cycle.startDate);
     mEntryListAdapter.update(viewState.cycle, viewState.renderedEntries, viewState.viewMode, viewState.entryShowcaseDate, viewState.showcaseStickerSelection);
     if (getUserVisibleHint()) {
       onScrollStateUpdate(viewState.scrollState);

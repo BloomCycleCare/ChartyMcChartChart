@@ -58,8 +58,9 @@ public class MeasurementEntry extends Entry {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MeasurementEntry that = (MeasurementEntry) o;
-    return mEntryDate == that.mEntryDate && monitorReading == that.monitorReading &&
-        lhTestResult == that.lhTestResult;
+    return Objects.equals(getDate(), that.getDate())
+        && Objects.equals(monitorReading, that.monitorReading)
+        && Objects.equals(lhTestResult, that.lhTestResult);
   }
 
   @Override

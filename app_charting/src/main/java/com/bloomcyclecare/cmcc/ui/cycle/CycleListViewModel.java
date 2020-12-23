@@ -79,7 +79,9 @@ public class CycleListViewModel extends AndroidViewModel {
           } else {
             return ViewMode.CHARTING;
           }
-        }).cache();
+        })
+        .doOnNext(vm -> Timber.d("Switching to ViewMode = %s", vm.name()))
+        .cache();
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
@@ -118,11 +120,14 @@ public class CycleListViewModel extends AndroidViewModel {
               .observeOn(Schedulers.computation())
               .parallel()
               .map(cycle -> Flowable.combineLatest(
-                  entryRepo.getStreamForCycle(Flowable.just(cycle)),
+                  entryRepo.getStreamForCycle(Flowable.just(cycle))
+                      .doOnNext(ces -> Timber.v("Got new stream for cycle starting %s", cycle.startDate)),
                   cycleRepo.getPreviousCycle(cycle)
                       .map(Optional::of).defaultIfEmpty(Optional.empty())
                       .toFlowable(),
-                  (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render())
+                  (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions))
+                  .doOnNext(r -> Timber.v("Triggering render for cycle starting %s", r.cycle().startDate))
+                  .map(CycleRenderer::render)
               )
               .sequential()
               .toList()

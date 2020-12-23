@@ -4,8 +4,8 @@ import android.util.Range;
 
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.StickerSelectionEntryDao;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.LocalDate;
@@ -65,6 +65,7 @@ public class RoomStickerSelectionRepo implements RWStickerSelectionRepo {
   public Flowable<Map<LocalDate, StickerSelection>> getSelections(Range<LocalDate> dateRange) {
     return mStickerSelectionDao
         .getIndexedStream(dateRange.getLower(), dateRange.getUpper())
+        .distinctUntilChanged()
         .map(m -> {
           ImmutableMap.Builder<LocalDate, StickerSelection> out = ImmutableMap.builder();
           for (Map.Entry<LocalDate, StickerSelectionEntry> e : m.entrySet()) {

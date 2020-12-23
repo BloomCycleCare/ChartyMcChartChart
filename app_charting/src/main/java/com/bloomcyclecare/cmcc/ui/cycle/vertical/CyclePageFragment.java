@@ -105,9 +105,11 @@ public class CyclePageFragment extends BaseCycleListFragment {
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
-      mPageAdapter.update(viewState.renderableCycles.stream()
-          .map(CycleRenderer.RenderableCycle::cycle)
-          .collect(Collectors.toList()), viewState.viewMode);
+      mPageAdapter.update(
+          viewState.renderableCycles.stream()
+              .map(CycleRenderer.RenderableCycle::cycle)
+              .collect(Collectors.toList()),
+          viewState.viewMode);
       mPageAdapter.onPageActive(viewState.currentCycleIndex);
       if (mViewPager.getCurrentItem() != viewState.currentCycleIndex) {
         mViewPager.setCurrentItem(viewState.currentCycleIndex);
