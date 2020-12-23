@@ -46,7 +46,7 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public Maybe<E> get(LocalDate entryDate) {
     return doMaybeT(new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate = \"%s\"",
+        "SELECT * FROM %s WHERE entryDate = '%s'",
         mTableName,
         DateUtil.toWireStr(entryDate))));
   }
@@ -67,7 +67,7 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public Flowable<E> getStream(LocalDate entryDate) {
     SimpleSQLiteQuery query = new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate = \"%s\"",
+        "SELECT * FROM %s WHERE entryDate = '%s'",
         mTableName,
         DateUtil.toWireStr(entryDate)));
     return doMaybeT(query)
@@ -80,7 +80,7 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public Flowable<Optional<E>> getOptionalStream(LocalDate entryDate) {
     SimpleSQLiteQuery query = new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate = \"%s\"",
+        "SELECT * FROM %s WHERE entryDate = '%s'",
         mTableName,
         DateUtil.toWireStr(entryDate)));
     return doMaybeT(query)
@@ -94,7 +94,7 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public Flowable<Map<LocalDate, E>> getIndexedStream(LocalDate firstDate, LocalDate lastDate) {
     return doFlowableList(new SimpleSQLiteQuery(String.format(
-        "SELECT * FROM %s WHERE entryDate >= \"%s\" AND entryDate <= \"%s\" ORDER BY entryDate",
+        "SELECT * FROM %s WHERE entryDate >= '%s' AND entryDate <= '%s' ORDER BY entryDate",
         mTableName,
         DateUtil.toWireStr(firstDate),
         DateUtil.toWireStr(lastDate))))
