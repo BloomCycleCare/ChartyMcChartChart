@@ -7,12 +7,15 @@ import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Optional;
+import com.google.common.collect.Sets;
 
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import javax.annotation.Nullable;
@@ -98,7 +101,11 @@ public abstract class BaseEntryDao<E extends Entry> {
         mTableName,
         DateUtil.toWireStr(firstDate),
         DateUtil.toWireStr(lastDate))))
-        .distinctUntilChanged()
+        .distinctUntilChanged((l1, l2) -> {
+          Set<E> s1 = new HashSet<>(l1);
+          Set<E> s2 = new HashSet<>(l2);
+          return Sets.difference(s1, s2).isEmpty() && Sets.difference(s2, s1).isEmpty();
+        })
         .map(entries -> {
           List<LocalDate> daysMissingData = DateUtil.daysBetween(firstDate, lastDate, false);
           Map<LocalDate, E> out = new HashMap<>(daysMissingData.size());

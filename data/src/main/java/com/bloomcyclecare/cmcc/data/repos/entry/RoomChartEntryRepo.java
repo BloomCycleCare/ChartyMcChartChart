@@ -130,11 +130,16 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             cycle.startDate,
             Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
         .flatMap(pair -> Flowable.combineLatest(
-            observationEntryDao.getIndexedStream(pair.first, pair.second),
-            wellnessEntryDao.getIndexedStream(pair.first, pair.second),
-            symptomEntryDao.getIndexedStream(pair.first, pair.second),
-            measurementEntryDao.getIndexedStream(pair.first, pair.second),
-            stickerSelectionRepo.getSelections(Range.create(pair.first, pair.second)),
+            observationEntryDao.getIndexedStream(pair.first, pair.second)
+                .doOnNext(n -> Timber.v("Got new observation stream for cycle starting %s", pair.first)),
+            wellnessEntryDao.getIndexedStream(pair.first, pair.second)
+                .doOnNext(n -> Timber.v("Got new wellness stream for cycle starting %s", pair.first)),
+            symptomEntryDao.getIndexedStream(pair.first, pair.second)
+                .doOnNext(n -> Timber.v("Got new symptom stream for cycle starting %s", pair.first)),
+            measurementEntryDao.getIndexedStream(pair.first, pair.second)
+                .doOnNext(n -> Timber.v("Got new measurement stream for cycle starting %s", pair.first)),
+            stickerSelectionRepo.getSelections(Range.create(pair.first, pair.second))
+                .doOnNext(n -> Timber.v("Got new selections for cycle starting %s", pair.first)),
             (observationStream, wellnessStream, symptomStream, measurementStream, stickerSelections) -> {
               List<ChartEntry> out = new ArrayList<>();
               for (LocalDate d : DateUtil.daysBetween(pair.first, pair.second, false)) {

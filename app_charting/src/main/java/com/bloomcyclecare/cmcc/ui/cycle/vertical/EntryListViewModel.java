@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 
@@ -48,7 +49,7 @@ class EntryListViewModel extends AndroidViewModel {
   private final RWStickerSelectionRepo mStickerSelectionRepo;
   private final ViewMode mViewMode;
 
-  private EntryListViewModel(@NonNull Application application, ViewMode viewMode, Cycle cycle) {
+  private EntryListViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, ViewMode viewMode, Cycle cycle) {
     super(application);
     ChartingApp myApp = ChartingApp.cast(application);
     ROCycleRepo cycleRepo = myApp.cycleRepo(viewMode);
@@ -58,12 +59,14 @@ class EntryListViewModel extends AndroidViewModel {
     mStickerSelectionRepo = myApp.stickerSelectionRepo(viewMode);
     mViewMode = viewMode;
 
-    Flowable<CycleRenderer.RenderableCycle> cycleStream = Flowable.combineLatest(
-        cycleRepo.getPreviousCycle(cycle).map(Optional::of).defaultIfEmpty(Optional.empty()).toFlowable(),
-        instructionsRepo.getAll(),
-        entryRepo.getStreamForCycle(Flowable.just(cycle)),
-        (previousCycle, instructions, entries) -> new CycleRenderer(cycle, previousCycle, entries, instructions))
-        .map(CycleRenderer::render);
+    Flowable<CycleRenderer.RenderableCycle> cycleStream  = cycleListViewModel.viewStateStream().map(vs -> {
+      for (CycleRenderer.RenderableCycle rc : vs.renderableCycles()) {
+        if (rc.cycle().equals(cycle)) {
+          return rc;
+        }
+      }
+      throw new IllegalStateException();
+    });
 
     Flowable<ScrollState> scrollStateFlowable = mScrollEventsFromUI
         .sample(500, TimeUnit.MILLISECONDS)
@@ -170,11 +173,13 @@ class EntryListViewModel extends AndroidViewModel {
   public static class Factory implements ViewModelProvider.Factory {
 
     private final Application mApplication;
+    private final CycleListViewModel cycleListViewModel;
     private final ViewMode viewMode;
     private final Cycle currentCycle;
 
-    public Factory(Application application, ViewMode viewMode, Cycle currentCycle) {
+    public Factory(Application application, CycleListViewModel cycleListViewModel, ViewMode viewMode, Cycle currentCycle) {
       mApplication = application;
+      this.cycleListViewModel = cycleListViewModel;
       this.viewMode = viewMode;
       this.currentCycle = currentCycle;
     }
@@ -182,7 +187,7 @@ class EntryListViewModel extends AndroidViewModel {
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new EntryListViewModel(mApplication, viewMode, currentCycle);
+      return (T) new EntryListViewModel(mApplication, cycleListViewModel, viewMode, currentCycle);
     }
   }
 }
