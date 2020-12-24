@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 public class StickerSelector {
@@ -50,8 +50,8 @@ public class StickerSelector {
   static final String FLOW_POSITIVE_EXPLANATION = "Observation was part of uninterrupted flow at start of cycle";
   static final String FLOW_NEGATIVE_EXPLANATION = "Observation was not part of uninterrupted flow at the start of cycle";
 
-  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ALWAYS_LOG = (b, c) -> true;
-  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ONLY_LOG_NEGATIVE = (b, c) -> !b;
+  private static final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> ALWAYS_LOG = (b, c) -> true;
+  private static final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> ONLY_LOG_NEGATIVE = (b, c) -> !b;
 
   private static final DecisionTree.Node TREE = new DecisionTree.ParentNode(
       DecisionTree.Criteria.and(
