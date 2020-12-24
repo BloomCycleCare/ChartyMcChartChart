@@ -22,12 +22,12 @@ import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import androidx.annotation.NonNull;
@@ -178,7 +178,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         (entryContext, activeItems) -> new WellnessEntry(entryContext.entry.entryDate, activeItems));
 
     Flowable<Optional<StickerSelection>> stickerSelectionStream =
-        mEntryContext.map(c -> Optional.fromNullable(c.entry.stickerSelection)).toFlowable();
+        mEntryContext.map(c -> Optional.ofNullable(c.entry.stickerSelection)).toFlowable();
 
     Flowable.combineLatest(
         mEntryContext.toFlowable()
@@ -207,7 +207,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection.orNull()),
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
@@ -261,8 +261,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
     firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
     positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
     pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
-    timeOfDayUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.intercourseTimeOfDay).or(IntercourseTimeOfDay.NONE));
-    noteUpdates.onNext(Optional.fromNullable(context.entry.observationEntry.note).or(""));
+    timeOfDayUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.intercourseTimeOfDay).orElse(IntercourseTimeOfDay.NONE));
+    noteUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.note).orElse(""));
 
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
