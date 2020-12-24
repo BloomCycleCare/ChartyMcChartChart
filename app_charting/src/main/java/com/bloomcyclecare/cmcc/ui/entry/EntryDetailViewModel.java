@@ -177,8 +177,8 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .doOnNext(i -> Timber.v("New wellness udpates")),
         (entryContext, activeItems) -> new WellnessEntry(entryContext.entry.entryDate, activeItems));
 
-    Flowable<StickerSelection> stickerSelectionStream =
-        mEntryContext.map(c -> c.entry.stickerSelection).toFlowable();
+    Flowable<Optional<StickerSelection>> stickerSelectionStream =
+        mEntryContext.map(c -> Optional.fromNullable(c.entry.stickerSelection)).toFlowable();
 
     Flowable.combineLatest(
         mEntryContext.toFlowable()
@@ -207,7 +207,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection),
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection.orNull()),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
