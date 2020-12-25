@@ -54,6 +54,7 @@ public class StickerSelector {
   private static final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> ONLY_LOG_NEGATIVE = (b, c) -> !b;
 
   private static final DecisionTree.Node TREE = new DecisionTree.ParentNode(
+      "Has observation and instructions",
       DecisionTree.Criteria.and(
           DecisionTree.Criteria.create(
               c -> c.hasObservation,
@@ -72,6 +73,7 @@ public class StickerSelector {
       ),
       ONLY_LOG_NEGATIVE,
       new DecisionTree.ParentNode(
+          "In flow or is fertile",
           DecisionTree.Criteria.or(
               DecisionTree.Criteria.create(
                   c -> c.inFlow,
@@ -90,6 +92,7 @@ public class StickerSelector {
           ),
           ALWAYS_LOG,
           new DecisionTree.ParentNode(
+              "Has bleeding",
               DecisionTree.Criteria.create(
                   c -> c.hasBleeding,
                   c -> BLEEDING_POSITIVE_REASON,
@@ -100,6 +103,7 @@ public class StickerSelector {
               ALWAYS_LOG,
               LEAF_NODES.get(Sticker.RED),
               new DecisionTree.ParentNode(
+                  "Has mucus",
                   DecisionTree.Criteria.create(
                       c -> c.hasMucus,
                       c -> MUCUS_POSITIVE_REASON,
@@ -109,6 +113,7 @@ public class StickerSelector {
                   ),
                   ALWAYS_LOG,
                   new DecisionTree.ParentNode(
+                      "Has infertility reasons",
                       DecisionTree.Criteria.create(
                           c -> !c.infertilityReasons.isEmpty(),
                           c -> INFERTILE_POSITIVE_REASON,
@@ -124,6 +129,7 @@ public class StickerSelector {
               )
           ),
           new DecisionTree.ParentNode(
+              "Has mucus",
               DecisionTree.Criteria.create(
                   c -> c.hasMucus,
                   c -> MUCUS_POSITIVE_REASON,
@@ -161,7 +167,9 @@ public class StickerSelector {
     DecisionTree.Node currentNode = LEAF_NODES.get(selection);
     Optional<DecisionTree.ParentNode> parentNode = currentNode.parent();
     boolean pathDir = false;
-    while (!ancestors.contains(currentNode) && parentNode.isPresent()) {
+    while (parentNode.isPresent() && (
+        LEAF_NODES.containsValue(currentNode) ||
+        !ancestors.contains((DecisionTree.ParentNode) currentNode))) {
       if (currentNode == parentNode.get().branchTrue) {
         pathDir = true;
       } else if (currentNode == parentNode.get().branchFalse) {
@@ -171,7 +179,7 @@ public class StickerSelector {
             String.format("Node %s is not a child of %s",
                 currentNode.description(), parentNode.get().description()));
       }
-      currentNode = currentNode.parent().get();
+      currentNode = parentNode.get();
       parentNode = currentNode.parent();
     }
     if (!parentNode.isPresent()) {
@@ -181,8 +189,8 @@ public class StickerSelector {
         expectedResult.sticker,
         String.format("Can't be %s, today %s",
             selection.name(),
-            parentNode.get().critera.getReason(!pathDir, context)),
-        parentNode.get().critera.getExplanation(!pathDir, context),
+            ((DecisionTree.ParentNode) currentNode).critera.getReason(!pathDir, context)),
+        ((DecisionTree.ParentNode) currentNode).critera.getExplanation(!pathDir, context),
         String.format("Today %s", Joiner.on(", ").join(expectedResult.matchedCriteria)));
   }
 

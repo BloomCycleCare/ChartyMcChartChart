@@ -147,6 +147,7 @@ public class DecisionTree {
   public static class ParentNode implements Node {
 
     public Criteria critera;
+    public final String summary;
     public final Node branchTrue;
     public final Node branchFalse;
     private final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> shouldLogFn;
@@ -155,10 +156,12 @@ public class DecisionTree {
     private ParentNode parent;
 
     public ParentNode(
+        String summary,
         Criteria criteria,
         BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> shouldLogFn,
         Node branchTrue,
         Node branchFalse) {
+      this.summary = summary;
       this.parent = null;
       this.branchTrue = branchTrue;
       this.branchFalse = branchFalse;
@@ -167,6 +170,11 @@ public class DecisionTree {
 
       branchTrue.setParent(this);
       branchFalse.setParent(this);
+    }
+
+    @Override
+    public String toString() {
+      return summary;
     }
 
     public String getReason(CycleRenderer.StickerSelectionContext context, BiFunction<Boolean, String, String> decorator) {
