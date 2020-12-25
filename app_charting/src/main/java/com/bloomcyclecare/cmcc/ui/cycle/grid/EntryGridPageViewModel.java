@@ -89,11 +89,9 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             if (!Strings.isNullOrEmpty(re.trainingMarker())) {
               entriesWithMarker++;
             }
-            if (re.manualStickerSelection().isPresent()) {
-              StickerSelection expected = StickerSelection.create(
-                  re.expectedStickerSelection().sticker,
-                  viewState.viewMode() == ViewMode.TRAINING ? null : re.expectedStickerSelection().text);
-              if (SelectionChecker.create(re.stickerSelectionContext()).check(re.manualStickerSelection().get()).ok()) {
+            Optional<StickerSelection> manualSelection = re.manualStickerSelection();
+            if (manualSelection.isPresent()) {
+              if (SelectionChecker.create(re.stickerSelectionContext()).check(manualSelection.get()).ok()) {
                 entriesWithCorrectAnswer++;
               }
             }

@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 public class StickerSelector {
@@ -50,10 +50,11 @@ public class StickerSelector {
   static final String FLOW_POSITIVE_EXPLANATION = "Observation was part of uninterrupted flow at start of cycle";
   static final String FLOW_NEGATIVE_EXPLANATION = "Observation was not part of uninterrupted flow at the start of cycle";
 
-  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ALWAYS_LOG = (b, c) -> true;
-  private static final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> ONLY_LOG_NEGATIVE = (b, c) -> !b;
+  private static final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> ALWAYS_LOG = (b, c) -> true;
+  private static final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> ONLY_LOG_NEGATIVE = (b, c) -> !b;
 
   private static final DecisionTree.Node TREE = new DecisionTree.ParentNode(
+      "Has observation and instructions",
       DecisionTree.Criteria.and(
           DecisionTree.Criteria.create(
               c -> c.hasObservation,
@@ -72,6 +73,7 @@ public class StickerSelector {
       ),
       ONLY_LOG_NEGATIVE,
       new DecisionTree.ParentNode(
+          "In flow or is fertile",
           DecisionTree.Criteria.or(
               DecisionTree.Criteria.create(
                   c -> c.inFlow,
@@ -90,6 +92,7 @@ public class StickerSelector {
           ),
           ALWAYS_LOG,
           new DecisionTree.ParentNode(
+              "Has bleeding",
               DecisionTree.Criteria.create(
                   c -> c.hasBleeding,
                   c -> BLEEDING_POSITIVE_REASON,
@@ -100,6 +103,7 @@ public class StickerSelector {
               ALWAYS_LOG,
               LEAF_NODES.get(Sticker.RED),
               new DecisionTree.ParentNode(
+                  "Has mucus",
                   DecisionTree.Criteria.create(
                       c -> c.hasMucus,
                       c -> MUCUS_POSITIVE_REASON,
@@ -109,6 +113,7 @@ public class StickerSelector {
                   ),
                   ALWAYS_LOG,
                   new DecisionTree.ParentNode(
+                      "Has infertility reasons",
                       DecisionTree.Criteria.create(
                           c -> !c.infertilityReasons.isEmpty(),
                           c -> INFERTILE_POSITIVE_REASON,
@@ -124,6 +129,7 @@ public class StickerSelector {
               )
           ),
           new DecisionTree.ParentNode(
+              "Has mucus",
               DecisionTree.Criteria.create(
                   c -> c.hasMucus,
                   c -> MUCUS_POSITIVE_REASON,
@@ -158,29 +164,26 @@ public class StickerSelector {
     }
 
     Set<DecisionTree.ParentNode> ancestors = DecisionTree.ancestors(LEAF_NODES.get(expectedResult.sticker));
-    DecisionTree.Node currentNode = LEAF_NODES.get(selection);
-    DecisionTree.ParentNode parentNode = null;
-    boolean pathDir = false;
-    while (!ancestors.contains(currentNode) && currentNode.parent().isPresent()) {
-      parentNode = currentNode.parent().get();
-      if (currentNode == parentNode.branchTrue) {
-        pathDir = true;
-      } else if (currentNode == parentNode.branchFalse) {
-        pathDir = false;
-      } else {
-        throw new IllegalStateException(
-            String.format("Node %s is not a child of %s",
-                currentNode.description(), parentNode.description()));
-      }
-      currentNode = currentNode.parent().get();
+    DecisionTree.Node leafNode = LEAF_NODES.get(selection);
+    Optional<DecisionTree.ParentNode> parentNode = leafNode.parent();
+    if (!parentNode.isPresent()) {
+      throw new IllegalStateException("All leaves must have at least one parent");
     }
 
+    boolean pathDir = leafNode == parentNode.get().branchTrue;
+    DecisionTree.ParentNode currentNode = parentNode.get();
+    parentNode = currentNode.parent();
+    while (parentNode.isPresent() && !ancestors.contains(currentNode)) {
+      pathDir = currentNode == parentNode.get().branchTrue;
+      currentNode = parentNode.get();
+      parentNode = currentNode.parent();
+    }
     return CheckResult.incorrect(
         expectedResult.sticker,
         String.format("Can't be %s, today %s",
             selection.name(),
-            parentNode.critera.getReason(!pathDir, context)),
-        parentNode.critera.getExplanation(!pathDir, context),
+            currentNode.critera.getReason(!pathDir, context)),
+        currentNode.critera.getExplanation(!pathDir, context),
         String.format("Today %s", Joiner.on(", ").join(expectedResult.matchedCriteria)));
   }
 
