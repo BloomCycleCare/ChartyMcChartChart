@@ -159,28 +159,30 @@ public class StickerSelector {
 
     Set<DecisionTree.ParentNode> ancestors = DecisionTree.ancestors(LEAF_NODES.get(expectedResult.sticker));
     DecisionTree.Node currentNode = LEAF_NODES.get(selection);
-    DecisionTree.ParentNode parentNode = null;
+    Optional<DecisionTree.ParentNode> parentNode = currentNode.parent();
     boolean pathDir = false;
-    while (!ancestors.contains(currentNode) && currentNode.parent().isPresent()) {
-      parentNode = currentNode.parent().get();
-      if (currentNode == parentNode.branchTrue) {
+    while (!ancestors.contains(currentNode) && parentNode.isPresent()) {
+      if (currentNode == parentNode.get().branchTrue) {
         pathDir = true;
-      } else if (currentNode == parentNode.branchFalse) {
+      } else if (currentNode == parentNode.get().branchFalse) {
         pathDir = false;
       } else {
         throw new IllegalStateException(
             String.format("Node %s is not a child of %s",
-                currentNode.description(), parentNode.description()));
+                currentNode.description(), parentNode.get().description()));
       }
       currentNode = currentNode.parent().get();
+      parentNode = currentNode.parent();
     }
-
+    if (!parentNode.isPresent()) {
+      throw new IllegalStateException("All leaf nodes should have at least one parent! node: " + currentNode);
+    }
     return CheckResult.incorrect(
         expectedResult.sticker,
         String.format("Can't be %s, today %s",
             selection.name(),
-            parentNode.critera.getReason(!pathDir, context)),
-        parentNode.critera.getExplanation(!pathDir, context),
+            parentNode.get().critera.getReason(!pathDir, context)),
+        parentNode.get().critera.getExplanation(!pathDir, context),
         String.format("Today %s", Joiner.on(", ").join(expectedResult.matchedCriteria)));
   }
 
