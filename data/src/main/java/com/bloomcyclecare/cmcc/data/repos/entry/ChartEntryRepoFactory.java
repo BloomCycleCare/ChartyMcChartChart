@@ -42,10 +42,13 @@ public class ChartEntryRepoFactory extends RepoFactory<RWChartEntryRepo> {
       case TRAINING:
         Timber.w("Use exercise getter!");
         // TODO: drop
-        Exercise exercise = Exercise.forID(Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES).get();
+        Optional<Exercise> exercise = Exercise.forID(Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES);
+        if (!exercise.isPresent()) {
+          throw new IllegalStateException("Could not find exercise for ID " + Exercise.ID.CYCLE_REVIEW_REGULAR_CYCLES);
+        }
         return Optional.of(new TrainingChartEntryRepo(
-            exercise.trainingCycles(),false,
-            mStickerSelectionRepoFactory.forExercise(exercise), mObservationParser));
+            exercise.get().trainingCycles(),false,
+            mStickerSelectionRepoFactory.forExercise(exercise.get()), mObservationParser));
     }
     return Optional.empty();
   }

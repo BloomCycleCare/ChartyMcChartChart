@@ -4,6 +4,7 @@ import android.os.CancellationSignal;
 import android.os.ParcelFileDescriptor;
 
 import java.io.File;
+import java.io.IOException;
 
 import io.reactivex.Single;
 import timber.log.Timber;
@@ -25,14 +26,15 @@ public class PdfPrint {
             File file = getOutputFile(path, String.format("%s.pdf", fileName));
             Timber.d("Saving: %s", file.getAbsoluteFile());
 
-            ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE);
-            printAdapter.onWrite(new PageRange[]{PageRange.ALL_PAGES}, fd, new CancellationSignal(), new PrintDocumentAdapter.WriteResultCallback() {
-              @Override
-              public void onWriteFinished(PageRange[] pages) {
-                super.onWriteFinished(pages);
-                e.onSuccess(file);
-              }
-            });
+            try (ParcelFileDescriptor fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_WRITE)) {
+              printAdapter.onWrite(new PageRange[]{PageRange.ALL_PAGES}, fd, new CancellationSignal(), new PrintDocumentAdapter.WriteResultCallback() {
+                @Override
+                public void onWriteFinished(PageRange[] pages) {
+                  super.onWriteFinished(pages);
+                  e.onSuccess(file);
+                }
+              });
+            }
           } catch (Exception exception) {
             e.onError(exception);
           }
@@ -42,11 +44,13 @@ public class PdfPrint {
   }
 
   private File getOutputFile(File path, String fileName) throws Exception {
-    if (!path.exists()) {
-      path.mkdirs();
+    if (!path.exists() && !path.mkdirs()) {
+      throw new IOException("Could not mkdirs for " + path);
     }
     File file = new File(path, fileName);
-    file.createNewFile();
+    if (!file.createNewFile()) {
+      throw new IOException("Could not make file " + file.getAbsolutePath());
+    }
     return file;
   }
 }

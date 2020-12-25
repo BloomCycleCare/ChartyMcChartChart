@@ -9,6 +9,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.BiPredicate;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -146,16 +147,16 @@ public class DecisionTree {
   public static class ParentNode implements Node {
 
     public Criteria critera;
-    public Node branchTrue;
-    public Node branchFalse;
-    private final BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> shouldLogFn;
+    public final Node branchTrue;
+    public final Node branchFalse;
+    private final BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> shouldLogFn;
 
     @Nullable
     private ParentNode parent;
 
     public ParentNode(
         Criteria criteria,
-        BiFunction<Boolean, CycleRenderer.StickerSelectionContext, Boolean> shouldLogFn,
+        BiPredicate<Boolean, CycleRenderer.StickerSelectionContext> shouldLogFn,
         Node branchTrue,
         Node branchFalse) {
       this.parent = null;
@@ -170,7 +171,7 @@ public class DecisionTree {
 
     public String getReason(CycleRenderer.StickerSelectionContext context, BiFunction<Boolean, String, String> decorator) {
       boolean branch = critera.predicate.test(context);
-      if (!shouldLogFn.apply(branch, context)) {
+      if (!shouldLogFn.test(branch, context)) {
         return null;
       }
       return decorator.apply(branch, critera.getReason(branch, context));
@@ -178,7 +179,7 @@ public class DecisionTree {
 
     public Sticker select(CycleRenderer.StickerSelectionContext context, List<String> matchedCriteria) {
       boolean branch = critera.predicate.test(context);
-      if (shouldLogFn.apply(branch, context)) {
+      if (shouldLogFn.test(branch, context)) {
         matchedCriteria.add(critera.getReason(branch, context));
       }
       return branch
@@ -202,7 +203,6 @@ public class DecisionTree {
       parent = node;
     }
 
-    @Nullable
     @Override
     public Optional<ParentNode> parent() {
       return Optional.ofNullable(parent);
@@ -250,7 +250,6 @@ public class DecisionTree {
       parent = node;
     }
 
-    @Nullable
     @Override
     public Optional<ParentNode> parent() {
       return Optional.ofNullable(parent);
