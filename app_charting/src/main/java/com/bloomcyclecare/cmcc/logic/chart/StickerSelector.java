@@ -164,33 +164,26 @@ public class StickerSelector {
     }
 
     Set<DecisionTree.ParentNode> ancestors = DecisionTree.ancestors(LEAF_NODES.get(expectedResult.sticker));
-    DecisionTree.Node currentNode = LEAF_NODES.get(selection);
-    Optional<DecisionTree.ParentNode> parentNode = currentNode.parent();
-    boolean pathDir = false;
-    while (parentNode.isPresent() && (
-        LEAF_NODES.containsValue(currentNode) ||
-        !ancestors.contains((DecisionTree.ParentNode) currentNode))) {
-      if (currentNode == parentNode.get().branchTrue) {
-        pathDir = true;
-      } else if (currentNode == parentNode.get().branchFalse) {
-        pathDir = false;
-      } else {
-        throw new IllegalStateException(
-            String.format("Node %s is not a child of %s",
-                currentNode.description(), parentNode.get().description()));
-      }
+    DecisionTree.Node leafNode = LEAF_NODES.get(selection);
+    Optional<DecisionTree.ParentNode> parentNode = leafNode.parent();
+    if (!parentNode.isPresent()) {
+      throw new IllegalStateException("All leaves must have at least one parent");
+    }
+
+    boolean pathDir = leafNode == parentNode.get().branchTrue;
+    DecisionTree.ParentNode currentNode = parentNode.get();
+    parentNode = currentNode.parent();
+    while (parentNode.isPresent() && !ancestors.contains(currentNode)) {
+      pathDir = currentNode == parentNode.get().branchTrue;
       currentNode = parentNode.get();
       parentNode = currentNode.parent();
-    }
-    if (!parentNode.isPresent()) {
-      throw new IllegalStateException("All leaf nodes should have at least one parent! node: " + currentNode);
     }
     return CheckResult.incorrect(
         expectedResult.sticker,
         String.format("Can't be %s, today %s",
             selection.name(),
-            ((DecisionTree.ParentNode) currentNode).critera.getReason(!pathDir, context)),
-        ((DecisionTree.ParentNode) currentNode).critera.getExplanation(!pathDir, context),
+            currentNode.critera.getReason(!pathDir, context)),
+        currentNode.critera.getExplanation(!pathDir, context),
         String.format("Today %s", Joiner.on(", ").join(expectedResult.matchedCriteria)));
   }
 
