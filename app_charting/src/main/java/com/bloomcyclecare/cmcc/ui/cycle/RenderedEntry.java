@@ -101,8 +101,9 @@ public abstract class RenderedEntry {
     if (!ess.isEmpty()) {
       leftSummaryItems.add(ess);
     }
-    if (showMonitorReading && re.monitorReading().isPresent()) {
-      leftSummaryItems.add(re.monitorReading().get().name());
+    Optional<String> monitorReading = re.monitorReading().map(Enum::name);
+    if (showMonitorReading && monitorReading.isPresent()) {
+      leftSummaryItems.add(monitorReading.get());
     }
     String leftSummary = Joiner.on("|").join(leftSummaryItems);
     String rightSummary = re.pocSummary();
