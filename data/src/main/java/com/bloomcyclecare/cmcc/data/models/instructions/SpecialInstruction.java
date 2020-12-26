@@ -4,7 +4,7 @@ public enum SpecialInstruction implements AbstractInstruction {
   BREASTFEEDING_SEMINAL_FLUID_YELLOW_STAMPS("Yellow stamps for seminal fluid while breastfeeding."),
   ;
 
-  public String description;
+  private final String description;
 
   SpecialInstruction(String description) {
     this.description = description;
