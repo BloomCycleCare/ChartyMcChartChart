@@ -99,6 +99,8 @@ public class GoalModelFactory {
         case LESS:
           correctSet = lessActionsSeen;
           break;
+        default:
+          throw new IllegalStateException("Unsupported change type: " + template.relativeChange.name());
       }
       if (correctSet.add(template.action)) {
         out.add(template.withoutObject());

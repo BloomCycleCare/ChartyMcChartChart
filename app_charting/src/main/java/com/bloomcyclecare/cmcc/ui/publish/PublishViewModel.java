@@ -2,7 +2,6 @@ package com.bloomcyclecare.cmcc.ui.publish;
 
 import android.app.Application;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.backup.drive.DriveFeaturePrefs;
@@ -199,12 +198,12 @@ public class PublishViewModel extends AndroidViewModel {
 
     public abstract Optional<GoogleSignInAccount> account();
     public abstract Optional<String> myChartsLink();
-    public abstract Boolean publishEnabled();
+    public abstract boolean publishEnabled();
     public abstract Optional<Integer> itemsOutstanding();
     public abstract Optional<ReadableInstant> lastEncueueTimeMs();
     public abstract Optional<ReadableInstant> lastSuccessTimeMs();
 
-    public static ViewState create(Optional<GoogleSignInAccount> account, Optional<String> myChartsLink, Boolean publishEnabled, Optional<Integer> itemsOutstanding, Optional<ReadableInstant> lastEncueueTimeMs, Optional<ReadableInstant> lastSuccessTimeMs) {
+    public static ViewState create(Optional<GoogleSignInAccount> account, Optional<String> myChartsLink, boolean publishEnabled, Optional<Integer> itemsOutstanding, Optional<ReadableInstant> lastEncueueTimeMs, Optional<ReadableInstant> lastSuccessTimeMs) {
       return new AutoValue_PublishViewModel_ViewState(account, myChartsLink, publishEnabled, itemsOutstanding, lastEncueueTimeMs, lastSuccessTimeMs);
     }
   }

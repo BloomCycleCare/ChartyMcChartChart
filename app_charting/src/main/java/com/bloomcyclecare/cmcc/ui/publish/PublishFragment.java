@@ -21,6 +21,10 @@ import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.jakewharton.rxbinding2.widget.RxCompoundButton;
 
+import org.joda.time.ReadableInstant;
+
+import java.util.Optional;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.constraintlayout.widget.Group;
@@ -111,17 +115,17 @@ public class PublishFragment extends Fragment {
   }
 
   private void render(PublishViewModel.ViewState viewState) {
-    boolean hasAccount = viewState.account().isPresent();
+    Optional<GoogleSignInAccount> account = viewState.account();
 
     // Configure publish enable switch
-    mPublishEnabledSwitch.setEnabled(hasAccount);
+    mPublishEnabledSwitch.setEnabled(account.isPresent());
     if (mPublishEnabledSwitch.isChecked() != viewState.publishEnabled()) {
       mPublishEnabledSwitch.setChecked(viewState.publishEnabled());
     }
 
     // Configure sign in/out button
-    mConnectButton.setText(hasAccount ? "Sign Out" : "Sign In");
-    if (hasAccount) {
+    mConnectButton.setText(account.isPresent() ? "Sign Out" : "Sign In");
+    if (account.isPresent()) {
       mConnectButton.setOnClickListener(v -> mPublishViewModel.signOut());
     } else {
       mConnectButton.setOnClickListener(v -> {
@@ -130,18 +134,18 @@ public class PublishFragment extends Fragment {
     }
 
     // Configure sign in/out summary
-    if (hasAccount) {
-      GoogleSignInAccount account = viewState.account().get();
-      mSummaryTextView.setText(String.format("Signed in as %s", account.getEmail()));
+    if (account.isPresent()) {
+      mSummaryTextView.setText(String.format("Signed in as %s", account.get().getEmail()));
     } else {
       mSummaryTextView.setText("Not currently signed in.");
     }
 
     // Configure Drive link
-    if (hasAccount && viewState.publishEnabled() && viewState.myChartsLink().isPresent()) {
+    Optional<String> chartLinks = viewState.myChartsLink();
+    if (account.isPresent() && viewState.publishEnabled() && chartLinks.isPresent()) {
       mDriveLinkTextView.setText(Html.fromHtml(String.format(
           "<a href=\"%s\">Go to \"My Charts\" in Drive</a>",
-          viewState.myChartsLink().get()), FROM_HTML_MODE_COMPACT));
+          chartLinks.get()), FROM_HTML_MODE_COMPACT));
       mDriveLinkTextView.setMovementMethod(LinkMovementMethod.getInstance());
     } else {
       mDriveLinkTextView.setText("");
@@ -151,12 +155,13 @@ public class PublishFragment extends Fragment {
     mStatsGroup.setVisibility(viewState.publishEnabled() ? View.VISIBLE : View.GONE);
 
     // Configure time last published
+    Optional<ReadableInstant> lastSuccessTime = viewState.lastSuccessTimeMs();
     if (!viewState.publishEnabled()) {
       mTimeLastPublishedTextView.setText("Feature disabled");
-    } else if (!viewState.lastSuccessTimeMs().isPresent()){
+    } else if (!lastSuccessTime.isPresent()){
       mTimeLastPublishedTextView.setText("TBD");
     } else {
-      mTimeLastPublishedTextView.setText(DateUtil.toUiTimeStr(viewState.lastSuccessTimeMs().get()));
+      mTimeLastPublishedTextView.setText(DateUtil.toUiTimeStr(lastSuccessTime.get()));
     }
 
     // Configure time last triggered

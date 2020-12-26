@@ -19,10 +19,10 @@ public class DecisionTree {
 
   public static Set<ParentNode> ancestors(Node node) {
     Set<ParentNode> out = new HashSet<>();
-    Node currentNode = node;
-    while (currentNode.parent().isPresent()) {
-      out.add(currentNode.parent().get());
-      currentNode = currentNode.parent().get();
+    Optional<ParentNode> parentNode = node.parent();
+    while (parentNode.isPresent()) {
+      out.add(parentNode.get());
+      parentNode = parentNode.get().parent();
     }
     return out;
   }

@@ -162,8 +162,8 @@ public class GoalModel implements Comparable<GoalModel> {
   public enum Period {
     PER_DAY("day", 1), PER_WEEK("week", 2), PER_MONTH("month", 3);
 
-    public String interval;
-    public int rank;
+    final String interval;
+    final int rank;
 
     Period(String interval, int rank) {
       this.interval = interval;

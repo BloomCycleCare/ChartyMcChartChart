@@ -94,23 +94,24 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     }
 
     private void fillCell(CellRenderContext renderContext) {
-      if (!renderContext.renderedEntry().isPresent()) {
+      Optional<RenderedEntry> renderedEntry = renderContext.renderedEntry();
+      if (!renderedEntry.isPresent()) {
         clearCell();
         return;
       }
-      RenderedEntry renderedEntry = renderContext.renderedEntry().get();
       ViewMode viewMode = renderContext.rowRenderContext().viewMode();
       List<String> parts = new ArrayList<>();
       if (viewMode != ViewMode.TRAINING) {
-        parts.add(renderedEntry.entryDateShortStr());
+        parts.add(renderedEntry.get().entryDateShortStr());
       }
-      parts.add(renderedEntry.observationSummary().orElse("---"));
+      parts.add(renderedEntry.get().observationSummary().orElse("---"));
       textView.setText(ON_NEW_LINE.join(parts));
 
-      stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
-      stickerView.setText(renderedEntry.stickerText());
+      stickerView.setBackground(context.getDrawable(renderedEntry.get().stickerBackgroundResource()));
+      stickerView.setText(renderedEntry.get().stickerText());
 
-      strikeThroughView.setVisibility(renderedEntry.showStickerStrike() ? View.VISIBLE : View.GONE);
+      strikeThroughView.setVisibility(
+          renderedEntry.get().showStickerStrike() ? View.VISIBLE : View.GONE);
     }
 
     private void clearCell() {

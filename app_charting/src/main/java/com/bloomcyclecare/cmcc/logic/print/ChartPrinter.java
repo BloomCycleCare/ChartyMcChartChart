@@ -160,7 +160,8 @@ public class ChartPrinter {
       });*/
       webView.setPadding(0, 100,0, 0);
       Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-      webView.setInitialScale(Double.valueOf(display.getWidth() * 0.0625).intValue());
+      double scale = display.getWidth() * 0.0625;
+      webView.setInitialScale((int) scale);
       webView.loadDataWithBaseURL("file:///android_asset/", page.html, "text/HTML", "UTF-8", null);
     });
   }
