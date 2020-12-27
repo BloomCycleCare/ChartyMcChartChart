@@ -21,6 +21,13 @@ public class Pregnancy {
   @Nullable
   public LocalDate deliveryDate;
 
+  @Nullable
+  public LocalDate breastfeedingStartDate;
+
+  @Nullable
+  public LocalDate breastfeedingEndDate;
+
+
   public Pregnancy() {}
 
   private Pregnancy(Pregnancy that) {
