@@ -5,11 +5,13 @@ import android.app.Application;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
-import com.google.common.base.Optional;
 
 import org.joda.time.LocalDate;
 
+import java.util.Optional;
+
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
@@ -31,6 +33,8 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   private final SingleSubject<Pregnancy> mPregnancy = SingleSubject.create();
   private final Subject<Optional<LocalDate>> mDueDateUpdates = BehaviorSubject.create();
   private final Subject<Optional<LocalDate>> mDeliveryDateUpdates = BehaviorSubject.create();
+  private final Subject<Optional<LocalDate>> mBreastfeedingStartDateUpdates = BehaviorSubject.create();
+  private final Subject<Optional<LocalDate>> mBreastfeedingEndDateUpdates = BehaviorSubject.create();
   private final Subject<ViewState> mState = BehaviorSubject.create();
   private final Subject<Boolean> mBreastfeedingUpdates = BehaviorSubject.create();
 
@@ -39,9 +43,11 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     mPregnancyRepo = ChartingApp.cast(application).pregnancyRepo();
 
     Timber.v("Initializing with %s", pregnancy);
-    mDueDateUpdates.onNext(Optional.fromNullable(pregnancy.dueDate));
-    mDeliveryDateUpdates.onNext(Optional.fromNullable(pregnancy.deliveryDate));
+    mDueDateUpdates.onNext(Optional.ofNullable(pregnancy.dueDate));
+    mDeliveryDateUpdates.onNext(Optional.ofNullable(pregnancy.deliveryDate));
     onBreastfeedingToggle(pregnancy.breastfeedingStartDate != null);
+    mBreastfeedingStartDateUpdates.onNext(Optional.ofNullable(pregnancy.breastfeedingStartDate));
+    mBreastfeedingEndDateUpdates.onNext(Optional.ofNullable(pregnancy.breastfeedingEndDate));
     mPregnancy.onSuccess(pregnancy);
 
     stateStream().subscribe(mState);
@@ -51,12 +57,20 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     mBreastfeedingUpdates.onNext(value);
   }
 
-  void onNewDueDate(LocalDate date) {
-    mDueDateUpdates.onNext(Optional.of(date));
+  void onNewDueDate(@Nullable LocalDate date) {
+    mDueDateUpdates.onNext(Optional.ofNullable(date));
   }
 
-  void onNewDeliveryDate(LocalDate date) {
-    mDeliveryDateUpdates.onNext(Optional.of(date));
+  void onNewDeliveryDate(@Nullable LocalDate date) {
+    mDeliveryDateUpdates.onNext(Optional.ofNullable(date));
+  }
+
+  void onNewBreastfeedingStartDate(@Nullable LocalDate date) {
+    mBreastfeedingStartDateUpdates.onNext(Optional.ofNullable(date));
+  }
+
+  void onNewBreastfeedingEndDate(@Nullable LocalDate date) {
+    mBreastfeedingEndDateUpdates.onNext(Optional.ofNullable(date));
   }
 
   Completable onSave() {
@@ -90,10 +104,15 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue) -> {
-          pregnancy.dueDate = dueDate.orNull();
-          pregnancy.deliveryDate = deliveryDate.orNull();
-          return new ViewState(pregnancy, breastfeedingSwitchValue);
+        mBreastfeedingStartDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        mBreastfeedingEndDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue, breastfeedingStart, breastfeedingEnd) -> {
+          Pregnancy updatedPregnancy = pregnancy.copy();
+          updatedPregnancy.dueDate = dueDate.orElse(null);
+          updatedPregnancy.deliveryDate = deliveryDate.orElse(null);
+          updatedPregnancy.breastfeedingStartDate = breastfeedingStart.orElse(null);
+          updatedPregnancy.breastfeedingEndDate = breastfeedingEnd.orElse(null);
+          return new ViewState(updatedPregnancy, breastfeedingSwitchValue);
         })
         .toObservable();
   }
@@ -109,7 +128,7 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
       this.pregnancy = pregnancy;
       this.showBreastfeedingSection = pregnancy.deliveryDate != null;
       this.showBreastfeedingStartDate = showBreastfeedingSection && breastfeedingToggleValue;
-      this.showBreastfeedingEndDate = showBreastfeedingSection && pregnancy.breastfeedingStartDate != null;
+      this.showBreastfeedingEndDate = showBreastfeedingStartDate && pregnancy.breastfeedingStartDate != null;
     }
   }
 

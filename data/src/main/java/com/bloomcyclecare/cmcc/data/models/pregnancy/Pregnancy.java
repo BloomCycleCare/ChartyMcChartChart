@@ -33,6 +33,14 @@ public class Pregnancy {
   private Pregnancy(Pregnancy that) {
     this.id = that.id;
     this.positiveTestDate = that.positiveTestDate;
+    this.dueDate = that.dueDate;
+    this.deliveryDate = that.deliveryDate;
+    this.breastfeedingStartDate = that.breastfeedingStartDate;
+    this.breastfeedingEndDate = that.breastfeedingEndDate;
+  }
+
+  public Pregnancy copy() {
+    return new Pregnancy(this);
   }
 
   public WrappedPregnancy wrap() {
