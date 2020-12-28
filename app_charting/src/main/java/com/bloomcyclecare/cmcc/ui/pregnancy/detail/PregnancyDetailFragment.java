@@ -76,6 +76,8 @@ public class PregnancyDetailFragment extends Fragment {
     // Connect views to handlers
     mDisposables.add(RxView.clicks(mDueDateValueView).subscribe(o -> onDueDateClick()));
     mDisposables.add(RxView.clicks(mDeliveryDateValueView).subscribe(o -> onDeliveryDateClick()));
+    mDisposables.add(RxView.clicks(mBreastfeedingStartValue).subscribe(o -> onBreastfeedingStartDateClick()));
+    mDisposables.add(RxView.clicks(mBreastfeedingEndValue).subscribe(o -> onBreastfeedingEndDateClick()));
 
     mViewModel = new ViewModelProvider(this, new PregnancyDetailViewModel.Factory(
         requireActivity().getApplication(),
@@ -145,6 +147,50 @@ public class PregnancyDetailFragment extends Fragment {
         });
   }
 
+  private void onBreastfeedingStartDateClick() {
+    Timber.d("Handling breastfeeding start date click");
+    showDatePicker(
+        "Start Date",
+        vs -> {
+          if (vs.pregnancy.deliveryDate == null) {
+            throw new IllegalStateException("Cannot start breastfeeding until after delivery date!");
+          }
+          return Optional.ofNullable(vs.pregnancy.breastfeedingStartDate).orElse(vs.pregnancy.deliveryDate);
+        },
+        vs -> {
+          if (vs.pregnancy.deliveryDate == null) {
+            throw new IllegalStateException("Cannot start breastfeeding until after delivery date!");
+          }
+          return vs.pregnancy.deliveryDate.toDate().getTime();
+        },
+        d -> {
+          Timber.d("Registering breastfeeding start date update");
+          mViewModel.onNewBreastfeedingStartDate(d);
+        });
+  }
+
+  private void onBreastfeedingEndDateClick() {
+    Timber.d("Handling breastfeeding end date click");
+    showDatePicker(
+        "End Date",
+        vs -> {
+          if (vs.pregnancy.breastfeedingStartDate == null) {
+            throw new IllegalStateException("Cannot end breastfeeding before you've started!");
+          }
+          return Optional.ofNullable(vs.pregnancy.breastfeedingEndDate).orElse(LocalDate.now());
+        },
+        vs -> {
+          if (vs.pregnancy.breastfeedingStartDate == null) {
+            throw new IllegalStateException("Cannot end breastfeeding before you've started!");
+          }
+          return vs.pregnancy.breastfeedingStartDate.toDate().getTime();
+        },
+        d -> {
+          Timber.d("Registering breastfeeding end date update");
+          mViewModel.onNewBreastfeedingEndDate(d);
+        });
+  }
+
   private void showDatePicker(
       String title,
       Function<PregnancyDetailViewModel.ViewState, LocalDate> initialValueFn,
@@ -158,7 +204,7 @@ public class PregnancyDetailFragment extends Fragment {
       dialog.setTitle(title);
       dialog.getDatePicker().setMinDate(minDateFn.apply(currentState));
       dialog.show();
-    }));
+    }, Timber::e));
   }
 
   private void render(PregnancyDetailViewModel.ViewState viewState) {
@@ -185,5 +231,25 @@ public class PregnancyDetailFragment extends Fragment {
         viewState.showBreastfeedingStartDate ? View.VISIBLE : View.GONE);
     mBreastfeedingEndGroup.setVisibility(
         viewState.showBreastfeedingEndDate ? View.VISIBLE : View.GONE);
+
+    if (pregnancy.breastfeedingStartDate == null) {
+      mBreastfeedingStartValue.setText("TBD");
+    } else {
+      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingStartDate);
+      if (!mBreastfeedingStartValue.getText().toString().equals(dateStr)) {
+        Timber.d("Updating breastfeeding start date UI");
+        mBreastfeedingStartValue.setText(dateStr);
+      }
+    }
+
+    if (pregnancy.breastfeedingEndDate == null) {
+      mBreastfeedingEndValue.setText("TBD");
+    } else {
+      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingEndDate);
+      if (!mBreastfeedingEndValue.getText().toString().equals(dateStr)) {
+        Timber.d("Updating breastfeeding end date UI");
+        mBreastfeedingEndValue.setText(dateStr);
+      }
+    }
   }
 }
