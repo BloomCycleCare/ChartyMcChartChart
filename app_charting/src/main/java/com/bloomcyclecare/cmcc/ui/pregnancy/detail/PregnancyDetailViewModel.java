@@ -50,7 +50,18 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     mBreastfeedingEndDateUpdates.onNext(Optional.ofNullable(pregnancy.breastfeedingEndDate));
     mPregnancy.onSuccess(pregnancy);
 
+    clearOnDisabled(mBreastfeedingUpdates, mBreastfeedingStartDateUpdates);
+    clearOnDisabled(mBreastfeedingUpdates, mBreastfeedingEndDateUpdates);
+
     stateStream().subscribe(mState);
+  }
+
+  private static <T> void clearOnDisabled(Subject<Boolean> switchSubject, Subject<Optional<T>> target) {
+    switchSubject
+        .filter(v -> !v)
+        .map(v -> Optional.<T>empty())
+        .doOnNext(v -> Timber.v("Clearing on disable"))
+        .subscribe(target);
   }
 
   void onBreastfeedingToggle(boolean value) {
@@ -74,9 +85,6 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   }
 
   Completable onSave() {
-    if (!initialized()) {
-      return Completable.error(new IllegalStateException("Not initialized"));
-    }
     return mState.firstElement()
         .toSingle()
         .map(state -> state.pregnancy)
@@ -84,18 +92,11 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   }
 
   Maybe<ViewState> currentState() {
-    if (!initialized()) {
-      return Maybe.error(new IllegalStateException("Not initialized"));
-    }
     return mState.firstElement();
   }
 
   LiveData<ViewState> viewState() {
     return LiveDataReactiveStreams.fromPublisher(mState.toFlowable(BackpressureStrategy.BUFFER));
-  }
-
-  private boolean initialized() {
-    return mPregnancy.hasValue();
   }
 
   private Observable<ViewState> stateStream() {
@@ -104,8 +105,16 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        mBreastfeedingStartDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        mBreastfeedingEndDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        Observable.combineLatest(
+            mBreastfeedingStartDateUpdates.distinctUntilChanged(),
+            mBreastfeedingUpdates.distinctUntilChanged(),
+            (startDate, switchValue) -> switchValue ? startDate : Optional.<LocalDate>empty())
+            .toFlowable(BackpressureStrategy.BUFFER),
+        Observable.combineLatest(
+            mBreastfeedingEndDateUpdates.distinctUntilChanged(),
+            mBreastfeedingUpdates.distinctUntilChanged(),
+            (endDate, switchValue) -> switchValue ? endDate : Optional.<LocalDate>empty())
+            .toFlowable(BackpressureStrategy.BUFFER),
         (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue, breastfeedingStart, breastfeedingEnd) -> {
           Pregnancy updatedPregnancy = pregnancy.copy();
           updatedPregnancy.dueDate = dueDate.orElse(null);
