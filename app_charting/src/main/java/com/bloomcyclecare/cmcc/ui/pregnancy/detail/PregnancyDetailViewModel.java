@@ -13,6 +13,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -30,18 +32,23 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   private final Subject<Optional<LocalDate>> mDueDateUpdates = BehaviorSubject.create();
   private final Subject<Optional<LocalDate>> mDeliveryDateUpdates = BehaviorSubject.create();
   private final Subject<ViewState> mState = BehaviorSubject.create();
+  private final Subject<Boolean> mBreastfeedingUpdates = BehaviorSubject.create();
 
-  public PregnancyDetailViewModel(@NonNull Application application) {
+  public PregnancyDetailViewModel(@NonNull Application application, Pregnancy pregnancy) {
     super(application);
     mPregnancyRepo = ChartingApp.cast(application).pregnancyRepo();
-    stateStream().subscribe(mState);
-  }
 
-  public void init(Pregnancy pregnancy) {
     Timber.v("Initializing with %s", pregnancy);
     mDueDateUpdates.onNext(Optional.fromNullable(pregnancy.dueDate));
     mDeliveryDateUpdates.onNext(Optional.fromNullable(pregnancy.deliveryDate));
+    onBreastfeedingToggle(pregnancy.breastfeedingStartDate != null);
     mPregnancy.onSuccess(pregnancy);
+
+    stateStream().subscribe(mState);
+  }
+
+  void onBreastfeedingToggle(boolean value) {
+    mBreastfeedingUpdates.onNext(value);
   }
 
   void onNewDueDate(LocalDate date) {
@@ -82,10 +89,11 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mPregnancy.toFlowable().distinctUntilChanged(),
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (pregnancy, dueDate, deliveryDate) -> {
+        mBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue) -> {
           pregnancy.dueDate = dueDate.orNull();
           pregnancy.deliveryDate = deliveryDate.orNull();
-          return new ViewState(pregnancy);
+          return new ViewState(pregnancy, breastfeedingSwitchValue);
         })
         .toObservable();
   }
@@ -93,9 +101,32 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   public static class ViewState {
 
     public final Pregnancy pregnancy;
+    public final boolean showBreastfeedingSection;
+    public final boolean showBreastfeedingStartDate;
+    public final boolean showBreastfeedingEndDate;
 
-    private ViewState(Pregnancy pregnancy) {
+    private ViewState(Pregnancy pregnancy, boolean breastfeedingToggleValue) {
       this.pregnancy = pregnancy;
+      this.showBreastfeedingSection = pregnancy.deliveryDate != null;
+      this.showBreastfeedingStartDate = showBreastfeedingSection && breastfeedingToggleValue;
+      this.showBreastfeedingEndDate = showBreastfeedingSection && pregnancy.breastfeedingStartDate != null;
+    }
+  }
+
+  static class Factory implements ViewModelProvider.Factory {
+
+    private final @NonNull Application application;
+    private final @NonNull Pregnancy pregnancy;
+
+    public Factory(@NonNull Application application, @NonNull Pregnancy pregnancy) {
+      this.application = application;
+      this.pregnancy = pregnancy;
+    }
+
+    @NonNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+      return (T) new PregnancyDetailViewModel(application, pregnancy);
     }
   }
 }

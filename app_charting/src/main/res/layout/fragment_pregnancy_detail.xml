@@ -1,22 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-xmlns:app="http://schemas.android.com/apk/res-auto"
-xmlns:tools="http://schemas.android.com/tools"
-android:layout_width="match_parent"
-android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:padding="8dp">
 
     <TextView
+        android:id="@+id/tv_pregnancy_summary_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:id="@+id/tv_pregnancy_summary_header"
-        android:textAppearance="@android:style/TextAppearance.Material.Large"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        android:text="Summary"
         android:paddingTop="10dp"
         android:paddingBottom="8dp"
-        />
+        android:text="Summary"
+        android:textAppearance="@android:style/TextAppearance.Material.Large"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <ImageView
         android:id="@+id/iv_test_date"
@@ -31,7 +30,7 @@ android:layout_height="match_parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tv_pregnancy_summary_header"
         app:srcCompat="@drawable/ic_check_circle_black_24dp"
-        tools:ignore="ContentDescription"/>
+        tools:ignore="ContentDescription" />
 
     <TextView
         android:id="@+id/tv_test_date"
@@ -53,6 +52,8 @@ android:layout_height="match_parent"
         android:text="a date here"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintBottom_toBottomOf="@id/tv_test_date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@id/tv_test_date"
         app:layout_constraintTop_toTopOf="@id/tv_test_date"
         app:layout_constraintVertical_bias="0.0" />
@@ -69,7 +70,7 @@ android:layout_height="match_parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_test_date"
         app:srcCompat="@drawable/ic_date_range_black_24dp"
-        tools:ignore="ContentDescription"/>
+        tools:ignore="ContentDescription" />
 
     <TextView
         android:id="@+id/tv_due_date"
@@ -91,8 +92,10 @@ android:layout_height="match_parent"
         android:text="a date here"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintBottom_toBottomOf="@id/tv_due_date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@id/tv_due_date"
-        app:layout_constraintTop_toTopOf="@id/tv_due_date"/>
+        app:layout_constraintTop_toTopOf="@id/tv_due_date" />
 
     <ImageView
         android:id="@+id/iv_delivery_date"
@@ -106,7 +109,19 @@ android:layout_height="match_parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/iv_due_date"
         app:srcCompat="@drawable/ic_child_friendly_black_24dp"
-        tools:ignore="ContentDescription"/>
+        tools:ignore="ContentDescription" />
+
+    <ImageView
+        android:id="@+id/iv_breastfeeding"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingEnd="10dp"
+        android:paddingBottom="16dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/iv_delivery_date"
+        app:srcCompat="@drawable/ic_baby_black_24dp"
+        tools:ignore="ContentDescription" />
 
     <TextView
         android:id="@+id/tv_delivery_date"
@@ -128,7 +143,100 @@ android:layout_height="match_parent"
         android:text="a date here"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintBottom_toBottomOf="@id/tv_delivery_date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
         app:layout_constraintStart_toEndOf="@id/tv_delivery_date"
-        app:layout_constraintTop_toTopOf="@id/tv_delivery_date"/>
+        app:layout_constraintTop_toTopOf="@id/tv_delivery_date" />
+
+    <TextView
+        android:id="@+id/tv_breastfeeding"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingBottom="16dp"
+        android:text="Breastfeeding?"
+        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_breastfeeding"
+        app:layout_constraintStart_toEndOf="@+id/iv_breastfeeding"
+        app:layout_constraintTop_toBottomOf="@+id/iv_delivery_date"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/breastfeeding_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_breastfeeding"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@+id/tv_breastfeeding"
+        app:layout_constraintTop_toTopOf="@+id/tv_breastfeeding"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/tv_breastfeeding_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingBottom="16dp"
+        android:text="Breastfeeding Start:"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
+        app:layout_constraintTop_toBottomOf="@id/tv_breastfeeding" />
+
+    <TextView
+        android:id="@+id/tv_breastfeeding_start_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text="a date here"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_breastfeeding_start"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/tv_breastfeeding_start"
+        app:layout_constraintTop_toBottomOf="@+id/tv_breastfeeding"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/tv_breastfeeding_end"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingBottom="16dp"
+        android:text="Breastfeeding End:"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
+        app:layout_constraintTop_toBottomOf="@id/tv_breastfeeding_start" />
+
+    <TextView
+        android:id="@+id/tv_breastfeeding_end_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text="a date here"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_breastfeeding_end"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/tv_breastfeeding_end"
+        app:layout_constraintTop_toTopOf="@+id/tv_breastfeeding_end"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/breastfeeding_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="iv_breastfeeding,tv_breastfeeding,tv_breastfeeding_start,tv_breastfeeding_end,tv_breastfeeding_end_value,tv_breastfeeding_start_value,breastfeeding_value" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/breastfeeding_start_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="tv_breastfeeding_start,tv_breastfeeding_start_value" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/breastfeeding_end_group"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:constraint_referenced_ids="tv_breastfeeding_end,tv_breastfeeding_end_value" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

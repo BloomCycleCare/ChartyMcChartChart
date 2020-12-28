@@ -15,13 +15,17 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.jakewharton.rxbinding2.view.RxView;
+import com.jakewharton.rxbinding2.widget.RxCompoundButton;
 
 import org.joda.time.LocalDate;
 
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
@@ -37,6 +41,13 @@ public class PregnancyDetailFragment extends Fragment {
   private TextView mTestDateValueView;
   private TextView mDueDateValueView;
   private TextView mDeliveryDateValueView;
+
+  private View mBreastfeedingGroup;
+  private SwitchCompat mBreastfeedingValue;
+  private View mBreastfeedingStartGroup;
+  private TextView mBreastfeedingStartValue;
+  private View mBreastfeedingEndGroup;
+  private TextView mBreastfeedingEndValue;
 
   private PregnancyDetailViewModel mViewModel;
 
@@ -55,12 +66,25 @@ public class PregnancyDetailFragment extends Fragment {
     mDueDateValueView = view.findViewById(R.id.tv_due_date_value);
     mDeliveryDateValueView = view.findViewById(R.id.tv_delivery_date_value);
 
+    mBreastfeedingGroup = view.findViewById(R.id.breastfeeding_group);
+    mBreastfeedingValue = view.findViewById(R.id.breastfeeding_value);
+    mBreastfeedingStartGroup = view.findViewById(R.id.breastfeeding_start_group);
+    mBreastfeedingStartValue = view.findViewById(R.id.tv_breastfeeding_start_value);
+    mBreastfeedingEndGroup = view.findViewById(R.id.breastfeeding_end_group);
+    mBreastfeedingEndValue = view.findViewById(R.id.tv_breastfeeding_end_value);
+
+    // Connect views to handlers
     mDisposables.add(RxView.clicks(mDueDateValueView).subscribe(o -> onDueDateClick()));
     mDisposables.add(RxView.clicks(mDeliveryDateValueView).subscribe(o -> onDeliveryDateClick()));
 
-    mViewModel = new ViewModelProvider(this).get(PregnancyDetailViewModel.class);
-    // TODO: replace init with factory
-    mViewModel.init(PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy);
+    mViewModel = new ViewModelProvider(this, new PregnancyDetailViewModel.Factory(
+        requireActivity().getApplication(),
+        PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy))
+        .get(PregnancyDetailViewModel.class);
+
+    // Connect view events to view model
+    mDisposables.add(RxCompoundButton.checkedChanges(mBreastfeedingValue).subscribe(mViewModel::onBreastfeedingToggle));
+
     mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
 
     return view;
@@ -97,32 +121,42 @@ public class PregnancyDetailFragment extends Fragment {
 
   private void onDueDateClick() {
     Timber.d("Handling due date click");
-    mDisposables.add(mViewModel.currentState().toSingle().subscribe(currentState -> {
-      LocalDate date = Optional.ofNullable(currentState.pregnancy.dueDate)
-          .orElse(currentState.pregnancy.positiveTestDate.plusMonths(9));
-      DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
-        LocalDate dueDate = new LocalDate(year, month + 1, day);
-        Timber.d("Registering due date update");
-        mViewModel.onNewDueDate(dueDate);
-      }, date.getYear(), date.getMonthOfYear() - 1, date.getDayOfMonth());
-      dialog.setTitle("Start Date");
-      dialog.getDatePicker().setMinDate(currentState.pregnancy.positiveTestDate.toDate().getTime());
-      dialog.show();
-    }));
+    showDatePicker(
+        "Start Date",
+        vs -> Optional.ofNullable(vs.pregnancy.dueDate)
+            .orElse(vs.pregnancy.positiveTestDate.plusMonths(9)),
+        vs -> vs.pregnancy.positiveTestDate.toDate().getTime(),
+        d -> {
+          Timber.d("Registering due date update");
+          mViewModel.onNewDueDate(d);
+        });
   }
 
   private void onDeliveryDateClick() {
     Timber.d("Handling delivery date click");
+    showDatePicker(
+        "Due Date",
+        vs -> Optional.ofNullable(vs.pregnancy.deliveryDate)
+            .orElse(vs.pregnancy.positiveTestDate.plusMonths(9)),
+        vs -> vs.pregnancy.positiveTestDate.toDate().getTime(),
+        d -> {
+          Timber.d("Registering delivery date update");
+          mViewModel.onNewDeliveryDate(d);
+        });
+  }
+
+  private void showDatePicker(
+      String title,
+      Function<PregnancyDetailViewModel.ViewState, LocalDate> initialValueFn,
+      Function<PregnancyDetailViewModel.ViewState, Long> minDateFn,
+      Consumer<LocalDate> dateConsumer) {
     mDisposables.add(mViewModel.currentState().toSingle().subscribe(currentState -> {
-      LocalDate date = Optional.ofNullable(currentState.pregnancy.deliveryDate)
-          .orElse(currentState.pregnancy.positiveTestDate.plusMonths(9));
+      LocalDate date = initialValueFn.apply(currentState);
       DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
-        LocalDate dueDate = new LocalDate(year, month + 1, day);
-        Timber.d("Registering delivery date update");
-        mViewModel.onNewDeliveryDate(dueDate);
+        dateConsumer.accept(new LocalDate(year, month + 1, day));
       }, date.getYear(), date.getMonthOfYear() - 1, date.getDayOfMonth());
-      dialog.setTitle("Start Date");
-      dialog.getDatePicker().setMinDate(currentState.pregnancy.positiveTestDate.toDate().getTime());
+      dialog.setTitle(title);
+      dialog.getDatePicker().setMinDate(minDateFn.apply(currentState));
       dialog.show();
     }));
   }
@@ -145,5 +179,11 @@ public class PregnancyDetailFragment extends Fragment {
         mDeliveryDateValueView.setText(deliveryDateStr);
       }
     }
+    mBreastfeedingGroup.setVisibility(
+        viewState.showBreastfeedingSection ? View.VISIBLE : View.GONE);
+    mBreastfeedingStartGroup.setVisibility(
+        viewState.showBreastfeedingStartDate ? View.VISIBLE : View.GONE);
+    mBreastfeedingEndGroup.setVisibility(
+        viewState.showBreastfeedingEndDate ? View.VISIBLE : View.GONE);
   }
 }
