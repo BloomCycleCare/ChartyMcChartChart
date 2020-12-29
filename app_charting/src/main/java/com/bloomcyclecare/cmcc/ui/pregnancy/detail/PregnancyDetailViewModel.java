@@ -87,8 +87,7 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   Completable onSave() {
     return mState.firstElement()
         .toSingle()
-        .map(state -> state.pregnancy)
-        .flatMapCompletable(mPregnancyRepo::update);
+        .flatMapCompletable(viewState -> mPregnancyRepo.update(viewState.pregnancy));
   }
 
   Maybe<ViewState> currentState() {
@@ -105,16 +104,8 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        Observable.combineLatest(
-            mBreastfeedingStartDateUpdates.distinctUntilChanged(),
-            mBreastfeedingUpdates.distinctUntilChanged(),
-            (startDate, switchValue) -> switchValue ? startDate : Optional.<LocalDate>empty())
-            .toFlowable(BackpressureStrategy.BUFFER),
-        Observable.combineLatest(
-            mBreastfeedingEndDateUpdates.distinctUntilChanged(),
-            mBreastfeedingUpdates.distinctUntilChanged(),
-            (endDate, switchValue) -> switchValue ? endDate : Optional.<LocalDate>empty())
-            .toFlowable(BackpressureStrategy.BUFFER),
+        mBreastfeedingStartDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        mBreastfeedingEndDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue, breastfeedingStart, breastfeedingEnd) -> {
           Pregnancy updatedPregnancy = pregnancy.copy();
           updatedPregnancy.dueDate = dueDate.orElse(null);

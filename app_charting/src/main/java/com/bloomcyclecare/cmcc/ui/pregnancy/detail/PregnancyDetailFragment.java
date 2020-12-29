@@ -21,6 +21,7 @@ import com.jakewharton.rxbinding2.widget.RxCompoundButton;
 import org.joda.time.LocalDate;
 
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -85,12 +86,79 @@ public class PregnancyDetailFragment extends Fragment {
         PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy))
         .get(PregnancyDetailViewModel.class);
 
-    // Connect view events to view model
-    mDisposables.add(RxCompoundButton.checkedChanges(mBreastfeedingValue).subscribe(mViewModel::onBreastfeedingToggle));
+    AtomicBoolean rendered = new AtomicBoolean();
+    mViewModel.viewState().observe(getViewLifecycleOwner(), vs -> render(vs, rendered));
 
-    mViewModel.viewState().observe(getViewLifecycleOwner(), this::render);
+    // Connect view events to view model
+    mDisposables.add(RxCompoundButton.checkedChanges(mBreastfeedingValue)
+        .filter(v -> {
+          if (!rendered.get()) {
+            Timber.v("Dropping switch toggle, ViewState not yet rendered");
+            return false;
+          }
+          return true;
+        })
+        .subscribe(mViewModel::onBreastfeedingToggle));
 
     return view;
+  }
+
+  private void render(PregnancyDetailViewModel.ViewState viewState, AtomicBoolean rendered) {
+    Timber.d("Rendering new ViewState");
+    Pregnancy pregnancy = viewState.pregnancy;
+    mTestDateValueView.setText(DateUtil.toNewUiStr(pregnancy.positiveTestDate));
+    if (pregnancy.dueDate == null) {
+      mDueDateValueView.setText("TBD");
+    } else {
+      String dueDateStr = DateUtil.toNewUiStr(pregnancy.dueDate);
+      if (!mDueDateValueView.getText().toString().equals(dueDateStr)) {
+        Timber.d("Updating due date UI");
+        mDueDateValueView.setText(dueDateStr);
+      }
+    }
+    if (pregnancy.deliveryDate == null) {
+      mDeliveryDateValueView.setText("TBD");
+    } else {
+      String deliveryDateStr = DateUtil.toNewUiStr(pregnancy.deliveryDate);
+      if (!mDeliveryDateValueView.getText().toString().equals(deliveryDateStr)) {
+        Timber.d("Updating delivery date UI");
+        mDeliveryDateValueView.setText(deliveryDateStr);
+      }
+    }
+    mBreastfeedingGroup.setVisibility(
+        viewState.showBreastfeedingSection ? View.VISIBLE : View.GONE);
+    mBreastfeedingStartGroup.setVisibility(
+        viewState.showBreastfeedingStartDate ? View.VISIBLE : View.GONE);
+    mBreastfeedingEndGroup.setVisibility(
+        viewState.showBreastfeedingEndDate ? View.VISIBLE : View.GONE);
+
+    if (pregnancy.breastfeedingStartDate == null) {
+      mBreastfeedingStartValue.setText("TBD");
+    } else {
+      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingStartDate);
+      if (!mBreastfeedingStartValue.getText().toString().equals(dateStr)) {
+        Timber.d("Updating breastfeeding start date UI");
+        mBreastfeedingStartValue.setText(dateStr);
+      }
+    }
+
+    if (pregnancy.breastfeedingEndDate == null) {
+      mBreastfeedingEndValue.setText("TBD");
+    } else {
+      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingEndDate);
+      if (!mBreastfeedingEndValue.getText().toString().equals(dateStr)) {
+        Timber.d("Updating breastfeeding end date UI");
+        mBreastfeedingEndValue.setText(dateStr);
+      }
+    }
+
+    if (mBreastfeedingValue.isChecked() != viewState.showBreastfeedingStartDate) {
+      mBreastfeedingValue.setChecked(viewState.showBreastfeedingStartDate);
+    }
+
+    if (rendered.compareAndSet(false, true)) {
+      Timber.d("Rendered first view state");
+    }
   }
 
   @Override
@@ -211,53 +279,4 @@ public class PregnancyDetailFragment extends Fragment {
     }, Timber::e));
   }
 
-  private void render(PregnancyDetailViewModel.ViewState viewState) {
-    Timber.d("Rendering new ViewState");
-    Pregnancy pregnancy = viewState.pregnancy;
-    mTestDateValueView.setText(DateUtil.toNewUiStr(pregnancy.positiveTestDate));
-    if (pregnancy.dueDate == null) {
-      mDueDateValueView.setText("TBD");
-    } else {
-      String dueDateStr = DateUtil.toNewUiStr(pregnancy.dueDate);
-      if (!mDueDateValueView.getText().toString().equals(dueDateStr)) {
-        Timber.d("Updating due date UI");
-        mDueDateValueView.setText(dueDateStr);
-      }
-    }
-    if (pregnancy.deliveryDate == null) {
-      mDeliveryDateValueView.setText("TBD");
-    } else {
-      String deliveryDateStr = DateUtil.toNewUiStr(pregnancy.deliveryDate);
-      if (!mDeliveryDateValueView.getText().toString().equals(deliveryDateStr)) {
-        Timber.d("Updating delivery date UI");
-        mDeliveryDateValueView.setText(deliveryDateStr);
-      }
-    }
-    mBreastfeedingGroup.setVisibility(
-        viewState.showBreastfeedingSection ? View.VISIBLE : View.GONE);
-    mBreastfeedingStartGroup.setVisibility(
-        viewState.showBreastfeedingStartDate ? View.VISIBLE : View.GONE);
-    mBreastfeedingEndGroup.setVisibility(
-        viewState.showBreastfeedingEndDate ? View.VISIBLE : View.GONE);
-
-    if (pregnancy.breastfeedingStartDate == null) {
-      mBreastfeedingStartValue.setText("TBD");
-    } else {
-      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingStartDate);
-      if (!mBreastfeedingStartValue.getText().toString().equals(dateStr)) {
-        Timber.d("Updating breastfeeding start date UI");
-        mBreastfeedingStartValue.setText(dateStr);
-      }
-    }
-
-    if (pregnancy.breastfeedingEndDate == null) {
-      mBreastfeedingEndValue.setText("TBD");
-    } else {
-      String dateStr = DateUtil.toNewUiStr(pregnancy.breastfeedingEndDate);
-      if (!mBreastfeedingEndValue.getText().toString().equals(dateStr)) {
-        Timber.d("Updating breastfeeding end date UI");
-        mBreastfeedingEndValue.setText(dateStr);
-      }
-    }
-  }
 }
