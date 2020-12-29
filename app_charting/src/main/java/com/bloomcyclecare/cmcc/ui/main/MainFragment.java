@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -11,7 +12,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ui.main.MainFragmentDirections;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,7 +65,20 @@ public class MainFragment extends Fragment {
         intent.getAction() != null && intent.getAction().equals(Intent.ACTION_VIEW);
     NavController navController = Navigation.findNavController(view);
     if (importingData) {
-      navController.navigate(R.id.action_import_app_state);
+      switch (intent.getType()) {
+        case "application/json":
+          navController.navigate(R.id.action_import_app_state);
+          break;
+        case "application/octet-stream":
+          navController.navigate(R.id.import_from_baby_daybook);
+          break;
+        default:
+          new AlertDialog.Builder(requireContext())
+              .setTitle("File Not Supported")
+              .setMessage("This filetype is not supported by CMCC: " + intent.getType())
+              .setPositiveButton("Exit", (d,w) -> requireActivity().finish())
+              .show();
+      }
     } else {
       mDisposables.add(mMainViewModel.appInitialized()
           .observeOn(AndroidSchedulers.mainThread())

@@ -42,6 +42,12 @@
                 <data
                     android:mimeType="application/json"
                     android:scheme="content" />
+                <data
+                    android:mimeType="application/x-sqlite3"
+                    android:scheme="content" />
+                <data
+                    android:mimeType="application/octet-stream"
+                    android:scheme="content" />
 
                 <action android:name="android.intent.action.VIEW" />
 
