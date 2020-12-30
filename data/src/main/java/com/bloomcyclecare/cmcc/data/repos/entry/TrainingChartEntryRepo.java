@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.data.repos.entry;
 
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
@@ -9,7 +10,6 @@ import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
@@ -61,6 +61,7 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
         ChartEntry entry = new ChartEntry(entryDate, observationEntry,
             WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate),
             MeasurementEntry.emptyEntry(entryDate),
+            BreastfeedingEntry.emptyEntry(entryDate),
             populateStickerSelections ? stickerSelection : null);
         entry.marker = trainingEntry.marker().orElse("");
         initialEntries.put(entryDate, entry);

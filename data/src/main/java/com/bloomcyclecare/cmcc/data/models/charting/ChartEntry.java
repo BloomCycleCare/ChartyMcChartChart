@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.data.models.charting;
 
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
@@ -28,13 +29,14 @@ public class ChartEntry implements Comparable<ChartEntry> {
   public WellnessEntry wellnessEntry;
   public SymptomEntry symptomEntry;
   public MeasurementEntry measurementEntry;
+  public BreastfeedingEntry breastfeedingEntry;
   @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
 
   public ChartEntry() {}
 
-  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, MeasurementEntry measurementEntry, @Nullable StickerSelection stickerSelection) {
+  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, MeasurementEntry measurementEntry, BreastfeedingEntry breastfeedingEntry, @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
         observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
@@ -42,12 +44,13 @@ public class ChartEntry implements Comparable<ChartEntry> {
     this.wellnessEntry = wellnessEntry;
     this.symptomEntry = symptomEntry;
     this.measurementEntry = measurementEntry;
+    this.breastfeedingEntry = breastfeedingEntry;
     this.stickerSelection = stickerSelection;
   }
 
   public static ChartEntry emptyEntry(LocalDate entryDate) {
     return new ChartEntry(
-        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), MeasurementEntry.emptyEntry(entryDate), null);
+        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), MeasurementEntry.emptyEntry(entryDate), BreastfeedingEntry.emptyEntry(entryDate), null);
   }
 
   @NonNull
@@ -97,6 +100,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
           && Objects.equal(this.wellnessEntry, that.wellnessEntry)
           && Objects.equal(this.symptomEntry, that.symptomEntry)
           && Objects.equal(this.measurementEntry, that.measurementEntry)
+          && Objects.equal(this.breastfeedingEntry, that.breastfeedingEntry)
           && Objects.equal(this.stickerSelection, that.stickerSelection);
     }
     return false;
@@ -104,7 +108,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection);
+    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection);
   }
 
   @Override

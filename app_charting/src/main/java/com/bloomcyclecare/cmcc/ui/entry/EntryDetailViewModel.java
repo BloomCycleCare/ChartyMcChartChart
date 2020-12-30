@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
@@ -207,7 +208,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
         (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection.orElse(null)),
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, BreastfeedingEntry.emptyEntry(entryContext.entry.entryDate), stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);

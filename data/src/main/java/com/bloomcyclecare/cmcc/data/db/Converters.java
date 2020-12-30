@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.gson.reflect.TypeToken;
 
+import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
 import java.lang.reflect.Type;
@@ -50,6 +51,16 @@ public class Converters {
   @TypeConverter
   public LocalDate toLocalDate(String in) {
     return DateUtil.fromWireStr(in);
+  }
+
+  @TypeConverter
+  public Duration toDuration(String in) {
+    return new Duration(Long.valueOf(in));
+  }
+
+  @TypeConverter
+  public String fromDuration(Duration d) {
+    return String.valueOf(d.getMillis());
   }
 
   @TypeConverter
@@ -126,4 +137,5 @@ public class Converters {
   public LHTestResult toLHTestResult(String in) {
     return LHTestResult.valueOf(in);
   }
+
 }

@@ -138,7 +138,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
         } catch (Exception e) {
           throw new IllegalStateException(e);
         }
-      }), null, null, null, null));
+      }), null, null, null, null, null));
       tests.add(renderableEntry -> {
         StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert

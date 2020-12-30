@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
@@ -32,9 +33,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         SymptomEntry.class,
         WellnessEntry.class,
         MeasurementEntry.class,
+        BreastfeedingEntry.class,
         Pregnancy.class,
     },
-    version = 17)
+    version = 18)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -51,6 +53,8 @@ public abstract class AppDatabase extends RoomDatabase {
   public abstract SymptomEntryDao symptomEntryDao();
 
   public abstract MeasurementEntryDao measurementEntryDao();
+
+  public abstract BreastfeedingEntryDao breastfeedingEntryDao();
 
   public abstract PregnancyDao pregnancyDao();
 
@@ -143,11 +147,17 @@ public abstract class AppDatabase extends RoomDatabase {
           "ALTER TABLE `Pregnancy_new` RENAME TO `Pregnancy`"
       ));
 
+  private static final BwCompatMigration MIGRATION_17_18 = new BwCompatMigration(
+      17, 18,
+      QuerySet.of("CREATE TABLE IF NOT EXISTS `BreastfeedingEntry` (`entryDate` TEXT NOT NULL, `numTimesDay` INTEGER NOT NULL, `numTimesNight` INTEGER NOT NULL, `maxGapHours` TEXT, PRIMARY KEY(`entryDate`))"),
+      QuerySet.of("DROP TABLE `BreastfeedingEntry`"));
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
       .addAll(MIGRATION_15_16.migrations())
       .addAll(MIGRATION_16_17.migrations())
+      .addAll(MIGRATION_17_18.migrations())
       .build();
 
   public static class QuerySet {
