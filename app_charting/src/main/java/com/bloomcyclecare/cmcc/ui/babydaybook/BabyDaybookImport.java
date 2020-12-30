@@ -6,8 +6,16 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.logic.breastfeeding.BabyDaybookDB;
+import com.bloomcyclecare.cmcc.logic.breastfeeding.BreastfeedingStats;
+
+import org.joda.time.LocalDate;
+
+import java.util.Map;
 
 import androidx.fragment.app.Fragment;
+import io.reactivex.disposables.Disposable;
+import timber.log.Timber;
 
 /**
  * A simple {@link Fragment} subclass.
@@ -50,10 +58,27 @@ public class BabyDaybookImport extends Fragment {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    if (getArguments() != null) {
-      mParam1 = getArguments().getString(ARG_PARAM1);
-      mParam2 = getArguments().getString(ARG_PARAM2);
-    }
+
+    Disposable d = BabyDaybookDB.fromIntent(requireActivity().getIntent(), requireContext())
+        // Get all the start times
+        .map(BreastfeedingStats::new)
+        .flatMap(stats -> stats.dailyStats("Gladys"))
+        .subscribe(out -> {
+          for (Map.Entry<LocalDate, BreastfeedingStats.DailyStats> entry : out.entrySet()) {
+            BreastfeedingStats.DailyStats stats = entry.getValue();
+            double shortestHours = stats.shortestGapDuration().getStandardMinutes() / 60.0;
+            double longestHours = stats.longestGapDuration().getStandardMinutes() / 60.0;
+            Timber.i(" \t %s \t %f \t %f \t (between %s and %s) \t %d \t %d",
+                entry.getKey(), shortestHours, longestHours,
+                stats.gaps.last().getStart(), stats.gaps.last().getEnd(),
+                stats.nDay, stats.nNight);
+          }
+          BreastfeedingStats.AggregateStats aggregateStats = BreastfeedingStats.aggregate(out.values());
+          Timber.i("Aggregate stats { nDay %f±%f p50 %f, nNight %f±%f p50 %f, maxGap p50 %f p95 %f max %f}",
+              aggregateStats.nDayMean, aggregateStats.nDayInterval, aggregateStats.nDayMedian,
+              aggregateStats.nNightMean, aggregateStats.nNightInterval, aggregateStats.nNightMedian,
+              aggregateStats.maxGapMedian, aggregateStats.maxGapP95, aggregateStats.maxGapP95);
+        }, Timber::e);
   }
 
   @Override
