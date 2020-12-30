@@ -14,6 +14,7 @@ import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
@@ -67,11 +68,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
   final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
 
   final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
+  final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
+
   private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
+  private final SingleSubject<Boolean> shouldShowBreastfeedingPage = SingleSubject.create();
 
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
@@ -98,6 +102,35 @@ public class EntryDetailViewModel extends AndroidViewModel {
         mEntryContext.map(context -> !context.entry.measurementEntry.isEmpty()),
         (enabledInSettings, entryHasMeasurement) -> enabledInSettings || entryHasMeasurement)
         .subscribe(shouldShowMeasurementPage);
+
+    // Hook up when to show breastfeeding page
+    mEntryContext.map(context -> context.entry.entryDate)
+        .flatMap(entryDate -> myApp.pregnancyRepo(ViewMode.CHARTING)
+            .getAll()
+            .firstOrError()
+            .map(pregnancies -> {
+              Pregnancy mostRecentPregnancy = null;
+              for (Pregnancy p : pregnancies) {
+                if (p.positiveTestDate.isAfter(entryDate)) {
+                  continue;
+                }
+                if (mostRecentPregnancy == null || p.positiveTestDate.isAfter(mostRecentPregnancy.positiveTestDate)) {
+                  mostRecentPregnancy = p;
+                }
+              }
+              return Optional.ofNullable(mostRecentPregnancy);
+            })
+            .map(pregnancy -> {
+              if (!pregnancy.isPresent()) {
+                return false;
+              }
+              Timber.v("Found pregnancy %s", pregnancy.get());
+              if (pregnancy.get().breastfeedingStartDate == null || entryDate.isBefore(pregnancy.get().breastfeedingStartDate)) {
+                return false;
+              }
+              return pregnancy.get().breastfeedingEndDate == null || !entryDate.isAfter(pregnancy.get().breastfeedingEndDate);
+            }))
+        .subscribe(shouldShowBreastfeedingPage);
 
     Flowable<ErrorOr<Observation>> errorOrObservationStream = observationUpdates
         .toFlowable(BackpressureStrategy.DROP)
@@ -199,16 +232,19 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New wellness entry")),
         measurementEntries.toFlowable(BackpressureStrategy.BUFFER)
-            //.distinctUntilChanged()
+            .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New measurement entry")),
+        breastfeedingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
+            .distinctUntilChanged()
+            .doOnNext(i -> Timber.v("New breastfeeding entry")),
         stickerSelectionStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New sticker slection")),
         clarifyingQuestionRenderUpdates,
-        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection, clarifyingQuestionUpdates) -> {
+        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, BreastfeedingEntry.emptyEntry(entryContext.entry.entryDate), stickerSelection.orElse(null)),
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
@@ -268,10 +304,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
     measurementEntries.onNext(context.entry.measurementEntry);
+    breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
   }
 
   boolean showMeasurementPage() {
     return shouldShowMeasurementPage.getValue();
+  }
+
+  boolean showBreastfeedingPage() {
+    return shouldShowBreastfeedingPage.getValue();
   }
 
   LiveData<ViewState> viewStates() {
