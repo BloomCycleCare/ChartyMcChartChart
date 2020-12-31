@@ -10,18 +10,23 @@ import org.parceler.Parcel;
 import java.util.List;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 
 @Parcel
 @Entity
 public class BreastfeedingEntry extends Entry {
 
-  public int numTimesDay;
-  public int numTimesNight;
-  public Duration maxGapHours;
+  public int numDayFeedings;
+  public int numNightFeedings;
+  @Nullable
+  public Duration maxGapBetweenFeedings;
 
-  public BreastfeedingEntry(@NonNull LocalDate entryDate) {
+  public BreastfeedingEntry(@NonNull LocalDate entryDate, int numDayFeedings, int numNightFeedings, @Nullable Duration maxGapBetweenFeedings) {
     super(entryDate);
+    this.numDayFeedings = numDayFeedings;
+    this.numNightFeedings = numNightFeedings;
+    this.maxGapBetweenFeedings = maxGapBetweenFeedings;
   }
 
   public BreastfeedingEntry() {
@@ -29,11 +34,21 @@ public class BreastfeedingEntry extends Entry {
   }
 
   public static BreastfeedingEntry emptyEntry(LocalDate entryDate) {
-    return new BreastfeedingEntry(entryDate);
+    return new BreastfeedingEntry(entryDate, -1, -1, null);
   }
 
   @Override
   public List<String> getSummaryLines() {
-    return ImmutableList.of();
+    ImmutableList.Builder<String> lines = ImmutableList.builder();
+    if (numDayFeedings >= 0) {
+      lines.add("Number of day feedings: " + numDayFeedings);
+    }
+    if (numNightFeedings >= 0) {
+      lines.add("Number of night feedings: " + numNightFeedings);
+    }
+    if (maxGapBetweenFeedings != null) {
+      lines.add("Max hours between feedings: " + maxGapBetweenFeedings.getStandardMinutes() / (float) 60);
+    }
+    return lines.build();
   }
 }

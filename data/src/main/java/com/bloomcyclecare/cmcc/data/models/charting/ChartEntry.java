@@ -80,6 +80,11 @@ public class ChartEntry implements Comparable<ChartEntry> {
       lines.add(" ");
       lines.addAll(measurementLines);
     }
+    List<String> breastFeedingLines = breastfeedingEntry.getSummaryLines();
+    if (!breastFeedingLines.isEmpty()) {
+      lines.add(" ");
+      lines.addAll(breastFeedingLines);
+    }
     return lines;
   }
 

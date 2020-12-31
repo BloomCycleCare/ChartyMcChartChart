@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 18,
-    "identityHash": "899c2f23365211320c9f5513952a1623",
+    "identityHash": "5a28c4d69da848dd3f21474d86269632",
     "entities": [
       {
         "tableName": "Cycle",
@@ -305,7 +305,7 @@
       },
       {
         "tableName": "BreastfeedingEntry",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `numTimesDay` INTEGER NOT NULL, `numTimesNight` INTEGER NOT NULL, `maxGapHours` TEXT, PRIMARY KEY(`entryDate`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `numDayFeedings` INTEGER NOT NULL, `numNightFeedings` INTEGER NOT NULL, `maxGapBetweenFeedings` TEXT, PRIMARY KEY(`entryDate`))",
         "fields": [
           {
             "fieldPath": "mEntryDate",
@@ -314,20 +314,20 @@
             "notNull": true
           },
           {
-            "fieldPath": "numTimesDay",
-            "columnName": "numTimesDay",
+            "fieldPath": "numDayFeedings",
+            "columnName": "numDayFeedings",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
-            "fieldPath": "numTimesNight",
-            "columnName": "numTimesNight",
+            "fieldPath": "numNightFeedings",
+            "columnName": "numNightFeedings",
             "affinity": "INTEGER",
             "notNull": true
           },
           {
-            "fieldPath": "maxGapHours",
-            "columnName": "maxGapHours",
+            "fieldPath": "maxGapBetweenFeedings",
+            "columnName": "maxGapBetweenFeedings",
             "affinity": "TEXT",
             "notNull": false
           }
@@ -395,7 +395,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '899c2f23365211320c9f5513952a1623')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '5a28c4d69da848dd3f21474d86269632')"
     ]
   }
 }

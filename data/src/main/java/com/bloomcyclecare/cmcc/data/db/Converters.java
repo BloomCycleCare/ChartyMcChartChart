@@ -55,12 +55,13 @@ public class Converters {
 
   @TypeConverter
   public Duration toDuration(String in) {
-    return new Duration(Long.valueOf(in));
+    return in == null ? null : new Duration(Long.valueOf(in));
   }
 
   @TypeConverter
-  public String fromDuration(Duration d) {
-    return String.valueOf(d.getMillis());
+  @Nullable
+  public String fromDuration(@Nullable Duration d) {
+    return d == null ? null : String.valueOf(d.getMillis());
   }
 
   @TypeConverter

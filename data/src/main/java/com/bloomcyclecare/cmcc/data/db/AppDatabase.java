@@ -149,7 +149,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
   private static final BwCompatMigration MIGRATION_17_18 = new BwCompatMigration(
       17, 18,
-      QuerySet.of("CREATE TABLE IF NOT EXISTS `BreastfeedingEntry` (`entryDate` TEXT NOT NULL, `numTimesDay` INTEGER NOT NULL, `numTimesNight` INTEGER NOT NULL, `maxGapHours` TEXT, PRIMARY KEY(`entryDate`))"),
+      QuerySet.of("CREATE TABLE IF NOT EXISTS `BreastfeedingEntry` (`entryDate` TEXT NOT NULL, `numDayFeedings` INTEGER NOT NULL, `numNightFeedings` INTEGER NOT NULL, `maxGapBetweenFeedings` TEXT, PRIMARY KEY(`entryDate`))"),
       QuerySet.of("DROP TABLE `BreastfeedingEntry`"));
 
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
