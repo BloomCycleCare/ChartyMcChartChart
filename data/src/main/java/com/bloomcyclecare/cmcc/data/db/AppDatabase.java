@@ -36,7 +36,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         BreastfeedingEntry.class,
         Pregnancy.class,
     },
-    version = 18)
+    version = 19)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -147,10 +147,20 @@ public abstract class AppDatabase extends RoomDatabase {
           "ALTER TABLE `Pregnancy_new` RENAME TO `Pregnancy`"
       ));
 
-  private static final BwCompatMigration MIGRATION_17_18 = new BwCompatMigration(
+  static final BwCompatMigration MIGRATION_17_18 = new BwCompatMigration(
       17, 18,
       QuerySet.of("CREATE TABLE IF NOT EXISTS `BreastfeedingEntry` (`entryDate` TEXT NOT NULL, `numDayFeedings` INTEGER NOT NULL, `numNightFeedings` INTEGER NOT NULL, `maxGapBetweenFeedings` TEXT, PRIMARY KEY(`entryDate`))"),
       QuerySet.of("DROP TABLE `BreastfeedingEntry`"));
+
+  static final BwCompatMigration MIGRATION_18_19 = new BwCompatMigration(
+      18, 19,
+      QuerySet.of("ALTER TABLE Pregnancy ADD COLUMN babyDaybookName TEXT"),
+      QuerySet.of(
+          "CREATE TABLE `Pregnancy_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `positiveTestDate` TEXT, `dueDate` TEXT, `deliveryDate` TEXT, `breastfeedingStartDate` TEXT, `breastfeedingEndDate` TEXT)",
+          "INSERT INTO `Pregnancy_new` SELECT id, positiveTestDate, dueDate, deliveryDate, breastfeedingStartDate, breastfeedingEndDate FROM `Pregnancy`",
+          "DROP TABLE `Pregnancy`",
+          "ALTER TABLE `Pregnancy_new` RENAME TO `Pregnancy`"
+          ));
 
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
@@ -158,6 +168,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_15_16.migrations())
       .addAll(MIGRATION_16_17.migrations())
       .addAll(MIGRATION_17_18.migrations())
+      .addAll(MIGRATION_18_19.migrations())
       .build();
 
   public static class QuerySet {

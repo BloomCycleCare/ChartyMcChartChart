@@ -73,4 +73,29 @@ public class AppDatabaseTest {
         .isEqualTo("2020-12-05");
   }
 
+  @Test
+  public void downgrade19to18() throws IOException {
+    SupportSQLiteDatabase db = helper.createDatabase(TEST_DB, 19);
+
+    db.execSQL("INSERT INTO Pregnancy (id, positiveTestDate, dueDate, deliveryDate, breastfeedingStartDate, babyDaybookName) VALUES (1, '2020-01-01', '2020-12-01', '2020-12-05', '2020-12-05', 'foo')");
+    db.close();
+
+    db = helper.runMigrationsAndValidate(TEST_DB, 18, true, AppDatabase.MIGRATION_18_19.backwardMigration());
+
+    Cursor c = db.query("SELECT * FROM Pregnancy");
+    assertThat(c.getCount()).isEqualTo(1);
+    assertThat(c.getColumnCount()).isEqualTo(6);
+
+    assertThat(c.moveToFirst()).isTrue();
+    assertThat(c.getInt(c.getColumnIndexOrThrow("id")))
+        .isEqualTo(1);
+    assertThat(c.getString(c.getColumnIndexOrThrow("positiveTestDate")))
+        .isEqualTo("2020-01-01");
+    assertThat(c.getString(c.getColumnIndexOrThrow("dueDate")))
+        .isEqualTo("2020-12-01");
+    assertThat(c.getString(c.getColumnIndexOrThrow("deliveryDate")))
+        .isEqualTo("2020-12-05");
+    assertThat(c.getString(c.getColumnIndexOrThrow("breastfeedingStartDate")))
+        .isEqualTo("2020-12-05");
+  }
 }

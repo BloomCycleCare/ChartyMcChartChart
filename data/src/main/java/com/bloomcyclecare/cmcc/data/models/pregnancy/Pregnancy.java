@@ -27,6 +27,7 @@ public class Pregnancy {
   @Nullable
   public LocalDate breastfeedingEndDate;
 
+  public String babyDaybookName;
 
   public Pregnancy() {}
 
@@ -37,6 +38,7 @@ public class Pregnancy {
     this.deliveryDate = that.deliveryDate;
     this.breastfeedingStartDate = that.breastfeedingStartDate;
     this.breastfeedingEndDate = that.breastfeedingEndDate;
+    this.babyDaybookName = that.babyDaybookName;
   }
 
   public Pregnancy copy() {
