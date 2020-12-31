@@ -221,17 +221,41 @@
         app:layout_constraintTop_toTopOf="@+id/tv_breastfeeding_end"
         app:layout_constraintVertical_bias="0.0" />
 
+    <TextView
+        android:id="@+id/tv_baby_name_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingBottom="16dp"
+        android:text="Name in Baby Daybook:"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
+        app:layout_constraintTop_toBottomOf="@id/tv_breastfeeding_end" />
+
+    <EditText
+        android:id="@+id/baby_name_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:text=""
+        app:layout_constraintBottom_toBottomOf="@+id/tv_baby_name_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/tv_baby_name_header"
+        app:layout_constraintTop_toTopOf="@+id/tv_baby_name_header"
+        app:layout_constraintVertical_bias="0.0" />
+
     <androidx.constraintlayout.widget.Group
         android:id="@+id/breastfeeding_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="iv_breastfeeding,tv_breastfeeding,tv_breastfeeding_start,tv_breastfeeding_end,tv_breastfeeding_end_value,tv_breastfeeding_start_value,breastfeeding_value" />
+        app:constraint_referenced_ids="iv_breastfeeding,tv_breastfeeding,tv_breastfeeding_start,tv_breastfeeding_end,tv_breastfeeding_end_value,tv_breastfeeding_start_value,breastfeeding_value,baby_name_value,tv_baby_name_header" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/breastfeeding_start_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="tv_breastfeeding_start,tv_breastfeeding_start_value" />
+        app:constraint_referenced_ids="tv_breastfeeding_start,tv_breastfeeding_start_value,tv_baby_name_header,baby_name_value" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/breastfeeding_end_group"

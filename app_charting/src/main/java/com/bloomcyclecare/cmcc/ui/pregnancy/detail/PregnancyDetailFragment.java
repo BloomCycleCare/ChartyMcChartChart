@@ -9,6 +9,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
@@ -17,6 +18,7 @@ import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.jakewharton.rxbinding2.view.RxView;
 import com.jakewharton.rxbinding2.widget.RxCompoundButton;
+import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import org.joda.time.LocalDate;
 
@@ -50,6 +52,7 @@ public class PregnancyDetailFragment extends Fragment {
   private TextView mBreastfeedingStartValue;
   private View mBreastfeedingEndGroup;
   private TextView mBreastfeedingEndValue;
+  private EditText mBabyNameValue;
 
   private PregnancyDetailViewModel mViewModel;
 
@@ -74,6 +77,7 @@ public class PregnancyDetailFragment extends Fragment {
     mBreastfeedingStartValue = view.findViewById(R.id.tv_breastfeeding_start_value);
     mBreastfeedingEndGroup = view.findViewById(R.id.breastfeeding_end_group);
     mBreastfeedingEndValue = view.findViewById(R.id.tv_breastfeeding_end_value);
+    mBabyNameValue = view.findViewById(R.id.baby_name_value);
 
     // Connect views to handlers
     mDisposables.add(RxView.clicks(mDueDateValueView).subscribe(o -> onDueDateClick()));
@@ -99,6 +103,16 @@ public class PregnancyDetailFragment extends Fragment {
           return true;
         })
         .subscribe(mViewModel::onBreastfeedingToggle));
+    mDisposables.add(RxTextView.textChanges(mBabyNameValue)
+        .filter(v -> {
+          if (!rendered.get()) {
+            Timber.v("Dropping name update, ViewState not yet rendered");
+            return false;
+          }
+          return true;
+        })
+        .map(CharSequence::toString)
+        .subscribe(mViewModel::onBabyNameUpdate));
 
     return view;
   }
@@ -150,6 +164,11 @@ public class PregnancyDetailFragment extends Fragment {
         Timber.d("Updating breastfeeding end date UI");
         mBreastfeedingEndValue.setText(dateStr);
       }
+    }
+
+    if (!mBabyNameValue.getText().toString().equals(pregnancy.babyDaybookName)) {
+      Timber.d("Updating baby name UI");
+      mBabyNameValue.setText(pregnancy.babyDaybookName);
     }
 
     if (mBreastfeedingValue.isChecked() != viewState.showBreastfeedingStartDate) {
