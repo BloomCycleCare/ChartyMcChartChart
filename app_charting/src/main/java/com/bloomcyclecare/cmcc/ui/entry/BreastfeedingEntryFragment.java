@@ -2,6 +2,8 @@ package com.bloomcyclecare.cmcc.ui.entry;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -73,6 +75,19 @@ public class BreastfeedingEntryFragment extends Fragment {
   @Override
   public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_breastfeeding_entry, container, false);
+
+    view.findViewById(R.id.button_bbdb).setOnClickListener(v -> new AlertDialog.Builder(requireContext())
+        .setTitle("Import from Baby Daybook")
+        .setMessage("CMCC supports ingesting breastfeeding data recorded in the Baby Daybook app (which is great BTW). Please follow these steps to import your data:\n 1. Open Baby Daybook\n 2. Open Settings\n 3. Select Backup & Restore\n 4. Select the share button on the most recent backup (you can create a new one if you like)\n 5. Open the file with CMCC\n 6. Follow the onscreen instructions")
+        .setPositiveButton("Open Baby Daybook", (d,w) -> {
+          Intent intent = new Intent(Intent.ACTION_VIEW);
+          intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+          intent.setData(Uri.parse("market://details?id=" + "com.drillyapps.babydaybook"));
+          startActivity(intent);
+          d.dismiss();
+        })
+        .setNegativeButton("Close", (d,w) -> d.dismiss())
+        .show());
 
     TextView maxGapValue = view.findViewById(R.id.max_gap_value);
     TextView numFeedingsNightValue = view.findViewById(R.id.night_feedings_value);
