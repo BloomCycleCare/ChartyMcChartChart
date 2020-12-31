@@ -5,6 +5,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -18,12 +19,14 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -87,7 +90,8 @@ public class EntryDetailActivity extends AppCompatActivity {
      * {@link FragmentStatePagerAdapter}.
      */
     SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(
-        getSupportFragmentManager(), entryModifyContext, mViewModel.showMeasurementPage());
+        getSupportFragmentManager(), entryModifyContext,
+        mViewModel.showMeasurementPage(), mViewModel.showBreastfeedingPage());
 
     // Set up the ViewPager with the sections adapter.
     /**
@@ -252,12 +256,26 @@ public class EntryDetailActivity extends AppCompatActivity {
   public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
 
     private final CycleRenderer.EntryModificationContext mEntryModificationContext;
-    private final boolean shouldShowMeasurementPage;
 
-    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage) {
+    private final ImmutableList<Pair<String, Supplier<Fragment>>> fragmentSuppliers;
+
+    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage, boolean shouldShowBreastfeedingPage) {
       super(fm);
       mEntryModificationContext = entryModificationContext;
-      this.shouldShowMeasurementPage = shouldShowMeasurementPage;
+
+      ImmutableList.Builder<Pair<String, Supplier<Fragment>>> builder = ImmutableList.builder();
+      builder.add(Pair.create("Observation", ObservationEntryFragment::new));
+
+      if (shouldShowMeasurementPage) {
+        builder.add(Pair.create("Measurements", MeasurementEntryFragment::new));
+      }
+      if (shouldShowBreastfeedingPage) {
+        builder.add(Pair.create("Breastfeeding", BreastfeedingEntryFragment::new));
+      }
+
+      // TODO: add Wellness and Symptom
+
+      fragmentSuppliers = builder.build();
     }
 
     @Override
@@ -265,54 +283,26 @@ public class EntryDetailActivity extends AppCompatActivity {
       Bundle args = new Bundle();
       args.putParcelable(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(mEntryModificationContext));
 
-      Fragment fragment = null;
-      // getItem is called to instantiate the fragment for the given page.
-      // Return a PlaceholderFragment (defined as a static inner class below).
-      switch (position) {
-        case 0:
-          fragment = new ObservationEntryFragment();
-          break;
-        case 1:
-          fragment = new MeasurementEntryFragment();
-          break;
-        case 2:
-          fragment = new WellnessEntryFragment();
-          break;
-        case 3:
-          fragment = new SymptomEntryFragment();
-          break;
+      if (position > getCount() - 1) {
+        throw new IllegalArgumentException();
       }
-      if (fragment == null) {
-        Timber.e("Fragment should not be null!");
-        return null;
-      } else {
-        fragment.setArguments(args);
-        return fragment;
-      }
+
+      Fragment fragment = fragmentSuppliers.get(position).second.get();
+      fragment.setArguments(args);
+      return fragment;
     }
 
     @Override
     public int getCount() {
-      // TODO: change to 4 when we're ready to show wellness and symptom stuff
-      if (shouldShowMeasurementPage) {
-        return 2;
-      }
-      return 1;
+      return fragmentSuppliers.size();
     }
 
     @Override
     public CharSequence getPageTitle(int position) {
-      switch (position) {
-        case 0:
-          return "Observation";
-        case 1:
-          return "Measurement";
-        case 2:
-          return "Wellness";
-        case 3:
-          return "Symptoms";
+      if (position > getCount() - 1) {
+        throw new IllegalArgumentException();
       }
-      return null;
+      return fragmentSuppliers.get(position).first;
     }
   }
 }
