@@ -100,6 +100,16 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
   }
 
   @Override
+  public Flowable<List<ChartEntry>> getAllBetween(LocalDate start, LocalDate endInclusive) {
+    return mEntriesSubject.toFlowable(BackpressureStrategy.BUFFER)
+        .map(entries -> {
+          SortedMap<LocalDate, ChartEntry> m = entries.tailMap(start);
+          m = m.headMap(endInclusive);
+          return ImmutableList.copyOf(m.values());
+        });
+  }
+
+  @Override
   public Flowable<List<ChartEntry>> getStreamForCycle(Flowable<Cycle> cycleStream) {
     return Flowable.combineLatest(
         mEntriesSubject.toFlowable(BackpressureStrategy.BUFFER),

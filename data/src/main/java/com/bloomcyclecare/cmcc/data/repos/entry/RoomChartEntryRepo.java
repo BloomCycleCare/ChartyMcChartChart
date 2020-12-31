@@ -14,13 +14,13 @@ import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
-import com.google.common.base.Optional;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -133,27 +133,32 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         .distinctUntilChanged()
         .map(cycle -> Pair.create(
             cycle.startDate,
-            Optional.fromNullable(cycle.endDate).or(LocalDate.now())))
-        .flatMap(pair -> Flowable.combineLatest(
-            observationEntryDao.getIndexedStream(pair.first, pair.second)
-                .doOnNext(n -> Timber.v("Got new observation stream for cycle starting %s", pair.first)),
-            wellnessEntryDao.getIndexedStream(pair.first, pair.second)
-                .doOnNext(n -> Timber.v("Got new wellness stream for cycle starting %s", pair.first)),
-            symptomEntryDao.getIndexedStream(pair.first, pair.second)
-                .doOnNext(n -> Timber.v("Got new symptom stream for cycle starting %s", pair.first)),
-            measurementEntryDao.getIndexedStream(pair.first, pair.second)
-                .doOnNext(n -> Timber.v("Got new measurement stream for cycle starting %s", pair.first)),
-            breastfeedingEntryDao.getIndexedStream(pair.first, pair.second)
-                .doOnNext(n -> Timber.v("Got new breastfeeding stream for cycle starting %s", pair.first)),
-            stickerSelectionRepo.getSelections(Range.create(pair.first, pair.second))
-                .doOnNext(n -> Timber.v("Got new selections for cycle starting %s", pair.first)),
-            (observationStream, wellnessStream, symptomStream, measurementStream, breastfeedingStream, stickerSelections) -> {
-              List<ChartEntry> out = new ArrayList<>();
-              for (LocalDate d : DateUtil.daysBetween(pair.first, pair.second, false)) {
-                out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), measurementStream.get(d), breastfeedingStream.get(d), stickerSelections.get(d)));
-              }
-              return out;
-            }));
+            Optional.ofNullable(cycle.endDate).orElse(LocalDate.now())))
+        .flatMap(pair -> getAllBetween(pair.first, pair.second));
+  }
+
+  @Override
+  public Flowable<List<ChartEntry>> getAllBetween(LocalDate start, LocalDate endInclusive) {
+    return Flowable.combineLatest(
+        observationEntryDao.getIndexedStream(start, endInclusive)
+            .doOnNext(n -> Timber.v("Got new observation stream for cycle starting %s", start)),
+        wellnessEntryDao.getIndexedStream(start, endInclusive)
+            .doOnNext(n -> Timber.v("Got new wellness stream for cycle starting %s", start)),
+        symptomEntryDao.getIndexedStream(start, endInclusive)
+            .doOnNext(n -> Timber.v("Got new symptom stream for cycle starting %s", start)),
+        measurementEntryDao.getIndexedStream(start, endInclusive)
+            .doOnNext(n -> Timber.v("Got new measurement stream for cycle starting %s", start)),
+        breastfeedingEntryDao.getIndexedStream(start, endInclusive)
+            .doOnNext(n -> Timber.v("Got new breastfeeding stream for cycle starting %s", start)),
+        stickerSelectionRepo.getSelections(Range.create(start, endInclusive))
+            .doOnNext(n -> Timber.v("Got new selections for cycle starting %s", start)),
+        (observationStream, wellnessStream, symptomStream, measurementStream, breastfeedingStream, stickerSelections) -> {
+          List<ChartEntry> out = new ArrayList<>();
+          for (LocalDate d : DateUtil.daysBetween(start, endInclusive, false)) {
+            out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), measurementStream.get(d), breastfeedingStream.get(d), stickerSelections.get(d)));
+          }
+          return out;
+        });
   }
 
   @Override
