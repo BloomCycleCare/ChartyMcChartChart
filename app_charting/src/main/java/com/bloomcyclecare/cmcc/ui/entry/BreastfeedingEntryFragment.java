@@ -118,6 +118,11 @@ public class BreastfeedingEntryFragment extends Fragment {
       } else {
         numFeedingsNightValue.setText(String.valueOf(viewState.entry.numNightFeedings));
       }
+      if (viewState.entry.maxGapBetweenFeedings == null) {
+        maxGapValue.setText("TBD");
+      } else {
+        maxGapValue.setText(String.format("%.1f hrs", viewState.entry.maxGapBetweenFeedings.getStandardMinutes() / (float) 60));
+      }
     });
 
     return view;
