@@ -5,62 +5,36 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.logic.breastfeeding.BabyDaybookDB;
 import com.bloomcyclecare.cmcc.logic.breastfeeding.BreastfeedingStats;
+import com.bloomcyclecare.cmcc.ui.init.SplashFragment;
+import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 
 import org.joda.time.LocalDate;
 
 import java.util.Map;
 
-import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.disposables.Disposable;
 import timber.log.Timber;
 
-/**
- * A simple {@link Fragment} subclass.
- * Use the {@link BabyDaybookImport#newInstance} factory method to
- * create an instance of this fragment.
- */
-public class BabyDaybookImport extends Fragment {
-
-  // TODO: Rename parameter arguments, choose names that match
-  // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-  private static final String ARG_PARAM1 = "param1";
-  private static final String ARG_PARAM2 = "param2";
-
-  // TODO: Rename and change types of parameters
-  private String mParam1;
-  private String mParam2;
+public class BabyDaybookImport extends SplashFragment {
 
   public BabyDaybookImport() {
     // Required empty public constructor
   }
 
-  /**
-   * Use this factory method to create a new instance of
-   * this fragment using the provided parameters.
-   *
-   * @param param1 Parameter 1.
-   * @param param2 Parameter 2.
-   * @return A new instance of fragment BabyDaybookImport.
-   */
-  // TODO: Rename and change types and number of parameters
-  public static BabyDaybookImport newInstance(String param1, String param2) {
-    BabyDaybookImport fragment = new BabyDaybookImport();
-    Bundle args = new Bundle();
-    args.putString(ARG_PARAM1, param1);
-    args.putString(ARG_PARAM2, param2);
-    fragment.setArguments(args);
-    return fragment;
-  }
-
   @Override
-  public void onCreate(Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
+  public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
+    View view = super.onCreateView(inflater, container, savedInstanceState);
+
+    MainViewModel mainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+    mainViewModel.updateTitle("Baby Daybook Import");
 
     Disposable d = BabyDaybookDB.fromIntent(requireActivity().getIntent(), requireContext())
+        .doOnSubscribe(d1 -> updateStatus("Reading data from Baby Daybook"))
         // Get all the start times
+        .doOnSuccess(db -> updateStatus("Generating stats"))
         .map(BreastfeedingStats::new)
         .flatMap(stats -> stats.dailyStats("Gladys"))
         .subscribe(out -> {
@@ -78,13 +52,11 @@ public class BabyDaybookImport extends Fragment {
               aggregateStats.nDayMean, aggregateStats.nDayInterval, aggregateStats.nDayMedian,
               aggregateStats.nNightMean, aggregateStats.nNightInterval, aggregateStats.nNightMedian,
               aggregateStats.maxGapMedian, aggregateStats.maxGapP95, aggregateStats.maxGapP95);
-        }, Timber::e);
-  }
-
-  @Override
-  public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                           Bundle savedInstanceState) {
-    // Inflate the layout for this fragment
-    return inflater.inflate(R.layout.fragment_baby_daybook_import, container, false);
+          updateStatus("Success!");
+        }, t -> {
+          showError("Error importing data!");
+          Timber.e(t);
+        });
+    return view;
   }
 }

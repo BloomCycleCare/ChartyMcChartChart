@@ -75,7 +75,7 @@ public class SplashFragment extends Fragment {
     if (activity == null) {
       return;
     }
-    getActivity().runOnUiThread(() -> mStatusView.setText(status));
+    requireActivity().runOnUiThread(() -> mStatusView.setText(status));
   }
 
   public void showError(final String errorText) {
