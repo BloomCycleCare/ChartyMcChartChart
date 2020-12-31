@@ -53,6 +53,7 @@ public class PregnancyDetailFragment extends Fragment {
   private View mBreastfeedingEndGroup;
   private TextView mBreastfeedingEndValue;
   private EditText mBabyNameValue;
+  private TextView mBreastfeedingStats;
 
   private PregnancyDetailViewModel mViewModel;
 
@@ -78,6 +79,7 @@ public class PregnancyDetailFragment extends Fragment {
     mBreastfeedingEndGroup = view.findViewById(R.id.breastfeeding_end_group);
     mBreastfeedingEndValue = view.findViewById(R.id.tv_breastfeeding_end_value);
     mBabyNameValue = view.findViewById(R.id.baby_name_value);
+    mBreastfeedingStats = view.findViewById(R.id.breastfeeding_stats);
 
     // Connect views to handlers
     mDisposables.add(RxView.clicks(mDueDateValueView).subscribe(o -> onDueDateClick()));
@@ -174,6 +176,8 @@ public class PregnancyDetailFragment extends Fragment {
     if (mBreastfeedingValue.isChecked() != viewState.showBreastfeedingStartDate) {
       mBreastfeedingValue.setChecked(viewState.showBreastfeedingStartDate);
     }
+
+    mBreastfeedingStats.setText(viewState.stats);
 
     if (rendered.compareAndSet(false, true)) {
       Timber.d("Rendered first view state");

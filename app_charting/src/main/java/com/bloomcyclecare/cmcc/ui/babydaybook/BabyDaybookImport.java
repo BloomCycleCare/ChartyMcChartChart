@@ -45,12 +45,13 @@ public class BabyDaybookImport extends SplashFragment {
     mainViewModel.updateTitle("Baby Daybook Import");
 
     ChartingApp app = ChartingApp.cast(requireActivity().getApplication());
+    RWChartEntryRepo chartEntryRepo = app.entryRepo(ViewMode.CHARTING);
 
     Disposable d = Single.merge(Single.zip(
         BabyDaybookDB
             .fromIntent(requireActivity().getIntent(), requireContext())
             .doOnSubscribe(d1 -> updateStatus("Parsing data from Baby Daybook"))
-            .map(BreastfeedingStats::new),
+            .map(db -> new BreastfeedingStats(db, chartEntryRepo, app.pregnancyRepo(ViewMode.CHARTING))),
         app.pregnancyRepo(ViewMode.CHARTING)
             .getAll()
             .firstOrError()
@@ -76,9 +77,8 @@ public class BabyDaybookImport extends SplashFragment {
 
           updateStatus(String.format("Reading data for %s", pregnancy.get().babyDaybookName));
           LocalDate lastEntryDate = pregnancy.map(p -> p.breastfeedingEndDate).orElse(LocalDate.now());
-          RWChartEntryRepo chartEntryRepo = app.entryRepo(ViewMode.CHARTING);
           return Single.merge(Single.zip(
-              stats.dailyStats(pregnancy.get().babyDaybookName),
+              stats.dailyStatsFromBabyDaybook(pregnancy.get().babyDaybookName),
               chartEntryRepo
                   .getAllBetween(pregnancy.get().breastfeedingStartDate, lastEntryDate)
                   .firstOrError(),
@@ -100,7 +100,7 @@ public class BabyDaybookImport extends SplashFragment {
                     entryUpdated = true;
                   }
                   if (entry.breastfeedingEntry.maxGapBetweenFeedings == null) {
-                    entry.breastfeedingEntry.maxGapBetweenFeedings = ds.longestGapDuration();
+                    entry.breastfeedingEntry.maxGapBetweenFeedings = ds.longestGapDuration;
                     entryUpdated = true;
                   }
                   if (entryUpdated) {

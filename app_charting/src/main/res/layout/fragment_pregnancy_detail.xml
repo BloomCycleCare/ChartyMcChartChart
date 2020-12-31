@@ -249,7 +249,9 @@
         android:id="@+id/breastfeeding_group"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:constraint_referenced_ids="iv_breastfeeding,tv_breastfeeding,tv_breastfeeding_start,tv_breastfeeding_end,tv_breastfeeding_end_value,tv_breastfeeding_start_value,breastfeeding_value,baby_name_value,tv_baby_name_header" />
+        app:constraint_referenced_ids="iv_breastfeeding,tv_breastfeeding,tv_breastfeeding_start,tv_breastfeeding_end,tv_breastfeeding_end_value,tv_breastfeeding_start_value,breastfeeding_value,baby_name_value,tv_baby_name_header,breastfeeding_stats"
+        tools:layout_editor_absoluteX="8dp"
+        tools:layout_editor_absoluteY="8dp" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/breastfeeding_start_group"
@@ -262,5 +264,16 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:constraint_referenced_ids="tv_breastfeeding_end,tv_breastfeeding_end_value" />
+
+    <TextView
+        android:id="@+id/breastfeeding_stats"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="TextView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tv_baby_name_header"
+        app:layout_constraintVertical_bias="0.13999999" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

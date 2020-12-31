@@ -2,10 +2,14 @@ package com.bloomcyclecare.cmcc.ui.pregnancy.detail;
 
 import android.app.Application;
 
+import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
+import com.bloomcyclecare.cmcc.logic.breastfeeding.BreastfeedingStats;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 
@@ -23,6 +27,7 @@ import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
+import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.SingleSubject;
 import io.reactivex.subjects.Subject;
@@ -30,6 +35,7 @@ import timber.log.Timber;
 
 public class PregnancyDetailViewModel extends AndroidViewModel {
 
+  private final BreastfeedingStats mStats;
   private final RWPregnancyRepo mPregnancyRepo;
   private final SingleSubject<Pregnancy> mPregnancy = SingleSubject.create();
   private final Subject<Optional<LocalDate>> mDueDateUpdates = BehaviorSubject.create();
@@ -43,6 +49,7 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   public PregnancyDetailViewModel(@NonNull Application application, Pregnancy pregnancy) {
     super(application);
     mPregnancyRepo = ChartingApp.cast(application).pregnancyRepo();
+    mStats = new BreastfeedingStats(null, ChartingApp.cast(application).entryRepo(ViewMode.CHARTING), mPregnancyRepo);
 
     Timber.v("Initializing with %s", pregnancy);
     mDueDateUpdates.onNext(Optional.ofNullable(pregnancy.dueDate));
@@ -115,14 +122,34 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mBreastfeedingStartDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBreastfeedingEndDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBabyNameUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue, breastfeedingStart, breastfeedingEnd, babyName) -> {
+        mPregnancy.toFlowable().distinctUntilChanged()
+            .flatMapSingle(pregnancy -> {
+              if (Strings.isNullOrEmpty(pregnancy.babyDaybookName)) {
+                return Single.just(ImmutableList.<String>of());
+              }
+              // TODO: this should be hot
+              return mStats.dailyStatsFromRepo(pregnancy.babyDaybookName)
+                  .map(m -> BreastfeedingStats.aggregate(m.values()))
+                  .map(aggregateStats -> {
+                    ImmutableList.Builder<String> lines = ImmutableList.builder();
+                    lines.add(String.format("Number of day feedings: %.2f±%.2f", aggregateStats.nDayMean, aggregateStats.nDayInterval));
+                    lines.add(String.format("Number of night feedings: %.2f±%.2f", aggregateStats.nNightMean, aggregateStats.nNightInterval));
+
+                    lines.add("Max gap between feedings (median): " + aggregateStats.maxGapMedian);
+                    lines.add("Max gap between feedings (p95): " + aggregateStats.maxGapP95);
+
+                    lines.add("Longest gap on: " + aggregateStats.longestGapDate);
+                    return lines.build();
+                  });
+            }),
+        (pregnancy, dueDate, deliveryDate, breastfeedingSwitchValue, breastfeedingStart, breastfeedingEnd, babyName, stats) -> {
           Pregnancy updatedPregnancy = pregnancy.copy();
           updatedPregnancy.dueDate = dueDate.orElse(null);
           updatedPregnancy.deliveryDate = deliveryDate.orElse(null);
           updatedPregnancy.breastfeedingStartDate = breastfeedingStart.orElse(null);
           updatedPregnancy.breastfeedingEndDate = breastfeedingEnd.orElse(null);
           updatedPregnancy.babyDaybookName = babyName.orElse(null);
-          return new ViewState(updatedPregnancy, breastfeedingSwitchValue);
+          return new ViewState(updatedPregnancy, breastfeedingSwitchValue, Joiner.on("\n").join(stats));
         })
         .toObservable();
   }
@@ -133,12 +160,14 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     public final boolean showBreastfeedingSection;
     public final boolean showBreastfeedingStartDate;
     public final boolean showBreastfeedingEndDate;
+    public final String stats;
 
-    private ViewState(Pregnancy pregnancy, boolean breastfeedingToggleValue) {
+    private ViewState(Pregnancy pregnancy, boolean breastfeedingToggleValue, String stats) {
       this.pregnancy = pregnancy;
       this.showBreastfeedingSection = pregnancy.deliveryDate != null;
       this.showBreastfeedingStartDate = showBreastfeedingSection && breastfeedingToggleValue;
       this.showBreastfeedingEndDate = showBreastfeedingStartDate && pregnancy.breastfeedingStartDate != null;
+      this.stats = stats;
     }
   }
 

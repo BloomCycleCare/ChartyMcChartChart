@@ -3,6 +3,11 @@ package com.bloomcyclecare.cmcc.logic.breastfeeding;
 import android.util.Pair;
 import android.util.Range;
 
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
+import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSortedMap;
 import com.google.common.collect.ImmutableSortedSet;
@@ -30,13 +35,18 @@ public class BreastfeedingStats {
   private static final Duration MIN_GAP = Duration.standardMinutes(15);
 
   private final BabyDaybookDB mDB;
+  private final ROChartEntryRepo mChartEntryRepo;
+  private final ROPregnancyRepo mPregnancyRepo;
 
-  public BreastfeedingStats(BabyDaybookDB db) {
+  public BreastfeedingStats(BabyDaybookDB db, ROChartEntryRepo chartEntryRepo, ROPregnancyRepo pregnancyRepo) {
     mDB = db;
+    mChartEntryRepo = chartEntryRepo;
+    mPregnancyRepo = pregnancyRepo;
   }
 
   public static class AggregateStats {
     public final Range<LocalDate> dateRange;
+    public final LocalDate longestGapDate;
 
     public final double nDayMedian;
     public final double nDayMean;
@@ -59,7 +69,7 @@ public class BreastfeedingStats {
       List<Integer> nNights = dailyStats.stream().map(s -> s.nNight).collect(Collectors.toList());
       nNightMedian = Quantiles.median().compute(nNights);
 
-      List<Double> maxGaps = dailyStats.stream().map(s -> s.longestGapDuration().getStandardMinutes() / (double) 60).collect(Collectors.toList());
+      List<Double> maxGaps = dailyStats.stream().map(s -> s.longestGapDuration.getStandardMinutes() / (double) 60).collect(Collectors.toList());
       maxGapMedian = Quantiles.median().compute(maxGaps);
       maxGapP95 = Quantiles.percentiles().index(95).compute(maxGaps);
       maxGapP99 = Quantiles.percentiles().index(99).compute(maxGaps);
@@ -67,6 +77,7 @@ public class BreastfeedingStats {
       LocalDate firstDate = null, lastDate = null;
       int nDaySum = 0;
       int nNightSum = 0;
+      DailyStats longestGap = null;
       for (DailyStats stats : dailyStats) {
         if (firstDate == null || stats.day.isBefore(firstDate)) {
           firstDate = stats.day;
@@ -76,7 +87,13 @@ public class BreastfeedingStats {
         }
         nDaySum += stats.nDay;
         nNightSum += stats.nNight;
+
+
+        if (longestGap == null || stats.longestGapDuration.isLongerThan(longestGap.longestGapDuration)) {
+          longestGap = stats;
+        }
       }
+      longestGapDate = longestGap.day;
 
       nDayMean = nDaySum / (float) n;
       nNightMean = nNightSum / (float) n;
@@ -101,27 +118,65 @@ public class BreastfeedingStats {
 
   public static class DailyStats {
     public final LocalDate day;
-    public final ImmutableSortedSet<Interval> gaps;
     public final int nDay;
     public final int nNight;
+    public final Duration longestGapDuration;
 
     public DailyStats(LocalDate day, ImmutableSortedSet<Interval> gaps, int nDay, int nNight) {
+      this(day, new Duration(gaps.last().getStart(), gaps.last().getEnd()), nDay, nNight);
+    }
+
+    public DailyStats(BreastfeedingEntry entry) {
+      this(entry.mEntryDate, entry.maxGapBetweenFeedings, entry.numDayFeedings, entry.numNightFeedings);
+    }
+
+    public DailyStats(LocalDate day, Duration longestGapDuration, int nDay, int nNight) {
       this.day = day;
-      this.gaps = gaps;
+      this.longestGapDuration = longestGapDuration;
       this.nDay = nDay;
       this.nNight = nNight;
     }
-
-    public Duration shortestGapDuration() {
-      return duration(gaps.first());
-    }
-
-    public Duration longestGapDuration() {
-      return duration(gaps.last());
-    }
   }
 
-  public Single<ImmutableSortedMap<LocalDate, DailyStats>> dailyStats(String babyName) {
+  public Single<ImmutableSortedMap<LocalDate, DailyStats>> dailyStatsFromRepo(String babyName) {
+    return mPregnancyRepo.getAll().firstOrError()
+        .map(pregnancies -> {
+          for (Pregnancy pregnancy : pregnancies) {
+            if (pregnancy.babyDaybookName != null && pregnancy.babyDaybookName.equals(babyName)) {
+              return Optional.of(pregnancy);
+            }
+          }
+          return Optional.<Pregnancy>empty();
+        })
+        .flatMap(pregnancy -> {
+          if (!pregnancy.isPresent()) {
+            return Single.just(ImmutableSortedMap.<LocalDate, DailyStats>naturalOrder().build());
+          }
+          LocalDate endDate = Optional.ofNullable(pregnancy.get().breastfeedingEndDate).orElse(LocalDate.now());
+          return mChartEntryRepo
+              .getAllBetween(pregnancy.get().breastfeedingStartDate, endDate)
+              .firstOrError()
+              .map(entries -> {
+                ImmutableSortedMap.Builder<LocalDate, DailyStats> statsBuilder = ImmutableSortedMap.naturalOrder();
+                for (ChartEntry entry : entries) {
+                  // TODO: this could be better
+                  if (entry.breastfeedingEntry.maxGapBetweenFeedings == null) {
+                    continue;
+                  }
+                  if (entry.breastfeedingEntry.numDayFeedings < 0) {
+                    continue;
+                  }
+                  if (entry.breastfeedingEntry.numNightFeedings < 0) {
+                    continue;
+                  }
+                  statsBuilder.put(entry.entryDate, new DailyStats(entry.breastfeedingEntry));
+                }
+                return statsBuilder.build();
+              });
+        });
+  }
+
+  public Single<ImmutableSortedMap<LocalDate, DailyStats>> dailyStatsFromBabyDaybook(String babyName) {
     return indexByDay(mDB.actionIntervals(babyName, "breastfeeding"), true, MIN_GAP)
         .flatMap(m -> Observable.fromIterable(m.entrySet())
             .map(e -> {
