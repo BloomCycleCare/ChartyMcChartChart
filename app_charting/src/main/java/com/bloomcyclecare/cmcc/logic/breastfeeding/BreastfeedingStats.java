@@ -18,7 +18,6 @@ import org.joda.time.Interval;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -61,16 +60,29 @@ public class BreastfeedingStats {
     public final double maxGapP95;
     public final double maxGapP99;
 
-    private AggregateStats(Collection<DailyStats> dailyStats) {
-      nDaysWithStats = dailyStats.size();
+    @SuppressWarnings("UnstableApiUsage")
+    private AggregateStats(ImmutableSortedMap<LocalDate, DailyStats> dailyStats, int tailWindowSize) {
+      if (tailWindowSize == 0) {
+        throw new IllegalArgumentException();
+      }
 
-      List<Integer> nDays = dailyStats.stream().map(s -> s.nDay).collect(Collectors.toList());
+      LocalDate windowStart = tailWindowSize < 0
+          ? dailyStats.firstKey() : dailyStats.lastKey().minusDays(tailWindowSize);
+
+
+      List<DailyStats> selectedStats = new ArrayList<>();
+      for (LocalDate d : dailyStats.tailMap(windowStart).keySet()) {
+        selectedStats.add(dailyStats.get(d));
+      }
+      nDaysWithStats = selectedStats.size();
+
+      List<Integer> nDays = selectedStats.stream().map(s -> s.nDay).collect(Collectors.toList());
       nDayMedian = Quantiles.median().compute(nDays);
 
-      List<Integer> nNights = dailyStats.stream().map(s -> s.nNight).collect(Collectors.toList());
+      List<Integer> nNights = selectedStats.stream().map(s -> s.nNight).collect(Collectors.toList());
       nNightMedian = Quantiles.median().compute(nNights);
 
-      List<Double> maxGaps = dailyStats.stream().map(s -> s.longestGapDuration.getStandardMinutes() / (double) 60).collect(Collectors.toList());
+      List<Double> maxGaps = selectedStats.stream().map(s -> s.longestGapDuration.getStandardMinutes() / (double) 60).collect(Collectors.toList());
       maxGapMedian = Quantiles.median().compute(maxGaps);
       maxGapP95 = Quantiles.percentiles().index(95).compute(maxGaps);
       maxGapP99 = Quantiles.percentiles().index(99).compute(maxGaps);
@@ -79,7 +91,7 @@ public class BreastfeedingStats {
       int nDaySum = 0;
       int nNightSum = 0;
       DailyStats longestGap = null;
-      for (DailyStats stats : dailyStats) {
+      for (DailyStats stats : selectedStats) {
         if (firstDate == null || stats.day.isBefore(firstDate)) {
           firstDate = stats.day;
         }
@@ -101,7 +113,7 @@ public class BreastfeedingStats {
 
       double nDaySquaredDiffSum = 0.0;
       double nNightSquaredDiffSum = 0.0;
-      for (DailyStats stats : dailyStats) {
+      for (DailyStats stats : selectedStats) {
         nDaySquaredDiffSum += Math.pow(stats.nDay - nDayMean, 2);
         nNightSquaredDiffSum += Math.pow(stats.nNight - nNightMean, 2);
       }
@@ -114,8 +126,12 @@ public class BreastfeedingStats {
     }
   }
 
-  public static AggregateStats aggregate(Collection<DailyStats> dailyStats) {
-    return new AggregateStats(dailyStats);
+  public static AggregateStats aggregateLastN( ImmutableSortedMap<LocalDate, DailyStats> dailyStats, int windowSize) {
+    return new AggregateStats(dailyStats, windowSize);
+  }
+
+  public static AggregateStats aggregate(ImmutableSortedMap<LocalDate, DailyStats> dailyStats) {
+    return new AggregateStats(dailyStats, -1);
   }
 
   public static class DailyStats {

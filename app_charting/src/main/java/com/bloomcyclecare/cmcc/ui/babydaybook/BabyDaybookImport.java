@@ -129,7 +129,7 @@ public class BabyDaybookImport extends SplashFragment {
                     actions.add(chartEntryRepo.insert(entry));
                   }
                 }
-                BreastfeedingStats.AggregateStats aggregateStats = BreastfeedingStats.aggregate(dailyStats.values());
+                BreastfeedingStats.AggregateStats aggregateStats = BreastfeedingStats.aggregate(dailyStats);
                 Timber.i("Aggregate stats { nDay %f±%f p50 %f, nNight %f±%f p50 %f, maxGap p50 %f p95 %f max %f}",
                     aggregateStats.nDayMean, aggregateStats.nDayInterval, aggregateStats.nDayMedian,
                     aggregateStats.nNightMean, aggregateStats.nNightInterval, aggregateStats.nNightMedian,

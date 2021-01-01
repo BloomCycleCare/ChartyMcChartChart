@@ -142,19 +142,43 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
               }
               // TODO: this should be hot
               return mStats.dailyStatsFromRepo(pregnancy.babyDaybookName)
-                  .map(m -> BreastfeedingStats.aggregate(m.values()))
-                  .map(aggregateStats -> {
-                    ImmutableList.Builder<String> lines = ImmutableList.builder();
-                    lines.add(String.format("Number of days since start: %d", Days.daysBetween(pregnancy.breastfeedingStartDate, LocalDate.now()).getDays() + 1));
-                    lines.add(String.format("Number of days with stats: %d", aggregateStats.nDaysWithStats));
-                    lines.add("");
-                    lines.add(String.format("Number of day feedings: %.2f±%.2f", aggregateStats.nDayMean, aggregateStats.nDayInterval));
-                    lines.add(String.format("Number of night feedings: %.2f±%.2f", aggregateStats.nNightMean, aggregateStats.nNightInterval));
-                    lines.add("");
-                    lines.add(String.format("Max gap between feedings (median): %.2f",aggregateStats.maxGapMedian));
-                    lines.add(String.format("Max gap between feedings (p95): %.2f", aggregateStats.maxGapP95));
+                  .map(m -> {
+                    BreastfeedingStats.AggregateStats aggregateTotal = BreastfeedingStats.aggregate(m);
+                    BreastfeedingStats.AggregateStats aggregate7D = BreastfeedingStats.aggregateLastN(m, 7);
+                    BreastfeedingStats.AggregateStats aggregate30D = BreastfeedingStats.aggregateLastN(m, 30);
 
-                    lines.add("Longest gap on: " + aggregateStats.longestGapDate);
+                    ImmutableList.Builder<String> lines = ImmutableList.builder();
+                    lines.add("Longest gap on: " + aggregateTotal.longestGapDate);
+                    lines.add("");
+                    lines.add(String.format("Number of days since start: %d", Days.daysBetween(pregnancy.breastfeedingStartDate, LocalDate.now()).getDays() + 1));
+                    lines.add(String.format("Number of days with stats: %d", aggregateTotal.nDaysWithStats));
+                    lines.add("");
+                    lines.add("Number of day feedings:");
+                    lines.add(String.format(
+                        " - %.2f±%.2f, %.2f±%.2f, %.2f±%.2f",
+                        aggregateTotal.nDayMean, aggregateTotal.nDayInterval,
+                        aggregate30D.nDayMean, aggregate30D.nDayInterval,
+                        aggregate7D.nDayMean, aggregate7D.nDayInterval));
+                    lines.add("");
+                    lines.add("Number of night feedings:");
+                    lines.add(String.format(
+                        " - %.2f±%.2f, %.2f±%.2f, %.2f±%.2f",
+                        aggregateTotal.nNightMean, aggregateTotal.nNightInterval,
+                        aggregate30D.nNightMean, aggregate30D.nNightInterval,
+                        aggregate7D.nNightMean, aggregate7D.nNightInterval));
+                    lines.add("");
+                    lines.add("Max gap between feedings (median): ");
+                    lines.add(String.format(
+                        " - %.2f, %.2f, %.2f",
+                        aggregateTotal.maxGapMedian, aggregate30D.maxGapMedian, aggregate7D.maxGapMedian));
+                    lines.add("Max gap between feedings (p95): ");
+                    lines.add(String.format(
+                        " - %.2f, %.2f, %.2f",
+                        aggregateTotal.maxGapP95, aggregate30D.maxGapP95, aggregate7D.maxGapP95));
+
+                    lines.add("");
+                    lines.add("Key: total, 30d, 7d");
+
                     return lines.build();
                   });
             }),
