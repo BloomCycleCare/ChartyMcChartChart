@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.breastfeeding;
 
 import android.app.Application;
 

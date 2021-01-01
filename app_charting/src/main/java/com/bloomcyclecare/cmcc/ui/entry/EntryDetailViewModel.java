@@ -21,6 +21,7 @@ import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -54,21 +55,21 @@ import timber.log.Timber;
 
 public class EntryDetailViewModel extends AndroidViewModel {
 
-  final Subject<String> observationUpdates = BehaviorSubject.createDefault("");
-  final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
-  final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
-  final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
-  final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
+  public final Subject<String> observationUpdates = BehaviorSubject.createDefault("");
+  public final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
+  public final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
+  public final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
 
-  final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
-  final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
+  public final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
+  public final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
 
-  final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
-  final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
+  public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
+  public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
@@ -315,7 +316,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return shouldShowBreastfeedingPage.getValue();
   }
 
-  LiveData<ViewState> viewStates() {
+  public LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
@@ -428,14 +429,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return Completable.merge(actions);
   }
 
-  static class ViewState {
-    final CycleRenderer.EntryModificationContext entryModificationContext;
-    final ChartEntry chartEntry;
-    final String observationErrorText;
-    final boolean isInPregnancy;
-    final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
-    final List<ValidationIssue> validationIssues = new ArrayList<>();
-    final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
+  public static class ViewState {
+    public final CycleRenderer.EntryModificationContext entryModificationContext;
+    public final ChartEntry chartEntry;
+    public final String observationErrorText;
+    public final boolean isInPregnancy;
+    public final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
+    public final List<ValidationIssue> validationIssues = new ArrayList<>();
+    public final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
 
     ViewState(ViewState that) {
       this.entryModificationContext = that.entryModificationContext;
@@ -467,15 +468,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
       }
     }
 
-    boolean renderClarifyingQuestions() {
+    public boolean renderClarifyingQuestions() {
       return entryModificationContext.entry.observationEntry.observation != null;
     }
 
-    boolean promptForClarifyingQuestions() {
+    public boolean promptForClarifyingQuestions() {
       return !renderClarifyingQuestions();
     }
 
-    boolean showPointOfChange() {
+    public boolean showPointOfChange() {
       return renderClarifyingQuestions()
           && entryModificationContext.shouldAskEssentialSamenessIfMucus
           && chartEntry.observationEntry.hasMucus();

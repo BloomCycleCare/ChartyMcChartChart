@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.breastfeeding;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -14,6 +14,7 @@ import android.widget.TextView;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.ui.entry.EntryDetailViewModel;
 
 import org.parceler.Parcels;
 

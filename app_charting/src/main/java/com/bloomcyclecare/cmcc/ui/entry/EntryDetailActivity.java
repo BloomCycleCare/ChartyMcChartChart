@@ -4,8 +4,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
-import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,36 +17,26 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.android.material.tabs.TabLayout;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
-import static com.bloomcyclecare.cmcc.ui.entry.ObservationEntryFragment.OK_RESPONSE;
+import static com.bloomcyclecare.cmcc.ui.entry.observation.ObservationEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity {
-
-  private static final boolean DEBUG = true;
-  private static final String TAG = EntryDetailActivity.class.getSimpleName();
 
   private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
@@ -66,8 +54,6 @@ public class EntryDetailActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
 
-    if (DEBUG) Log.v(TAG, "onCreate: Start");
-
     Intent intent = getIntent();
     CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(
         intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
@@ -81,29 +67,15 @@ public class EntryDetailActivity extends AppCompatActivity {
     getSupportActionBar().setTitle(getTitle(entryModifyContext.cycle, entryModifyContext.entry.entryDate));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    /**
-     * The {@link PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(
+    EntryDetailPagerAdapter mEntryDetailPagerAdapter = new EntryDetailPagerAdapter(
         getSupportFragmentManager(), entryModifyContext,
         mViewModel.showMeasurementPage(), mViewModel.showBreastfeedingPage());
 
-    // Set up the ViewPager with the sections adapter.
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
     ViewPager mViewPager = findViewById(R.id.container);
-    mViewPager.setAdapter(mSectionsPagerAdapter);
+    mViewPager.setAdapter(mEntryDetailPagerAdapter);
 
     TabLayout tabLayout = findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
-
-    if (DEBUG) Log.v(TAG, "onCreate: Finish");
   }
 
   private Menu menu;
@@ -247,62 +219,5 @@ public class EntryDetailActivity extends AppCompatActivity {
 
   private static String getTitle(Cycle cycle, LocalDate entryDate) {
     return DateUtil.toUiStr(entryDate);
-  }
-
-  /**
-   * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-   * one of the sections/tabs/pages.
-   */
-  public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
-
-    private final CycleRenderer.EntryModificationContext mEntryModificationContext;
-
-    private final ImmutableList<Pair<String, Supplier<Fragment>>> fragmentSuppliers;
-
-    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage, boolean shouldShowBreastfeedingPage) {
-      super(fm);
-      mEntryModificationContext = entryModificationContext;
-
-      ImmutableList.Builder<Pair<String, Supplier<Fragment>>> builder = ImmutableList.builder();
-      builder.add(Pair.create("Observation", ObservationEntryFragment::new));
-
-      if (shouldShowMeasurementPage) {
-        builder.add(Pair.create("Measurements", MeasurementEntryFragment::new));
-      }
-      if (shouldShowBreastfeedingPage) {
-        builder.add(Pair.create("Breastfeeding", BreastfeedingEntryFragment::new));
-      }
-
-      // TODO: add Wellness and Symptom
-
-      fragmentSuppliers = builder.build();
-    }
-
-    @Override
-    public Fragment getItem(int position) {
-      Bundle args = new Bundle();
-      args.putParcelable(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(mEntryModificationContext));
-
-      if (position > getCount() - 1) {
-        throw new IllegalArgumentException();
-      }
-
-      Fragment fragment = fragmentSuppliers.get(position).second.get();
-      fragment.setArguments(args);
-      return fragment;
-    }
-
-    @Override
-    public int getCount() {
-      return fragmentSuppliers.size();
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-      if (position > getCount() - 1) {
-        throw new IllegalArgumentException();
-      }
-      return fragmentSuppliers.get(position).first;
-    }
   }
 }

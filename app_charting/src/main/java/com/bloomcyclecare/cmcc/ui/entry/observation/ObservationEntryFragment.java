@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.observation;
 
 import android.content.Context;
 import android.os.Bundle;
@@ -15,9 +15,11 @@ import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
-import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
+import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
+import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
+import com.bloomcyclecare.cmcc.ui.entry.EntryDetailViewModel;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.base.Strings;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;

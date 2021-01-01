@@ -9,6 +9,7 @@ import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
 import com.google.common.collect.Iterables;
 
 import org.joda.time.LocalDate;
