@@ -49,7 +49,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:text="a date here"
+        android:text="TBD"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintBottom_toBottomOf="@id/tv_test_date"
         app:layout_constraintEnd_toEndOf="parent"
@@ -84,13 +84,15 @@
         app:layout_constraintTop_toTopOf="@id/iv_due_date"
         app:layout_constraintVertical_bias="0.0" />
 
-    <TextView
+    <EditText
         android:id="@+id/tv_due_date_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:text="a date here"
+        android:text="TBD"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:focusable="false"
+        android:inputType="date"
         app:layout_constraintBottom_toBottomOf="@id/tv_due_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -135,13 +137,15 @@
         app:layout_constraintTop_toTopOf="@id/iv_delivery_date"
         app:layout_constraintVertical_bias="0.0" />
 
-    <TextView
+    <EditText
         android:id="@+id/tv_delivery_date_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:text="a date here"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:inputType="date"
+        android:focusable="false"
         app:layout_constraintBottom_toBottomOf="@id/tv_delivery_date"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -152,7 +156,6 @@
         android:id="@+id/tv_breastfeeding"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:paddingBottom="16dp"
         android:text="Breastfeeding?"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintBottom_toBottomOf="@+id/iv_breastfeeding"
@@ -176,19 +179,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:paddingBottom="16dp"
+        android:paddingTop="16dp"
         android:text="Breastfeeding Start:"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
         app:layout_constraintTop_toBottomOf="@id/tv_breastfeeding" />
 
-    <TextView
+    <EditText
         android:id="@+id/tv_breastfeeding_start_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:text="a date here"
+        android:text="TBD"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:inputType="date"
+        android:focusable="false"
         app:layout_constraintBottom_toBottomOf="@+id/tv_breastfeeding_start"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -201,19 +206,21 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:paddingBottom="16dp"
+        android:paddingTop="16dp"
         android:text="Breastfeeding End:"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
         app:layout_constraintTop_toBottomOf="@id/tv_breastfeeding_start" />
 
-    <TextView
+    <EditText
         android:id="@+id/tv_breastfeeding_end_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:text="a date here"
+        android:text="TBD"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:inputType="date"
+        android:focusable="false"
         app:layout_constraintBottom_toBottomOf="@+id/tv_breastfeeding_end"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
@@ -226,7 +233,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:paddingBottom="16dp"
+        android:paddingTop="16dp"
         android:text="Name in Baby Daybook:"
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintStart_toStartOf="@id/tv_breastfeeding"
@@ -270,6 +277,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="TextView"
+        android:paddingTop="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
