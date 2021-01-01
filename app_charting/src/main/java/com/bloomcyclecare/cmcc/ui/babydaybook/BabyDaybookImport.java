@@ -82,7 +82,21 @@ public class BabyDaybookImport extends SplashFragment {
               chartEntryRepo
                   .getAllBetween(pregnancy.get().breastfeedingStartDate, lastEntryDate)
                   .firstOrError(),
-              (dailyStats, entries) -> {
+              Single.<Boolean>create(emitter -> {
+                new AlertDialog.Builder(requireContext())
+                    .setTitle("Overwrite existing data?")
+                    .setMessage("Would you like to overwrite any existing data in CMCC with information from Baby Daybook?\n\nIf yes, the data from CMCC will be PERMANENTLY lost. If no, only data for days without datai n CMCC will be imported.")
+                    .setPositiveButton("Yes", (di, w) -> {
+                      emitter.onSuccess(true);
+                      di.dismiss();
+                    })
+                    .setNegativeButton("No", (di, w) -> {
+                      emitter.onSuccess(false);
+                      di.dismiss();
+                    })
+                    .show();
+              }).subscribeOn(AndroidSchedulers.mainThread()).observeOn(Schedulers.computation()),
+              (dailyStats, entries, overwriteExisting) -> {
                 List<Completable> actions = new ArrayList<>();
                 for (ChartEntry entry : entries) {
                   BreastfeedingStats.DailyStats ds = dailyStats.get(entry.entryDate);
@@ -91,15 +105,15 @@ public class BabyDaybookImport extends SplashFragment {
                     Timber.d("No daily stats found for %s", entry.entryDate);
                     continue;
                   }
-                  if (entry.breastfeedingEntry.numDayFeedings < 0) {
+                  if (overwriteExisting || entry.breastfeedingEntry.numDayFeedings < 0) {
                     entry.breastfeedingEntry.numDayFeedings = ds.nDay;
                     entryUpdated = true;
                   }
-                  if (entry.breastfeedingEntry.numNightFeedings < 0) {
+                  if (overwriteExisting || entry.breastfeedingEntry.numNightFeedings < 0) {
                     entry.breastfeedingEntry.numNightFeedings = ds.nNight;
                     entryUpdated = true;
                   }
-                  if (entry.breastfeedingEntry.maxGapBetweenFeedings == null) {
+                  if (overwriteExisting || entry.breastfeedingEntry.maxGapBetweenFeedings == null) {
                     entry.breastfeedingEntry.maxGapBetweenFeedings = ds.longestGapDuration;
                     entryUpdated = true;
                   }

@@ -179,7 +179,7 @@ public class BreastfeedingStats {
   }
 
   public Single<ImmutableSortedMap<LocalDate, DailyStats>> dailyStatsFromBabyDaybook(String babyName) {
-    return indexByDay(mDB.actionIntervals(babyName, "breastfeeding"), true, MIN_GAP)
+    return indexByDay(mDB.actionIntervals(babyName, "breastfeeding", "pump"), true, MIN_GAP)
         .flatMap(m -> Observable.fromIterable(m.entrySet())
             .map(e -> {
               int nDay = 0, nNight = 0;

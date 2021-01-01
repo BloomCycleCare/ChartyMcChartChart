@@ -5,18 +5,19 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.Interval;
-import org.joda.time.ReadableInstant;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,20 +35,33 @@ public class BabyDaybookDB {
     mDB = db;
   }
 
-  public Single<List<ActionInterval>> actionIntervals(String babyName, String type) {
+  public Single<List<ActionInterval>> actionIntervals(String babyName, String... types) {
     return babyId(babyName).toSingle()
-        .flatMap(babyUID -> actionIntervalsForBabyID(babyUID, type));
+        .flatMap(babyUID -> actionIntervalsForBabyID(babyUID, types));
   }
 
-  private Single<ImmutableList<ActionInterval>> actionIntervalsForBabyID(String babyID, String type) {
+  private Single<ImmutableList<ActionInterval>> actionIntervalsForBabyID(String babyID, String... types) {
     return Single.create(emitter -> {
-      String[] args = {babyID, type};
-      Cursor c = mDB.rawQuery("SELECT start_millis, end_millis FROM daily_actions WHERE baby_uid=? AND type=? ORDER BY start_millis", args, null);
+      String inClause = TextUtils.join(",", Collections.nCopies(types.length, "?"));
+      String[] args = new String[types.length + 1];
+      System.arraycopy(types, 0, args, 0, types.length);
+      args[args.length - 1] = babyID;
+      Cursor c = mDB.rawQuery("SELECT start_millis, end_millis, type FROM daily_actions WHERE type IN (" + inClause + ") AND baby_uid=? ORDER BY start_millis", args, null);
 
       ImmutableList.Builder<ActionInterval> out = ImmutableList.builder();
       while (c.moveToNext()) {
-        ReadableInstant start = new DateTime(c.getLong(0), DateTimeZone.getDefault());
-        ReadableInstant end = new DateTime(c.getLong(1), DateTimeZone.getDefault());
+        DateTime start = new DateTime(c.getLong(0), DateTimeZone.getDefault());
+        String type = c.getString(2);
+        DateTime end;
+        long endMillis = c.getLong(1);
+        if (endMillis > 0) {
+          end = new DateTime(endMillis, DateTimeZone.getDefault());
+        } else if (type.equals("pump")){
+          end = start.plusMinutes(1);
+        } else {
+          Timber.w("Skipping entry missing end time {type: %s, start: %s}", type, start);
+          continue;
+        }
         if (start.isAfter(end)) {
           Timber.w("Skipping malformed interval start (%s) end (%s)", start, end);
           continue;
@@ -55,7 +69,7 @@ public class BabyDaybookDB {
         out.add(new ActionInterval(type, new Interval(start, end)));
       }
       ImmutableList<ActionInterval> is = out.build();
-      Timber.v("Found %d entries for %s, %s", is.size(), babyID, type);
+      Timber.v("Found %d entries for %s", is.size(), babyID);
       emitter.onSuccess(is);
     });
   }
