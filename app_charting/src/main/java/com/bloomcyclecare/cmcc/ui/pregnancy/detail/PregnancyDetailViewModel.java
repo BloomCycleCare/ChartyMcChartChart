@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.LocalDate;
 
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -44,9 +45,10 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
   private final Subject<Optional<LocalDate>> mBreastfeedingEndDateUpdates = BehaviorSubject.create();
   private final Subject<ViewState> mState = BehaviorSubject.create();
   private final Subject<Boolean> mBreastfeedingUpdates = BehaviorSubject.create();
+  private final Subject<Boolean> mfilteredBreastfeedingUpdates = BehaviorSubject.create();
   private final Subject<Optional<String>> mBabyNameUpdates = BehaviorSubject.create();
 
-  public PregnancyDetailViewModel(@NonNull Application application, Pregnancy pregnancy) {
+  public PregnancyDetailViewModel(@NonNull Application application, Pregnancy pregnancy, Supplier<Single<Boolean>> confirmationPrompt) {
     super(application);
     mPregnancyRepo = ChartingApp.cast(application).pregnancyRepo();
     mStats = new BreastfeedingStats(null, ChartingApp.cast(application).entryRepo(ViewMode.CHARTING), mPregnancyRepo);
@@ -60,19 +62,29 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
     mBabyNameUpdates.onNext(Optional.ofNullable(pregnancy.babyDaybookName));
     mPregnancy.onSuccess(pregnancy);
 
-    clearOnDisabled(mBreastfeedingUpdates, mBreastfeedingStartDateUpdates);
-    clearOnDisabled(mBreastfeedingUpdates, mBreastfeedingEndDateUpdates);
-    clearOnDisabled(mBreastfeedingUpdates, mBabyNameUpdates);
+    mBreastfeedingUpdates
+        .flatMap(checked -> {
+          if (checked || pregnancy.breastfeedingStartDate == null) {
+            return Observable.just(checked);
+          }
+          Timber.v("Prompting to confirm if fields should be cleared");
+          return confirmationPrompt.get()
+              .map(shouldDisable -> {
+                if (!shouldDisable) {
+                  Timber.v("Not clearing the breastfeeding fields");
+                  return true;
+                }
+                Timber.d("Clearing the breastfeeding fields");
+                mBreastfeedingStartDateUpdates.onNext(Optional.empty());
+                mBreastfeedingEndDateUpdates.onNext(Optional.empty());
+                mBabyNameUpdates.onNext(Optional.empty());
+                return false;
+              })
+              .toObservable();
+        })
+        .subscribe(mfilteredBreastfeedingUpdates);
 
     stateStream().subscribe(mState);
-  }
-
-  private static <T> void clearOnDisabled(Subject<Boolean> switchSubject, Subject<Optional<T>> target) {
-    switchSubject
-        .filter(v -> !v)
-        .map(v -> Optional.<T>empty())
-        .doOnNext(v -> Timber.v("Clearing on disable"))
-        .subscribe(target);
   }
 
   void onBreastfeedingToggle(boolean value) {
@@ -118,7 +130,7 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
         mPregnancy.toFlowable().distinctUntilChanged(),
         mDueDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mDeliveryDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-        mBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
+        mfilteredBreastfeedingUpdates.toFlowable(BackpressureStrategy.BUFFER).doOnNext(v -> Timber.v("Got new breastfeeding update %b", v)),
         mBreastfeedingStartDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBreastfeedingEndDateUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
         mBabyNameUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -175,16 +187,18 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
 
     private final @NonNull Application application;
     private final @NonNull Pregnancy pregnancy;
+    private final @NonNull Supplier<Single<Boolean>> confirmationPrompt;
 
-    public Factory(@NonNull Application application, @NonNull Pregnancy pregnancy) {
+    public Factory(@NonNull Application application, @NonNull Pregnancy pregnancy, @NonNull Supplier<Single<Boolean>> confirmationPrompt) {
       this.application = application;
       this.pregnancy = pregnancy;
+      this.confirmationPrompt = confirmationPrompt;
     }
 
     @NonNull
     @Override
     public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
-      return (T) new PregnancyDetailViewModel(application, pregnancy);
+      return (T) new PregnancyDetailViewModel(application, pregnancy, confirmationPrompt);
     }
   }
 }

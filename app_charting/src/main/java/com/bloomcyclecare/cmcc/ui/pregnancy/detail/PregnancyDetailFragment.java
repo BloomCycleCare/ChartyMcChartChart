@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.pregnancy.detail;
 
+import android.app.AlertDialog;
 import android.app.DatePickerDialog;
 import android.content.DialogInterface;
 import android.os.Bundle;
@@ -34,6 +35,7 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
@@ -89,7 +91,8 @@ public class PregnancyDetailFragment extends Fragment {
 
     mViewModel = new ViewModelProvider(this, new PregnancyDetailViewModel.Factory(
         requireActivity().getApplication(),
-        PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy))
+        PregnancyDetailFragmentArgs.fromBundle(requireArguments()).getPregnancy().pregnancy,
+        this::confirmBreastfeedingDisable))
         .get(PregnancyDetailViewModel.class);
 
     AtomicBoolean rendered = new AtomicBoolean();
@@ -117,6 +120,23 @@ public class PregnancyDetailFragment extends Fragment {
         .subscribe(mViewModel::onBabyNameUpdate));
 
     return view;
+  }
+
+  Single<Boolean> confirmBreastfeedingDisable() {
+    return Single.create(emitter -> {
+      new AlertDialog.Builder(requireContext())
+          .setTitle("Confirm Disable")
+          .setMessage("Are you sure you want to disable breastfeeding for this pregnancy? This will clear the fields below and prevent you from inputing further information on the entry page. Data already entered on entries will NOT be deleted.")
+          .setPositiveButton("Confirm", (d,w) -> {
+            emitter.onSuccess(true);
+            d.dismiss();
+          })
+          .setNegativeButton("Cancel", (d,w) -> {
+            emitter.onSuccess(false);
+            d.dismiss();
+          })
+          .show();
+    });
   }
 
   private void render(PregnancyDetailViewModel.ViewState viewState, AtomicBoolean rendered) {
@@ -147,6 +167,10 @@ public class PregnancyDetailFragment extends Fragment {
         viewState.showBreastfeedingStartDate ? View.VISIBLE : View.GONE);
     mBreastfeedingEndGroup.setVisibility(
         viewState.showBreastfeedingEndDate ? View.VISIBLE : View.GONE);
+
+    if (mBreastfeedingValue.isChecked() != viewState.showBreastfeedingStartDate) {
+      mBreastfeedingValue.setChecked(viewState.showBreastfeedingStartDate);
+    }
 
     if (pregnancy.breastfeedingStartDate == null) {
       mBreastfeedingStartValue.setText("TBD");
