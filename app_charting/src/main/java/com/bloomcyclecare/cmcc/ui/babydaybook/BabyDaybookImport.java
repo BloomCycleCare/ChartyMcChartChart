@@ -24,11 +24,14 @@ import java.util.List;
 import java.util.Optional;
 
 import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.Navigation;
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 public class BabyDaybookImport extends SplashFragment {
@@ -47,40 +50,44 @@ public class BabyDaybookImport extends SplashFragment {
     ChartingApp app = ChartingApp.cast(requireActivity().getApplication());
     RWChartEntryRepo chartEntryRepo = app.entryRepo(ViewMode.CHARTING);
 
+    Subject<Pregnancy> pregnancySubject = BehaviorSubject.create();
+
+    app.pregnancyRepo(ViewMode.CHARTING)
+        .getAll()
+        .map(pregnancies -> {
+          Pregnancy mostRecentPreganancy = null;
+          for (Pregnancy p : pregnancies) {
+            if (mostRecentPreganancy == null || mostRecentPreganancy.positiveTestDate.isBefore(p.positiveTestDate)) {
+              mostRecentPreganancy = p;
+            }
+          }
+          return Optional.ofNullable(mostRecentPreganancy);
+        })
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .toObservable()
+        .subscribe(pregnancySubject);
+
     Disposable d = Single.merge(Single.zip(
         BabyDaybookDB
             .fromIntent(requireActivity().getIntent(), requireContext())
             .doOnSubscribe(d1 -> updateStatus("Parsing data from Baby Daybook"))
             .map(db -> new BreastfeedingStats(db, chartEntryRepo, app.pregnancyRepo(ViewMode.CHARTING))),
-        app.pregnancyRepo(ViewMode.CHARTING)
-            .getAll()
-            .firstOrError()
-            .map(pregnancies -> {
-              Pregnancy mostRecentPreganancy = null;
-              for (Pregnancy p : pregnancies) {
-                if (mostRecentPreganancy == null || mostRecentPreganancy.positiveTestDate.isBefore(p.positiveTestDate)) {
-                  mostRecentPreganancy = p;
-                }
-              }
-              return Optional.ofNullable(mostRecentPreganancy);
-            }),
+        pregnancySubject.firstOrError(),
         (stats, pregnancy) -> {
-          if (!pregnancy.isPresent()) {
-            return Single.just(Optional.of("No pregnancy, bailing out"));
-          }
-          if (pregnancy.get().breastfeedingStartDate == null) {
+          if (pregnancy.breastfeedingStartDate == null) {
             return Single.just(Optional.of("Breastfeeding not active"));
           }
-          if (Strings.isNullOrEmpty(pregnancy.get().babyDaybookName)) {
+          if (Strings.isNullOrEmpty(pregnancy.babyDaybookName)) {
             return Single.just(Optional.of("Pregnancy had no baby name"));
           }
 
-          updateStatus(String.format("Reading data for %s", pregnancy.get().babyDaybookName));
-          LocalDate lastEntryDate = pregnancy.map(p -> p.breastfeedingEndDate).orElse(LocalDate.now());
+          updateStatus(String.format("Reading data for %s", pregnancy.babyDaybookName));
+          LocalDate lastEntryDate = Optional.ofNullable(pregnancy.breastfeedingEndDate).orElse(LocalDate.now());
           return Single.merge(Single.zip(
-              stats.dailyStatsFromBabyDaybook(pregnancy.get().babyDaybookName),
+              stats.dailyStatsFromBabyDaybook(pregnancy.babyDaybookName),
               chartEntryRepo
-                  .getAllBetween(pregnancy.get().breastfeedingStartDate, lastEntryDate)
+                  .getAllBetween(pregnancy.breastfeedingStartDate, lastEntryDate)
                   .firstOrError(),
               Single.<Boolean>create(emitter -> {
                 new AlertDialog.Builder(requireContext())
@@ -140,12 +147,32 @@ public class BabyDaybookImport extends SplashFragment {
                     });
               }));
         }))
+        .observeOn(AndroidSchedulers.mainThread())
         .subscribe(errorMessage -> {
           if (errorMessage.isPresent()) {
             showError(errorMessage.get());
           } else {
             updateStatus("Success!");
           }
+          new AlertDialog.Builder(requireContext())
+              .setTitle("Import Successful")
+              .setMessage("Where would you like to go?")
+              .setPositiveButton("View pregnancy", (di,w) -> {
+                Disposable dn = pregnancySubject
+                    .firstOrError()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(pregnancy -> Navigation.findNavController(requireView())
+                        .navigate(BabyDaybookImportDirections
+                            .actionBabyDaybookImportToPregnancyDetail()
+                            .setPregnancy(pregnancy.wrap())));
+                di.dismiss();
+              })
+              .setNegativeButton("View chart", (di,w) -> {
+                Navigation.findNavController(requireView())
+                    .navigate(BabyDaybookImportDirections.actionBabyDaybookImportToChartPager());
+                di.dismiss();
+              })
+              .show();
         }, t -> {
           showError("Error importing data!");
           Timber.e(t);

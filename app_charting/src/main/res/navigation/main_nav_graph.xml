@@ -223,6 +223,10 @@
         <action
             android:id="@+id/action_babyDaybookImport_to_chart_pager"
             app:destination="@id/chart_pager" />
+        <action
+            android:id="@+id/action_babyDaybookImport_to_pregnancy_detail"
+            app:destination="@id/pregnancy_detail"
+            app:popUpTo="@id/main_nav_graph" />
     </fragment>
 
 </navigation>
