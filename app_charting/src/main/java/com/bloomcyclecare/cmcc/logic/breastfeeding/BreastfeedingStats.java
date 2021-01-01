@@ -45,6 +45,7 @@ public class BreastfeedingStats {
   }
 
   public static class AggregateStats {
+    public final int nDaysWithStats;
     public final Range<LocalDate> dateRange;
     public final LocalDate longestGapDate;
 
@@ -61,7 +62,7 @@ public class BreastfeedingStats {
     public final double maxGapP99;
 
     private AggregateStats(Collection<DailyStats> dailyStats) {
-      int n = dailyStats.size();
+      nDaysWithStats = dailyStats.size();
 
       List<Integer> nDays = dailyStats.stream().map(s -> s.nDay).collect(Collectors.toList());
       nDayMedian = Quantiles.median().compute(nDays);
@@ -95,8 +96,8 @@ public class BreastfeedingStats {
       }
       longestGapDate = longestGap.day;
 
-      nDayMean = nDaySum / (float) n;
-      nNightMean = nNightSum / (float) n;
+      nDayMean = nDaySum / (float) nDaysWithStats;
+      nNightMean = nNightSum / (float) nDaysWithStats;
 
       double nDaySquaredDiffSum = 0.0;
       double nNightSquaredDiffSum = 0.0;
@@ -105,8 +106,9 @@ public class BreastfeedingStats {
         nNightSquaredDiffSum += Math.pow(stats.nNight - nNightMean, 2);
       }
 
-      nDayInterval = 1.96 * Math.sqrt(nDaySquaredDiffSum / n) / Math.sqrt(n);
-      nNightInterval = 1.96 * Math.sqrt(nNightSquaredDiffSum / n) / Math.sqrt(n);
+      // TODO: use student's t thing if nDaysWithStats << 30
+      nDayInterval = 1.96 * Math.sqrt(nDaySquaredDiffSum / nDaysWithStats) / Math.sqrt(nDaysWithStats);
+      nNightInterval = 1.96 * Math.sqrt(nNightSquaredDiffSum / nDaysWithStats) / Math.sqrt(nDaysWithStats);
 
       dateRange = Range.create(firstDate, lastDate);
     }

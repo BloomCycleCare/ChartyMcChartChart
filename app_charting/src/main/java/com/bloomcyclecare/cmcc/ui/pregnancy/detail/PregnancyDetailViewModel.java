@@ -11,6 +11,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.Days;
 import org.joda.time.LocalDate;
 
 import java.util.Optional;
@@ -144,9 +145,12 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
                   .map(m -> BreastfeedingStats.aggregate(m.values()))
                   .map(aggregateStats -> {
                     ImmutableList.Builder<String> lines = ImmutableList.builder();
+                    lines.add(String.format("Number of days since start: %d", Days.daysBetween(pregnancy.breastfeedingStartDate, LocalDate.now()).getDays() + 1));
+                    lines.add(String.format("Number of days with stats: %d", aggregateStats.nDaysWithStats));
+                    lines.add("");
                     lines.add(String.format("Number of day feedings: %.2f±%.2f", aggregateStats.nDayMean, aggregateStats.nDayInterval));
                     lines.add(String.format("Number of night feedings: %.2f±%.2f", aggregateStats.nNightMean, aggregateStats.nNightInterval));
-
+                    lines.add("");
                     lines.add(String.format("Max gap between feedings (median): %.2f",aggregateStats.maxGapMedian));
                     lines.add(String.format("Max gap between feedings (p95): %.2f", aggregateStats.maxGapP95));
 
