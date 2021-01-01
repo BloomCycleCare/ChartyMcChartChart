@@ -135,8 +135,8 @@ public class PregnancyDetailViewModel extends AndroidViewModel {
                     lines.add(String.format("Number of day feedings: %.2f±%.2f", aggregateStats.nDayMean, aggregateStats.nDayInterval));
                     lines.add(String.format("Number of night feedings: %.2f±%.2f", aggregateStats.nNightMean, aggregateStats.nNightInterval));
 
-                    lines.add("Max gap between feedings (median): " + aggregateStats.maxGapMedian);
-                    lines.add("Max gap between feedings (p95): " + aggregateStats.maxGapP95);
+                    lines.add(String.format("Max gap between feedings (median): %.2f",aggregateStats.maxGapMedian));
+                    lines.add(String.format("Max gap between feedings (p95): %.2f", aggregateStats.maxGapP95));
 
                     lines.add("Longest gap on: " + aggregateStats.longestGapDate);
                     return lines.build();
