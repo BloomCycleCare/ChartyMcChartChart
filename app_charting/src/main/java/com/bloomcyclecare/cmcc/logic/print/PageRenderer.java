@@ -1,9 +1,9 @@
 package com.bloomcyclecare.cmcc.logic.print;
 
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
-import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
@@ -13,7 +13,6 @@ import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.TreeSet;
 
 import androidx.annotation.NonNull;
@@ -150,6 +149,7 @@ public class PageRenderer {
     builder.append("td.red { background: red; } ");
     builder.append("td.yellow { background: yellow; } ");
     builder.append("td.green { background: green; } ");
+    builder.append("td.lightgreen { background: #E2FFCC; } ");
     builder.append("td.separator { border-right: 4px solid black; } ");
     builder.append("td.baby { background-image: url(\"ic_child_care_black_24px.svg\"); background-position: center; background-repeat: no-repeat; } ");
     builder.append("</style>");
@@ -210,6 +210,8 @@ public class PageRenderer {
         return "white";
       case GREEN:
         return "green";
+      case LIGHTGREEN:
+        return "lightgreen";
       default:
         throw new IllegalArgumentException("Unkown color id: " + color);
     }

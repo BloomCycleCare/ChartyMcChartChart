@@ -1,5 +1,5 @@
 package com.bloomcyclecare.cmcc.data.models.stickering;
 
 public enum StickerColor {
-  WHITE, YELLOW, GREY, GREEN, RED
+  WHITE, YELLOW, GREY, GREEN, LIGHTGREEN, RED
 }
