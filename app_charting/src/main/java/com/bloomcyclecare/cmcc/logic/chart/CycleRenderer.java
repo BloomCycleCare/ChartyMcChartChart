@@ -80,7 +80,7 @@ public class CycleRenderer {
       Map<LocalDate, Boolean> daysOfIntercourse = new HashMap<>();
       LocalDate mostRecentPeakTypeMucus = null;
       LocalDate lastDayOfThreeOrMoreDaysOfMucus = null;
-      int consecutiveDaysOfMucus = 0;
+      int consecutiveDaysOfNonPeakMucus = 0;
       ChartEntry previousEntry = null;
       boolean hasHadLegitFlow = false;
 
@@ -127,26 +127,27 @@ public class CycleRenderer {
         state.todayHasBlood = false;
         state.todaysFlow = null;
         if (e.observationEntry.observation == null) {
-          consecutiveDaysOfMucus = 0;
+          consecutiveDaysOfNonPeakMucus = 0;
         } else {
           daysWithAnObservation.add(e.entryDate);
           Observation observation = e.observationEntry.observation;
           state.todayHasMucus = observation.hasMucus();
+          boolean hasNonPeakMucus = observation.hasMucus() && !observation.dischargeSummary.isPeakType();
           state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
           if (observation.flow != null) {
             state.todaysFlow = observation.flow;
             hasHadLegitFlow |= observation.flow.isLegit();
           }
-          if (state.todayHasMucus) {
-            consecutiveDaysOfMucus++;
-            if (consecutiveDaysOfMucus >= 3) {
+          if (hasNonPeakMucus) {
+            consecutiveDaysOfNonPeakMucus++;
+            if (consecutiveDaysOfNonPeakMucus >= 3) {
               lastDayOfThreeOrMoreDaysOfMucus = e.entryDate;
             }
-            if (observation.dischargeSummary.isPeakType()) {
+          } else {
+            consecutiveDaysOfNonPeakMucus = 0;
+            if (state.todayHasMucus) {
               mostRecentPeakTypeMucus = e.entryDate;
             }
-          } else {
-            consecutiveDaysOfMucus = 0;
           }
         }
         state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
@@ -176,7 +177,6 @@ public class CycleRenderer {
           state.mostRecentPeakDay = Optional.of(peakDays.last());
         }
         state.hasHadAnyMucus = !daysOfMucus.isEmpty();
-        state.consecutiveDaysOfMucus = consecutiveDaysOfMucus;
         state.hadIntercourseYesterday = daysOfIntercourse.containsKey(yesterday) && daysOfIntercourse.get(yesterday);
         if (!peakDays.isEmpty()) {
           state.countsOfThree.put(
@@ -227,8 +227,8 @@ public class CycleRenderer {
         }
         if (state.instructions.isActive(BasicInstruction.D_3)
             && state.isPrePeak()
-            && consecutiveDaysOfMucus > 0
-            && consecutiveDaysOfMucus < 3) {
+            && consecutiveDaysOfNonPeakMucus > 0
+            && consecutiveDaysOfNonPeakMucus < 3) {
           state.fertilityReasons.add(BasicInstruction.D_3);
         }
         if (state.instructions.isActive(BasicInstruction.D_4)
@@ -428,7 +428,6 @@ public class CycleRenderer {
     public Optional<LocalDate> mostRecentPointOfChangeAway;
     public boolean todayHasMucus;
     public boolean hasHadAnyMucus;
-    public int consecutiveDaysOfMucus;
     public boolean hadIntercourseYesterday;
     public Map<CountOfThreeReason, Integer> countsOfThree = new HashMap<>();
 
