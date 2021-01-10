@@ -252,13 +252,13 @@ public class PageRenderer {
             break;
         }
 
-        textLines[1] = Optional.ofNullable(entry.expectedStickerSelection().text)
+        textLines[1] = entry.manualStickerSelection().map(ss -> ss.text)
             .map(StickerText::toString)
             .orElse("");
 
         List<String> classes = new ArrayList<>();
-        classes.add(getColorClass(entry.expectedStickerSelection().sticker.color));
-        if (entry.expectedStickerSelection().sticker.hasBaby) {
+        classes.add(getColorClass(entry.manualStickerSelection().map(ss -> ss.sticker.color).orElse(StickerColor.GREY)));
+        if (entry.manualStickerSelection().map(ss -> ss.sticker.hasBaby).orElse(false)) {
           classes.add("baby");
         }
 
