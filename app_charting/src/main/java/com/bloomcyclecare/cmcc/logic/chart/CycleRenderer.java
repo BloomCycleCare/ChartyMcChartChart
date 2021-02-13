@@ -405,7 +405,7 @@ public class CycleRenderer {
   public static class State {
     public Cycle cycle;
     public Optional<Cycle> previousCycle;
-    @Deprecated public ChartEntry entry;
+    @Deprecated  ChartEntry entry;
     public LocalDate entryDate;
     public Instructions instructions;
     public int entryNum;
@@ -671,7 +671,7 @@ public class CycleRenderer {
           .manualStickerSelection(Optional.ofNullable(state.entry.stickerSelection))
           .hasObservation(state.entry.hasObservation())
           .entryNum(state.entryNum)
-          .dateSummary(DateUtil.toNewUiStr(state.entry.entryDate))
+          .dateSummary(DateUtil.toNewUiStr(state.entryDate))
           .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
           .intercourseTimeOfDay(Optional.ofNullable(state.entry.observationEntry.intercourseTimeOfDay)
