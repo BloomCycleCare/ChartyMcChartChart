@@ -57,9 +57,9 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     Instructions instructions =
         createInstructions(ImmutableList.<BasicInstruction>builder()
             .addAll(BASIC_INSTRUCTIONS.activeItems)
-            .add(BasicInstruction.K_1)
+            .add(BasicInstruction.J)
             .build(), ImmutableList.of(), ImmutableList.of());
-    run(entries.build(), (re) -> re.modificationContext().shouldAskEssentialSamenessIfMucus, instructions);
+    run(entries.build(), (re) -> re.modificationContext().shouldAskEssentialSameness, instructions);
   }
 
   @Test

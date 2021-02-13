@@ -183,13 +183,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
           }
-          if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()) {
+          if (entryContext.shouldAskEssentialSameness) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
-          }
-          if (observationEntry.hasBlood() && !entryContext.allPreviousDaysHaveHadBlood) {
-            builder.add(new ClarifyingQuestionUpdate(
-                ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
           }
           return builder.build();
         });
@@ -264,22 +260,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
           new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
     }
 
-    boolean shouldAskEssentialSameness = viewState.entryModificationContext.shouldAskEssentialSamenessIfMucus
-        && observationEntry.hasMucus();
-
-    if (shouldAskEssentialSameness
+    if (viewState.entryModificationContext.shouldAskEssentialSameness
         && viewState.previousPrompts.contains(ClarifyingQuestion.ESSENTIAL_SAMENESS)
         && !observationEntry.isEssentiallyTheSame) {
       return ImmutableList.of(
           new ClarifyingQuestionUpdate(ClarifyingQuestion.POINT_OF_CHANGE, observationEntry.pointOfChange));
     }
-    if (shouldAskEssentialSameness) {
+    if (viewState.entryModificationContext.shouldAskEssentialSameness) {
       return ImmutableList.of(
           new ClarifyingQuestionUpdate(ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
-    }
-    if (observationEntry.hasBlood() && !viewState.entryModificationContext.allPreviousDaysHaveHadBlood) {
-      return ImmutableList.of(
-          new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
     }
     return ImmutableList.of();
   }
@@ -477,9 +466,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     }
 
     public boolean showPointOfChange() {
-      return renderClarifyingQuestions()
-          && entryModificationContext.shouldAskEssentialSamenessIfMucus
-          && chartEntry.observationEntry.hasMucus();
+      return renderClarifyingQuestions() && entryModificationContext.shouldAskEssentialSameness;
     }
 
     boolean isDirty() {
@@ -491,9 +478,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
         switch (update.question) {
           case POINT_OF_CHANGE:
             chartEntry.observationEntry.pointOfChange = update.answer;
-            break;
-          case UNUSUAL_BLEEDING:
-            chartEntry.observationEntry.unusualBleeding = update.answer;
             break;
           case UNUSUAL_STRESS:
             chartEntry.observationEntry.unusualStress = update.answer;

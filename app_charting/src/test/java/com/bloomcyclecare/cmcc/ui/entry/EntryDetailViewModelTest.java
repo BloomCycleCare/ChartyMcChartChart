@@ -98,7 +98,7 @@ public class EntryDetailViewModelTest {
 
   @Test
   public void testAskEssentialSamenessQuestion() throws Exception {
-    mContext.shouldAskEssentialSamenessIfMucus = true;
+    mContext.shouldAskEssentialSameness = true;
     mContext.entry.observationEntry.observation = ObservationParser.parse("6CX1").orElse(null);
     assertThat(mContext.entry.observationEntry.hasMucus()).isTrue();
     initModel();
@@ -119,31 +119,6 @@ public class EntryDetailViewModelTest {
     assertThat(state.chartEntry.observationEntry.isEssentiallyTheSame).isFalse();
     assertThat(state.clarifyingQuestionState).containsExactly(
         new ClarifyingQuestionUpdate(ClarifyingQuestion.ESSENTIAL_SAMENESS, false));
-  }
-
-  @Test
-  public void testAskUnusualBleeding() {
-    initModel();
-    EntryDetailViewModel.ViewState state = mViewModel.viewStatesRx().blockingFirst();
-    assertThat(state.clarifyingQuestionState).isEmpty();
-
-    mViewModel.observationUpdates.onNext("H");
-    state = mViewModel.viewStatesRx().blockingFirst();
-    assertThat(state.chartEntry.observationEntry.unusualBleeding).isFalse();
-    assertThat(state.clarifyingQuestionState).containsExactly(
-        new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, false));
-
-    toggleClarifyingQuestion(ClarifyingQuestion.UNUSUAL_BLEEDING, true);
-    state = mViewModel.viewStatesRx().blockingFirst();
-    assertThat(state.chartEntry.observationEntry.unusualBleeding).isTrue();
-    assertThat(state.clarifyingQuestionState).containsExactly(
-        new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, true));
-
-    toggleClarifyingQuestion(ClarifyingQuestion.UNUSUAL_BLEEDING, false);
-    state = mViewModel.viewStatesRx().blockingFirst();
-    assertThat(state.chartEntry.observationEntry.unusualBleeding).isFalse();
-    assertThat(state.clarifyingQuestionState).containsExactly(
-        new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, false));
   }
 
   @Test

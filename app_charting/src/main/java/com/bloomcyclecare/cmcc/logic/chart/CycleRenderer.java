@@ -116,9 +116,6 @@ public class CycleRenderer {
             : Optional.of(pointsOfChangeToward.last());
         state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
             : Optional.of(pointsOfChangeAway.last());
-        if (e.observationEntry.unusualBleeding) {
-          daysOfUnusualBleeding.add(e.entryDate);
-        }
         if (e.observationEntry.hasMucus()) {
           daysOfMucus.add(e.entryDate);
         }
@@ -133,11 +130,12 @@ public class CycleRenderer {
           Observation observation = e.observationEntry.observation;
           state.todayHasMucus = observation.hasMucus();
           boolean hasNonPeakMucus = observation.hasMucus() && !observation.dischargeSummary.isPeakType();
-          state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
           if (observation.flow != null) {
             state.todaysFlow = observation.flow;
             hasHadLegitFlow |= observation.flow.isLegit();
           }
+          state.todayHasBlood = state.todaysFlow != null
+              || observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
           if (hasNonPeakMucus) {
             consecutiveDaysOfNonPeakMucus++;
             if (consecutiveDaysOfNonPeakMucus >= 3) {
@@ -161,12 +159,7 @@ public class CycleRenderer {
           daysOfFlow.add(e.entryDate);
         }
         state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
-        state.allPreviousDaysHaveHadBlood =
-            entriesEvaluated.headSet(yesterday).size() == daysOfFlow.headSet(yesterday).size();
-
-        if (state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
-          daysOfUnusualBleeding.add(e.entryDate);
-        } else if (state.todaysFlow != null && !state.isInMenstrualFlow && !e.observationEntry.isEssentiallyTheSame) {
+        if (!state.isInMenstrualFlow && state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
           daysOfUnusualBleeding.add(e.entryDate);
         }
         if (peakDays.isEmpty()) {
@@ -420,7 +413,6 @@ public class CycleRenderer {
     public Optional<LocalDate> mostRecentPeakDay;
     public boolean isInMenstrualFlow;
     public boolean hasHadLegitFlow;
-    public boolean allPreviousDaysHaveHadBlood;
     public Flow todaysFlow;
     public boolean todayHasBlood;
     public Optional<LocalDate> firstPointOfChangeToward;
@@ -535,7 +527,7 @@ public class CycleRenderer {
           && Optional.ofNullable(previousEntry).map(e -> e.observationEntry.intercourse).orElse(false)) {
         return true;
       }
-      if (instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
+      if (instructions.isActive(BasicInstruction.J) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
         return true;
       }
       return false;
@@ -549,9 +541,8 @@ public class CycleRenderer {
       EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
       modificationContext.hasPreviousCycle = false;
       modificationContext.previousCycleIsPregnancy = previousCycle.map(Cycle::isPregnancy).orElse(false);
-      modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
       modificationContext.isFirstEntry = entryNum == 1;
-      modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
+      modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();
       modificationContext.shouldAskDoublePeakQuestions = shouldAskDoublePeakQuestions();
       return modificationContext;
     }
@@ -670,8 +661,7 @@ public class CycleRenderer {
         pocSummary = "";
       }
       String essentialSamenessSummary;
-      if (state.entryModificationContext().shouldAskEssentialSamenessIfMucus
-          && state.entry.observationEntry.hasMucus()) {
+      if (state.entryModificationContext().shouldAskEssentialSameness) {
         essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
       } else {
         essentialSamenessSummary = "";
@@ -761,8 +751,7 @@ public class CycleRenderer {
     public boolean previousCycleIsPregnancy;
     public boolean isFirstEntry;
     public boolean shouldAskDoublePeakQuestions;
-    public boolean allPreviousDaysHaveHadBlood;
-    public boolean shouldAskEssentialSamenessIfMucus;
+    public boolean shouldAskEssentialSameness;
 
     @ParcelConstructor
     public EntryModificationContext(@NonNull Cycle cycle, @NonNull ChartEntry entry) {
@@ -809,6 +798,9 @@ public class CycleRenderer {
     @Nullable
     private StickerText getStickerText() {
       if (!hasObservation) {
+        return null;
+      }
+      if (hasBleeding) {
         return null;
       }
       if (peakDayOffset.isPeakDay()) {
