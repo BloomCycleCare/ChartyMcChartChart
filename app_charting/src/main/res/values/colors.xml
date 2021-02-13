@@ -6,7 +6,8 @@
 
     <color name="entryRed">#E06666</color>
     <color name="entryYellow">#FFD966</color>
-    <color name="entryGreen">#93C47D</color>
+    <color name="entryGreen">#95C67F</color>
+    <color name="entryLightGreen">#E2FFCC</color>
     <color name="entryWhite">#FFFFFF</color>
     <color name="entryGrey">#EEEEEE</color>
 

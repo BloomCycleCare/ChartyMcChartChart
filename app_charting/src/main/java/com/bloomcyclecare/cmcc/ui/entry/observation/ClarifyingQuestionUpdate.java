@@ -1,16 +1,16 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.observation;
 
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.google.common.base.Objects;
 
 import androidx.annotation.Nullable;
 
-class ClarifyingQuestionUpdate {
+public class ClarifyingQuestionUpdate {
 
-  final ClarifyingQuestion question;
-  final Boolean answer;
+  public final ClarifyingQuestion question;
+  public final Boolean answer;
 
-  ClarifyingQuestionUpdate(ClarifyingQuestion question, Boolean answer) {
+  public ClarifyingQuestionUpdate(ClarifyingQuestion question, Boolean answer) {
     this.question = question;
     this.answer = answer;
   }

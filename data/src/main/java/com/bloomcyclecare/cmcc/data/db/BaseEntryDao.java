@@ -1,6 +1,8 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
+import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -159,6 +161,8 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      MeasurementEntry.class,
+      BreastfeedingEntry.class,
       StickerSelectionEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
@@ -167,6 +171,8 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      MeasurementEntry.class,
+      BreastfeedingEntry.class,
       StickerSelectionEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
@@ -175,6 +181,8 @@ public abstract class BaseEntryDao<E extends Entry> {
       ObservationEntry.class,
       WellnessEntry.class,
       SymptomEntry.class,
+      MeasurementEntry.class,
+      BreastfeedingEntry.class,
       StickerSelectionEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);

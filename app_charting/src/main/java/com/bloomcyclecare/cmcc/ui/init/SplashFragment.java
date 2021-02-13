@@ -75,7 +75,8 @@ public class SplashFragment extends Fragment {
     if (activity == null) {
       return;
     }
-    getActivity().runOnUiThread(() -> mStatusView.setText(status));
+    Timber.i("Updating status: %s", status);
+    requireActivity().runOnUiThread(() -> mStatusView.setText(status));
   }
 
   public void showError(final String errorText) {

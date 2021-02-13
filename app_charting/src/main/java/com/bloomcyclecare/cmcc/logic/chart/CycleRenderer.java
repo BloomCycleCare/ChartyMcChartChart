@@ -80,7 +80,7 @@ public class CycleRenderer {
       Map<LocalDate, Boolean> daysOfIntercourse = new HashMap<>();
       LocalDate mostRecentPeakTypeMucus = null;
       LocalDate lastDayOfThreeOrMoreDaysOfMucus = null;
-      int consecutiveDaysOfMucus = 0;
+      int consecutiveDaysOfNonPeakMucus = 0;
       ChartEntry previousEntry = null;
       boolean hasHadLegitFlow = false;
 
@@ -116,9 +116,6 @@ public class CycleRenderer {
             : Optional.of(pointsOfChangeToward.last());
         state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
             : Optional.of(pointsOfChangeAway.last());
-        if (e.observationEntry.unusualBleeding) {
-          daysOfUnusualBleeding.add(e.entryDate);
-        }
         if (e.observationEntry.hasMucus()) {
           daysOfMucus.add(e.entryDate);
         }
@@ -127,26 +124,28 @@ public class CycleRenderer {
         state.todayHasBlood = false;
         state.todaysFlow = null;
         if (e.observationEntry.observation == null) {
-          consecutiveDaysOfMucus = 0;
+          consecutiveDaysOfNonPeakMucus = 0;
         } else {
           daysWithAnObservation.add(e.entryDate);
           Observation observation = e.observationEntry.observation;
           state.todayHasMucus = observation.hasMucus();
-          state.todayHasBlood = observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
+          boolean hasNonPeakMucus = observation.hasMucus() && !observation.dischargeSummary.isPeakType();
           if (observation.flow != null) {
             state.todaysFlow = observation.flow;
             hasHadLegitFlow |= observation.flow.isLegit();
           }
-          if (state.todayHasMucus) {
-            consecutiveDaysOfMucus++;
-            if (consecutiveDaysOfMucus >= 3) {
+          state.todayHasBlood = state.todaysFlow != null
+              || observation.dischargeSummary != null && observation.dischargeSummary.hasBlood();
+          if (hasNonPeakMucus) {
+            consecutiveDaysOfNonPeakMucus++;
+            if (consecutiveDaysOfNonPeakMucus >= 3) {
               lastDayOfThreeOrMoreDaysOfMucus = e.entryDate;
             }
-            if (observation.dischargeSummary.isPeakType()) {
+          } else {
+            consecutiveDaysOfNonPeakMucus = 0;
+            if (state.todayHasMucus) {
               mostRecentPeakTypeMucus = e.entryDate;
             }
-          } else {
-            consecutiveDaysOfMucus = 0;
           }
         }
         state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
@@ -160,12 +159,7 @@ public class CycleRenderer {
           daysOfFlow.add(e.entryDate);
         }
         state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
-        state.allPreviousDaysHaveHadBlood =
-            entriesEvaluated.headSet(yesterday).size() == daysOfFlow.headSet(yesterday).size();
-
-        if (state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
-          daysOfUnusualBleeding.add(e.entryDate);
-        } else if (state.todaysFlow != null && !state.isInMenstrualFlow && !e.observationEntry.isEssentiallyTheSame) {
+        if (!state.isInMenstrualFlow && state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
           daysOfUnusualBleeding.add(e.entryDate);
         }
         if (peakDays.isEmpty()) {
@@ -176,7 +170,6 @@ public class CycleRenderer {
           state.mostRecentPeakDay = Optional.of(peakDays.last());
         }
         state.hasHadAnyMucus = !daysOfMucus.isEmpty();
-        state.consecutiveDaysOfMucus = consecutiveDaysOfMucus;
         state.hadIntercourseYesterday = daysOfIntercourse.containsKey(yesterday) && daysOfIntercourse.get(yesterday);
         if (!peakDays.isEmpty()) {
           state.countsOfThree.put(
@@ -227,8 +220,8 @@ public class CycleRenderer {
         }
         if (state.instructions.isActive(BasicInstruction.D_3)
             && state.isPrePeak()
-            && consecutiveDaysOfMucus > 0
-            && consecutiveDaysOfMucus < 3) {
+            && consecutiveDaysOfNonPeakMucus > 0
+            && consecutiveDaysOfNonPeakMucus < 3) {
           state.fertilityReasons.add(BasicInstruction.D_3);
         }
         if (state.instructions.isActive(BasicInstruction.D_4)
@@ -420,7 +413,6 @@ public class CycleRenderer {
     public Optional<LocalDate> mostRecentPeakDay;
     public boolean isInMenstrualFlow;
     public boolean hasHadLegitFlow;
-    public boolean allPreviousDaysHaveHadBlood;
     public Flow todaysFlow;
     public boolean todayHasBlood;
     public Optional<LocalDate> firstPointOfChangeToward;
@@ -428,7 +420,6 @@ public class CycleRenderer {
     public Optional<LocalDate> mostRecentPointOfChangeAway;
     public boolean todayHasMucus;
     public boolean hasHadAnyMucus;
-    public int consecutiveDaysOfMucus;
     public boolean hadIntercourseYesterday;
     public Map<CountOfThreeReason, Integer> countsOfThree = new HashMap<>();
 
@@ -536,7 +527,7 @@ public class CycleRenderer {
           && Optional.ofNullable(previousEntry).map(e -> e.observationEntry.intercourse).orElse(false)) {
         return true;
       }
-      if (instructions.isActive(BasicInstruction.K_1) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
+      if (instructions.isActive(BasicInstruction.J) && isPrePeak() && (!isInMenstrualFlow || hasHadLegitFlow)) {
         return true;
       }
       return false;
@@ -550,9 +541,8 @@ public class CycleRenderer {
       EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
       modificationContext.hasPreviousCycle = false;
       modificationContext.previousCycleIsPregnancy = previousCycle.map(Cycle::isPregnancy).orElse(false);
-      modificationContext.allPreviousDaysHaveHadBlood = allPreviousDaysHaveHadBlood;
       modificationContext.isFirstEntry = entryNum == 1;
-      modificationContext.shouldAskEssentialSamenessIfMucus = shouldAskEssentialSameness();
+      modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();
       modificationContext.shouldAskDoublePeakQuestions = shouldAskDoublePeakQuestions();
       return modificationContext;
     }
@@ -671,8 +661,7 @@ public class CycleRenderer {
         pocSummary = "";
       }
       String essentialSamenessSummary;
-      if (state.entryModificationContext().shouldAskEssentialSamenessIfMucus
-          && state.todayHasMucus) {
+      if (state.entryModificationContext().shouldAskEssentialSameness) {
         essentialSamenessSummary = state.entry.observationEntry.isEssentiallyTheSame ? "yes" : "no";
       } else {
         essentialSamenessSummary = "";
@@ -762,8 +751,7 @@ public class CycleRenderer {
     public boolean previousCycleIsPregnancy;
     public boolean isFirstEntry;
     public boolean shouldAskDoublePeakQuestions;
-    public boolean allPreviousDaysHaveHadBlood;
-    public boolean shouldAskEssentialSamenessIfMucus;
+    public boolean shouldAskEssentialSameness;
 
     @ParcelConstructor
     public EntryModificationContext(@NonNull Cycle cycle, @NonNull ChartEntry entry) {
@@ -810,6 +798,9 @@ public class CycleRenderer {
     @Nullable
     private StickerText getStickerText() {
       if (!hasObservation) {
+        return null;
+      }
+      if (hasBleeding) {
         return null;
       }
       if (peakDayOffset.isPeakDay()) {

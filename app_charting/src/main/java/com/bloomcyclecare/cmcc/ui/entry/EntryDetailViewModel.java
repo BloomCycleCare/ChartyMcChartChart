@@ -4,6 +4,7 @@ import android.app.Application;
 
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
@@ -13,12 +14,14 @@ import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
+import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
+import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -52,25 +55,28 @@ import timber.log.Timber;
 
 public class EntryDetailViewModel extends AndroidViewModel {
 
-  final Subject<String> observationUpdates = BehaviorSubject.createDefault("");
-  final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
-  final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
-  final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
-  final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
-  final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
+  public final Subject<String> observationUpdates = BehaviorSubject.createDefault("");
+  public final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<IntercourseTimeOfDay> timeOfDayUpdates = BehaviorSubject.createDefault(IntercourseTimeOfDay.NONE);
+  public final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
+  public final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
 
-  final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
-  final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
+  public final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
+  public final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
 
-  final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
+  public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
+  public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
+
   private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
+  private final SingleSubject<Boolean> shouldShowBreastfeedingPage = SingleSubject.create();
 
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
@@ -97,6 +103,35 @@ public class EntryDetailViewModel extends AndroidViewModel {
         mEntryContext.map(context -> !context.entry.measurementEntry.isEmpty()),
         (enabledInSettings, entryHasMeasurement) -> enabledInSettings || entryHasMeasurement)
         .subscribe(shouldShowMeasurementPage);
+
+    // Hook up when to show breastfeeding page
+    mEntryContext.map(context -> context.entry.entryDate)
+        .flatMap(entryDate -> myApp.pregnancyRepo(ViewMode.CHARTING)
+            .getAll()
+            .firstOrError()
+            .map(pregnancies -> {
+              Pregnancy mostRecentPregnancy = null;
+              for (Pregnancy p : pregnancies) {
+                if (p.positiveTestDate.isAfter(entryDate)) {
+                  continue;
+                }
+                if (mostRecentPregnancy == null || p.positiveTestDate.isAfter(mostRecentPregnancy.positiveTestDate)) {
+                  mostRecentPregnancy = p;
+                }
+              }
+              return Optional.ofNullable(mostRecentPregnancy);
+            })
+            .map(pregnancy -> {
+              if (!pregnancy.isPresent()) {
+                return false;
+              }
+              Timber.v("Found pregnancy %s", pregnancy.get());
+              if (pregnancy.get().breastfeedingStartDate == null || entryDate.isBefore(pregnancy.get().breastfeedingStartDate)) {
+                return false;
+              }
+              return pregnancy.get().breastfeedingEndDate == null || !entryDate.isAfter(pregnancy.get().breastfeedingEndDate);
+            }))
+        .subscribe(shouldShowBreastfeedingPage);
 
     Flowable<ErrorOr<Observation>> errorOrObservationStream = observationUpdates
         .toFlowable(BackpressureStrategy.DROP)
@@ -148,13 +183,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
           }
-          if (entryContext.shouldAskEssentialSamenessIfMucus && observationEntry.hasMucus()) {
+          if (entryContext.shouldAskEssentialSameness) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
-          }
-          if (observationEntry.hasBlood() && !entryContext.allPreviousDaysHaveHadBlood) {
-            builder.add(new ClarifyingQuestionUpdate(
-                ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
           }
           return builder.build();
         });
@@ -198,16 +229,19 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New wellness entry")),
         measurementEntries.toFlowable(BackpressureStrategy.BUFFER)
-            //.distinctUntilChanged()
+            .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New measurement entry")),
+        breastfeedingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
+            .distinctUntilChanged()
+            .doOnNext(i -> Timber.v("New breastfeeding entry")),
         stickerSelectionStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.v("New sticker slection")),
         clarifyingQuestionRenderUpdates,
-        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, stickerSelection, clarifyingQuestionUpdates) -> {
+        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, stickerSelection.orElse(null)),
+              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
@@ -226,22 +260,15 @@ public class EntryDetailViewModel extends AndroidViewModel {
           new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
     }
 
-    boolean shouldAskEssentialSameness = viewState.entryModificationContext.shouldAskEssentialSamenessIfMucus
-        && observationEntry.hasMucus();
-
-    if (shouldAskEssentialSameness
+    if (viewState.entryModificationContext.shouldAskEssentialSameness
         && viewState.previousPrompts.contains(ClarifyingQuestion.ESSENTIAL_SAMENESS)
         && !observationEntry.isEssentiallyTheSame) {
       return ImmutableList.of(
           new ClarifyingQuestionUpdate(ClarifyingQuestion.POINT_OF_CHANGE, observationEntry.pointOfChange));
     }
-    if (shouldAskEssentialSameness) {
+    if (viewState.entryModificationContext.shouldAskEssentialSameness) {
       return ImmutableList.of(
           new ClarifyingQuestionUpdate(ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
-    }
-    if (observationEntry.hasBlood() && !viewState.entryModificationContext.allPreviousDaysHaveHadBlood) {
-      return ImmutableList.of(
-          new ClarifyingQuestionUpdate(ClarifyingQuestion.UNUSUAL_BLEEDING, observationEntry.unusualBleeding));
     }
     return ImmutableList.of();
   }
@@ -267,13 +294,18 @@ public class EntryDetailViewModel extends AndroidViewModel {
     symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
     measurementEntries.onNext(context.entry.measurementEntry);
+    breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
   }
 
   boolean showMeasurementPage() {
     return shouldShowMeasurementPage.getValue();
   }
 
-  LiveData<ViewState> viewStates() {
+  boolean showBreastfeedingPage() {
+    return shouldShowBreastfeedingPage.getValue();
+  }
+
+  public LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
         .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
@@ -386,14 +418,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return Completable.merge(actions);
   }
 
-  static class ViewState {
-    final CycleRenderer.EntryModificationContext entryModificationContext;
-    final ChartEntry chartEntry;
-    final String observationErrorText;
-    final boolean isInPregnancy;
-    final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
-    final List<ValidationIssue> validationIssues = new ArrayList<>();
-    final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
+  public static class ViewState {
+    public final CycleRenderer.EntryModificationContext entryModificationContext;
+    public final ChartEntry chartEntry;
+    public final String observationErrorText;
+    public final boolean isInPregnancy;
+    public final List<ClarifyingQuestionUpdate> clarifyingQuestionState = new ArrayList<>();
+    public final List<ValidationIssue> validationIssues = new ArrayList<>();
+    public final Set<ClarifyingQuestion> previousPrompts = new HashSet<>();
 
     ViewState(ViewState that) {
       this.entryModificationContext = that.entryModificationContext;
@@ -425,18 +457,16 @@ public class EntryDetailViewModel extends AndroidViewModel {
       }
     }
 
-    boolean renderClarifyingQuestions() {
+    public boolean renderClarifyingQuestions() {
       return entryModificationContext.entry.observationEntry.observation != null;
     }
 
-    boolean promptForClarifyingQuestions() {
+    public boolean promptForClarifyingQuestions() {
       return !renderClarifyingQuestions();
     }
 
-    boolean showPointOfChange() {
-      return renderClarifyingQuestions()
-          && entryModificationContext.shouldAskEssentialSamenessIfMucus
-          && chartEntry.observationEntry.hasMucus();
+    public boolean showPointOfChange() {
+      return renderClarifyingQuestions() && entryModificationContext.shouldAskEssentialSameness;
     }
 
     boolean isDirty() {
@@ -448,9 +478,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
         switch (update.question) {
           case POINT_OF_CHANGE:
             chartEntry.observationEntry.pointOfChange = update.answer;
-            break;
-          case UNUSUAL_BLEEDING:
-            chartEntry.observationEntry.unusualBleeding = update.answer;
             break;
           case UNUSUAL_STRESS:
             chartEntry.observationEntry.unusualStress = update.answer;

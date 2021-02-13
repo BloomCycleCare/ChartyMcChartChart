@@ -19,6 +19,9 @@
         <action
             android:id="@+id/action_import_app_state"
             app:destination="@id/import_app_state" />
+        <action
+            android:id="@+id/import_from_baby_daybook"
+            app:destination="@id/babyDaybookImport" />
     </fragment>
 
     <fragment
@@ -212,5 +215,18 @@
         android:name="com.bloomcyclecare.cmcc.ui.profile.ProfileActivity"
         android:label="Sharing"
         tools:layout="@layout/activity_drive"/>
+    <fragment
+        android:id="@+id/babyDaybookImport"
+        android:name="com.bloomcyclecare.cmcc.ui.babydaybook.BabyDaybookImport"
+        android:label="fragment_baby_daybook_import"
+        tools:layout="@layout/fragment_baby_daybook_import" >
+        <action
+            android:id="@+id/action_babyDaybookImport_to_chart_pager"
+            app:destination="@id/chart_pager" />
+        <action
+            android:id="@+id/action_babyDaybookImport_to_pregnancy_detail"
+            app:destination="@id/pregnancy_detail"
+            app:popUpTo="@id/main_nav_graph" />
+    </fragment>
 
 </navigation>

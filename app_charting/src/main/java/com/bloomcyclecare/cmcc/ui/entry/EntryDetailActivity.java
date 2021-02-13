@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -28,24 +27,16 @@ import java.util.List;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentManager;
-import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.lifecycle.ViewModelProviders;
-import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
-import static com.bloomcyclecare.cmcc.ui.entry.ObservationEntryFragment.OK_RESPONSE;
+import static com.bloomcyclecare.cmcc.ui.entry.observation.ObservationEntryFragment.OK_RESPONSE;
 
 public class EntryDetailActivity extends AppCompatActivity {
-
-  private static final boolean DEBUG = true;
-  private static final String TAG = EntryDetailActivity.class.getSimpleName();
 
   private static final Joiner ON_NEW_LINE = Joiner.on('\n');
 
@@ -63,8 +54,6 @@ public class EntryDetailActivity extends AppCompatActivity {
     super.onCreate(savedInstanceState);
     setContentView(R.layout.activity_entry_detail);
 
-    if (DEBUG) Log.v(TAG, "onCreate: Start");
-
     Intent intent = getIntent();
     CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(
         intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
@@ -78,28 +67,15 @@ public class EntryDetailActivity extends AppCompatActivity {
     getSupportActionBar().setTitle(getTitle(entryModifyContext.cycle, entryModifyContext.entry.entryDate));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    /**
-     * The {@link PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link FragmentStatePagerAdapter}.
-     */
-    SectionsPagerAdapter mSectionsPagerAdapter = new SectionsPagerAdapter(
-        getSupportFragmentManager(), entryModifyContext, mViewModel.showMeasurementPage());
+    EntryDetailPagerAdapter mEntryDetailPagerAdapter = new EntryDetailPagerAdapter(
+        getSupportFragmentManager(), entryModifyContext,
+        mViewModel.showMeasurementPage(), mViewModel.showBreastfeedingPage());
 
-    // Set up the ViewPager with the sections adapter.
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
     ViewPager mViewPager = findViewById(R.id.container);
-    mViewPager.setAdapter(mSectionsPagerAdapter);
+    mViewPager.setAdapter(mEntryDetailPagerAdapter);
 
     TabLayout tabLayout = findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
-
-    if (DEBUG) Log.v(TAG, "onCreate: Finish");
   }
 
   private Menu menu;
@@ -243,76 +219,5 @@ public class EntryDetailActivity extends AppCompatActivity {
 
   private static String getTitle(Cycle cycle, LocalDate entryDate) {
     return DateUtil.toUiStr(entryDate);
-  }
-
-  /**
-   * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-   * one of the sections/tabs/pages.
-   */
-  public class SectionsPagerAdapter extends FragmentStatePagerAdapter {
-
-    private final CycleRenderer.EntryModificationContext mEntryModificationContext;
-    private final boolean shouldShowMeasurementPage;
-
-    public SectionsPagerAdapter(FragmentManager fm, CycleRenderer.EntryModificationContext entryModificationContext, boolean shouldShowMeasurementPage) {
-      super(fm);
-      mEntryModificationContext = entryModificationContext;
-      this.shouldShowMeasurementPage = shouldShowMeasurementPage;
-    }
-
-    @Override
-    public Fragment getItem(int position) {
-      Bundle args = new Bundle();
-      args.putParcelable(CycleRenderer.EntryModificationContext.class.getCanonicalName(), Parcels.wrap(mEntryModificationContext));
-
-      Fragment fragment = null;
-      // getItem is called to instantiate the fragment for the given page.
-      // Return a PlaceholderFragment (defined as a static inner class below).
-      switch (position) {
-        case 0:
-          fragment = new ObservationEntryFragment();
-          break;
-        case 1:
-          fragment = new MeasurementEntryFragment();
-          break;
-        case 2:
-          fragment = new WellnessEntryFragment();
-          break;
-        case 3:
-          fragment = new SymptomEntryFragment();
-          break;
-      }
-      if (fragment == null) {
-        Timber.e("Fragment should not be null!");
-        return null;
-      } else {
-        fragment.setArguments(args);
-        return fragment;
-      }
-    }
-
-    @Override
-    public int getCount() {
-      // TODO: change to 4 when we're ready to show wellness and symptom stuff
-      if (shouldShowMeasurementPage) {
-        return 2;
-      }
-      return 1;
-    }
-
-    @Override
-    public CharSequence getPageTitle(int position) {
-      switch (position) {
-        case 0:
-          return "Observation";
-        case 1:
-          return "Measurement";
-        case 2:
-          return "Wellness";
-        case 3:
-          return "Symptoms";
-      }
-      return null;
-    }
   }
 }

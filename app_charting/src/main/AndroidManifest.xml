@@ -39,14 +39,18 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
             <intent-filter>
-                <data
-                    android:mimeType="application/json"
-                    android:scheme="content" />
+                <data android:scheme="content" />
 
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/x-sqlite3" />
+                <data android:mimeType="application/octet-stream" />
+
+                <action android:name="android.intent.action.DEFAULT" />
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SENDTO" />
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
             </intent-filter>
         </activity>
         <activity

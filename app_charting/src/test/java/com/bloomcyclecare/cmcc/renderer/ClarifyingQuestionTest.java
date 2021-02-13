@@ -57,9 +57,9 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
     Instructions instructions =
         createInstructions(ImmutableList.<BasicInstruction>builder()
             .addAll(BASIC_INSTRUCTIONS.activeItems)
-            .add(BasicInstruction.K_1)
+            .add(BasicInstruction.J)
             .build(), ImmutableList.of(), ImmutableList.of());
-    run(entries.build(), (re) -> re.modificationContext().shouldAskEssentialSamenessIfMucus, instructions);
+    run(entries.build(), (re) -> re.modificationContext().shouldAskEssentialSameness, instructions);
   }
 
   @Test
@@ -138,7 +138,7 @@ public class ClarifyingQuestionTest extends BaseRendererTest {
         } catch (Exception e) {
           throw new IllegalStateException(e);
         }
-      }), null, null, null, null));
+      }), null, null, null, null, null));
       tests.add(renderableEntry -> {
         StandardSubjectBuilder baseAssert = assertWithMessage(String.format("Issue on %s %s", entryDate, GsonUtil.getGsonInstance().toJson(renderableEntry)));
         baseAssert

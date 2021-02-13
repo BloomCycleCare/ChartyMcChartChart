@@ -53,7 +53,7 @@ public abstract class BaseRendererTest {
         } catch (Exception e) {
           throw new IllegalStateException(e);
         }
-      }), null, null, null, null));
+      }), null, null, null, null, null));
       Optional<StickerExpectations> stickerExpectations = anEntry.getValue();
       stickerExpectations.ifPresent(expectations -> tests.add(renderableEntry -> {
         StandardSubjectBuilder baseAssert = assertWithMessage(

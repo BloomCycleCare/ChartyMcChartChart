@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.observation;
 
 import android.view.View;
 import android.widget.Switch;

@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry;
+package com.bloomcyclecare.cmcc.ui.entry.measurement;
 
 import android.app.Application;
 import android.graphics.Color;

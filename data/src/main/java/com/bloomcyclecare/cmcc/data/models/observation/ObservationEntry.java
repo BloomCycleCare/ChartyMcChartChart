@@ -104,9 +104,6 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
       return false;
     }
     switch (question) {
-      case UNUSUAL_BLEEDING:
-        unusualBleeding = answer;
-        return true;
       case UNUSUAL_BUILDUP:
         unusualBuildup = answer;
         return true;

@@ -25,8 +25,8 @@ import timber.log.Timber;
 
 public class BackupWorker extends RxWorker {
 
-  private static final String BACKUP_FILE_NAME_IN_DRIVE = "backup.chart";
-  private static final String LOCAL_BACKUP_FILE_NAME = "local_backup.chart";
+  private static final String BACKUP_FILE_NAME_IN_DRIVE = "cmcc_backup.json";
+  private static final String LOCAL_BACKUP_FILE_NAME = "local_cmcc_backup.json";
 
   private final Context mContext;
   private final ChartingApp mApp;
@@ -64,7 +64,7 @@ public class BackupWorker extends RxWorker {
                     Timber.v("Uploading file to Drive");
                     com.google.api.services.drive.model.File driveFile =
                         new com.google.api.services.drive.model.File();
-                    driveFile.setName("backup.chart");
+                    driveFile.setName(BACKUP_FILE_NAME_IN_DRIVE);
                     driveFile.setProperties(appState.properties());
                     FileContent mediaContent = new FileContent("application/json", file);
                     return driveService
