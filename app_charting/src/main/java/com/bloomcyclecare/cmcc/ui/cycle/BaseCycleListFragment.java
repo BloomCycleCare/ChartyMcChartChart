@@ -51,9 +51,9 @@ public abstract class BaseCycleListFragment extends Fragment {
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
-    super.onCreate(savedInstanceState);
-
     mViewModel = CycleListViewModel.forFragment(this, initialViewModeFromArgs(requireArguments()), exerciseIdFromArgs(requireArguments()));
+
+    super.onCreate(savedInstanceState);
 
     setHasOptionsMenu(true);
   }
