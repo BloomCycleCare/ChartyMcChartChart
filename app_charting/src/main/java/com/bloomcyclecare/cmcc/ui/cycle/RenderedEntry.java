@@ -26,6 +26,7 @@ public abstract class RenderedEntry {
   @NonNull public abstract String entryDateStr();
   @NonNull public abstract String entryDateShortStr();
   @NonNull public abstract Optional<String> observationSummary();
+  @NonNull public abstract Optional<String> measurementSummary();
   @NonNull public abstract String stickerText();
   @NonNull public abstract String leftSummary();
   @NonNull public abstract String rightSummary();
@@ -45,8 +46,8 @@ public abstract class RenderedEntry {
   @NonNull public abstract Optional<StickerSelection> expectedStickerSelection();
   @NonNull public abstract Optional<StickerSelection> manualStickerSelection();
 
-  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, String stickerText, String leftSummary, String rightSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean canSelectYellowStamps, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, CycleRenderer.StickerSelectionContext stickerSelectionContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
-    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, stickerText, leftSummary, rightSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, canSelectYellowStamps, hasObservation, entryModificationContext, stickerSelectionContext, expectedStickerSelection, manualStickerSelection);
+  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, Optional<String> measurementSummary, String stickerText, String leftSummary, String rightSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean canSelectYellowStamps, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, CycleRenderer.StickerSelectionContext stickerSelectionContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
+    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, measurementSummary, stickerText, leftSummary, rightSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, canSelectYellowStamps, hasObservation, entryModificationContext, stickerSelectionContext, expectedStickerSelection, manualStickerSelection);
   }
 
   @NonNull
@@ -84,8 +85,6 @@ public abstract class RenderedEntry {
       stickerText = "?";
     }
 
-    String pocSummary = viewMode == ViewMode.TRAINING ? "" : re.pocSummary();
-
     ChartEntry entry = re.modificationContext().entry;
     boolean showStickerStrike = !autoStickeringEnabled && hasNonEmptyManualSelection && !autoSelection.equals(manualSelection);
     boolean showWeekTransition = entry.observationEntry.getDate().dayOfWeek().getAsString().equals("1");
@@ -114,6 +113,7 @@ public abstract class RenderedEntry {
         re.dateSummary(),
         re.dateSummaryShort(),
         re.entrySummary(),
+        monitorReading,
         stickerText,
         leftSummary,
         rightSummary,

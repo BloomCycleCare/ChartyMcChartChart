@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.logic.print;
 
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerColor;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
@@ -137,6 +138,7 @@ public class PageRenderer {
   private static void appendHead(StringBuilder builder) {
     builder.append("<head>");
     builder.append("<style>");
+    builder.append("em.measurement { font-weight: normal; font-style: normal; font-size: 100%; }");
     builder.append("#container { padding-top: 20pt; padding-left: 20pt; }");
     builder.append("table.outer { margin: auto; table-layout: fixed; width: 100%; border: 4px solid black; border-collapse: collapse; } ");
     builder.append("table.sticker { height: 100%; width: 100%; } ");
@@ -242,21 +244,17 @@ public class PageRenderer {
           textLines[l] = "";
         }
 
-        switch (entry.intercourseTimeOfDay()) {
-          case ANY:
-            textLines[0] = "I";
-            break;
-          case END:
-            textLines[2] = "I";
-            break;
-          case NONE:
-          default:
-            break;
-        }
+        textLines[0] = entry.monitorReading()
+            .map(Enum::name)
+            .map(v -> String.format("<em class=\"measurement\">%s</em>", v))
+            .orElse("");
 
         textLines[1] = entry.manualStickerSelection().map(ss -> ss.text)
             .map(StickerText::toString)
             .orElse("");
+
+        // TODO: add differentiation based on entry.intercourseTimeOfDay()
+        textLines[2] = entry.intercourseTimeOfDay() == IntercourseTimeOfDay.NONE ? "" : "I";
 
         List<String> classes = new ArrayList<>();
         classes.add(getColorClass(entry.manualStickerSelection().map(ss -> ss.sticker.color).orElse(StickerColor.GREY)));

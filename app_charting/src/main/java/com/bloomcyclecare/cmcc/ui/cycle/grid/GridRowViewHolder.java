@@ -65,6 +65,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     private final Context context;
     private final TextView textView;
     private final TextView stickerView;
+    private final TextView measurementView;
     private final View strikeThroughView;
     private final Consumer<RenderedEntry> stickerClickListener;
 
@@ -77,6 +78,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
       stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
       strikeThroughView = cellLayout.findViewById(R.id.cell_sticker_strike_through);
+      measurementView = cellLayout.findViewById(R.id.cell_measurement_indicator);
     }
 
     public void update(CellRenderContext renderContext) {
@@ -100,18 +102,24 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
         return;
       }
       ViewMode viewMode = renderContext.rowRenderContext().viewMode();
+      renderedEntry.ifPresent(entry -> fillCell(viewMode, renderedEntry.get()));
+    }
+
+    private void fillCell(ViewMode viewMode, RenderedEntry renderedEntry) {
       List<String> parts = new ArrayList<>();
       if (viewMode != ViewMode.TRAINING) {
-        parts.add(renderedEntry.get().entryDateShortStr());
+        parts.add(renderedEntry.entryDateShortStr());
       }
-      parts.add(renderedEntry.get().observationSummary().orElse("---"));
+      parts.add(renderedEntry.observationSummary().orElse("---"));
       textView.setText(ON_NEW_LINE.join(parts));
 
-      stickerView.setBackground(context.getDrawable(renderedEntry.get().stickerBackgroundResource()));
-      stickerView.setText(renderedEntry.get().stickerText());
+      stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
+      stickerView.setText(renderedEntry.stickerText());
 
       strikeThroughView.setVisibility(
-          renderedEntry.get().showStickerStrike() ? View.VISIBLE : View.GONE);
+          renderedEntry.showStickerStrike() ? View.VISIBLE : View.GONE);
+
+      measurementView.setText(renderedEntry.measurementSummary().orElse(""));
     }
 
     private void clearCell() {
