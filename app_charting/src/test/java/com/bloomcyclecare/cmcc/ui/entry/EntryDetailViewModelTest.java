@@ -6,15 +6,18 @@ import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
+import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import org.joda.time.LocalDate;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import io.reactivex.Flowable;
@@ -24,6 +27,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 public class EntryDetailViewModelTest {
 
+  private ChartingApp mockApplication;
   private CycleRenderer.EntryModificationContext mContext;
   private EntryDetailViewModel mViewModel;
 
@@ -35,10 +39,12 @@ public class EntryDetailViewModelTest {
     PreferenceRepo mockPreferenceRepo = Mockito.mock(PreferenceRepo.class);
     Mockito.when(mockPreferenceRepo.summaries()).thenReturn(Flowable.just(mockPreferenceSummary));
 
-    ChartingApp mockApplication = Mockito.mock(ChartingApp.class);
-    Mockito.when(mockApplication.preferenceRepo()).thenReturn(mockPreferenceRepo);
+    RWPregnancyRepo mockPregnancyRepo = Mockito.mock(RWPregnancyRepo.class);
+    Mockito.when(mockPregnancyRepo.getAll()).thenReturn(Flowable.just(ImmutableList.of()));
 
-    mViewModel = new EntryDetailViewModel(mockApplication);
+    mockApplication = Mockito.mock(ChartingApp.class);
+    Mockito.when(mockApplication.preferenceRepo()).thenReturn(mockPreferenceRepo);
+    Mockito.when(mockApplication.pregnancyRepo(ArgumentMatchers.any())).thenReturn(mockPregnancyRepo);
 
     Cycle cycle = new Cycle("test", LocalDate.now(), null, null);
     mContext = new CycleRenderer.EntryModificationContext(
@@ -46,7 +52,7 @@ public class EntryDetailViewModelTest {
   }
 
   private void initModel() {
-    mViewModel.initialize(mContext);
+    mViewModel = new EntryDetailViewModel(mockApplication, mContext);
   }
 
   @Test

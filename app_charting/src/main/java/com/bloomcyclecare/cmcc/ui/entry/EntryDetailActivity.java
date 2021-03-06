@@ -27,7 +27,7 @@ import java.util.List;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager.widget.ViewPager;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -58,8 +58,8 @@ public class EntryDetailActivity extends AppCompatActivity {
     CycleRenderer.EntryModificationContext entryModifyContext = Parcels.unwrap(
         intent.getParcelableExtra(CycleRenderer.EntryModificationContext.class.getCanonicalName()));
 
-    mViewModel = ViewModelProviders.of(this).get(EntryDetailViewModel.class);
-    mViewModel.initialize(entryModifyContext);
+    mViewModel = new ViewModelProvider(this, new EntryDetailViewModel.Factory(getApplication(), entryModifyContext))
+        .get(EntryDetailViewModel.class);
 
     Toolbar toolbar = findViewById(R.id.toolbar);
     setSupportActionBar(toolbar);
