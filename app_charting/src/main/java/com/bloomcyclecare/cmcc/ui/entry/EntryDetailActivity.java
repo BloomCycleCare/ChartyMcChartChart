@@ -67,12 +67,14 @@ public class EntryDetailActivity extends AppCompatActivity {
     getSupportActionBar().setTitle(getTitle(entryModifyContext.cycle, entryModifyContext.entry.entryDate));
     // Create the adapter that will return a fragment for each of the three
     // primary sections of the activity.
-    EntryDetailPagerAdapter mEntryDetailPagerAdapter = new EntryDetailPagerAdapter(
-        getSupportFragmentManager(), entryModifyContext,
-        mViewModel.showMeasurementPage(), mViewModel.showBreastfeedingPage());
-
     ViewPager mViewPager = findViewById(R.id.container);
-    mViewPager.setAdapter(mEntryDetailPagerAdapter);
+    mDisposables.add(Single.zip(
+        mViewModel.showMeasurementPage(),
+        mViewModel.showBreastfeedingPage(),
+        (showMeasurementPage, showBreastfeedingPage) -> new EntryDetailPagerAdapter(
+              getSupportFragmentManager(), entryModifyContext,
+              showMeasurementPage, showBreastfeedingPage))
+        .subscribe(mViewPager::setAdapter));
 
     TabLayout tabLayout = findViewById(R.id.tabs);
     tabLayout.setupWithViewPager(mViewPager);
