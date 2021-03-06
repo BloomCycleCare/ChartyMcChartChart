@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.ui.entry.observation;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -199,10 +200,10 @@ public class ObservationEntryFragment extends Fragment {
       showcaseManager.showShowcase(ShowcaseManager.ShowcaseID.ENTRY_DETAIL_INPUT_OBSERVATION, observationEditText);
 
       EntryDetailActivity activity = (EntryDetailActivity) requireActivity();
-      activity.getMenu().findItem(R.id.action_save);
+      Menu menu = activity.getMenu();
 
       if (hasValidObservation) {
-        ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE, requireActivity())
+        ShowcaseManager.SequenceBuilder builder = ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE, requireActivity())
             .addShowcase(
                 ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION,
                 observationDescriptionTextView,
@@ -230,10 +231,15 @@ public class ObservationEntryFragment extends Fragment {
             /*.addShowcase(
                 ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_MENU,
                 requireActivity().findViewById(R.id.action_pregnancy_test))*/
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_SAVE,
-                activity.findViewById(activity.getMenu().findItem(R.id.action_save).getItemId()))
-            .build();
+            ;
+        if (menu == null) {
+          Timber.w("Null menu, skipping ENTRY_DETAIL_EXPLAIN_SAVE showcase");
+        } else {
+          builder.addShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_SAVE,
+              activity.findViewById(activity.getMenu().findItem(R.id.action_save).getItemId()));
+        }
+        builder.build();
       }
     }));
 

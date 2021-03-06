@@ -27,6 +27,8 @@ import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.LocalDate;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +39,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -73,7 +77,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
-  private final SingleSubject<CycleRenderer.EntryModificationContext> mEntryContext = SingleSubject.create();
 
   private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
   private final SingleSubject<Boolean> shouldShowBreastfeedingPage = SingleSubject.create();
@@ -82,13 +85,32 @@ public class EntryDetailViewModel extends AndroidViewModel {
   private final RWCycleRepo mCycleRepo;
   private final RWPregnancyRepo mPregnancyRepo;
 
-  public EntryDetailViewModel(@NonNull Application application) {
+  public EntryDetailViewModel(
+      @NonNull Application application, CycleRenderer.EntryModificationContext context) {
     super(application);
-
     ChartingApp myApp = ChartingApp.cast(application);
     mEntryRepo = myApp.entryRepo(ViewMode.CHARTING);
     mCycleRepo = myApp.cycleRepo(ViewMode.CHARTING);
     mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
+
+    LocalDate entryDate = context.entry.entryDate;
+    if (context.entry.observationEntry.observation != null) {
+      observationUpdates.onNext(context.entry.observationEntry.observation.toString());
+    } else {
+      observationUpdates.onNext("");
+    }
+    peakDayUpdates.onNext(context.entry.observationEntry.peakDay);
+    intercourseUpdates.onNext(context.entry.observationEntry.intercourse);
+    firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
+    positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
+    pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
+    timeOfDayUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.intercourseTimeOfDay).orElse(IntercourseTimeOfDay.NONE));
+    noteUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.note).orElse(""));
+
+    symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
+    wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
+    measurementEntries.onNext(context.entry.measurementEntry);
+    breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
 
     mDisposables.add(intercourseUpdates.distinctUntilChanged().subscribe(value -> {
       if (!value) {
@@ -97,40 +119,37 @@ public class EntryDetailViewModel extends AndroidViewModel {
     }));
 
     // Hook up when to show measurement page
-    Single.zip(
-        myApp.preferenceRepo().summaries().firstOrError()
-            .map(summary -> summary.lhTestMeasurementEnabled() || summary.clearblueMachineMeasurementEnabled()),
-        mEntryContext.map(context -> !context.entry.measurementEntry.isEmpty()),
-        (enabledInSettings, entryHasMeasurement) -> enabledInSettings || entryHasMeasurement)
+    myApp.preferenceRepo().summaries().firstOrError()
+        .map(summary -> summary.lhTestMeasurementEnabled() || summary.clearblueMachineMeasurementEnabled())
+        .map(enabledInSettings -> enabledInSettings || !context.entry.measurementEntry.isEmpty())
         .subscribe(shouldShowMeasurementPage);
 
     // Hook up when to show breastfeeding page
-    mEntryContext.map(context -> context.entry.entryDate)
-        .flatMap(entryDate -> myApp.pregnancyRepo(ViewMode.CHARTING)
-            .getAll()
-            .firstOrError()
-            .map(pregnancies -> {
-              Pregnancy mostRecentPregnancy = null;
-              for (Pregnancy p : pregnancies) {
-                if (p.positiveTestDate.isAfter(entryDate)) {
-                  continue;
-                }
-                if (mostRecentPregnancy == null || p.positiveTestDate.isAfter(mostRecentPregnancy.positiveTestDate)) {
-                  mostRecentPregnancy = p;
-                }
-              }
-              return Optional.ofNullable(mostRecentPregnancy);
-            })
-            .map(pregnancy -> {
-              if (!pregnancy.isPresent()) {
-                return false;
-              }
-              Timber.v("Found pregnancy %s", pregnancy.get());
-              if (pregnancy.get().breastfeedingStartDate == null || entryDate.isBefore(pregnancy.get().breastfeedingStartDate)) {
-                return false;
-              }
-              return pregnancy.get().breastfeedingEndDate == null || !entryDate.isAfter(pregnancy.get().breastfeedingEndDate);
-            }))
+    myApp.pregnancyRepo(ViewMode.CHARTING)
+        .getAll()
+        .firstOrError()
+        .map(pregnancies -> {
+          Pregnancy mostRecentPregnancy = null;
+          for (Pregnancy p : pregnancies) {
+            if (p.positiveTestDate.isAfter(entryDate)) {
+              continue;
+            }
+            if (mostRecentPregnancy == null || p.positiveTestDate.isAfter(mostRecentPregnancy.positiveTestDate)) {
+              mostRecentPregnancy = p;
+            }
+          }
+          return Optional.ofNullable(mostRecentPregnancy);
+        })
+        .map(pregnancy -> {
+          if (!pregnancy.isPresent()) {
+            return false;
+          }
+          Timber.v("Found pregnancy %s", pregnancy.get());
+          if (pregnancy.get().breastfeedingStartDate == null || entryDate.isBefore(pregnancy.get().breastfeedingStartDate)) {
+            return false;
+          }
+          return pregnancy.get().breastfeedingEndDate == null || !entryDate.isAfter(pregnancy.get().breastfeedingEndDate);
+        })
         .subscribe(shouldShowBreastfeedingPage);
 
     Flowable<ErrorOr<Observation>> errorOrObservationStream = observationUpdates
@@ -147,9 +166,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionUpdateList = RxUtil
         .aggregateLatest(clarifyingQuestionUpdates.toFlowable(BackpressureStrategy.BUFFER), u -> u.question);
 
-    Flowable<ObservationEntry> observationEntryStream = mEntryContext
-        .toFlowable().distinctUntilChanged()
-        .map(context -> context.entry.observationEntry)
+    Flowable<ObservationEntry> observationEntryStream = Flowable.just(context.entry.observationEntry)
         .compose(RxUtil.update(errorOrObservationStream,
             (e, v) -> e.observation = v.or(null), "observation"))
         .compose(RxUtil.update(peakDayUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
@@ -174,47 +191,38 @@ public class EntryDetailViewModel extends AndroidViewModel {
             (e, v) -> e.note = v, "notes"))
         ;
 
-    Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionRenderUpdates = Flowable.combineLatest(
-        mEntryContext.toFlowable(), observationEntryStream, (entryContext, observationEntry) -> {
+    Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionRenderUpdates = observationEntryStream
+        .map(observationEntry -> {
           ImmutableList.Builder<ClarifyingQuestionUpdate> builder = ImmutableList.builder();
-          if (entryContext.shouldAskDoublePeakQuestions) {
+          if (context.shouldAskDoublePeakQuestions) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_BUILDUP, observationEntry.unusualBuildup));
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.UNUSUAL_STRESS, observationEntry.unusualStress));
           }
-          if (entryContext.shouldAskEssentialSameness) {
+          if (context.shouldAskEssentialSameness) {
             builder.add(new ClarifyingQuestionUpdate(
                 ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
           }
           return builder.build();
         });
 
-    Flowable<SymptomEntry> symptomEntryStream = Flowable.combineLatest(
-        mEntryContext.toFlowable()
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
-        symptomUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New symptom udpates")),
-        (entryContext, activeSymptoms) -> new SymptomEntry(entryContext.entry.entryDate, activeSymptoms));
+    Flowable<SymptomEntry> symptomEntryStream = symptomUpdates
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .distinctUntilChanged()
+        .doOnNext(i -> Timber.v("New symptom updates"))
+        .map(activeSymptoms -> new SymptomEntry(entryDate, activeSymptoms));
 
-    Flowable<WellnessEntry> wellnessEntryStream = Flowable.combineLatest(
-        mEntryContext.toFlowable()
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
-        wellnessUpdates.toFlowable(BackpressureStrategy.BUFFER)
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New wellness udpates")),
-        (entryContext, activeItems) -> new WellnessEntry(entryContext.entry.entryDate, activeItems));
+    Flowable<WellnessEntry> wellnessEntryStream = wellnessUpdates
+        .toFlowable(BackpressureStrategy.BUFFER)
+        .distinctUntilChanged()
+        .doOnNext(i -> Timber.v("New wellness updates"))
+        .map(activeItems -> new WellnessEntry(entryDate, activeItems));
 
     Flowable<Optional<StickerSelection>> stickerSelectionStream =
-        mEntryContext.map(c -> Optional.ofNullable(c.entry.stickerSelection)).toFlowable();
+        Flowable.just(Optional.ofNullable(context.entry.stickerSelection));
 
     Flowable.combineLatest(
-        mEntryContext.toFlowable()
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New EntryRenderContext update")),
         errorOrObservationStream
             .map(errorOrObservation -> !errorOrObservation.hasError() ? "" : errorOrObservation.error().getMessage())
             .distinctUntilChanged()
@@ -236,12 +244,12 @@ public class EntryDetailViewModel extends AndroidViewModel {
             .doOnNext(i -> Timber.v("New breastfeeding entry")),
         stickerSelectionStream
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New sticker slection")),
+            .doOnNext(i -> Timber.v("New sticker selection")),
         clarifyingQuestionRenderUpdates,
-        (entryContext, observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
+        (observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
-              entryContext,
-              new ChartEntry(entryContext.entry.entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
+              context,
+              new ChartEntry(entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);
@@ -271,30 +279,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
           new ClarifyingQuestionUpdate(ClarifyingQuestion.ESSENTIAL_SAMENESS, observationEntry.isEssentiallyTheSame));
     }
     return ImmutableList.of();
-  }
-
-  void initialize(CycleRenderer.EntryModificationContext context) {
-    if (mEntryContext.hasValue()) {
-      Timber.w("Reinitializing EntryRenderContext!");
-    }
-    mEntryContext.onSuccess(context);
-    if (context.entry.observationEntry.observation != null) {
-      observationUpdates.onNext(context.entry.observationEntry.observation.toString());
-    } else {
-      observationUpdates.onNext("");
-    }
-    peakDayUpdates.onNext(context.entry.observationEntry.peakDay);
-    intercourseUpdates.onNext(context.entry.observationEntry.intercourse);
-    firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
-    positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
-    pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
-    timeOfDayUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.intercourseTimeOfDay).orElse(IntercourseTimeOfDay.NONE));
-    noteUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.note).orElse(""));
-
-    symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
-    wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
-    measurementEntries.onNext(context.entry.measurementEntry);
-    breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
   }
 
   boolean showMeasurementPage() {
@@ -516,6 +500,22 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
     public static ValidationIssue block(String summary, String details) {
       return new ValidationIssue(summary, details, ValidationAction.BLOCK);
+    }
+  }
+
+  static class Factory implements ViewModelProvider.Factory {
+    private final @NonNull Application application;
+    private final CycleRenderer.EntryModificationContext context;
+
+    public Factory(@NonNull Application application, CycleRenderer.EntryModificationContext context) {
+      this.application = application;
+      this.context = context;
+    }
+
+    @NonNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull Class<T> modelClass) {
+      return (T) new EntryDetailViewModel(application, context);
     }
   }
 }
