@@ -281,12 +281,12 @@ public class EntryDetailViewModel extends AndroidViewModel {
     return ImmutableList.of();
   }
 
-  boolean showMeasurementPage() {
-    return shouldShowMeasurementPage.getValue();
+  Single<Boolean> showMeasurementPage() {
+    return shouldShowMeasurementPage;
   }
 
-  boolean showBreastfeedingPage() {
-    return shouldShowBreastfeedingPage.getValue();
+  Single<Boolean> showBreastfeedingPage() {
+    return shouldShowBreastfeedingPage;
   }
 
   public LiveData<ViewState> viewStates() {
