@@ -85,8 +85,6 @@ public abstract class RenderedEntry {
       stickerText = "?";
     }
 
-    String pocSummary = viewMode == ViewMode.TRAINING ? "" : re.pocSummary();
-
     ChartEntry entry = re.modificationContext().entry;
     boolean showStickerStrike = !autoStickeringEnabled && hasNonEmptyManualSelection && !autoSelection.equals(manualSelection);
     boolean showWeekTransition = entry.observationEntry.getDate().dayOfWeek().getAsString().equals("1");
