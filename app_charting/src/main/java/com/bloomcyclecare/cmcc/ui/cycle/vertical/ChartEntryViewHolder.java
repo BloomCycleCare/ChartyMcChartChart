@@ -9,6 +9,10 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
+import com.google.common.base.Joiner;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import androidx.core.util.Consumer;
 import androidx.recyclerview.widget.RecyclerView;
@@ -78,7 +82,11 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
     public void bind(RenderedEntry re, ViewMode viewMode, boolean showcaseEntry, boolean showcaseStickerSelection) {
       mStickerView.setVisibility(View.VISIBLE);
 
-      mEntryDataTextView.setText(re.observationSummary().orElse("No observation"));
+      List<String> dataTextViewParts = new ArrayList<>();
+      dataTextViewParts.add(re.observationSummary().orElse("No observation"));
+      re.measurementSummary().ifPresent(dataTextViewParts::add);
+
+      mEntryDataTextView.setText(Joiner.on(" - ").join(dataTextViewParts));
       mEntryNumTextView.setText(re.entryNum());
       mEntryDateTextView.setText(re.entryDateStr());
       mStickerView.setBackgroundResource(re.stickerBackgroundResource());
