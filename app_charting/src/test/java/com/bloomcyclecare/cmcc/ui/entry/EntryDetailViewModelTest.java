@@ -5,6 +5,7 @@ import androidx.arch.core.executor.testing.InstantTaskExecutorRule;
 import androidx.lifecycle.Observer;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.when;
 @RunWith(JUnit4.class)
 public class EntryDetailViewModelTest {
 
+  // TODO: test clarifying question updates.
   // TODO: test question resolution flow.
   // TODO: test PoC clarifying question flow.
 
@@ -92,13 +94,103 @@ public class EntryDetailViewModelTest {
   }
 
   @Test
+  public void testObservationUpdate() {
+    initModel();
+    mViewModel.observationUpdates.onNext("Not an observation");
+    mViewModel.observationUpdates.onNext("0 AD");
+
+    verify(mObserver, times(4)).onChanged(viewState.capture());
+    assertThat(viewState.getAllValues()).hasSize(4);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.observation).isNull();
+    assertThat(initialValue.observationErrorText).isEmpty();
+
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.observation).isNull();
+    assertThat(firstUpdate.observationErrorText).isNotEmpty();
+
+    // Skip second due to race
+
+    EntryDetailViewModel.ViewState thirdUpdate = viewState.getAllValues().get(3);
+    assertThat(thirdUpdate.chartEntry.observationEntry.observation).isNotNull();
+    assertThat(thirdUpdate.observationErrorText).isEmpty();
+  }
+
+  @Test
+  public void testPeakDayUpdates() {
+    initModel();
+    mViewModel.peakDayUpdates.onNext(true);
+
+    verify(mObserver, times(2)).onChanged(viewState.capture());
+    assertThat(viewState.getAllValues()).hasSize(2);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.peakDay).isFalse();
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.peakDay).isTrue();
+  }
+
+  @Test
+  public void testFirstDayOfCycleUpdates() {
+    initModel();
+    mViewModel.firstDayOfCycleUpdates.onNext(true);
+
+    verify(mObserver, times(2)).onChanged(viewState.capture());
+    assertThat(viewState.getAllValues()).hasSize(2);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.firstDay).isFalse();
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.firstDay).isTrue();
+  }
+
+  @Test
+  public void testPositivePregnancyTestUpdates() {
+    initModel();
+    mViewModel.positivePregnancyTestUpdates.onNext(true);
+
+    verify(mObserver, times(2)).onChanged(viewState.capture());
+    assertThat(viewState.getAllValues()).hasSize(2);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.positivePregnancyTest).isFalse();
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.positivePregnancyTest).isTrue();
+  }
+
+  @Test
+  public void testPointOfChange() {
+    initModel();
+    mViewModel.pointOfChangeUpdates.onNext(true);
+
+    verify(mObserver, times(2)).onChanged(viewState.capture());
+    assertThat(viewState.getAllValues()).hasSize(2);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.pointOfChange).isFalse();
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.pointOfChange).isTrue();
+  }
+
+  @Test
   public void testNoteUpdates() {
     initModel();
     mViewModel.noteUpdates.onNext("some note");
 
     verify(mObserver, times(2)).onChanged(viewState.capture());
-    assertThat(viewState.getAllValues().get(0).chartEntry.observationEntry.note).isEmpty();
-    assertThat(viewState.getAllValues().get(1).chartEntry.observationEntry.note).isEqualTo("some note");
+    assertThat(viewState.getAllValues()).hasSize(2);
+
+    EntryDetailViewModel.ViewState initialValue = viewState.getAllValues().get(0);
+    assertThat(initialValue.chartEntry.observationEntry.note).isEmpty();
+
+    EntryDetailViewModel.ViewState firstUpdate = viewState.getAllValues().get(1);
+    assertThat(firstUpdate.chartEntry.observationEntry.note).isEqualTo("some note");
   }
 
   @Test
