@@ -50,7 +50,6 @@ import io.reactivex.FlowableTransformer;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
@@ -79,7 +78,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
   public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
   public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
 
-  private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
   private final SingleSubject<Boolean> shouldShowMeasurementPage = SingleSubject.create();
@@ -88,18 +86,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
   private final RWChartEntryRepo mEntryRepo;
   private final RWCycleRepo mCycleRepo;
   private final RWPregnancyRepo mPregnancyRepo;
-
-
-  public static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Flowable<X> source, BiConsumer<T, X> consumerFn, String name) {
-    return RxUtil.update(source.distinctUntilChanged(), (t, x) -> {
-      //Timber.v("Updating %s to %s", name, x.toString());
-      consumerFn.accept(t, x);
-    }, name);
-  }
-
-  public static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Observable<X> source, BiConsumer<T, X> consumerFn, String name) {
-    return update(source.toFlowable(BackpressureStrategy.BUFFER), consumerFn, name);
-  }
 
   public EntryDetailViewModel(
       @NonNull Application application, CycleRenderer.EntryModificationContext context) {
@@ -548,4 +534,16 @@ public class EntryDetailViewModel extends AndroidViewModel {
       return (T) new EntryDetailViewModel(application, context);
     }
   }
+
+  private static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Flowable<X> source, BiConsumer<T, X> consumerFn, String name) {
+    return RxUtil.update(source.distinctUntilChanged(), (t, x) -> {
+      Timber.v("Updating %s to %s", name, x.toString());
+      consumerFn.accept(t, x);
+    }, name);
+  }
+
+  private static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Observable<X> source, BiConsumer<T, X> consumerFn, String name) {
+    return update(source.toFlowable(BackpressureStrategy.BUFFER), consumerFn, name);
+  }
+
 }
