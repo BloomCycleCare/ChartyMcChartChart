@@ -310,10 +310,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .doOnNext(viewState -> Timber.d("PUBLISHING new ViewState")));
   }
 
-  Flowable<ViewState> viewStatesRx() {
-    return mViewStates.toFlowable(BackpressureStrategy.BUFFER);
-  }
-
   Single<Boolean> isDirty() {
     return mViewStates.firstOrError().map(ViewState::isDirty);
   }
