@@ -23,6 +23,7 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
+import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +33,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -44,10 +46,12 @@ import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
+import io.reactivex.FlowableTransformer;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.functions.BiConsumer;
 import io.reactivex.functions.Consumer;
 import io.reactivex.functions.Function;
 import io.reactivex.schedulers.Schedulers;
@@ -85,6 +89,18 @@ public class EntryDetailViewModel extends AndroidViewModel {
   private final RWCycleRepo mCycleRepo;
   private final RWPregnancyRepo mPregnancyRepo;
 
+
+  public static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Flowable<X> source, BiConsumer<T, X> consumerFn, String name) {
+    return RxUtil.update(source.distinctUntilChanged(), (t, x) -> {
+      //Timber.v("Updating %s to %s", name, x.toString());
+      consumerFn.accept(t, x);
+    }, name);
+  }
+
+  public static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Observable<X> source, BiConsumer<T, X> consumerFn, String name) {
+    return update(source.toFlowable(BackpressureStrategy.BUFFER), consumerFn, name);
+  }
+
   public EntryDetailViewModel(
       @NonNull Application application, CycleRenderer.EntryModificationContext context) {
     super(application);
@@ -112,11 +128,14 @@ public class EntryDetailViewModel extends AndroidViewModel {
     measurementEntries.onNext(context.entry.measurementEntry);
     breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
 
-    mDisposables.add(intercourseUpdates.distinctUntilChanged().subscribe(value -> {
-      if (!value) {
-        timeOfDayUpdates.onNext(IntercourseTimeOfDay.NONE);
-      }
-    }));
+    Observable.combineLatest(
+        intercourseUpdates,
+        timeOfDayUpdates,
+        (intercourse, timeOfDay) -> !intercourse && timeOfDay != IntercourseTimeOfDay.NONE)
+        .filter(v -> v)
+        .doOnNext(i -> Timber.v("Resetting intercourse time of day"))
+        .map(v -> IntercourseTimeOfDay.NONE)
+        .subscribe(timeOfDayUpdates);
 
     // Hook up when to show measurement page
     myApp.preferenceRepo().summaries().firstOrError()
@@ -167,31 +186,24 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .aggregateLatest(clarifyingQuestionUpdates.toFlowable(BackpressureStrategy.BUFFER), u -> u.question);
 
     Flowable<ObservationEntry> observationEntryStream = Flowable.just(context.entry.observationEntry)
-        .compose(RxUtil.update(errorOrObservationStream,
-            (e, v) -> e.observation = v.or(null), "observation"))
-        .compose(RxUtil.update(peakDayUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.peakDay = v, "peakDay"))
-        .compose(RxUtil.update(intercourseUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.intercourse = v, "intercourse"))
-        .compose(RxUtil.update(firstDayOfCycleUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.firstDay = v, "firstDay"))
-        .compose(RxUtil.update(positivePregnancyTestUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.positivePregnancyTest = v, "positivePregnancyTest"))
-        .compose(RxUtil.update(pointOfChangeUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.pointOfChange = v, "pointOfChange"))
-        .compose(RxUtil.update(clarifyingQuestionUpdateList.distinctUntilChanged(),
+        .compose(update(errorOrObservationStream, (e, v) -> e.observation = v.or(null), "observation"))
+        .compose(update(peakDayUpdates, (e, v) -> e.peakDay = v, "peakDay"))
+        .compose(update(intercourseUpdates, (e, v) -> e.intercourse = v, "intercourse"))
+        .compose(update(firstDayOfCycleUpdates, (e, v) -> e.firstDay = v, "firstDay"))
+        .compose(update(positivePregnancyTestUpdates, (e, v) -> e.positivePregnancyTest = v, "positivePregnancyTest"))
+        .compose(update(pointOfChangeUpdates, (e, v) -> e.pointOfChange = v, "pointOfChange"))
+        .compose(update(timeOfDayUpdates, (e, v) -> e.intercourseTimeOfDay = v, "timeOfDay"))
+        .compose(update(noteUpdates, (e, v) -> e.note = v, "notes"))
+        .compose(update(clarifyingQuestionUpdateList,
             (e, v) -> {
               for (ClarifyingQuestionUpdate u : v) {
                 e.updateClarifyingQuestion(u.question, u.answer);
               }
             }, "clarifyingQuestions"))
-        .compose(RxUtil.update(timeOfDayUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.intercourseTimeOfDay = v, "timeOfDay"))
-        .compose(RxUtil.update(noteUpdates.toFlowable(BackpressureStrategy.BUFFER).distinctUntilChanged(),
-            (e, v) -> e.note = v, "notes"))
         ;
 
     Flowable<List<ClarifyingQuestionUpdate>> clarifyingQuestionRenderUpdates = observationEntryStream
+        .distinctUntilChanged()
         .map(observationEntry -> {
           ImmutableList.Builder<ClarifyingQuestionUpdate> builder = ImmutableList.builder();
           if (context.shouldAskDoublePeakQuestions) {
@@ -226,26 +238,28 @@ public class EntryDetailViewModel extends AndroidViewModel {
         errorOrObservationStream
             .map(errorOrObservation -> !errorOrObservation.hasError() ? "" : errorOrObservation.error().getMessage())
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New observation error")),
+            .doOnNext(i -> Timber.d("NEW observation error")),
         observationEntryStream
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New observation entry")),
+            .doOnNext(i -> Timber.d("NEW observation entry")),
         symptomEntryStream
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New symptom entry")),
+            .doOnNext(i -> Timber.d("NEW symptom entry")),
         wellnessEntryStream
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New wellness entry")),
+            .doOnNext(i -> Timber.d("NEW wellness entry")),
         measurementEntries.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New measurement entry")),
+            .doOnNext(i -> Timber.d("NEW measurement entry")),
         breastfeedingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New breastfeeding entry")),
+            .doOnNext(i -> Timber.d("NEW breastfeeding entry")),
         stickerSelectionStream
             .distinctUntilChanged()
-            .doOnNext(i -> Timber.v("New sticker selection")),
-        clarifyingQuestionRenderUpdates,
+            .doOnNext(i -> Timber.d("NEW sticker selection")),
+        clarifyingQuestionRenderUpdates
+            .distinctUntilChanged()
+            .doOnNext(i -> Timber.d("NEW clarifying quesiton render updates")),
         (observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               context,
@@ -256,6 +270,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
           return state;
         })
+        .distinctUntilChanged()
         .toObservable()
         .subscribe(mViewStates);
   }
@@ -292,7 +307,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   public LiveData<ViewState> viewStates() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates
         .toFlowable(BackpressureStrategy.DROP)
-        .doOnNext(viewState -> Timber.d("Publishing new ViewState")));
+        .doOnNext(viewState -> Timber.d("PUBLISHING new ViewState")));
   }
 
   Flowable<ViewState> viewStatesRx() {
@@ -427,6 +442,25 @@ public class EntryDetailViewModel extends AndroidViewModel {
       this.observationErrorText = observationErrorText;
       this.isInPregnancy = entryModificationContext.cycle.isPregnancy();
       validate();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) return true;
+      if (o == null || getClass() != o.getClass()) return false;
+      ViewState viewState = (ViewState) o;
+      return isInPregnancy == viewState.isInPregnancy &&
+          entryModificationContext.equals(viewState.entryModificationContext) &&
+          chartEntry.equals(viewState.chartEntry) &&
+          observationErrorText.equals(viewState.observationErrorText) &&
+          clarifyingQuestionState.equals(viewState.clarifyingQuestionState) &&
+          validationIssues.equals(viewState.validationIssues) &&
+          previousPrompts.equals(viewState.previousPrompts);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(entryModificationContext, chartEntry, observationErrorText, isInPregnancy, clarifyingQuestionState, validationIssues, previousPrompts);
     }
 
     private void validate() {

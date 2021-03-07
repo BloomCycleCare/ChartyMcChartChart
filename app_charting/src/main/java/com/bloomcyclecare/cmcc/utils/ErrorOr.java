@@ -51,4 +51,12 @@ public class ErrorOr<T> {
   public Throwable error() {
     return mError;
   }
+
+  @Override
+  public String toString() {
+    return "ErrorOr{" +
+        "mValue=" + mValue +
+        ", mError=" + mError +
+        '}';
+  }
 }

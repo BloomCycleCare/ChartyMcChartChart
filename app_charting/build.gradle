@@ -57,6 +57,9 @@ android {
         exclude 'META-INF/ASL2.0'
 
     }
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 repositories {
@@ -165,4 +168,7 @@ dependencies {
     implementation project(path: ':data')
     implementation project(path: ':ui_utils')
     implementation project(path: ':feature_instructions')
+
+    testImplementation 'android.arch.core:core-testing:1.1.1'
+    testImplementation 'net.lachlanmckee:timber-junit-rule:1.0.1'
 }

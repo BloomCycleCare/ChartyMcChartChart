@@ -81,7 +81,7 @@ public class RxUtil {
 
   public static <T extends Copyable<T>, X> FlowableTransformer<T, T> update(Flowable<X> source, BiConsumer<T, X> consumerFn, String name) {
     return upstream -> Flowable
-        .combineLatest(upstream, stallWarning(source, name), (t, x) -> {
+        .combineLatest(upstream.distinctUntilChanged(), stallWarning(source, name), (t, x) -> {
           T copyOfT = t.copy();
           consumerFn.accept(copyOfT, x);
           return copyOfT;
