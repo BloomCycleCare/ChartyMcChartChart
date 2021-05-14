@@ -8,6 +8,7 @@ import android.util.Pair;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
+import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
@@ -45,17 +46,20 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
 
     Observable<Pair<Optional<File>, Boolean>> backupFile = mAccountSubject.distinctUntilChanged()
         .flatMapSingle(account -> {
-          Timber.v("Checking for backup file");
           if (!account.isPresent()) {
             Timber.v("No account, bailing out");
             return Single.just(Pair.create(Optional.empty(), false));
           }
+          Timber.d(
+              "Checking for backup file %s in directory %s",
+              BackupWorker.BACKUP_FILE_NAME_IN_DRIVE, BackupWorker.BACKUP_DIRECTORY_NAME_IN_DRIVE);
           DriveServiceHelper driveService = DriveServiceHelper.forAccount(account.get(), mContext);
           return driveService
-              .getFolder("My Charts")
-              .flatMap(folder -> driveService.getFilesInFolder(folder, "backup.chart"))
+              .getFolder(BackupWorker.BACKUP_DIRECTORY_NAME_IN_DRIVE)
+              .flatMap(folder -> driveService.getFilesInFolder(folder, BackupWorker.BACKUP_FILE_NAME_IN_DRIVE))
               .switchIfEmpty(Single.just(ImmutableList.of()))
               .map(files -> {
+                Timber.v("Found %d files", files.size());
                 if (files.isEmpty()) {
                   return Pair.create(Optional.empty(), true);
                 }
