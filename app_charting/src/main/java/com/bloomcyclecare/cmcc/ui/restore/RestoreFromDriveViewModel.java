@@ -2,8 +2,9 @@ package com.bloomcyclecare.cmcc.ui.restore;
 
 import android.app.Application;
 import android.content.Context;
+import android.content.Intent;
+import android.util.Pair;
 
-import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
@@ -24,10 +25,8 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
-import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
@@ -44,25 +43,32 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
     super(application);
     mContext = application.getApplicationContext();
 
-    Observable<Optional<File>> backupFile = mAccountSubject.distinctUntilChanged()
+    Observable<Pair<Optional<File>, Boolean>> backupFile = mAccountSubject.distinctUntilChanged()
         .flatMapSingle(account -> {
           Timber.v("Checking for backup file");
           if (!account.isPresent()) {
             Timber.v("No account, bailing out");
-            return Single.just(Optional.empty());
+            return Single.just(Pair.create(Optional.empty(), false));
           }
           DriveServiceHelper driveService = DriveServiceHelper.forAccount(account.get(), mContext);
           return driveService
               .getFolder("My Charts")
               .flatMap(folder -> driveService.getFilesInFolder(folder, "backup.chart"))
               .switchIfEmpty(Single.just(ImmutableList.of()))
-              .map(files -> files.isEmpty() ? Optional.empty() : Optional.of(files.get(0)));
+              .map(files -> {
+                if (files.isEmpty()) {
+                  return Pair.create(Optional.empty(), true);
+                }
+                return Pair.create(Optional.of(files.get(0)), false);
+              });
         });
 
     Observable.combineLatest(
         mAccountSubject.distinctUntilChanged(),
         backupFile,
-        ViewState::create).subscribe(mViewModelSubject);
+        (account, backupFilePair) -> ViewState.create(
+            account, backupFilePair.first, backupFilePair.second))
+        .subscribe(mViewModelSubject);
   }
 
   public void checkAccount() {
@@ -71,6 +77,10 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
         .map(Optional::of)
         .switchIfEmpty(Single.just(Optional.empty()))
         .subscribe(account -> mAccountSubject.onNext(account));
+  }
+
+  public Single<Intent> switchAccount() {
+    return GoogleAuthHelper.switchIntent(mContext).doOnSubscribe(d -> mAccountSubject.onNext(Optional.empty()));
   }
 
   public Completable restore(File backupFile) {
@@ -106,9 +116,10 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
 
     abstract Optional<GoogleSignInAccount> account();
     abstract Optional<File> backupFile();
+    abstract boolean noneFound();
 
-    public static ViewState create(Optional<GoogleSignInAccount> account, Optional<File> backupFile) {
-      return new AutoValue_RestoreFromDriveViewModel_ViewState(account, backupFile);
+    public static ViewState create(Optional<GoogleSignInAccount> account, Optional<File> backupFile, boolean noneFound) {
+      return new AutoValue_RestoreFromDriveViewModel_ViewState(account, backupFile, noneFound);
     }
 
   }

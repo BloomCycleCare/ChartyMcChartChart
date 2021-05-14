@@ -25,7 +25,7 @@ import timber.log.Timber;
 
 public class BackupWorker extends RxWorker {
 
-  private static final String BACKUP_FILE_NAME_IN_DRIVE = "cmcc_backup.json";
+  public static final String BACKUP_FILE_NAME_IN_DRIVE = "cmcc_backup.json";
   private static final String LOCAL_BACKUP_FILE_NAME = "local_cmcc_backup.json";
 
   private final Context mContext;

@@ -9,23 +9,24 @@ import android.view.ViewGroup;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.api.services.drive.model.File;
 
 import java.util.Map;
-import java.util.Optional;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
-import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import timber.log.Timber;
 
 public class RestoreFromDriveFragment extends Fragment {
 
+  CompositeDisposable mDisposables = new CompositeDisposable();
   RestoreFromDriveViewModel mViewModel;
 
   @Nullable
@@ -37,11 +38,48 @@ public class RestoreFromDriveFragment extends Fragment {
 
     mViewModel.checkAccount();
     mViewModel.viewState().observeForever(viewState -> {
+      if (viewState.noneFound()) {
+        Timber.i("No backup file found");
+        if (!viewState.account().isPresent()) {
+          Timber.w("Account missing for NOT_FOUND restore from backup");
+        }
+        String accountEmail = viewState.account()
+            .map(GoogleSignInAccount::getEmail)
+            .orElse("IDK, this is a bug");
+        new AlertDialog.Builder(requireContext())
+            .setTitle("No File Found")
+            .setMessage("We were not able to find any previous backups for " + accountEmail)
+            .setPositiveButton("OK", (dialog, which) -> {
+              Navigation.findNavController(requireView()).popBackStack();
+              dialog.dismiss();
+            })
+            .setNegativeButton("Switch Accounts", ((dialog, which) -> {
+              mDisposables.add(mViewModel.switchAccount()
+                  .subscribe(intent -> {
+                    startActivityForResult(intent, 1);
+                  }, t -> {
+                    dialog.dismiss();
+                    Timber.e(t, "Error switching accounts for restore from drive");
+                    new AlertDialog.Builder(requireContext())
+                        .setTitle("Failed to switch accounts")
+                        .setMessage("Something went wrong")
+                        .setPositiveButton("OK", (d, w) -> {
+                          Navigation.findNavController(requireView()).popBackStack();
+                          d.dismiss();
+                        })
+                        .show();
+                  }));
+            }))
+            .show();
+        return;
+      }
       if (!viewState.account().isPresent()) {
+        Timber.d("Prompting for sign in");
         startActivityForResult(GoogleAuthHelper.getPromptIntent(requireContext()), 1);
+        return;
       }
       if (viewState.backupFile().isPresent()) {
-        promptRestoreFromDrive(viewState.backupFile().get())
+        mDisposables.add(promptRestoreFromDrive(viewState.backupFile().get())
             .flatMap(doRestore -> {
               if (!doRestore) {
                 return Single.just(false);
@@ -55,7 +93,8 @@ public class RestoreFromDriveFragment extends Fragment {
               } else {
                 Navigation.findNavController(requireView()).popBackStack();
               }
-            });
+            }));
+        return;
       }
     });
     return view;
@@ -65,6 +104,12 @@ public class RestoreFromDriveFragment extends Fragment {
   public void onResume() {
     mViewModel.checkAccount();
     super.onResume();
+  }
+
+  @Override
+  public void onDestroy() {
+    mDisposables.dispose();
+    super.onDestroy();
   }
 
   private Single<Boolean> promptRestoreFromDrive(File file) {

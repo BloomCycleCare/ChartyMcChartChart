@@ -8,9 +8,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.android.gms.auth.api.signin.GoogleSignInClient;
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
 import com.google.android.gms.common.api.Scope;
+import com.google.android.gms.tasks.Task;
 import com.google.api.services.drive.DriveScopes;
 
 import io.reactivex.Maybe;
+import io.reactivex.Single;
+import io.reactivex.SingleOnSubscribe;
 import io.reactivex.subjects.MaybeSubject;
 import timber.log.Timber;
 
@@ -33,6 +36,22 @@ public class GoogleAuthHelper {
         e.onSuccess(account);
       }
     });
+  }
+
+  public static Single<Intent> switchIntent(Context context) {
+    GoogleSignInClient client = getClient(context);
+    return Single
+        .create((SingleOnSubscribe<Boolean>) emitter -> {
+          Task<Void> task = client.signOut();
+          task.addOnSuccessListener(aVoid -> emitter.onSuccess(true));
+          task.addOnFailureListener(emitter::onError);
+        })
+        .map(signedOut -> {
+          if (signedOut) {
+            return client.getSignInIntent();
+          }
+          throw new IllegalStateException();
+        });
   }
 
   public static Intent getPromptIntent(Context context) {
