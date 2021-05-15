@@ -67,6 +67,17 @@ public class MainActivity extends AppCompatActivity {
     Timber.v("Awaiting initial ViewState");
   }
 
+  @Override
+  public void onBackPressed() {
+    String fragmentLabel = navController.getCurrentDestination().getLabel().toString();
+    if (fragmentLabel.equals("Your Cycles")) {
+      Timber.d("Finishing MainActivity for back press on label %s", fragmentLabel);
+      finish();
+      return;
+    }
+    super.onBackPressed();
+  }
+
   private void configureNavigation(ViewMode initialViewMode) {
     Timber.d("Configuring navigation with default ViewMode %s", initialViewMode.name());
 
