@@ -539,7 +539,7 @@ public class CycleRenderer {
 
     EntryModificationContext entryModificationContext() {
       EntryModificationContext modificationContext = new EntryModificationContext(cycle, entry);
-      modificationContext.hasPreviousCycle = false;
+      modificationContext.hasPreviousCycle = previousCycle.isPresent();
       modificationContext.previousCycleIsPregnancy = previousCycle.map(Cycle::isPregnancy).orElse(false);
       modificationContext.isFirstEntry = entryNum == 1;
       modificationContext.shouldAskEssentialSameness = shouldAskEssentialSameness();

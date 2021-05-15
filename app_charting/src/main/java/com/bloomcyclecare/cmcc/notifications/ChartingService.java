@@ -51,6 +51,14 @@ public class ChartingService extends Service {
     notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     initNotificationChannel();
 
+    Notification initialNotification = new NotificationCompat.Builder(this, CHANNEL_ID)
+        .setSmallIcon(R.drawable.ic_assignment_black_24dp)
+        .setContentTitle("Checking Chart Data")
+        .setContentText("Checking to see if yesterday needs an observation.")
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+        .build();
+    startForeground(1, initialNotification);
+
     // TODO: fix this to handle turning the notification back on via preferences
     mDisposables.add(stopStreamForApp(ChartingApp.cast(getApplication()))
         .doOnNext(v -> Timber.v("yesterdayHasObservation: %b", v))
@@ -58,13 +66,18 @@ public class ChartingService extends Service {
         .doOnNext(v -> Timber.d("Shutting down charting reminder"))
         .distinctUntilChanged()
         .doOnComplete(this::clearNotificationAndTerminate)
+        // Ensure we call something within the required 5s time limit
         .subscribe(yesterdayHasObservation -> {
           if (yesterdayHasObservation) {
             clearNotificationAndTerminate();
           } else {
             Timber.d("Showing notification");
             Notification notification = createNotification(this, "Input entry for yesterday");
-            notificationManager.notify(R.string.charting_reminder, notification);
+            notificationManager.notify(1, notification);
+            // Allow the notification to be dismissed
+            // NOTE: This does not stop the service but removes it from being in the foreground
+            // state. See method docs for more details.
+            stopForeground(false);
           }
         }, t -> {
           Timber.e(t);
