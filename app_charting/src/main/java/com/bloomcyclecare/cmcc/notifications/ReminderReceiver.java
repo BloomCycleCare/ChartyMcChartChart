@@ -4,6 +4,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
+import androidx.core.content.ContextCompat;
+
 import timber.log.Timber;
 
 public class ReminderReceiver extends BroadcastReceiver {
@@ -13,5 +15,6 @@ public class ReminderReceiver extends BroadcastReceiver {
     Intent i = new Intent(context, ChartingService.class);
     i.setAction(ChartingService.Action.SET_REMINDER.name());
     context.startService(i);
+    //ContextCompat.startForegroundService(context, new Intent(context, ChartingService.class));
   }
 }
