@@ -77,7 +77,7 @@ public class ChartingService extends Service {
             // Allow the notification to be dismissed
             // NOTE: This does not stop the service but removes it from being in the foreground
             // state. See method docs for more details.
-            stopForeground(false);
+            //stopForeground(false);
           }
         }, t -> {
           Timber.e(t);
@@ -158,7 +158,15 @@ public class ChartingService extends Service {
   }
 
   @Override
+  public void onTaskRemoved(Intent rootIntent) {
+    Timber.d("onTaskRemoved");
+    clearNotificationAndTerminate();
+    super.onTaskRemoved(rootIntent);
+  }
+
+  @Override
   public void onDestroy() {
+    Timber.d("onDestroy");
     mDisposables.dispose();
     super.onDestroy();
   }
@@ -166,18 +174,19 @@ public class ChartingService extends Service {
   private static Notification createNotification(Context context, String text) {
     Timber.d("Creating notification with text: %s", text);
     NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-        .setSmallIcon(R.drawable.ic_assignment_black_24dp)
-        .setContentTitle("Charting Reminder")
-        .setContentText(text)
-        .setOnlyAlertOnce(true)
-        .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
-        .setPriority(NotificationCompat.PRIORITY_DEFAULT);
+            .setSmallIcon(R.drawable.ic_assignment_black_24dp)
+            .setContentTitle("Charting Reminder")
+            .setContentText(text)
+            .setOnlyAlertOnce(true)
+            .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
         new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
     PendingIntent dismissIntent = PendingIntent.getBroadcast(context, 0,
         new Intent(context, ReminderReceiver.class), PendingIntent.FLAG_UPDATE_CURRENT);
     builder.setContentIntent(contentIntent);
     builder.setDeleteIntent(dismissIntent);
+    builder.addAction(R.drawable.ic_assignment_black_24dp, "Remind me later", dismissIntent);
     return builder.build();
   }
 
