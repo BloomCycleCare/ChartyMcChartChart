@@ -1,6 +1,5 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
-import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -8,7 +7,6 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
@@ -21,16 +19,11 @@ import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
-import timber.log.Timber;
 
 public class MainFragment extends Fragment {
 
   private CompositeDisposable mDisposables = new CompositeDisposable();
   private MainViewModel mMainViewModel;
-
-  private ProgressBar mProgressBar;
-  private TextView mErrorView;
-  private TextView mStatusView;
 
   public MainFragment() {
     // Required empty public constructor
@@ -48,9 +41,9 @@ public class MainFragment extends Fragment {
                            Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_splash, container, false);
 
-    mProgressBar = view.findViewById(R.id.splash_progress);
-    mErrorView = view.findViewById(R.id.splash_error_tv);
-    mStatusView = view.findViewById(R.id.splash_status_tv);
+    TextView mStatusView = view.findViewById(R.id.splash_status_tv);
+    mStatusView.setText("Initializing App");
+    view.findViewById(R.id.splash_progress).setVisibility(View.VISIBLE);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
     mMainViewModel.updateSubtitle("");
@@ -104,41 +97,4 @@ public class MainFragment extends Fragment {
   public void onDetach() {
     super.onDetach();
   }
-
-  public void showProgress(final String message) {
-    Activity activity = getActivity();
-    if (activity == null) {
-      return;
-    }
-    activity.runOnUiThread(() -> {
-      mProgressBar.setVisibility(View.VISIBLE);
-      updateStatus(message);
-      mStatusView.setVisibility(View.VISIBLE);
-      mErrorView.setText("");
-      mErrorView.setVisibility(View.INVISIBLE);
-      Timber.i(message);
-    });
-  }
-
-  public void updateStatus(final String status) {
-    Activity activity = getActivity();
-    if (activity == null) {
-      return;
-    }
-    getActivity().runOnUiThread(() -> mStatusView.setText(status));
-  }
-
-  public void showError(final String errorText) {
-    Activity activity = getActivity();
-    if (activity == null) {
-      return;
-    }
-    activity.runOnUiThread(() -> {
-      mProgressBar.setVisibility(View.INVISIBLE);
-      mStatusView.setVisibility(View.INVISIBLE);
-      mErrorView.setText(errorText);
-      mErrorView.setVisibility(View.VISIBLE);
-    });
-  }
-
 }

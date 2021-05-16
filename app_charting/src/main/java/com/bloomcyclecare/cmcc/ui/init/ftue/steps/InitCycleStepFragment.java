@@ -10,7 +10,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragment;
 import com.bloomcyclecare.cmcc.ui.init.ftue.StepperFragmentDirections;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 import com.stepstone.stepper.Step;
@@ -30,6 +29,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
 import io.reactivex.disposables.CompositeDisposable;
+import timber.log.Timber;
 
 public class InitCycleStepFragment extends Fragment implements Step {
 
@@ -107,6 +107,7 @@ public class InitCycleStepFragment extends Fragment implements Step {
       mDatePromptButton.setText("Restore from Google Drive");
       mDatePromptButton.setOnClickListener(v -> {
         NavController navController = Navigation.findNavController(requireParentFragment().getView());
+        Timber.d("Navigating to RestoreFromDrive");
         navController.navigate(StepperFragmentDirections.actionRestoreFromDrive());
       });
     }
