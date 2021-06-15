@@ -1,24 +1,30 @@
 package com.bloomcyclecare.cmcc.ui.main;
 
+import android.app.Activity;
 import android.app.Application;
+import android.content.Intent;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableList;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
+import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 public class MainViewModel extends AndroidViewModel {
 
@@ -50,12 +56,53 @@ public class MainViewModel extends AndroidViewModel {
         .subscribe(mViewStateSubject);
   }
 
-  Single<Boolean> appInitialized() {
+  private Single<Boolean> appInitialized() {
     return Single.zip(
         mCycleRepo.getCurrentCycle().map(c -> true).switchIfEmpty(Single.just(false)),
         mInstructionsRepo.getAll().firstOrError().map(instructions -> !instructions.isEmpty()),
-        (hasCycle, hasInstructions) -> hasCycle && hasInstructions)
+        (hasCycle, hasInstructions) -> {
+          boolean appInitialized = hasCycle && hasInstructions;
+          if (appInitialized) {
+            return true;
+          }
+          Timber.i("App not initialized: hasCycle %b, hasInstructions %b", hasCycle, hasInstructions);
+          return false;
+        })
         .subscribeOn(Schedulers.computation());
+  }
+
+  private Single<Boolean> hasExistingData() {
+    return Single.zip(
+        mCycleRepo.getStream().first(ImmutableList.of()),
+        mInstructionsRepo.getAll().first(ImmutableList.of()),
+        (cycles, instructionSets) -> {
+          if (!cycles.isEmpty()) {
+            Timber.w("Found %d cycles", cycles.size());
+          }
+          if (!instructionSets.isEmpty()) {
+            Timber.w("Found %d instruction sets", instructionSets.size());
+          }
+          return !cycles.isEmpty() || !instructionSets.isEmpty();
+        });
+  }
+
+  private Completable maybeExportData(Single<Boolean> exportExistingData, Activity activity) {
+    return hasExistingData()
+        .flatMap(hasExistingData -> !hasExistingData ? Single.just(false) : exportExistingData)
+        .flatMapCompletable(export -> {
+          if (!export) {
+            return Completable.complete();
+          }
+          AppStateExporter exporter = new AppStateExporter(ChartingApp.cast(activity.getApplication()));
+          return exporter.getShareIntent(activity)
+              .flatMapCompletable(intent -> Completable.fromRunnable(() -> activity.startActivity(intent)));
+        });
+  }
+
+  Single<Boolean> shouldShowCyclePage(Single<Boolean> exportExistingData, Activity activity) {
+    return appInitialized().flatMap(
+        initialized -> initialized
+            ? Single.just(true) : maybeExportData(exportExistingData, activity).andThen(Single.just(false)));
   }
 
   Single<ViewState> initialState() {

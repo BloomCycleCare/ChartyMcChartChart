@@ -200,31 +200,7 @@ public class CycleListViewModel extends AndroidViewModel {
 
   Single<Intent> export() {
     AppStateExporter exporter = new AppStateExporter(ChartingApp.cast(getApplication()));
-    return exporter.export()
-        .map(appState -> GsonUtil.getGsonInstance().toJson(appState))
-        .map(json -> {
-          File path = new File(getApplication().getFilesDir(), "tmp/");
-          if (!path.exists()) {
-            path.mkdir();
-          }
-          String date = new SimpleDateFormat("yyyyMMdd").format(new Date());
-          File file = new File(path, "cmcc_export_" + date + ".json");
-
-          Files.write(json, file, Charsets.UTF_8);
-
-          Uri uri = FileProvider.getUriForFile(
-              getApplication(), String.format("%s.fileprovider", getApplication().getPackageName()), file);
-
-          Intent shareIntent = ShareCompat.IntentBuilder.from(mActivity)
-              .setSubject("CMCC Export")
-              .setEmailTo(null)
-              .setType("application/json")
-              .setStream(uri)
-              .getIntent();
-          shareIntent.setData(uri);
-          shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-          return shareIntent;
-        });
+    return exporter.getShareIntent(mActivity);
   }
 
   private static class Factory implements ViewModelProvider.Factory {
