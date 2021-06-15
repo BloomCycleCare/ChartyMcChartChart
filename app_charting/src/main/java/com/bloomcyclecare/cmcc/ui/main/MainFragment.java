@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.backup.AppStateExporter;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -17,6 +18,8 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+
+import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 
@@ -73,10 +76,10 @@ public class MainFragment extends Fragment {
               .show();
       }
     } else {
-      mDisposables.add(mMainViewModel.appInitialized()
-          .observeOn(AndroidSchedulers.mainThread())
-          .subscribe(initialized -> {
-            if (initialized) {
+      mDisposables.add(mMainViewModel
+          .shouldShowCyclePage(promptForExportExistingData(), requireActivity())
+          .subscribe(showChart -> {
+            if (showChart) {
               mDisposables.add(mMainViewModel.initialState().subscribe(viewState -> {
                 navController.navigate(MainFragmentDirections.actionShowChart()
                     .setViewMode(viewState.defaultViewMode()));
@@ -86,6 +89,23 @@ public class MainFragment extends Fragment {
             }
           }));
     }
+  }
+
+  private Single<Boolean> promptForExportExistingData() {
+    return Single.create(e -> {
+      new AlertDialog.Builder(requireContext())
+          .setTitle("Export Existing Data?")
+          .setMessage("Existing data was found but the app cann't be loaded. Would you like to export this data to a file before it is cleared?")
+          .setPositiveButton("Yes", (d, i) -> {
+            e.onSuccess(true);
+            d.dismiss();
+          })
+          .setNegativeButton("No", (d, i) -> {
+            e.onSuccess(false);
+            d.dismiss();
+          })
+          .show();
+    });
   }
 
   @Override

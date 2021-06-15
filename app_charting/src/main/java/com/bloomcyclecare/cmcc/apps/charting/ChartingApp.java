@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.apps.charting;
 
 import android.app.Application;
 import android.content.Intent;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
@@ -40,6 +41,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.firebase.FirebaseApp;
 
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
@@ -108,7 +110,11 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     PreferenceManager.setDefaultValues(this, R.xml.pref_settings, false);
 
     if (BuildConfig.DEBUG) {
+      Timber.i("Planting DebugTree");
       Timber.plant(new Timber.DebugTree());
+    } else {
+      Timber.i("Planting ReleaseTree");
+      Timber.plant(new ReleaseTree());
     }
 
     Migration[] migrations = new Migration[AppDatabase.MIGRATIONS.size()];
@@ -315,5 +321,16 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
   @Override
   public WorkerManager getWorkerManager() {
     return mWorkerManager;
+  }
+
+  private static class ReleaseTree extends Timber.DebugTree {
+
+    @Override
+    protected void log(int priority, String tag, @NotNull String message, Throwable t) {
+      if (priority < Log.INFO) {
+        return;
+      }
+      super.log(priority, tag, message, t);
+    }
   }
 }
