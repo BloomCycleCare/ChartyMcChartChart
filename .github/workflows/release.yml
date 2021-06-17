@@ -63,4 +63,4 @@ jobs:
           releaseFile: release.apk
           track: internal
           userFraction: 1.0
-          mappingFile: mapping.txt
+          #mappingFile: mapping.txt -- not needed until I use proguard
