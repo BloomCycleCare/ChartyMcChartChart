@@ -50,9 +50,9 @@ jobs:
       - uses: actions/download-artifact@master
         with:
           name: release.apk
-      - uses: actions/download-artifact@master
-        with:
-          name: mapping.txt
+#      - uses: actions/download-artifact@master
+#        with:
+#          name: mapping.txt
       # 2
       - name: Publish to Play Store internal test track
         uses: r0adkll/upload-google-play@v1
@@ -63,4 +63,4 @@ jobs:
           releaseFile: release.apk
           track: internal
           userFraction: 1.0
-          #mappingFile: mapping.txt -- not needed until I use proguard
+#          mappingFile: mapping.txt -- not needed until I use proguard
