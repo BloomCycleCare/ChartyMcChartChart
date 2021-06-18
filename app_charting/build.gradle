@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'idea'
 apply plugin: "androidx.navigation.safeargs"
+apply plugin: 'com.github.alexfu.androidautoversion'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -10,8 +11,8 @@ android {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         multiDexEnabled true
-        versionCode 28
-        versionName "0.5.12"
+        versionName androidAutoVersion.versionName
+        versionCode androidAutoVersion.versionCode
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
