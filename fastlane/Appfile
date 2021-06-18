@@ -1,0 +1,2 @@
+json_key_file("~/Downloads/pc-api-7894145556795938229-192-8db9ea2eea54.json") # Path to the json secret file - Follow https://docs.fastlane.tools/actions/supply/#setup to get one
+package_name("com.bloomcyclecare.cmcc") # e.g. com.krausefx.app
