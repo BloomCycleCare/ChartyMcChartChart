@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.models;
 
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.List;
@@ -19,6 +20,12 @@ public abstract class Entry {
   @NonNull
   @ColumnInfo(name = "entryDate")
   public LocalDate mEntryDate;
+
+  @ColumnInfo(name = "timeCreated")
+  public DateTime mTimeCreated;
+
+  @ColumnInfo(name = "timeUpdated")
+  public DateTime mTimeUpdated;
 
   public Entry() {}
 
