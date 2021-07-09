@@ -86,11 +86,6 @@ class TrainingStickerSelectionRepo implements RWStickerSelectionRepo {
   }
 
   @Override
-  public Single<Optional<StickerSelection>> getSelection(LocalDate date) {
-    return getSelectionStream(date).firstOrError();
-  }
-
-  @Override
   public Flowable<Optional<StickerSelection>> getSelectionStream(LocalDate date) {
     return mUpdateSubject
         .map(ignoredValue -> Optional.ofNullable(mSelections.get(date)))

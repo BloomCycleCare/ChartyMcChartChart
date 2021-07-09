@@ -15,13 +15,22 @@ public class StickerSelectionEntry extends Entry {
 
   public StickerSelection selection;
 
-  public StickerSelectionEntry(LocalDate entryDate, StickerSelection selection) {
-    super(entryDate);
+  public StickerSelectionEntry() {
+    super();
+  }
+
+  public StickerSelectionEntry(Entry entry, StickerSelection selection) {
+    super(entry);
     this.selection = selection;
   }
 
   public static StickerSelectionEntry emptyEntry(LocalDate entryDate) {
-    return new StickerSelectionEntry(entryDate, StickerSelection.empty());
+    return new StickerSelectionEntry(entryDate);
+  }
+
+  private StickerSelectionEntry(LocalDate date) {
+    super(date);
+    this.selection = StickerSelection.empty();
   }
 
   @Override

@@ -66,9 +66,9 @@ dependencies {
     annotationProcessor "androidx.room:room-compiler:$room_version" // use kapt for Kotlin
     implementation "androidx.room:room-rxjava2:$room_version"
     implementation "androidx.room:room-guava:$room_version"
-    androidTestCompile "androidx.room:room-testing:$room_version"
+    androidTestImplementation "androidx.room:room-testing:$room_version"
     implementation project(path: ':utils')
     implementation project(path: ':core')
 
-    androidTestCompile "com.google.truth:truth:1.1"
+    androidTestImplementation "com.google.truth:truth:1.1"
 }

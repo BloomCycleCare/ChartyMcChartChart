@@ -63,6 +63,6 @@ public class TrainingEntry {
 
   public ObservationEntry asChartEntry(LocalDate date, Function<String, Optional<Observation>> observationParser) {
     Observation observation = observationParser.apply(observationText).orElse(null);
-    return new ObservationEntry(date, observation, peakDay, intercourse, false, false, pointOfChange, unusualBleeding, null, isEssentiallyTheSame, "");
+    return new ObservationEntry(ObservationEntry.emptyEntry(date), observation, peakDay, intercourse, false, false, pointOfChange, unusualBleeding, null, isEssentiallyTheSame, "");
   }
 }

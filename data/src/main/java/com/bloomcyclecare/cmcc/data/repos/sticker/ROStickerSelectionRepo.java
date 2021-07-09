@@ -33,7 +33,5 @@ public interface ROStickerSelectionRepo {
 
   Flowable<Map<LocalDate, StickerSelection>> getSelections();
 
-  Single<Optional<StickerSelection>> getSelection(LocalDate date);
-
   Flowable<Optional<StickerSelection>> getSelectionStream(LocalDate date);
 }

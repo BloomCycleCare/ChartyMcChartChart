@@ -35,7 +35,7 @@ public class MeasurementEntryViewModel extends ViewModel {
     measurementEntries = BehaviorSubject.createDefault(initialEntry);
 
     Observable.combineLatest(
-        BehaviorSubject.createDefault(initialEntry.mEntryDate),
+        BehaviorSubject.createDefault(initialEntry),
         monitorReadings
             .map(i -> MonitorReading.values()[i])
             .doOnError(Timber::w)
