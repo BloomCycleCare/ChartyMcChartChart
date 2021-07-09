@@ -25,6 +25,14 @@ public class ClarifyingQuestionUpdate {
   }
 
   @Override
+  public String toString() {
+    return "ClarifyingQuestionUpdate{" +
+        "question=" + question +
+        ", answer=" + answer +
+        '}';
+  }
+
+  @Override
   public int hashCode() {
     return Objects.hashCode(question, answer);
   }
