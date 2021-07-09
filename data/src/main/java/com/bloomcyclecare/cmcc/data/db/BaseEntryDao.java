@@ -136,13 +136,14 @@ public abstract class BaseEntryDao<E extends Entry> {
   @Insert(onConflict = OnConflictStrategy.REPLACE)
   abstract Completable insertInternal(E entry);
 
-  public Completable insert(E entry) {
-    DateTime now = DateTime.now();
-    if (entry.mTimeCreated == null) {
-      entry.mTimeCreated = now;
+  public final Completable insert(E entry) {
+    if (entry.mTimeCreated != null) {
+      return Completable.error(new IllegalArgumentException("timeCreated != null"));
     }
+    DateTime now = DateTime.now();
+    entry.mTimeCreated = now;
     entry.mTimeUpdated = now;
-    entry.mTimesUpdated = entry.mTimesUpdated++;
+    entry.mTimesUpdated = ++entry.mTimesUpdated;
     return insertInternal(entry);
   }
 
@@ -168,9 +169,15 @@ public abstract class BaseEntryDao<E extends Entry> {
   @Update
   abstract Completable updateInternal(E entry);
 
-  public Completable update(E entry) {
+  public final Completable update(E entry) {
+    if (entry.mTimeCreated == null) {
+      return Completable.error(new IllegalArgumentException("timeCreated == null"));
+    }
+    if (entry.mTimesUpdated <= 0) {
+      return Completable.error(new IllegalArgumentException("timesUpdated <= 0"));
+    }
     entry.mTimeUpdated = DateTime.now();
-    entry.mTimesUpdated = entry.mTimesUpdated++;
+    entry.mTimesUpdated = ++entry.mTimesUpdated;
     return updateInternal(entry);
   }
 

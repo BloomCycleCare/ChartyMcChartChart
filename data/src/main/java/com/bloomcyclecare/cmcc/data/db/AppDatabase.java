@@ -183,12 +183,12 @@ public abstract class AppDatabase extends RoomDatabase {
   static final BwCompatMigration MIGRATION_20_21 = new BwCompatMigration(
       20, 21,
       QuerySet.of(
-          "ALTER TABLE ObservationEntry ADD COLUMN timesUpdated INTEGER",
-          "ALTER TABLE StickerSelectionEntry ADD COLUMN timesUpdated INTEGER",
-          "ALTER TABLE SymptomEntry ADD COLUMN timesUpdated INTEGER",
-          "ALTER TABLE WellnessEntry ADD COLUMN timesUpdated INTEGER",
-          "ALTER TABLE MeasurementEntry ADD COLUMN timesUpdated INTEGER",
-          "ALTER TABLE BreastfeedingEntry ADD COLUMN timesUpdated INTEGER"
+          "ALTER TABLE ObservationEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL",
+          "ALTER TABLE StickerSelectionEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL",
+          "ALTER TABLE SymptomEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL",
+          "ALTER TABLE WellnessEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL",
+          "ALTER TABLE MeasurementEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL",
+          "ALTER TABLE BreastfeedingEntry ADD COLUMN timesUpdated INTEGER DEFAULT 0 NOT NULL"
       ),
       QuerySet.of());
 
