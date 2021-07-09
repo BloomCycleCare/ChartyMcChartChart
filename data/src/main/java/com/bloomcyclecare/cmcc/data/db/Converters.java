@@ -13,10 +13,12 @@ import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.gson.reflect.TypeToken;
 
+import org.joda.time.DateTime;
 import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 
 import java.lang.reflect.Type;
+import java.time.Instant;
 import java.util.List;
 
 import androidx.annotation.Nullable;
@@ -139,4 +141,13 @@ public class Converters {
     return LHTestResult.valueOf(in);
   }
 
+  @TypeConverter
+  public DateTime toDateTime(long in) {
+    return new DateTime(in);
+  }
+
+  @TypeConverter
+  public long fromDateTime(DateTime in) {
+    return in.getMillis();
+  }
 }

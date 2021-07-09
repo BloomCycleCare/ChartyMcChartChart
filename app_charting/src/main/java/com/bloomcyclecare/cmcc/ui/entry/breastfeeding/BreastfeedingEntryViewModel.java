@@ -44,7 +44,7 @@ public class BreastfeedingEntryViewModel extends AndroidViewModel {
         numDadyFeedingsSubject.distinctUntilChanged(),
         longestFeedingGapHours.distinctUntilChanged(),
         (numNightFeedings, numDayFeedings, longestGapBetweenFeedings) -> new BreastfeedingEntry(
-            initialEntry.mEntryDate,
+            initialEntry,
             numDayFeedings.orElse(-1),
             numNightFeedings.orElse(-1),
             longestGapBetweenFeedings.orElse(null)))
