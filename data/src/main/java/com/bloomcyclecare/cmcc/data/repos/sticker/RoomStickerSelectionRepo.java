@@ -34,7 +34,8 @@ public class RoomStickerSelectionRepo implements RWStickerSelectionRepo {
   @Override
   public Completable recordSelection(StickerSelection selection, LocalDate entryDate) {
     return mStickerSelectionDao
-        .insert(new StickerSelectionEntry(entryDate, selection))
+        .get(entryDate).defaultIfEmpty(StickerSelectionEntry.emptyEntry(entryDate))
+        .flatMapCompletable(entry -> mStickerSelectionDao.insert(new StickerSelectionEntry(entry, selection)))
         .doOnComplete(() -> mUpdateSubject.onNext(UpdateEvent.create(entryDate, selection)))
         .subscribeOn(Schedulers.computation());
 
@@ -48,12 +49,8 @@ public class RoomStickerSelectionRepo implements RWStickerSelectionRepo {
 
   @Override
   public Completable delete(LocalDate date) {
-    return getSelection(date).flatMapCompletable(e -> {
-      if (!e.isPresent()) {
-        return Completable.complete();
-      }
-      return mStickerSelectionDao.delete(new StickerSelectionEntry(date, e.get()));
-    }).subscribeOn(Schedulers.computation());
+    return mStickerSelectionDao.get(date).flatMapCompletable(mStickerSelectionDao::delete)
+        .subscribeOn(Schedulers.computation());
   }
 
   @Override
@@ -92,11 +89,6 @@ public class RoomStickerSelectionRepo implements RWStickerSelectionRepo {
           }
           return out.build();
         });
-  }
-
-  @Override
-  public Single<Optional<StickerSelection>> getSelection(LocalDate date) {
-    return getSelectionStream(date).firstOrError();
   }
 
   @Override

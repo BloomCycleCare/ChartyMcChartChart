@@ -211,13 +211,13 @@ public class EntryDetailViewModel extends AndroidViewModel {
         .toFlowable(BackpressureStrategy.BUFFER)
         .distinctUntilChanged()
         .doOnNext(i -> Timber.v("New symptom updates"))
-        .map(activeSymptoms -> new SymptomEntry(entryDate, activeSymptoms));
+        .map(activeSymptoms -> new SymptomEntry(context.entry.symptomEntry, activeSymptoms));
 
     Flowable<WellnessEntry> wellnessEntryStream = wellnessUpdates
         .toFlowable(BackpressureStrategy.BUFFER)
         .distinctUntilChanged()
         .doOnNext(i -> Timber.v("New wellness updates"))
-        .map(activeItems -> new WellnessEntry(entryDate, activeItems));
+        .map(activeItems -> new WellnessEntry(context.entry.wellnessEntry, activeItems));
 
     Flowable<Optional<StickerSelection>> stickerSelectionStream =
         Flowable.just(Optional.ofNullable(context.entry.stickerSelection));

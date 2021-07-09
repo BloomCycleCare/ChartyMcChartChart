@@ -36,7 +36,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         BreastfeedingEntry.class,
         Pregnancy.class,
     },
-    version = 20)
+    version = 21)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -180,6 +180,18 @@ public abstract class AppDatabase extends RoomDatabase {
       ),
       QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_20_21 = new BwCompatMigration(
+      20, 21,
+      QuerySet.of(
+          "ALTER TABLE ObservationEntry ADD COLUMN timesUpdated INTEGER",
+          "ALTER TABLE StickerSelectionEntry ADD COLUMN timesUpdated INTEGER",
+          "ALTER TABLE SymptomEntry ADD COLUMN timesUpdated INTEGER",
+          "ALTER TABLE WellnessEntry ADD COLUMN timesUpdated INTEGER",
+          "ALTER TABLE MeasurementEntry ADD COLUMN timesUpdated INTEGER",
+          "ALTER TABLE BreastfeedingEntry ADD COLUMN timesUpdated INTEGER"
+      ),
+      QuerySet.of());
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -188,6 +200,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_17_18.migrations())
       .addAll(MIGRATION_18_19.migrations())
       .addAll(MIGRATION_19_20.migrations())
+      .addAll(MIGRATION_20_21.migrations())
       .build();
 
   public static class QuerySet {

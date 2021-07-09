@@ -79,11 +79,27 @@ public class DateUtil {
     return PRINT_FORMAT.print(date);
   }
 
+  @Nullable
   public static LocalDate fromWireStr(String dateStr) {
     if (Strings.isNullOrEmpty(dateStr)) {
       return null;
     }
     return WIRE_FORMAT.parseLocalDate(dateStr);
+  }
+
+  @Nullable
+  public static DateTime fromWire(long dateTimeWire) {
+    if (dateTimeWire < 0) {
+      return null;
+    }
+    return new DateTime(dateTimeWire);
+  }
+
+  public static long toWire(@Nullable DateTime dateTime) {
+    if (dateTime == null) {
+      return -1;
+    }
+    return dateTime.getMillis();
   }
 
   public static Flowable<LocalDate> nowStream() {

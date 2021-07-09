@@ -22,8 +22,8 @@ public class BreastfeedingEntry extends Entry {
   @Nullable
   public Duration maxGapBetweenFeedings;
 
-  public BreastfeedingEntry(@NonNull LocalDate entryDate, int numDayFeedings, int numNightFeedings, @Nullable Duration maxGapBetweenFeedings) {
-    super(entryDate);
+  public BreastfeedingEntry(@NonNull Entry entry, int numDayFeedings, int numNightFeedings, @Nullable Duration maxGapBetweenFeedings) {
+    super(entry);
     this.numDayFeedings = numDayFeedings;
     this.numNightFeedings = numNightFeedings;
     this.maxGapBetweenFeedings = maxGapBetweenFeedings;
@@ -34,7 +34,14 @@ public class BreastfeedingEntry extends Entry {
   }
 
   public static BreastfeedingEntry emptyEntry(LocalDate entryDate) {
-    return new BreastfeedingEntry(entryDate, -1, -1, null);
+    return new BreastfeedingEntry(entryDate);
+  }
+
+  public BreastfeedingEntry(LocalDate date) {
+    super(date);
+    this.numDayFeedings = -1;
+    this.numNightFeedings = -1;
+    this.maxGapBetweenFeedings = null;
   }
 
   @Override

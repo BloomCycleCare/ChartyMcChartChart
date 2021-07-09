@@ -21,11 +21,17 @@ public class MeasurementEntry extends Entry {
 
   @Ignore
   public MeasurementEntry(
-      LocalDate entryDate, MonitorReading monitorReading, LHTestResult lhTestResult) {
-    super(entryDate);
+      Entry entry, MonitorReading monitorReading, LHTestResult lhTestResult) {
+    super(entry);
 
     this.monitorReading = monitorReading;
     this.lhTestResult = lhTestResult;
+  }
+
+  private MeasurementEntry(LocalDate date) {
+    super(date);
+    this.monitorReading = MonitorReading.UNKNOWN;
+    this.lhTestResult = LHTestResult.NONE;
   }
 
   public MeasurementEntry() {
@@ -46,7 +52,7 @@ public class MeasurementEntry extends Entry {
   }
 
   public static MeasurementEntry emptyEntry(LocalDate entryDate) {
-    return new MeasurementEntry(entryDate, MonitorReading.UNKNOWN, LHTestResult.NONE);
+    return new MeasurementEntry(entryDate);
   }
 
   public boolean isEmpty() {
@@ -58,7 +64,7 @@ public class MeasurementEntry extends Entry {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     MeasurementEntry that = (MeasurementEntry) o;
-    return Objects.equals(getDate(), that.getDate())
+    return super.equals(that)
         && Objects.equals(monitorReading, that.monitorReading)
         && Objects.equals(lhTestResult, that.lhTestResult);
   }

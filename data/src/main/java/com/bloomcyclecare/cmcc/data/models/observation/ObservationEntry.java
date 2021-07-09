@@ -38,7 +38,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
 
   @Ignore
   public ObservationEntry(
-      LocalDate entryDate,
+      Entry entry,
       @Nullable Observation observation,
       boolean peakDay,
       boolean intercourse,
@@ -49,7 +49,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
       IntercourseTimeOfDay intercourseTimeOfDay,
       boolean isEssentiallyTheSame,
       String note) {
-    super(entryDate);
+    super(entry);
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
@@ -67,7 +67,21 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   }
 
   public static ObservationEntry emptyEntry(LocalDate date) {
-    return new ObservationEntry(date, null, false, false, false, false, false, false, IntercourseTimeOfDay.NONE, false, "");
+    return new ObservationEntry(date);
+  }
+
+  public ObservationEntry(LocalDate date) {
+    super(date);
+    this.observation = null;
+    this.peakDay = false;
+    this.intercourse = false;
+    this.firstDay = false;
+    this.positivePregnancyTest = false;
+    this.pointOfChange = false;
+    this.unusualBleeding = false;
+    this.intercourseTimeOfDay = IntercourseTimeOfDay.NONE;
+    this.isEssentiallyTheSame = false;
+    this.note = "";
   }
 
   @Override
@@ -160,8 +174,8 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   public boolean equals(Object o) {
     if (o instanceof ObservationEntry) {
       ObservationEntry that = (ObservationEntry) o;
-      return Objects.equal(this.observation, that.observation) &&
-          Objects.equal(this.getDate(), that.getDate()) &&
+      return super.equals(that) &&
+          Objects.equal(this.observation, that.observation) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
           this.firstDay == that.firstDay &&
@@ -183,7 +197,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
 
   @Override
   public ObservationEntry copy() {
-    return new ObservationEntry(mEntryDate, observation, peakDay, intercourse, firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+    return new ObservationEntry(this, observation, peakDay, intercourse, firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
   }
 }
 

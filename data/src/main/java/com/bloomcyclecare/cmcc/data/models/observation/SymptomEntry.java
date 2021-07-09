@@ -29,17 +29,24 @@ public class SymptomEntry extends Entry implements Parcelable {
   public BoolMapping symptoms;
 
   public static SymptomEntry emptyEntry(LocalDate date) {
-    return new SymptomEntry(date, new BoolMapping());
+    return new SymptomEntry(date);
   }
 
   @Ignore
-  public SymptomEntry(LocalDate entryDate, BoolMapping symptoms) {
-    super(entryDate);
+  private SymptomEntry(LocalDate date) {
+    super(date);
+    this.symptoms = new BoolMapping();
+  }
+
+  @Ignore
+  public SymptomEntry(Entry entry, BoolMapping symptoms) {
+    super(entry);
     this.symptoms = new BoolMapping(symptoms);
   }
 
+  @Ignore
   public SymptomEntry(Parcel in) {
-    super(DateUtil.fromWireStr(in.readString()));
+    super(in);
     int size = in.readInt();
     symptoms = new BoolMapping();
     for (int i = 0; i < size; i++) {
@@ -81,7 +88,7 @@ public class SymptomEntry extends Entry implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(getDateStr());
+    fillParcel(dest);
     dest.writeInt(symptoms.size());
     for (Map.Entry<String, Boolean> entry : symptoms.entrySet()) {
       dest.writeString(entry.getKey());
@@ -95,8 +102,7 @@ public class SymptomEntry extends Entry implements Parcelable {
       return false;
     }
     SymptomEntry that = (SymptomEntry) obj;
-    return Objects.equal(this.getDate(), that.getDate())
-        && Maps.difference(this.symptoms, that.symptoms).areEqual();
+    return super.equals(that) && Maps.difference(this.symptoms, that.symptoms).areEqual();
   }
 
   @Override
@@ -108,7 +114,7 @@ public class SymptomEntry extends Entry implements Parcelable {
     for (Map.Entry<String, Boolean> entry : symptoms.entrySet()) {
       items[i++] = entry;
     }
-    return Objects.hashCode(items);
+    return Objects.hashCode(items) + super.hashCode();
   }
 
   public static final Creator<SymptomEntry> CREATOR = new Creator<SymptomEntry>() {

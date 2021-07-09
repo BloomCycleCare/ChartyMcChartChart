@@ -18,6 +18,7 @@ import java.util.Map;
 import javax.crypto.SecretKey;
 
 import androidx.room.Entity;
+import androidx.room.Ignore;
 
 /**
  * Created by parkeroth on 9/18/17.
@@ -28,21 +29,24 @@ public class WellnessEntry extends Entry implements Parcelable {
   public BoolMapping wellnessItems;
 
   public static WellnessEntry emptyEntry(LocalDate date) {
-    return new WellnessEntry(date, new BoolMapping());
+    return new WellnessEntry(date);
   }
 
-  public WellnessEntry(LocalDate entryDate, Map<String, Boolean> wellnessItems) {
-    this(entryDate, wellnessItems, null);
-  }
-
-  @Deprecated
-  public WellnessEntry(LocalDate entryDate, Map<String, Boolean> wellnessItems, SecretKey key) {
+  @Ignore
+  private WellnessEntry(LocalDate entryDate) {
     super(entryDate);
+    this.wellnessItems = new BoolMapping();
+  }
+
+  @Ignore
+  public WellnessEntry(Entry entry, Map<String, Boolean> wellnessItems) {
+    super(entry);
     this.wellnessItems = new BoolMapping(wellnessItems);
   }
 
+  @Ignore
   public WellnessEntry(Parcel in) {
-    super(DateUtil.fromWireStr(in.readString()));
+    super(in);
     int size = in.readInt();
     wellnessItems = new BoolMapping();
     for (int i = 0; i < size; i++) {
@@ -80,7 +84,7 @@ public class WellnessEntry extends Entry implements Parcelable {
 
   @Override
   public void writeToParcel(Parcel dest, int flags) {
-    dest.writeString(getDateStr());
+    fillParcel(dest);
     dest.writeInt(wellnessItems.size());
     for (Map.Entry<String, Boolean> entry : wellnessItems.entrySet()) {
       dest.writeString(entry.getKey());
@@ -94,7 +98,7 @@ public class WellnessEntry extends Entry implements Parcelable {
       return false;
     }
     WellnessEntry that = (WellnessEntry) obj;
-    return Objects.equal(this.getDate(), that.getDate())
+    return super.equals(that)
         && Maps.difference(this.wellnessItems, that.wellnessItems).areEqual();
   }
 
@@ -107,7 +111,7 @@ public class WellnessEntry extends Entry implements Parcelable {
     for (Map.Entry<String, Boolean> entry : wellnessItems.entrySet()) {
       items[i++] = entry;
     }
-    return Objects.hashCode(items);
+    return Objects.hashCode(items) + super.hashCode();
   }
 
   public static final Creator<WellnessEntry> CREATOR = new Creator<WellnessEntry>() {

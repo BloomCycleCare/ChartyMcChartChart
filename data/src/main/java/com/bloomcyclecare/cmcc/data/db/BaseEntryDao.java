@@ -11,6 +11,7 @@ import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import java.util.HashMap;
@@ -133,7 +134,17 @@ public abstract class BaseEntryDao<E extends Entry> {
   }
 
   @Insert(onConflict = OnConflictStrategy.REPLACE)
-  public abstract Completable insert(E entry);
+  abstract Completable insertInternal(E entry);
+
+  public Completable insert(E entry) {
+    DateTime now = DateTime.now();
+    if (entry.mTimeCreated == null) {
+      entry.mTimeCreated = now;
+    }
+    entry.mTimeUpdated = now;
+    entry.mTimesUpdated = entry.mTimesUpdated++;
+    return insertInternal(entry);
+  }
 
   public Completable insertNullable(@Nullable E entry) {
     if (entry == null) {
@@ -155,7 +166,13 @@ public abstract class BaseEntryDao<E extends Entry> {
   }
 
   @Update
-  public abstract Completable update(E entry);
+  abstract Completable updateInternal(E entry);
+
+  public Completable update(E entry) {
+    entry.mTimeUpdated = DateTime.now();
+    entry.mTimesUpdated = entry.mTimesUpdated++;
+    return updateInternal(entry);
+  }
 
   @RawQuery(observedEntities = {
       ObservationEntry.class,
