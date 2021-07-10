@@ -26,7 +26,8 @@ public class Instructions {
   public static Instructions createBasicInstructions(LocalDate startDate) {
     return new Instructions(startDate, ImmutableList.of(
         BasicInstruction.D_1, BasicInstruction.D_2, BasicInstruction.D_3, BasicInstruction.D_4, BasicInstruction.D_5, BasicInstruction.D_6,
-        BasicInstruction.E_1, /*BasicInstruction.E_2,*/ BasicInstruction.E_3, BasicInstruction.E_4, /*BasicInstruction.E_5, BasicInstruction.E_6,*/ BasicInstruction.E_7),
+        BasicInstruction.E_1, /*BasicInstruction.E_2,*/ BasicInstruction.E_3, BasicInstruction.E_4, /*BasicInstruction.E_5, BasicInstruction.E_6,*/ BasicInstruction.E_7,
+        BasicInstruction.H),
         ImmutableList.of(), ImmutableList.of());
   }
 

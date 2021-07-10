@@ -75,6 +75,7 @@ public class ObservationEntryFragment extends Fragment {
         view.findViewById(R.id.et_modify_observation_note);
     Switch peakDaySwitch = view.findViewById(R.id.switch_peak_day);
     Switch intercourseSwitch = view.findViewById(R.id.switch_intercourse);
+    Switch uncertainSwitch = view.findViewById(R.id.switch_uncertain);
     Switch firstDaySwitch = view.findViewById(R.id.switch_new_cycle);
     Switch pointOfChangeSwitch = view.findViewById(R.id.switch_point_of_change);
     Switch pregnancyTestSwitch = view.findViewById(R.id.switch_pregancy_test);

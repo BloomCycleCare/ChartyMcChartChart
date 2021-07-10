@@ -135,4 +135,26 @@ public class BasicInstructionRendererTest extends BaseRendererTest {
 
     runTest(entries.build(), BASIC_INSTRUCTIONS);
   }
+
+  @Test
+  public void testUncertainCount() throws Exception {
+    ImmutableMap.Builder<TrainingEntry, Optional<StickerExpectations>> entries = ImmutableMap.builder();
+    entries.put(TrainingEntry.forText("M"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("H"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("H"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("M"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("L0AD").intercourse(), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("VL0AD"), Optional.of(StickerExpectations.redSticker()));
+    entries.put(TrainingEntry.forText("0AD").uncertain(), Optional.of(StickerExpectations.greenBabySticker(null)));
+
+    entries.put(TrainingEntry.forText("0AD"), Optional.of(StickerExpectations.greenBabySticker(StickerText.ONE)));
+    entries.put(TrainingEntry.forText("2AD"), Optional.of(StickerExpectations.greenBabySticker(StickerText.TWO)));
+    entries.put(TrainingEntry.forText("2AD"), Optional.of(StickerExpectations.greenBabySticker(StickerText.THREE)));
+    entries.put(TrainingEntry.forText("0AD"), Optional.of(StickerExpectations.greenSticker()));
+    entries.put(TrainingEntry.forText("8CX1"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+    entries.put(TrainingEntry.forText("8KX2"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+    entries.put(TrainingEntry.forText("10CX2"), Optional.of(StickerExpectations.whiteBabySticker(null)));
+
+    runTest(entries.build(), BASIC_INSTRUCTIONS);
+  }
 }

@@ -74,6 +74,7 @@ public class CycleRenderer {
       TreeSet<LocalDate> daysOfFlow = new TreeSet<>();
       Set<LocalDate> daysOfMucus = new HashSet<>();
       TreeSet<LocalDate> daysOfUnusualBleeding = new TreeSet<>();
+      TreeSet<LocalDate> daysOfUncertainty = new TreeSet<>();
       TreeSet<LocalDate> peakDays = new TreeSet<>();
       TreeSet<LocalDate> pointsOfChangeToward = new TreeSet<>();
       TreeSet<LocalDate> pointsOfChangeAway = new TreeSet<>();
@@ -148,12 +149,6 @@ public class CycleRenderer {
             }
           }
         }
-        state.firstPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
-            : Optional.of(pointsOfChangeToward.first());
-        state.mostRecentPointOfChangeToward = pointsOfChangeToward.isEmpty() ? Optional.empty()
-            : Optional.of(pointsOfChangeToward.last());
-        state.mostRecentPointOfChangeAway = pointsOfChangeAway.isEmpty() ? Optional.empty()
-            : Optional.of(pointsOfChangeAway.last());
         state.hasHadLegitFlow = hasHadLegitFlow;
         if (state.todayHasBlood || state.todaysFlow != null) {
           daysOfFlow.add(e.entryDate);
@@ -161,6 +156,9 @@ public class CycleRenderer {
         state.isInMenstrualFlow = entriesEvaluated.size() == daysOfFlow.size();
         if (!state.isInMenstrualFlow && state.todayHasBlood && !e.observationEntry.isEssentiallyTheSame) {
           daysOfUnusualBleeding.add(e.entryDate);
+        }
+        if (e.observationEntry.uncertain) {
+          daysOfUncertainty.add(e.entryDate);
         }
         if (peakDays.isEmpty()) {
           state.firstPeakDay = Optional.empty();
@@ -195,6 +193,19 @@ public class CycleRenderer {
           state.countsOfThree.put(
               CountOfThreeReason.POINT_OF_CHANGE,
               Days.daysBetween(pointsOfChangeAway.last().minusDays(1), e.entryDate).getDays());
+        }
+        Optional<LocalDate> effectivePointOfChange = effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway);
+        if (effectivePointOfChange.isPresent()) {
+          Integer existingCount = state.countsOfThree.get(CountOfThreeReason.POINT_OF_CHANGE);
+          int count = Days.daysBetween(effectivePointOfChange.get(), e.entryDate).getDays();
+          if (existingCount == null || count < existingCount) {
+            state.countsOfThree.put(CountOfThreeReason.POINT_OF_CHANGE, count);
+          }
+        }
+        if (!daysOfUncertainty.isEmpty()) {
+          state.countsOfThree.put(
+              CountOfThreeReason.UNCERTAIN,
+              Days.daysBetween(daysOfUncertainty.last(), e.entryDate).getDays());
         }
 
         // Step 2: Evaluate fertility reasons
@@ -269,9 +280,12 @@ public class CycleRenderer {
             (state.todaysFlow != null && !state.todaysFlow.isLegit()) || state.todayHasBlood)) {
           state.infertilityReasons.add(BasicInstruction.E_7);
         }
-
+        if (state.instructions.isActive(BasicInstruction.H)
+            && state.isWithinCountOfThree(CountOfThreeReason.UNCERTAIN)) {
+          state.fertilityReasons.add(BasicInstruction.H);
+          state.countOfThreeReasons.put(BasicInstruction.H, CountOfThreeReason.UNCERTAIN);
+        }
         // Basic Instruction yellow stamp reasons (section K)
-        Optional<LocalDate> effectivePointOfChange = effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway);
         if (state.instructions.isActive(BasicInstruction.K_1)
             && state.isPrePeak()
             && !state.isInMenstrualFlow
@@ -307,9 +321,8 @@ public class CycleRenderer {
           state.countOfThreeReasons.put(YellowStampInstruction.YS_1_B, CountOfThreeReason.PEAK_DAY);
         }
         if (state.instructions.isActive(YellowStampInstruction.YS_1_C)
-            && !pointsOfChangeAway.isEmpty()
-            // This last condition should check for +3 days but count starts on the Poc...?
-            && !state.entryDate.isAfter(pointsOfChangeAway.last().plusDays(2))) {
+            && Optional.ofNullable(state.countsOfThree.get(CountOfThreeReason.POINT_OF_CHANGE)).map(c -> c < 4).orElse(false)
+            ) {
           state.fertilityReasons.add(YellowStampInstruction.YS_1_C);
           state.countOfThreeReasons.put(YellowStampInstruction.YS_1_C, CountOfThreeReason.POINT_OF_CHANGE);
         }
@@ -564,7 +577,7 @@ public class CycleRenderer {
   }
 
   public enum CountOfThreeReason {
-    UNUSUAL_BLEEDING, PEAK_DAY, CONSECUTIVE_DAYS_OF_MUCUS, PEAK_TYPE_MUCUS, POINT_OF_CHANGE;
+    UNUSUAL_BLEEDING, PEAK_DAY, CONSECUTIVE_DAYS_OF_MUCUS, PEAK_TYPE_MUCUS, POINT_OF_CHANGE, UNCERTAIN;
   }
 
   @AutoValue

@@ -65,6 +65,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
   public final Subject<String> observationUpdates = BehaviorSubject.createDefault("");
   public final Subject<Boolean> peakDayUpdates = BehaviorSubject.createDefault(false);
   public final Subject<Boolean> intercourseUpdates = BehaviorSubject.createDefault(false);
+  public final Subject<Boolean> uncertainUpdates = BehaviorSubject.createDefault(false);
   public final Subject<Boolean> firstDayOfCycleUpdates = BehaviorSubject.createDefault(false);
   public final Subject<Boolean> positivePregnancyTestUpdates = BehaviorSubject.createDefault(false);
   public final Subject<Boolean> pointOfChangeUpdates = BehaviorSubject.createDefault(false);
@@ -103,6 +104,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     }
     peakDayUpdates.onNext(context.entry.observationEntry.peakDay);
     intercourseUpdates.onNext(context.entry.observationEntry.intercourse);
+    uncertainUpdates.onNext(context.entry.observationEntry.uncertain);
     firstDayOfCycleUpdates.onNext(context.entry.observationEntry.firstDay);
     positivePregnancyTestUpdates.onNext(context.entry.observationEntry.positivePregnancyTest);
     pointOfChangeUpdates.onNext(context.entry.observationEntry.pointOfChange);
@@ -174,6 +176,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     Flowable<ObservationEntry> observationEntryStream = Flowable.just(context.entry.observationEntry)
         .compose(update(errorOrObservationStream, (e, v) -> e.observation = v.or(null), "observation"))
         .compose(update(peakDayUpdates, (e, v) -> e.peakDay = v, "peakDay"))
+        .compose(update(uncertainUpdates, (e, v) -> e.uncertain = v, "uncertain"))
         .compose(update(intercourseUpdates, (e, v) -> e.intercourse = v, "intercourse"))
         .compose(update(firstDayOfCycleUpdates, (e, v) -> e.firstDay = v, "firstDay"))
         .compose(update(positivePregnancyTestUpdates, (e, v) -> e.positivePregnancyTest = v, "positivePregnancyTest"))
