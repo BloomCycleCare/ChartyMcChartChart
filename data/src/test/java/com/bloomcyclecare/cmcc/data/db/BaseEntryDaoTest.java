@@ -96,8 +96,10 @@ public class BaseEntryDaoTest {
   @Test
   public void testInsert_alreadyCreated() {
     TestEntry entry = new TestEntry();
-    entry.mTimeCreated = DateTime.now();
-    testEntryDao.insert(entry).test().assertError(t -> t instanceof IllegalArgumentException);
+    entry.mTimeCreated = DateTime.now().minusHours(1);
+    testEntryDao.insert(entry).test().assertComplete();
+    assertThat(entry.mTimeUpdated).isGreaterThan(entry.mTimeCreated);
+    assertThat(entry.mTimesUpdated).isEqualTo(1);
   }
 
   @Test

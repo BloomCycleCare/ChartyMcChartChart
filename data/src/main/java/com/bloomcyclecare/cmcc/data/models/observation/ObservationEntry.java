@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.models.observation;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.Copyable;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 
 import org.joda.time.LocalDate;
@@ -25,6 +26,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   @Nullable public Observation observation;
   public boolean peakDay;
   public boolean intercourse;
+  public boolean uncertain;
   public boolean firstDay;
   public boolean positivePregnancyTest;
   public boolean pointOfChange;
@@ -42,6 +44,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
       @Nullable Observation observation,
       boolean peakDay,
       boolean intercourse,
+      boolean uncertain,
       boolean firstDay,
       boolean positivePregnancyTest,
       boolean pointOfChange,
@@ -53,6 +56,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     this.observation = observation;
     this.peakDay = peakDay;
     this.intercourse = intercourse;
+    this.uncertain = uncertain;
     this.firstDay = firstDay;
     this.positivePregnancyTest = positivePregnancyTest;
     this.pointOfChange = pointOfChange;
@@ -100,6 +104,9 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
     }
     if (peakDay) {
       lines.add("Peak day: yes");
+    }
+    if (uncertain) {
+      lines.add("Uncertain: yes");
     }
     if (unusualBleeding) {
       lines.add("Unusual bleeding: yes");
@@ -164,10 +171,20 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   }
 
   public Optional<String> getListUiText() {
-    if (observation == null) {
+    List<String> parts = new ArrayList<>();
+    if (observation != null) {
+      parts.add(observation.toString());
+    }
+    if (intercourse) {
+      parts.add("I");
+    }
+    if (uncertain) {
+      parts.add("UNCERTAIN");
+    }
+    if (parts.isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(String.format("%s %s", observation.toString(), intercourse ? "I" : ""));
+    return Optional.of(Joiner.on(" ").join(parts));
   }
 
   @Override
@@ -178,6 +195,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
           Objects.equal(this.observation, that.observation) &&
           this.peakDay == that.peakDay &&
           this.intercourse == that.intercourse &&
+          this.uncertain == that.uncertain &&
           this.firstDay == that.firstDay &&
           this.positivePregnancyTest == that.positivePregnancyTest &&
           this.pointOfChange == that.pointOfChange &&
@@ -192,12 +210,12 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   @Override
   public int hashCode() {
     return Objects.hashCode(
-        observation, peakDay, intercourse, getDate(), firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+        observation, peakDay, intercourse, getDate(), firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note, uncertain);
   }
 
   @Override
   public ObservationEntry copy() {
-    return new ObservationEntry(this, observation, peakDay, intercourse, firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
+    return new ObservationEntry(this, observation, peakDay, intercourse, uncertain, firstDay, positivePregnancyTest, pointOfChange, unusualBleeding, intercourseTimeOfDay, isEssentiallyTheSame, note);
   }
 }
 

@@ -18,6 +18,7 @@ public class TrainingEntry {
   private boolean pointOfChange = false;
   private boolean unusualBleeding = false;
   private boolean isEssentiallyTheSame = false;
+  private boolean uncertain = false;
 
   private TrainingEntry(String observationText, String marker) {
     this.observationText = observationText;
@@ -61,8 +62,13 @@ public class TrainingEntry {
     return this;
   }
 
+  public TrainingEntry uncertain() {
+    uncertain = true;
+    return this;
+  }
+
   public ObservationEntry asChartEntry(LocalDate date, Function<String, Optional<Observation>> observationParser) {
     Observation observation = observationParser.apply(observationText).orElse(null);
-    return new ObservationEntry(ObservationEntry.emptyEntry(date), observation, peakDay, intercourse, false, false, pointOfChange, unusualBleeding, null, isEssentiallyTheSame, "");
+    return new ObservationEntry(ObservationEntry.emptyEntry(date), observation, peakDay, intercourse, uncertain, false, false, pointOfChange, unusualBleeding, null, isEssentiallyTheSame, "");
   }
 }
