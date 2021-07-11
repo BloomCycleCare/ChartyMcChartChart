@@ -137,11 +137,10 @@ public abstract class BaseEntryDao<E extends Entry> {
   abstract Completable insertInternal(E entry);
 
   public final Completable insert(E entry) {
-    if (entry.mTimeCreated != null) {
-      return Completable.error(new IllegalArgumentException("timeCreated != null"));
-    }
     DateTime now = DateTime.now();
-    entry.mTimeCreated = now;
+    if (entry.mTimeCreated == null) {
+      entry.mTimeCreated = now;
+    }
     entry.mTimeUpdated = now;
     entry.mTimesUpdated = ++entry.mTimesUpdated;
     return insertInternal(entry);

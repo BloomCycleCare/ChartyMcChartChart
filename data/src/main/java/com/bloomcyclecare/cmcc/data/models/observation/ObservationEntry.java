@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.data.models.observation;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.Copyable;
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 
 import org.joda.time.LocalDate;
@@ -170,10 +171,20 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
   }
 
   public Optional<String> getListUiText() {
-    if (observation == null) {
+    List<String> parts = new ArrayList<>();
+    if (observation != null) {
+      parts.add(observation.toString());
+    }
+    if (intercourse) {
+      parts.add("I");
+    }
+    if (uncertain) {
+      parts.add("UNCERTAIN");
+    }
+    if (parts.isEmpty()) {
       return Optional.empty();
     }
-    return Optional.of(String.format("%s %s", observation.toString(), intercourse ? "I" : ""));
+    return Optional.of(Joiner.on(" ").join(parts));
   }
 
   @Override

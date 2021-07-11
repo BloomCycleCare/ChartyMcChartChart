@@ -108,6 +108,9 @@ public class ObservationEntryFragment extends Fragment {
       RxCompoundButton
           .checkedChanges(pointOfChangeSwitch)
           .subscribe(mEntryDetailViewModel.pointOfChangeUpdates);
+      RxCompoundButton
+          .checkedChanges(uncertainSwitch)
+          .subscribe(mEntryDetailViewModel.uncertainUpdates);
 
       RxAdapterView.itemSelections(intercourseSpinner)
           .map(ordinal -> IntercourseTimeOfDay.values()[ordinal])
@@ -181,6 +184,7 @@ public class ObservationEntryFragment extends Fragment {
       maybeUpdate(peakDaySwitch, observationEntry.peakDay);
       maybeUpdate(firstDaySwitch, observationEntry.firstDay);
       maybeUpdate(pointOfChangeSwitch, observationEntry.pointOfChange);
+      maybeUpdate(uncertainSwitch, observationEntry.uncertain);
       if (!Strings.isNullOrEmpty(observationEntry.note)
           && !observationEntry.note.equals(noteTextView.getText().toString())) {
         noteTextView.setText(observationEntry.note);
