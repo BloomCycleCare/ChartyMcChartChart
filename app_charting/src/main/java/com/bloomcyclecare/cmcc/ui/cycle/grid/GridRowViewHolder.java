@@ -79,6 +79,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
       strikeThroughView = cellLayout.findViewById(R.id.cell_sticker_strike_through);
       measurementView = cellLayout.findViewById(R.id.cell_measurement_indicator);
+      measurementView.setText("");
     }
 
     public void update(CellRenderContext renderContext) {
