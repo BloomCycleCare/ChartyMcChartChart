@@ -23,7 +23,7 @@ jobs:
       - name: Decode Firebase Config
         env:
           FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
-          run: echo $FIREBASE_CONFIG > app_charting/google-services.json
+        run: echo $FIREBASE_CONFIG > app_charting/google-services.json
       # 2
       - name: Generate Release APK
         run: ./gradlew app_charting:assembleRelease
