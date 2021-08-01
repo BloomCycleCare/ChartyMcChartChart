@@ -2,6 +2,7 @@ apply plugin: 'com.android.application'
 apply plugin: 'idea'
 apply plugin: "androidx.navigation.safeargs"
 apply plugin: 'com.github.alexfu.androidautoversion'
+apply plugin: 'com.google.gms.google-services'
 
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
@@ -78,6 +79,9 @@ dependencies {
 
     implementation project(path: ':core')
     implementation project(path: ':utils')
+
+    implementation platform('com.google.firebase:firebase-bom:28.3.0')
+    implementation 'com.google.firebase:firebase-analytics'
 
     api "com.google.guava:guava:$rootProject.ext.guavaVersion"
     implementation "joda-time:joda-time:$rootProject.ext.jodaVersion"
