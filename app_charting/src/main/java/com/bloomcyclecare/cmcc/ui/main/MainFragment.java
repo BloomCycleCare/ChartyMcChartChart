@@ -77,7 +77,9 @@ public class MainFragment extends Fragment {
       }
     } else {
       mDisposables.add(mMainViewModel
-          .shouldShowCyclePage(promptForExportExistingData(), requireActivity())
+          .shouldShowCyclePage(promptForExportExistingData()
+              .subscribeOn(AndroidSchedulers.mainThread())
+              .observeOn(AndroidSchedulers.mainThread()), requireActivity())
           .observeOn(AndroidSchedulers.mainThread())
           .subscribe(showChart -> {
             if (showChart) {

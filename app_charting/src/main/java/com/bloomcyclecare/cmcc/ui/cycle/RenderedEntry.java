@@ -5,6 +5,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
+import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
@@ -107,10 +108,14 @@ public abstract class RenderedEntry {
     String leftSummary = Joiner.on("|").join(leftSummaryItems);
     String rightSummary = re.pocSummary();
 
+    LocalDate today = LocalDate.now();
+    LocalDate entryDate = re.modificationContext().entry.entryDate;
+    String dateStr = today.getYear() == entryDate.getYear()
+        ? DateUtil.toUiStr(entryDate) : DateUtil.toNewUiStr(entryDate);
     return create(
         String.valueOf(re.entryNum()),
-        re.modificationContext().entry.entryDate,
-        re.dateSummary(),
+        entryDate,
+        dateStr,
         re.dateSummaryShort(),
         re.entrySummary(),
         monitorReading,
