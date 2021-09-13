@@ -5,6 +5,8 @@ import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -35,8 +37,10 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         MeasurementEntry.class,
         BreastfeedingEntry.class,
         Pregnancy.class,
+        MedicationEntry.class,
+        Medication.class,
     },
-    version = 22)
+    version = 23)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -57,6 +61,10 @@ public abstract class AppDatabase extends RoomDatabase {
   public abstract BreastfeedingEntryDao breastfeedingEntryDao();
 
   public abstract PregnancyDao pregnancyDao();
+
+  public abstract MedicationEntryDao medicationEntryDao();
+
+  public abstract MedicationDao medicationDao();
 
   private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
     @Override
