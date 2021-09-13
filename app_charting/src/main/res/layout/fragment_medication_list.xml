@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:app="http://schemas.android.com/apk/res-auto"
+android:layout_width="match_parent"
+android:layout_height="match_parent">
+
+<com.google.android.material.floatingactionbutton.FloatingActionButton
+    android:id="@+id/medications_fab"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="bottom|end"
+    android:layout_margin="@dimen/fab_margin"
+    app:srcCompat="@drawable/ic_baseline_add_24"
+    android:contentDescription="Add a medication" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/tv_no_mediations"
+        android:textAlignment="center"
+        android:paddingTop="40dp"
+        android:text="No medications.\nAdd some by clicking the '+' below."/>
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerview_medications"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp" />
+</FrameLayout>
