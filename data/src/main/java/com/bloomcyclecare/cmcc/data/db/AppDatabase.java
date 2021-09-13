@@ -7,6 +7,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -37,8 +38,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         MeasurementEntry.class,
         BreastfeedingEntry.class,
         Pregnancy.class,
-        MedicationEntry.class,
         Medication.class,
+        MedicationEntry.class,
+        MedicationRef.class,
     },
     version = 23)
 @TypeConverters({Converters.class})
