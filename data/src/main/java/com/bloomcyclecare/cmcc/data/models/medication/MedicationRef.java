@@ -1,7 +1,9 @@
 package com.bloomcyclecare.cmcc.data.models.medication;
 
+import androidx.annotation.NonNull;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
+import androidx.room.Index;
 
 import org.joda.time.LocalDate;
 
@@ -14,9 +16,10 @@ import org.joda.time.LocalDate;
             childColumns = "medicationId",
             onDelete = ForeignKey.CASCADE
         )
-    }
+    },
+    indices = {@Index("medicationId")}
 )
 public class MedicationRef {
-  public LocalDate entryDate;
+  @NonNull public LocalDate entryDate;
   public int medicationId;
 }

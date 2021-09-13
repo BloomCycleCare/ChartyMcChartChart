@@ -207,6 +207,21 @@ public abstract class AppDatabase extends RoomDatabase {
       QuerySet.of("ALTER TABLE ObservationEntry ADD COLUMN uncertain INTEGER NOT NULL DEFAULT (0)"),
       QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_22_23 = new BwCompatMigration(
+      22, 23,
+      QuerySet.of(
+          "CREATE TABLE IF NOT EXISTS `MedicationRef` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)",
+          "CREATE INDEX IF NOT EXISTS `index_MedicationRef_medicationId` ON `MedicationRef` (`medicationId`)",
+          "CREATE TABLE IF NOT EXISTS `MedicationEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, PRIMARY KEY(`entryDate`))",
+          "CREATE TABLE IF NOT EXISTS `Medication` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `dosage` TEXT, `frequency` TEXT, `active` INTEGER NOT NULL)"
+      ),
+      QuerySet.of(
+          "DROP TABLE `MedicationRef`",
+          "DROP TABLE `MedicationEntry`",
+          "DROP TABLE `Medication`",
+          "DROP INDEX `index_MedicationRef_medicationId`"
+      ));
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -217,6 +232,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_19_20.migrations())
       .addAll(MIGRATION_20_21.migrations())
       .addAll(MIGRATION_21_22.migrations())
+      .addAll(MIGRATION_22_23.migrations())
       .build();
 
   public static class QuerySet {

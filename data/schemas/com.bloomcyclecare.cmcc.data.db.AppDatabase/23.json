@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 23,
-    "identityHash": "aea493664188b2cc74af4adc60344d5d",
+    "identityHash": "3ca716936696a5b08ab8cf623665be94",
     "entities": [
       {
         "tableName": "Cycle",
@@ -512,44 +512,6 @@
         "foreignKeys": []
       },
       {
-        "tableName": "MedicationEntry",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, PRIMARY KEY(`entryDate`))",
-        "fields": [
-          {
-            "fieldPath": "mEntryDate",
-            "columnName": "entryDate",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "mTimeCreated",
-            "columnName": "timeCreated",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "mTimeUpdated",
-            "columnName": "timeUpdated",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "mTimesUpdated",
-            "columnName": "timesUpdated",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "columnNames": [
-            "entryDate"
-          ],
-          "autoGenerate": false
-        },
-        "indices": [],
-        "foreignKeys": []
-      },
-      {
         "tableName": "Medication",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `dosage` TEXT, `frequency` TEXT, `active` INTEGER NOT NULL)",
         "fields": [
@@ -598,12 +560,98 @@
         },
         "indices": [],
         "foreignKeys": []
+      },
+      {
+        "tableName": "MedicationEntry",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, PRIMARY KEY(`entryDate`))",
+        "fields": [
+          {
+            "fieldPath": "mEntryDate",
+            "columnName": "entryDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "mTimeCreated",
+            "columnName": "timeCreated",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "mTimeUpdated",
+            "columnName": "timeUpdated",
+            "affinity": "INTEGER",
+            "notNull": false
+          },
+          {
+            "fieldPath": "mTimesUpdated",
+            "columnName": "timesUpdated",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "entryDate"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [],
+        "foreignKeys": []
+      },
+      {
+        "tableName": "MedicationRef",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "entryDate",
+            "columnName": "entryDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "medicationId",
+            "columnName": "medicationId",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "columnNames": [
+            "entryDate",
+            "medicationId"
+          ],
+          "autoGenerate": false
+        },
+        "indices": [
+          {
+            "name": "index_MedicationRef_medicationId",
+            "unique": false,
+            "columnNames": [
+              "medicationId"
+            ],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_MedicationRef_medicationId` ON `${TABLE_NAME}` (`medicationId`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "Medication",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "medicationId"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
       }
     ],
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aea493664188b2cc74af4adc60344d5d')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3ca716936696a5b08ab8cf623665be94')"
     ]
   }
 }
