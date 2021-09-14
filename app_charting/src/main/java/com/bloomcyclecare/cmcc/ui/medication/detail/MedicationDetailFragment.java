@@ -15,6 +15,7 @@ import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -26,6 +27,7 @@ import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
+import timber.log.Timber;
 
 public class MedicationDetailFragment extends Fragment {
 
@@ -110,6 +112,7 @@ public class MedicationDetailFragment extends Fragment {
     TextView descriptionView = view.findViewById(R.id.tv_medication_description_value);
     TextView dosageView = view.findViewById(R.id.tv_medication_dosage_value);
     TextView frequencyView = view.findViewById(R.id.tv_medication_frequency_value);
+    SwitchCompat activeView = view.findViewById(R.id.tv_medication_active_value);
 
     RxTextView.textChanges(nameView).map(CharSequence::toString)
         .subscribe(mMedicationDetailViewModel.nameSubject);
@@ -119,8 +122,10 @@ public class MedicationDetailFragment extends Fragment {
         .subscribe(mMedicationDetailViewModel.dosageSubject);
     RxTextView.textChanges(frequencyView).map(CharSequence::toString)
         .subscribe(mMedicationDetailViewModel.frequencySubject);
+    //TODO: hook up switch
 
     mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
+      Timber.d("Rendering ViewState");
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
@@ -128,6 +133,10 @@ public class MedicationDetailFragment extends Fragment {
       maybeUpdate(descriptionView, viewState.medication.description);
       maybeUpdate(dosageView, viewState.medication.dosage);
       maybeUpdate(frequencyView, viewState.medication.frequency);
+
+      if (activeView.isChecked() != viewState.medication.active) {
+        activeView.setChecked(viewState.medication.active);
+      }
     });
     return view;
   }

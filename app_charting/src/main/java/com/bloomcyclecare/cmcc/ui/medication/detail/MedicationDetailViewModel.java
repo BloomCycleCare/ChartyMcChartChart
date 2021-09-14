@@ -45,7 +45,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     activeSubject = BehaviorSubject.createDefault(mInitialValue.active);
 
     String title = initialMedication == null ? "New Medication" : "Edit Medication";
-        Observable.combineLatest(
+    Observable.combineLatest(
         nameSubject.distinctUntilChanged(),
         descriptionSubject.distinctUntilChanged(),
         dosageSubject.distinctUntilChanged(),
@@ -69,7 +69,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   }
 
   public Single<Boolean> dirty() {
-    return mViewStates.firstOrError().map(mInitialValue::equals);
+    return mViewStates.firstOrError().map(vs -> !vs.medication.equals(mInitialValue));
   }
 
   public Completable save() {
