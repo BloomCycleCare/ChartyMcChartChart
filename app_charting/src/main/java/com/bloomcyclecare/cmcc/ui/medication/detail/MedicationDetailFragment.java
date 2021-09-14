@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.medication.detail;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,8 +24,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
-import java.util.Optional;
-
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 
 public class MedicationDetailFragment extends Fragment {
@@ -54,20 +54,23 @@ public class MedicationDetailFragment extends Fragment {
   }
 
   private void onBackPressed() {
-    mDisposable.add(mMedicationDetailViewModel.dirty().subscribe(isDirty -> {
+    NavController navController = Navigation.findNavController(requireView());
+    Context context = requireContext();
+    mDisposable.add(mMedicationDetailViewModel.dirty().observeOn(AndroidSchedulers.mainThread()).subscribe(isDirty -> {
       if (!isDirty) {
-        Navigation.findNavController(requireView()).popBackStack();
+        navController.popBackStack();
+        return;
       }
-      new AlertDialog.Builder(requireContext())
+      new AlertDialog.Builder(context)
           .setTitle("Save Changes?")
           .setMessage("Would you like to save your changes?")
           .setPositiveButton("Yes", (dialog, which) -> {
-            doSave();
             dialog.dismiss();
+            doSave(context, navController);
           })
           .setNegativeButton("No", (dialog, which) -> {
-            Navigation.findNavController(requireView()).popBackStack();
             dialog.dismiss();
+            navController.popBackStack();
           })
           .show();
     }));
@@ -86,7 +89,7 @@ public class MedicationDetailFragment extends Fragment {
         onBackPressed();
         return true;
       case R.id.action_save:
-        doSave();
+        doSave(requireContext(), Navigation.findNavController(requireView()));
         return true;
       case R.id.action_delete:
         mDisposable.add(mMedicationDetailViewModel.delete().subscribe(() -> {
@@ -129,11 +132,13 @@ public class MedicationDetailFragment extends Fragment {
     return view;
   }
 
-  private void doSave() {
-    mDisposable.add(mMedicationDetailViewModel.save().subscribe(() -> {
-      Toast.makeText(requireContext(), "Medication updated", Toast.LENGTH_SHORT).show();
-      Navigation.findNavController(requireView()).popBackStack();
-    }));
+  private void doSave(Context context, NavController navController) {
+    mDisposable.add(mMedicationDetailViewModel.save()
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(() -> {
+          Toast.makeText(context, "Medication updated", Toast.LENGTH_SHORT).show();
+          navController.popBackStack();
+        }));
   }
 
   private static void maybeUpdate(TextView view, String value) {
