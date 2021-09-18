@@ -11,7 +11,7 @@ import java.util.Objects;
 @Entity
 public class Medication {
   @PrimaryKey(autoGenerate = true)
-  public int id;
+  public long id;
   public boolean active;
   public String name = "";
   public String description = "";

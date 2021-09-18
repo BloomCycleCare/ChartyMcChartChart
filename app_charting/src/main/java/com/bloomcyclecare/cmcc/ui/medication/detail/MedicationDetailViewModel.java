@@ -89,7 +89,13 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   }
 
   public Completable delete() {
-    return mViewStates.firstOrError().ignoreElement();
+    return mViewStates.firstOrError().flatMapCompletable(vs -> {
+      if (!vs.dirty(mInitialValue)) {
+        Timber.d("Not saving, ViewStats is clean");
+        return Completable.complete();
+      }
+      return mMedicationRepo.delete(vs.medication);
+    });
   }
 
   static class ViewState {
