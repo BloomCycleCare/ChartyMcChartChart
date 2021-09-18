@@ -18,6 +18,17 @@ public class Medication {
   public String dosage = "";
   public String frequency = "";
 
+  public Medication() {}
+
+  public Medication(Medication that) {
+    this.id = that.id;
+    this.active = that.active;
+    this.name = that.name;
+    this.description = that.description;
+    this.dosage = that.dosage;
+    this.frequency = that.frequency;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

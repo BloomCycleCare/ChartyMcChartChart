@@ -10,7 +10,10 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 
+import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 
 import java.util.Optional;
 
@@ -20,12 +23,14 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import timber.log.Timber;
 
 
 public class MedicationDetailViewModel extends AndroidViewModel {
 
   @NonNull
   private final Medication mInitialValue;
+  private final RWMedicationRepo mMedicationRepo;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
   final Subject<String> nameSubject;
@@ -37,6 +42,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   public MedicationDetailViewModel(@NonNull Application application,
                                    @Nullable Medication initialMedication) {
     super(application);
+    mMedicationRepo = ChartingApp.cast(application).medicationRepo(ViewMode.CHARTING);
     mInitialValue = initialMedication == null ? new Medication() : initialMedication;
     nameSubject = BehaviorSubject.createDefault(mInitialValue.name);
     descriptionSubject = BehaviorSubject.createDefault(mInitialValue.description);
@@ -52,7 +58,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
         frequencySubject.distinctUntilChanged(),
         activeSubject.distinctUntilChanged(),
         (name, description, dosage, frequency, active) -> {
-          Medication medication = new Medication();
+          Medication medication = new Medication(mInitialValue);
           medication.name = name;
           medication.description = description;
           medication.dosage = dosage;
@@ -69,11 +75,17 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   }
 
   public Single<Boolean> dirty() {
-    return mViewStates.firstOrError().map(vs -> !vs.medication.equals(mInitialValue));
+    return mViewStates.firstOrError().map(vs -> vs.dirty(mInitialValue));
   }
 
   public Completable save() {
-    return mViewStates.firstOrError().ignoreElement();
+    return mViewStates.firstOrError().flatMapCompletable(vs -> {
+      if (!vs.dirty(mInitialValue)) {
+        Timber.d("Not saving, ViewStats is clean");
+        return Completable.complete();
+      }
+      return mMedicationRepo.save(vs.medication).ignoreElement();
+    });
   }
 
   public Completable delete() {
@@ -88,6 +100,10 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     ViewState(String title, Medication medication) {
       this.title = title;
       this.medication = medication;
+    }
+
+    boolean dirty(Medication medication) {
+      return !this.medication.equals(medication);
     }
   }
 
