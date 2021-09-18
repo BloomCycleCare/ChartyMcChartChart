@@ -22,6 +22,13 @@ public class RoomMedicationRepo implements RWMedicationRepo {
   }
 
   @Override
+  public Completable importAll(List<Medication> medications) {
+    return Completable.merge(medications.stream()
+        .map(medication -> medicationDao.insert(medication).ignoreElement())
+        .collect(Collectors.toSet()));
+  }
+
+  @Override
   public Single<Medication> save(Medication medication) {
     if (medication.id <= 0) {
       Timber.v("Mediation has no ID, inserting");

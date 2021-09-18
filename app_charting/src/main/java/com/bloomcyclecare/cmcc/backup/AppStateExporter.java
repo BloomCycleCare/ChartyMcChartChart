@@ -5,12 +5,16 @@ import android.app.Application;
 import android.content.Intent;
 import android.net.Uri;
 
-import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
+
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.models.AppState;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.medication.ROMedicationRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.ROPregnancyRepo;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.google.common.base.Charsets;
@@ -20,9 +24,6 @@ import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import androidx.core.app.ShareCompat;
-import androidx.core.content.FileProvider;
-
 import io.reactivex.Single;
 
 public class AppStateExporter {
@@ -31,6 +32,7 @@ public class AppStateExporter {
   private final ROChartEntryRepo mEntryRepo;
   private final ROInstructionsRepo mInstructionsRepo;
   private final ROPregnancyRepo mPregnancyRepo;
+  private final ROMedicationRepo mMedicaitonRepo;
 
   public static AppStateExporter forApp(ChartingApp myApp) {
     return new AppStateExporter(myApp);
@@ -41,6 +43,7 @@ public class AppStateExporter {
     mEntryRepo = myApp.entryRepo(ViewMode.CHARTING);
     mInstructionsRepo = myApp.instructionsRepo(ViewMode.CHARTING);
     mPregnancyRepo = myApp.pregnancyRepo(ViewMode.CHARTING);
+    mMedicaitonRepo = myApp.medicationRepo(ViewMode.CHARTING);
   }
 
   public Single<AppState> export() {
@@ -49,8 +52,9 @@ public class AppStateExporter {
         mEntryRepo.getAllEntries(),
         mInstructionsRepo.getAll().firstOrError(),
         mPregnancyRepo.getAll().firstOrError(),
-        (cycles, entries, instructions, pregnancies) -> new AppState(
-            cycles, entries, null, instructions, pregnancies));
+        mMedicaitonRepo.getAll(true).firstOrError(),
+        (cycles, entries, instructions, pregnancies, medications) -> new AppState(
+            cycles, entries, null, instructions, pregnancies, medications));
   }
 
   public Single<Intent> getShareIntent(Activity launchingActivity) {
