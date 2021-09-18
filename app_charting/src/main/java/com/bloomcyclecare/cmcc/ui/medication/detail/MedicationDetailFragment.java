@@ -25,6 +25,8 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
@@ -35,6 +37,12 @@ public class MedicationDetailFragment extends Fragment {
 
   private MainViewModel mMainViewModel;
   private MedicationDetailViewModel mMedicationDetailViewModel;
+
+  @Override
+  public void onDestroy() {
+    mDisposable.clear();
+    super.onDestroy();
+  }
 
   @Override
   public void onCreate(@Nullable Bundle savedInstanceState) {
@@ -94,7 +102,7 @@ public class MedicationDetailFragment extends Fragment {
         doSave(requireContext(), Navigation.findNavController(requireView()));
         return true;
       case R.id.action_delete:
-        mDisposable.add(mMedicationDetailViewModel.delete().subscribe(() -> {
+        mDisposable.add(mMedicationDetailViewModel.delete().observeOn(AndroidSchedulers.mainThread()).subscribe(() -> {
           Toast.makeText(requireContext(), "Medication deleted", Toast.LENGTH_SHORT).show();
           Navigation.findNavController(requireView()).popBackStack();
         }));
@@ -114,15 +122,7 @@ public class MedicationDetailFragment extends Fragment {
     TextView frequencyView = view.findViewById(R.id.tv_medication_frequency_value);
     SwitchCompat activeView = view.findViewById(R.id.tv_medication_active_value);
 
-    RxTextView.textChanges(nameView).map(CharSequence::toString)
-        .subscribe(mMedicationDetailViewModel.nameSubject);
-    RxTextView.textChanges(descriptionView).map(CharSequence::toString)
-        .subscribe(mMedicationDetailViewModel.descriptionSubject);
-    RxTextView.textChanges(dosageView).map(CharSequence::toString)
-        .subscribe(mMedicationDetailViewModel.dosageSubject);
-    RxTextView.textChanges(frequencyView).map(CharSequence::toString)
-        .subscribe(mMedicationDetailViewModel.frequencySubject);
-    //TODO: hook up switch
+    AtomicBoolean initialized = new AtomicBoolean();
 
     mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       Timber.d("Rendering ViewState");
@@ -136,6 +136,18 @@ public class MedicationDetailFragment extends Fragment {
 
       if (activeView.isChecked() != viewState.medication.active) {
         activeView.setChecked(viewState.medication.active);
+      }
+
+      if (initialized.compareAndSet(false, true)) {
+        RxTextView.textChanges(nameView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.nameSubject);
+        RxTextView.textChanges(descriptionView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.descriptionSubject);
+        RxTextView.textChanges(dosageView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.dosageSubject);
+        RxTextView.textChanges(frequencyView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.frequencySubject);
+        //TODO: hook up switch
       }
     });
     return view;

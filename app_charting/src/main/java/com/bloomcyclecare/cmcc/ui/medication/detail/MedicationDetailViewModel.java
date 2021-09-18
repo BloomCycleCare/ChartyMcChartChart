@@ -90,8 +90,8 @@ public class MedicationDetailViewModel extends AndroidViewModel {
 
   public Completable delete() {
     return mViewStates.firstOrError().flatMapCompletable(vs -> {
-      if (!vs.dirty(mInitialValue)) {
-        Timber.d("Not saving, ViewStats is clean");
+      if (vs.medication.id <= 0) {
+        Timber.d("Not deleting, medication hasn't yet been saved");
         return Completable.complete();
       }
       return mMedicationRepo.delete(vs.medication);

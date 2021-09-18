@@ -8,7 +8,7 @@ public class WrappedMedication implements Parcelable {
 
   public Medication medication;
 
-  WrappedMedication(Medication medication) {
+  public WrappedMedication(Medication medication) {
     this.medication = medication;
   }
 
