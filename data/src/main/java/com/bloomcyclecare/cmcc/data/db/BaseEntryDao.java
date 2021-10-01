@@ -1,9 +1,18 @@
 package com.bloomcyclecare.cmcc.data.db;
 
+import androidx.arch.core.util.Function;
+import androidx.room.Dao;
+import androidx.room.Delete;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.RawQuery;
+import androidx.room.Update;
+import androidx.sqlite.db.SimpleSQLiteQuery;
+import androidx.sqlite.db.SupportSQLiteQuery;
+
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
-import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -24,15 +33,6 @@ import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 
-import androidx.arch.core.util.Function;
-import androidx.room.Dao;
-import androidx.room.Delete;
-import androidx.room.Insert;
-import androidx.room.OnConflictStrategy;
-import androidx.room.RawQuery;
-import androidx.room.Update;
-import androidx.sqlite.db.SimpleSQLiteQuery;
-import androidx.sqlite.db.SupportSQLiteQuery;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -139,11 +139,10 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public final Completable insert(E entry) {
     DateTime now = DateTime.now();
-    if (entry.mTimeCreated == null) {
-      entry.mTimeCreated = now;
+    if (entry.timeCreated() == null) {
+      entry.setTimeCreated(now);
     }
-    entry.mTimeUpdated = now;
-    entry.mTimesUpdated = ++entry.mTimesUpdated;
+    entry.setTimeUpdated(now);
     return insertInternal(entry);
   }
 
@@ -170,14 +169,13 @@ public abstract class BaseEntryDao<E extends Entry> {
   abstract Completable updateInternal(E entry);
 
   public final Completable update(E entry) {
-    if (entry.mTimeCreated == null) {
+    if (entry.timeCreated() == null) {
       return Completable.error(new IllegalArgumentException("timeCreated == null"));
     }
-    if (entry.mTimesUpdated <= 0) {
+    if (entry.timesUpdated() <= 0) {
       return Completable.error(new IllegalArgumentException("timesUpdated <= 0"));
     }
-    entry.mTimeUpdated = DateTime.now();
-    entry.mTimesUpdated = ++entry.mTimesUpdated;
+    entry.setTimeUpdated(DateTime.now());
     return updateInternal(entry);
   }
 
@@ -188,7 +186,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      MedicationEntry.class,
+      BaseMedicationEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
@@ -199,7 +197,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      MedicationEntry.class,
+      BaseMedicationEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
 
@@ -210,7 +208,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      MedicationEntry.class,
+      BaseMedicationEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

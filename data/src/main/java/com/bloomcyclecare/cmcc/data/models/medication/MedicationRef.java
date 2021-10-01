@@ -12,7 +12,7 @@ import org.joda.time.LocalDate;
     foreignKeys = {
         @ForeignKey(
             entity = Medication.class,
-            parentColumns = "id",
+            parentColumns = "medicationId",
             childColumns = "medicationId",
             onDelete = ForeignKey.CASCADE
         )

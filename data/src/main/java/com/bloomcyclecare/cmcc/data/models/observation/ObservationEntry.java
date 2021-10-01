@@ -1,6 +1,10 @@
 package com.bloomcyclecare.cmcc.data.models.observation;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -12,16 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
-import androidx.room.Ignore;
-
 /**
  * Created by parkeroth on 4/22/17.
  */
 @Entity
 @Parcel
-public class ObservationEntry extends Entry implements Copyable<ObservationEntry> {
+public class ObservationEntry extends BaseEntry implements Copyable<ObservationEntry> {
 
   @Nullable public Observation observation;
   public boolean peakDay;
@@ -40,7 +40,7 @@ public class ObservationEntry extends Entry implements Copyable<ObservationEntry
 
   @Ignore
   public ObservationEntry(
-      Entry entry,
+      BaseEntry entry,
       @Nullable Observation observation,
       boolean peakDay,
       boolean intercourse,

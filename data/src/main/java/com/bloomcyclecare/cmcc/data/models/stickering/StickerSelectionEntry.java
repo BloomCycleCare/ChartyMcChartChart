@@ -1,6 +1,8 @@
 package com.bloomcyclecare.cmcc.data.models.stickering;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import androidx.room.Entity;
+
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
@@ -8,10 +10,8 @@ import org.joda.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 
-import androidx.room.Entity;
-
 @Entity
-public class StickerSelectionEntry extends Entry {
+public class StickerSelectionEntry extends BaseEntry {
 
   public StickerSelection selection;
 
@@ -19,7 +19,7 @@ public class StickerSelectionEntry extends Entry {
     super();
   }
 
-  public StickerSelectionEntry(Entry entry, StickerSelection selection) {
+  public StickerSelectionEntry(BaseEntry entry, StickerSelection selection) {
     super(entry);
     this.selection = selection;
   }

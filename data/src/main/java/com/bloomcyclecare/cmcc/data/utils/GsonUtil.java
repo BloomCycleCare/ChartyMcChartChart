@@ -1,6 +1,6 @@
 package com.bloomcyclecare.cmcc.data.utils;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -34,7 +34,7 @@ public class GsonUtil {
         .setPrettyPrinting()
         .registerTypeAdapter(LocalDate.class, new LocalDateSerializer())
         .registerTypeAdapter(DateTime.class, new DateTimeSerializer())
-        .registerTypeAdapter(Entry.class, new InterfaceAdapter<Entry>())
+        .registerTypeAdapter(BaseEntry.class, new InterfaceAdapter<BaseEntry>())
         .create();
   }
 

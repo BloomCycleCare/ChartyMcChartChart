@@ -6,9 +6,8 @@ import android.os.Parcelable;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
-import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
@@ -24,7 +23,7 @@ import java.util.Map;
  * Created by parkeroth on 9/18/17.
  */
 @Entity
-public class SymptomEntry extends Entry implements Parcelable {
+public class SymptomEntry extends BaseEntry implements Parcelable {
 
   public BoolMapping symptoms;
 
@@ -39,7 +38,7 @@ public class SymptomEntry extends Entry implements Parcelable {
   }
 
   @Ignore
-  public SymptomEntry(Entry entry, BoolMapping symptoms) {
+  public SymptomEntry(BaseEntry entry, BoolMapping symptoms) {
     super(entry);
     this.symptoms = new BoolMapping(symptoms);
   }

@@ -1,12 +1,18 @@
 package com.bloomcyclecare.cmcc.data.db;
 
 
+import androidx.annotation.NonNull;
+import androidx.room.Database;
+import androidx.room.RoomDatabase;
+import androidx.room.TypeConverters;
+import androidx.room.migration.Migration;
+import androidx.sqlite.db.SupportSQLiteDatabase;
+
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
-import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
@@ -20,13 +26,6 @@ import org.intellij.lang.annotations.Language;
 import java.util.Arrays;
 import java.util.List;
 
-import androidx.annotation.NonNull;
-import androidx.room.Database;
-import androidx.room.RoomDatabase;
-import androidx.room.TypeConverters;
-import androidx.room.migration.Migration;
-import androidx.sqlite.db.SupportSQLiteDatabase;
-
 @Database(
     entities = {
         Cycle.class,
@@ -39,7 +38,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
         BreastfeedingEntry.class,
         Pregnancy.class,
         Medication.class,
-        MedicationEntry.class,
+        BaseMedicationEntry.class,
         MedicationRef.class,
     },
     version = 23)

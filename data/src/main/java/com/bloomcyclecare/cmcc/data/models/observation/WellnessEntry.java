@@ -3,9 +3,11 @@ package com.bloomcyclecare.cmcc.data.models.observation;
 import android.os.Parcel;
 import android.os.Parcelable;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
-import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
@@ -15,16 +17,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.crypto.SecretKey;
-
-import androidx.room.Entity;
-import androidx.room.Ignore;
-
 /**
  * Created by parkeroth on 9/18/17.
  */
 @Entity
-public class WellnessEntry extends Entry implements Parcelable {
+public class WellnessEntry extends BaseEntry implements Parcelable {
 
   public BoolMapping wellnessItems;
 
@@ -39,7 +36,7 @@ public class WellnessEntry extends Entry implements Parcelable {
   }
 
   @Ignore
-  public WellnessEntry(Entry entry, Map<String, Boolean> wellnessItems) {
+  public WellnessEntry(BaseEntry entry, Map<String, Boolean> wellnessItems) {
     super(entry);
     this.wellnessItems = new BoolMapping(wellnessItems);
   }

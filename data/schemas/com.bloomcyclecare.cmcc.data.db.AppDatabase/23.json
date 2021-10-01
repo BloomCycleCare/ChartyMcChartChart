@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 23,
-    "identityHash": "3ca716936696a5b08ab8cf623665be94",
+    "identityHash": "9f09187d95d56b2da75dba089949b426",
     "entities": [
       {
         "tableName": "Cycle",
@@ -513,11 +513,17 @@
       },
       {
         "tableName": "Medication",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `dosage` TEXT, `frequency` TEXT, `active` INTEGER NOT NULL)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`medicationId` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `active` INTEGER NOT NULL, `name` TEXT, `description` TEXT, `dosage` TEXT, `frequency` TEXT)",
         "fields": [
           {
-            "fieldPath": "id",
-            "columnName": "id",
+            "fieldPath": "medicationId",
+            "columnName": "medicationId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
             "affinity": "INTEGER",
             "notNull": true
           },
@@ -544,17 +550,11 @@
             "columnName": "frequency",
             "affinity": "TEXT",
             "notNull": false
-          },
-          {
-            "fieldPath": "active",
-            "columnName": "active",
-            "affinity": "INTEGER",
-            "notNull": true
           }
         ],
         "primaryKey": {
           "columnNames": [
-            "id"
+            "medicationId"
           ],
           "autoGenerate": true
         },
@@ -601,7 +601,7 @@
       },
       {
         "tableName": "MedicationRef",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`medicationId`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "entryDate",
@@ -642,7 +642,7 @@
               "medicationId"
             ],
             "referencedColumns": [
-              "id"
+              "medicationId"
             ]
           }
         ]
@@ -651,7 +651,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '3ca716936696a5b08ab8cf623665be94')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '9f09187d95d56b2da75dba089949b426')"
     ]
   }
 }

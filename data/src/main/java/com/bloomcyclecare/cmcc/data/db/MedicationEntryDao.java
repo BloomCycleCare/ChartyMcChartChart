@@ -9,4 +9,6 @@ public abstract class MedicationEntryDao extends BaseEntryDao<MedicationEntry> {
   public MedicationEntryDao() {
     super(MedicationEntry.class, MedicationEntry::emptyEntry);
   }
+
+
 }

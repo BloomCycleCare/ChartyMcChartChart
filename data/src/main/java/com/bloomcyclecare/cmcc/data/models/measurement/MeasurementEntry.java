@@ -1,6 +1,9 @@
 package com.bloomcyclecare.cmcc.data.models.measurement;
 
-import com.bloomcyclecare.cmcc.data.models.Entry;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
+import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
@@ -9,19 +12,16 @@ import org.parceler.Parcel;
 import java.util.List;
 import java.util.Objects;
 
-import androidx.room.Entity;
-import androidx.room.Ignore;
-
 @Entity
 @Parcel
-public class MeasurementEntry extends Entry {
+public class MeasurementEntry extends BaseEntry {
 
   public MonitorReading monitorReading;
   public LHTestResult lhTestResult;
 
   @Ignore
   public MeasurementEntry(
-      Entry entry, MonitorReading monitorReading, LHTestResult lhTestResult) {
+      BaseEntry entry, MonitorReading monitorReading, LHTestResult lhTestResult) {
     super(entry);
 
     this.monitorReading = monitorReading;
