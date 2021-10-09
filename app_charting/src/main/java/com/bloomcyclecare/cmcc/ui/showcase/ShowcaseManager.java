@@ -6,6 +6,9 @@ import android.content.ContextWrapper;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+
+import java.util.function.Predicate;
+
 import timber.log.Timber;
 import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
 import uk.co.deanwild.materialshowcaseview.MaterialShowcaseSequence;
@@ -13,6 +16,8 @@ import uk.co.deanwild.materialshowcaseview.MaterialShowcaseView;
 import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class ShowcaseManager {
+
+  private Predicate<ShowcaseID> preemptIfTrue = id -> false;
 
   private static final int DELAY_MS = 200;
 
@@ -65,11 +70,15 @@ public class ShowcaseManager {
     }
   }
 
-  public void showShowcase(ShowcaseID showcaseID, View target) {
-    showShowcase(showcaseID, target, null);
+  public void preemptAllMatching(Predicate<ShowcaseID> ifTrue) {
+    preemptIfTrue = ifTrue;
   }
 
-  public void showShowcase(ShowcaseID showcaseID, View target, @Nullable IShowcaseListener listener) {
+  public void showShowcase(ShowcaseID showcaseID, View target) {
+    if (preemptIfTrue.test(showcaseID)) {
+      Timber.d("Preempting showcase %s", showcaseID.name());
+      return;
+    }
     Activity activity = getActivity(target);
     if (activity == null) {
       Timber.w("Failed to find activity for view: %d", target.getId());
@@ -78,9 +87,6 @@ public class ShowcaseManager {
     MaterialShowcaseView.Builder builder = new MaterialShowcaseView.Builder(activity);
     if (showcaseID.useRectangle) {
       builder = builder.withRectangleShape();
-    }
-    if (listener != null) {
-      builder.setListener(listener);
     }
     builder
         .renderOverNavigationBar()

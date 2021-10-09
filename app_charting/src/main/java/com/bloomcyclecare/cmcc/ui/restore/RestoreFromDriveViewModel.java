@@ -5,11 +5,17 @@ import android.content.Context;
 import android.content.Intent;
 import android.util.Pair;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.api.services.drive.model.File;
@@ -20,10 +26,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Optional;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
@@ -39,10 +41,12 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
 
   private final Context mContext;
+  private final ShowcaseManager mShowcaseManager;
 
   public RestoreFromDriveViewModel(@NonNull Application application) {
     super(application);
     mContext = application.getApplicationContext();
+    mShowcaseManager = ChartingApp.cast(application).showcaseManager();
 
     Observable<Pair<Optional<File>, Boolean>> backupFile = mAccountSubject.distinctUntilChanged()
         .flatMapSingle(account -> {
@@ -107,6 +111,11 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
             AppStateImporter importer = new AppStateImporter(ChartingApp.getInstance());
             return importer.importAppState(appState);
           })
+          .doOnComplete(() -> {
+            Timber.d("Preempting all showcase prompts");
+            mShowcaseManager.preemptAllMatching(p -> true);
+          })
+          .doOnError(Timber::e)
           .subscribeOn(Schedulers.io());
     });
   }
