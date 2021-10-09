@@ -5,6 +5,10 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.core.util.Consumer;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
@@ -16,10 +20,6 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import androidx.constraintlayout.widget.ConstraintLayout;
-import androidx.core.util.Consumer;
-import androidx.recyclerview.widget.RecyclerView;
 
 class GridRowViewHolder extends RecyclerView.ViewHolder {
 
@@ -127,6 +127,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       textView.setText("");
       stickerView.setText("");
       stickerView.setBackground(context.getDrawable(R.drawable.sticker_grey));
+      measurementView.setText("");
       strikeThroughView.setVisibility(View.GONE);
     }
   }
