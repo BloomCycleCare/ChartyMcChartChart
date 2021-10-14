@@ -3,10 +3,12 @@ package com.bloomcyclecare.cmcc.ui.showcase;
 import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
+import android.content.SharedPreferences;
 import android.view.View;
 
 import androidx.annotation.Nullable;
 
+import java.util.Arrays;
 import java.util.function.Predicate;
 
 import timber.log.Timber;
@@ -17,9 +19,13 @@ import uk.co.deanwild.materialshowcaseview.ShowcaseConfig;
 
 public class ShowcaseManager {
 
-  private Predicate<ShowcaseID> preemptIfTrue = id -> false;
+  private final Context mContext;
 
   private static final int DELAY_MS = 200;
+
+  public ShowcaseManager(Context context) {
+    mContext = context;
+  }
 
   public enum SequenceID {
     INCORRECT_STICKER_SELECTION,
@@ -71,14 +77,30 @@ public class ShowcaseManager {
   }
 
   public void preemptAllMatching(Predicate<ShowcaseID> ifTrue) {
-    preemptIfTrue = ifTrue;
+    SharedPreferences prefs = mContext.getSharedPreferences(
+        ShowcaseManager.class.getCanonicalName(), Context.MODE_PRIVATE);
+    SharedPreferences.Editor editor = prefs.edit();
+    editor.clear();
+    Arrays.stream(ShowcaseID.values()).filter(ifTrue).forEach(id -> {
+      Timber.d("Storing preemption for %s", id.name());
+      editor.putBoolean(id.name(), true);
+    });
+    Timber.d("Committing preemptions");
+    editor.apply();
+  }
+
+  public boolean shouldShowcase(ShowcaseID id) {
+    SharedPreferences prefs = mContext.getSharedPreferences(
+        ShowcaseManager.class.getCanonicalName(), Context.MODE_PRIVATE);
+    return !prefs.getBoolean(id.name(), false);
   }
 
   public void showShowcase(ShowcaseID showcaseID, View target) {
-    if (preemptIfTrue.test(showcaseID)) {
+    if (!shouldShowcase(showcaseID)) {
       Timber.d("Preempting showcase %s", showcaseID.name());
       return;
     }
+    Timber.d("Showing showcase %s", showcaseID.name());
     Activity activity = getActivity(target);
     if (activity == null) {
       Timber.w("Failed to find activity for view: %d", target.getId());
@@ -101,6 +123,12 @@ public class ShowcaseManager {
 
   public static SequenceBuilder sequenceBuilder(SequenceID id, Activity activity) {
     return new SequenceBuilder(id, activity);
+  }
+
+  public void maybeAddShowcase(ShowcaseID id, View view, SequenceBuilder builder) {
+    if (shouldShowcase(id)) {
+      builder.addShowcase(id, view);
+    }
   }
 
   public static class SequenceBuilder {
