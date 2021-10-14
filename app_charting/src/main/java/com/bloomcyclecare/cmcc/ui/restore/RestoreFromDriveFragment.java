@@ -58,6 +58,7 @@ public class RestoreFromDriveFragment extends Fragment {
 
     RestoreFromDriveViewModel.Factory factory = new RestoreFromDriveViewModel.Factory(requireActivity());
     mViewModel = new ViewModelProvider(this, factory).get(RestoreFromDriveViewModel.class);
+    mDisposables.add(mViewModel);
 
     mProgressTextView = view.findViewById(R.id.tv_progress);
     ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
