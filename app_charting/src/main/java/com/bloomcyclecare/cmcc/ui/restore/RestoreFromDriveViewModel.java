@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.ui.restore;
 
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
@@ -9,6 +10,8 @@ import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
@@ -21,6 +24,8 @@ import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,9 +48,9 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
   private final Context mContext;
   private final ShowcaseManager mShowcaseManager;
 
-  public RestoreFromDriveViewModel(@NonNull Application application) {
+  public RestoreFromDriveViewModel(@NonNull Application application, Activity activity) {
     super(application);
-    mContext = application.getApplicationContext();
+    mContext = activity;
     mShowcaseManager = ChartingApp.cast(application).showcaseManager();
 
     Observable<Pair<Optional<File>, Boolean>> backupFile = mAccountSubject.distinctUntilChanged()
@@ -135,5 +140,20 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
       return new AutoValue_RestoreFromDriveViewModel_ViewState(account, backupFile, noneFound);
     }
 
+  }
+
+  public static class Factory implements ViewModelProvider.Factory {
+    private final Activity activity;
+
+    public Factory(Activity activity) {
+      this.activity = activity;
+    }
+
+    @NonNull
+    @NotNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull @NotNull Class<T> modelClass) {
+      return (T) new RestoreFromDriveViewModel(activity.getApplication(), activity);
+    }
   }
 }
