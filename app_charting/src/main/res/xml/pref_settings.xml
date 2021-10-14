@@ -19,7 +19,6 @@
         android:title="Notifications"
         android:key="pref_key_notifications">
         <SwitchPreferenceCompat
-            android:defaultValue="true"
             android:key="CHARTING_REMINDER"
             android:title="Enable charting reminder"/>
     </PreferenceCategory>

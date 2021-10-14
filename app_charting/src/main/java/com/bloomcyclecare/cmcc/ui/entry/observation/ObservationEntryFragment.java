@@ -14,6 +14,12 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.ViewModelProviders;
+import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
@@ -29,11 +35,6 @@ import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProviders;
-import androidx.recyclerview.widget.DividerItemDecoration;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import io.reactivex.functions.Action;
 import timber.log.Timber;
 import uk.co.deanwild.materialshowcaseview.IShowcaseListener;
@@ -208,41 +209,40 @@ public class ObservationEntryFragment extends Fragment {
       Menu menu = activity.getMenu();
 
       if (hasValidObservation) {
-        ShowcaseManager.SequenceBuilder builder = ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE, requireActivity())
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION,
-                observationDescriptionTextView,
-                new IShowcaseListener() {
-                  @Override
-                  public void onShowcaseDisplayed(MaterialShowcaseView showcaseView) {
-                    InputMethodManager inputManager = (InputMethodManager)
-                        requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    inputManager.hideSoftInputFromWindow(requireActivity().getCurrentFocus().getWindowToken(),
-                        InputMethodManager.HIDE_NOT_ALWAYS);
-                  }
-                  @Override
-                  public void onShowcaseDismissed(MaterialShowcaseView showcaseView) {}
-                })
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_PEAK_DAY, peakDaySwitch)
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_INTERCOURSE, intercourseSwitch)
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_FIRST_DAY_NEW_CYCLE, firstDaySwitch)
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_NOTE, noteTextView)
-            .addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES, view.findViewById(R.id.observation_entry_layout))
-            /*.addShowcase(
-                ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_MENU,
-                requireActivity().findViewById(R.id.action_pregnancy_test))*/
-            ;
+        ShowcaseManager.SequenceBuilder builder = ShowcaseManager.sequenceBuilder(ShowcaseManager.SequenceID.ENTRY_DETAIL_PAGE, requireActivity());
+        if (showcaseManager.shouldShowcase(ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION)) {
+          builder.addShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_DESCRIPTION,
+              observationDescriptionTextView,
+              new IShowcaseListener() {
+                @Override
+                public void onShowcaseDisplayed(MaterialShowcaseView showcaseView) {
+                  InputMethodManager inputManager = (InputMethodManager)
+                      requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                  inputManager.hideSoftInputFromWindow(requireActivity().getCurrentFocus().getWindowToken(),
+                      InputMethodManager.HIDE_NOT_ALWAYS);
+                }
+                @Override
+                public void onShowcaseDismissed(MaterialShowcaseView showcaseView) {}
+              });
+          showcaseManager.maybeAddShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_PEAK_DAY, peakDaySwitch, builder);
+          showcaseManager.maybeAddShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_INTERCOURSE, intercourseSwitch, builder);
+          showcaseManager.maybeAddShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_FIRST_DAY_NEW_CYCLE, firstDaySwitch, builder);
+          showcaseManager.maybeAddShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_NOTE, noteTextView, builder);
+          showcaseManager.maybeAddShowcase(
+              ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_EXTRA_TOGGLES, view.findViewById(R.id.observation_entry_layout), builder);
+        }
         if (menu == null) {
           Timber.w("Null menu, skipping ENTRY_DETAIL_EXPLAIN_SAVE showcase");
         } else {
-          builder.addShowcase(
+          showcaseManager.maybeAddShowcase(
               ShowcaseManager.ShowcaseID.ENTRY_DETAIL_EXPLAIN_SAVE,
-              activity.findViewById(activity.getMenu().findItem(R.id.action_save).getItemId()));
+              activity.findViewById(activity.getMenu().findItem(R.id.action_save).getItemId()),
+              builder);
         }
         builder.build();
       }

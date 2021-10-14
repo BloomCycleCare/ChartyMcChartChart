@@ -59,9 +59,18 @@ public class PreferenceRepo {
   }
 
   public void disableAllTheThings() {
+    setBoolean(Key.ENABLE_BACKUP_TO_DRIVE, false);
+    setBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE, false);
+  }
+
+  public void setDebugDefaults() {
+    setBoolean(Key.CHARTING_REMINDER, false);
+  }
+
+  private void setBoolean(Key key, boolean value) {
+    Timber.d("Setting preference %s to %b", key.name(), value);
     preferences.edit()
-        .putBoolean(Key.ENABLE_BACKUP_TO_DRIVE.name(), false)
-        .putBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE.name(), false)
+        .putBoolean(key.name(), value)
         .apply();
   }
 
