@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.restore;
 
 import android.app.AlertDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Html;
 import android.view.LayoutInflater;
@@ -9,19 +10,22 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.ViewMode;
-import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
-import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
-import com.google.api.services.drive.model.File;
-
-import java.util.Map;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.Navigation;
+
+import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.android.gms.tasks.Task;
+import com.google.api.services.drive.model.File;
+
+import java.util.Map;
+
 import io.reactivex.Single;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -32,23 +36,39 @@ public class RestoreFromDriveFragment extends Fragment {
   CompositeDisposable mDisposables = new CompositeDisposable();
   RestoreFromDriveViewModel mViewModel;
 
+  TextView mProgressTextView;
+
+  @Override
+  public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+    Task<GoogleSignInAccount> a = GoogleSignIn.getSignedInAccountFromIntent(data);
+    try {
+      GoogleSignInAccount aa = a.getResult();
+      Timber.i("Got %s", aa.getDisplayName());
+      mViewModel.checkAccount();
+    } catch (Exception e) {
+      Timber.e(e);
+      mProgressTextView.setText("Error signing ino Google account");
+    }
+  }
+
   @Nullable
   @Override
   public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
     View view = inflater.inflate(R.layout.fragment_drive_restore, container, false);
 
-    mViewModel = new ViewModelProvider(this).get(RestoreFromDriveViewModel.class);
+    RestoreFromDriveViewModel.Factory factory = new RestoreFromDriveViewModel.Factory(requireActivity());
+    mViewModel = new ViewModelProvider(this, factory).get(RestoreFromDriveViewModel.class);
 
-    TextView mProgressText = view.findViewById(R.id.tv_progress);
+    mProgressTextView = view.findViewById(R.id.tv_progress);
     ProgressBar mProgressBar = view.findViewById(R.id.progressBar);
     mProgressBar.setVisibility(View.GONE);
 
-    mProgressText.setText("Checking for Google account");
+    mProgressTextView.setText("Checking for Google account");
     mViewModel.checkAccount();
     mViewModel.viewState().observeForever(viewState -> {
       if (viewState.noneFound()) {
         mProgressBar.setVisibility(View.GONE);
-        mProgressText.setText("No backup found in Drive");
+        mProgressTextView.setText("No backup found in Drive");
         Timber.i("No backup file found");
         if (!viewState.account().isPresent()) {
           Timber.w("Account missing for NOT_FOUND restore from backup");
@@ -64,7 +84,7 @@ public class RestoreFromDriveFragment extends Fragment {
               dialog.dismiss();
             })
             .setNegativeButton("Switch Accounts", ((dialog, which) -> {
-              mProgressText.setText("Switching Google accounts");
+              mProgressTextView.setText("Switching Google accounts");
               mDisposables.add(mViewModel.switchAccount()
                   .subscribe(intent -> {
                     startActivityForResult(intent, 1);
@@ -86,20 +106,20 @@ public class RestoreFromDriveFragment extends Fragment {
       }
       mProgressBar.setVisibility(View.VISIBLE);
       if (!viewState.account().isPresent()) {
-        mProgressText.setText("Prompting for Google account sign in");
+        mProgressTextView.setText("Prompting for Google account sign in");
         Timber.d("Prompting for sign in");
         startActivityForResult(GoogleAuthHelper.getPromptIntent(requireContext()), 1);
         return;
       }
       if (viewState.backupFile().isPresent()) {
-        mProgressText.setText("Found file in Drive");
+        mProgressTextView.setText("Found file in Drive");
         mDisposables.add(promptRestoreFromDrive(viewState.backupFile().get())
             .flatMap(doRestore -> {
               if (!doRestore) {
-                mProgressText.setText("Restore cancelled");
+                mProgressTextView.setText("Restore cancelled");
                 return Single.just(false);
               }
-              mProgressText.setText("Restoring data");
+              mProgressTextView.setText("Restoring data");
               return mViewModel.restore(viewState.backupFile().get()).andThen(Single.just(true))
                   .observeOn(AndroidSchedulers.mainThread())
                   .doOnTerminate(() -> mProgressBar.setVisibility(View.GONE));
@@ -107,7 +127,7 @@ public class RestoreFromDriveFragment extends Fragment {
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe(restored -> {
               if (restored) {
-                mProgressText.setText("Opening chart");
+                mProgressTextView.setText("Opening chart");
                 Navigation.findNavController(requireView()).navigate(
                     RestoreFromDriveFragmentDirections.actionShowChart()
                         .setViewMode(ViewMode.CHARTING));
