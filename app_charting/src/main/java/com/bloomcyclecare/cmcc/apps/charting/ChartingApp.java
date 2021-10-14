@@ -5,18 +5,21 @@ import android.content.Intent;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.preference.PreferenceManager;
+import androidx.room.Room;
+import androidx.room.migration.Migration;
+
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.ViewModelFactory;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.DriveFeaturePrefs;
+import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
 import com.bloomcyclecare.cmcc.backup.drive.PublishWorker;
 import com.bloomcyclecare.cmcc.backup.drive.UpdateTrigger;
 import com.bloomcyclecare.cmcc.backup.drive.WorkerManager;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
-import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
-import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.DataRepos;
 import com.bloomcyclecare.cmcc.data.repos.cycle.CycleRepoFactory;
@@ -35,7 +38,6 @@ import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.notifications.ChartingReceiver;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
-import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
@@ -48,14 +50,8 @@ import org.joda.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import androidx.preference.PreferenceManager;
-import androidx.room.Room;
-import androidx.room.migration.Migration;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.WorkManager;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.PublishSubject;
@@ -139,6 +135,9 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     });
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
+    if (BuildConfig.DEBUG) {
+      mPreferenceRepo.setDebugDefaults();
+    }
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 
