@@ -27,12 +27,10 @@ import com.google.common.base.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.MutableDateTime;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
-import androidx.room.IMultiInstanceInvalidationCallback;
-
 import java.util.Optional;
 
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
 import io.reactivex.Flowable;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
@@ -194,7 +192,7 @@ public class ChartingService extends Service {
     } else {
       Intent restartIntent = new Intent(this, ChartingReceiver.class);
       PendingIntent pi = PendingIntent.getBroadcast(
-          this, 0, restartIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+          this, 0, restartIntent, PendingIntent.FLAG_IMMUTABLE);
       AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
       am.set(AlarmManager.RTC_WAKEUP, restartTime.getMillis(), pi);
 
