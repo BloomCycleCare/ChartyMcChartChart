@@ -103,7 +103,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
-        return "";
+        return "subtitle";
     }
   }
 
