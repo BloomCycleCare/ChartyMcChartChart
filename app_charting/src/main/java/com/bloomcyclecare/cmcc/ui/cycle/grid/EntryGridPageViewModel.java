@@ -13,14 +13,23 @@ import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -73,13 +82,87 @@ public class EntryGridPageViewModel extends AndroidViewModel {
           }
           return ViewState.create(
               lofl,
-              getSubtitle(cycleListViewState),
+              getSubtitle(cycleListViewState, getStatViews(renderableCycles)),
               cycleListViewState.viewMode());
         })
         .subscribe(mViewStates);
   }
 
-  private String getSubtitle(CycleListViewModel.ViewState viewState) {
+  public enum Stat {
+    FLOW,
+    POC,
+    PEAK,
+    END
+  }
+
+  static class StatView {
+    public final String summary;
+    public final ImmutableSet<Integer> days;
+
+    StatView(String summary, ImmutableSet<Integer> days) {
+      this.summary = summary;
+      this.days = days;
+    }
+  }
+
+  private ImmutableMap<Stat, StatView> getStatViews(Collection<CycleRenderer.RenderableCycle> renderableCycles) {
+    int maxCycleLength = 35;
+    List<CycleRenderer.RenderableCycle> cycles = new ArrayList<>();
+    Timber.v("Getting stats for %d cycles", renderableCycles.size());
+    for (CycleRenderer.RenderableCycle cycle : renderableCycles.stream()
+        .sorted((c1, c2) -> c2.cycle().compareTo(c1.cycle()))
+        .collect(Collectors.toList())) {
+      if (cycle.entries().size() <= maxCycleLength) {
+        cycles.add(cycle);
+      } else {
+        Timber.v("Cycle starting %s had %d entries which exceeded the limit of %d", cycle.cycle().startDateStr, cycle.entries().size(), maxCycleLength);
+        break;
+      }
+    }
+    Timber.v("Only considering last %d cycles", cycles.size());
+    ImmutableMap.Builder<Stat, StatView> builder = ImmutableMap.builder();
+
+    builder.put(Stat.FLOW, getStatView(
+        "Typical flow length: ", cycles,
+        // Only look at cases where we are "past" the flow
+        (c) -> c.stats().daysOfFlow() < c.entries().size(),
+        (c) -> c.stats().daysOfFlow()));
+    builder.put(Stat.END, getStatView(
+        "Typical cycle length: ", cycles,
+        // Only consider cycles which have ended
+        (c) -> c.cycle().endDate != null,
+        (c) -> c.entries().size()));
+    //noinspection OptionalGetWithoutIsPresent
+    builder.put(Stat.PEAK, getStatView(
+        "Typical peak day: ", cycles,
+        // Only consider cycles which have had a peak day
+        (c) -> c.stats().daysPrePeak().isPresent(),
+        (c) -> c.stats().daysPrePeak().get() + 1));
+
+    return builder.build();
+  }
+
+  private String getStatSummary(Collection<Integer> days) {
+    SummaryStatistics stats = new SummaryStatistics();
+    days.forEach(stats::addValue);
+    long mean = Math.round(stats.getMean());
+    double ci95 = 1.960 * stats.getStandardDeviation() / Math.sqrt(stats.getN());
+    return String.format(Locale.getDefault(), "%d±%.1f", mean, ci95);
+  }
+
+  private StatView getStatView(
+      String summaryPrefix,
+      Collection<CycleRenderer.RenderableCycle> cycles,
+      Predicate<CycleRenderer.RenderableCycle> filterFn,
+      Function<CycleRenderer.RenderableCycle, Integer> mapperFn) {
+    ImmutableSet<Integer> days = ImmutableSet.copyOf(cycles.stream()
+        .filter(filterFn)
+        .map(mapperFn)
+        .collect(Collectors.toSet()));
+    return new StatView(summaryPrefix + getStatSummary(days), days);
+  }
+
+  private String getSubtitle(CycleListViewModel.ViewState viewState, ImmutableMap<Stat, StatView> statViews) {
     switch (viewState.viewMode()) {
       case TRAINING:
         int entriesWithCorrectAnswer = 0;
@@ -103,7 +186,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
-        return "subtitle";
+        List<String> statSummaries = statViews.values().stream()
+            .map(sv -> sv.summary)
+            .collect(Collectors.toList());
+        return Joiner.on(", ").join(statSummaries);
     }
   }
 

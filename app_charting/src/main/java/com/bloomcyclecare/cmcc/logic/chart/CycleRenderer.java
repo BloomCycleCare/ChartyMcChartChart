@@ -390,6 +390,7 @@ public class CycleRenderer {
           .cycleStartDate(mCycle.startDate)
           .isPregnancy(mCycle.isPregnancy())
           .daysWithAnObservation(daysWithAnObservation.size())
+          .daysOfFlow(daysOfFlow.size())
           .mcs(MccScorer.getScore(mEntries, peakDays.isEmpty() ? Optional.empty() : Optional.of(peakDays.last())));
       if (!peakDays.isEmpty()) {
         statsBuilder.daysPrePeak(Optional.of(Days.daysBetween(mCycle.startDate, peakDays.last()).getDays()));
@@ -606,6 +607,7 @@ public class CycleRenderer {
   public abstract static class CycleStats implements Comparable<CycleStats> {
     public abstract LocalDate cycleStartDate();
     public abstract Integer daysWithAnObservation();
+    public abstract Integer daysOfFlow();
     public abstract boolean isPregnancy ();
     public abstract Optional<Float> mcs();
     public abstract Optional<Integer> daysPrePeak();
@@ -622,7 +624,8 @@ public class CycleRenderer {
           .isPregnancy(false)
           .daysWithAnObservation(0)
           .daysPrePeak(Optional.empty())
-          .daysPostPeak(Optional.empty());
+          .daysPostPeak(Optional.empty())
+          .daysOfFlow(0);
     }
 
     @AutoValue.Builder
@@ -638,6 +641,8 @@ public class CycleRenderer {
       public abstract Builder daysPrePeak(Optional<Integer> daysPrePeak);
 
       public abstract Builder daysPostPeak(Optional<Integer> daysPostPeak);
+
+      public abstract Builder daysOfFlow(Integer daysOfFlow);
 
       public abstract CycleStats build();
     }
