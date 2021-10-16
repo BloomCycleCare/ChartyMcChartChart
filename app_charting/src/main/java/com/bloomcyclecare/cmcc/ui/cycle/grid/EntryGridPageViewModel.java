@@ -124,20 +124,22 @@ public class EntryGridPageViewModel extends AndroidViewModel {
 
     builder.put(Stat.FLOW, getStatView(
         "Typical flow length: ", cycles,
-        // Only look at cases where we are "past" the flow
-        (c) -> c.stats().daysOfFlow() < c.entries().size(),
+        (c) -> c.stats().daysOfFlow() < c.entries().size(),  // Only look at cases where we are "past" the flow
         (c) -> c.stats().daysOfFlow()));
-    builder.put(Stat.END, getStatView(
-        "Typical cycle length: ", cycles,
-        // Only consider cycles which have ended
-        (c) -> c.cycle().endDate != null,
-        (c) -> c.entries().size()));
+    //noinspection OptionalGetWithoutIsPresent
+    builder.put(Stat.POC, getStatView(
+        "Typical PoC: ", cycles,
+        (c) -> c.stats().daysBeforePoC().isPresent(),  // Only look at cases where we are "past" the PoC
+        (c) -> c.stats().daysBeforePoC().get() + 1));
     //noinspection OptionalGetWithoutIsPresent
     builder.put(Stat.PEAK, getStatView(
         "Typical peak day: ", cycles,
-        // Only consider cycles which have had a peak day
-        (c) -> c.stats().daysPrePeak().isPresent(),
+        (c) -> c.stats().daysPrePeak().isPresent(),  // Only consider cycles which have had a peak day
         (c) -> c.stats().daysPrePeak().get() + 1));
+    builder.put(Stat.END, getStatView(
+        "Typical cycle length: ", cycles,
+        (c) -> c.cycle().endDate != null,  // Only consider cycles which have ended
+        (c) -> c.entries().size()));
 
     return builder.build();
   }

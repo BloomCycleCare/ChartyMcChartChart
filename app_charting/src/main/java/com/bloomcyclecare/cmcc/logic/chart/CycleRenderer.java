@@ -399,6 +399,10 @@ public class CycleRenderer {
         }
       }
 
+      effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway)
+          .map(pointOfChange -> Days.daysBetween(mCycle.startDate, pointOfChange).getDays())
+          .ifPresent(daysBeforePoC -> statsBuilder.daysBeforePoC(Optional.of(daysBeforePoC)));
+
       return RenderableCycle.builder()
           .cycle(mCycle)
           .entries(renderableEntries)
@@ -612,6 +616,7 @@ public class CycleRenderer {
     public abstract Optional<Float> mcs();
     public abstract Optional<Integer> daysPrePeak();
     public abstract Optional<Integer> daysPostPeak();
+    public abstract Optional<Integer> daysBeforePoC();
 
     @Override
     public int compareTo(CycleStats other) {
@@ -625,6 +630,7 @@ public class CycleRenderer {
           .daysWithAnObservation(0)
           .daysPrePeak(Optional.empty())
           .daysPostPeak(Optional.empty())
+          .daysBeforePoC(Optional.empty())
           .daysOfFlow(0);
     }
 
@@ -638,9 +644,11 @@ public class CycleRenderer {
 
       public abstract Builder mcs(Optional<Float> mcs);
 
-      public abstract Builder daysPrePeak(Optional<Integer> daysPrePeak);
+      public abstract Builder daysPrePeak(Optional<Integer> days);
 
-      public abstract Builder daysPostPeak(Optional<Integer> daysPostPeak);
+      public abstract Builder daysPostPeak(Optional<Integer> days);
+
+      public abstract Builder daysBeforePoC(Optional<Integer> days);
 
       public abstract Builder daysOfFlow(Integer daysOfFlow);
 
