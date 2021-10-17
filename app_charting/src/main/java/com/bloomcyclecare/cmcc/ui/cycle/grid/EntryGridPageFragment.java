@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.view.LayoutInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
@@ -73,6 +74,7 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
     super.onCreate(savedInstanceState);
 
     mMainViewModel = new ViewModelProvider(requireActivity()).get(MainViewModel.class);
+    cycleListViewModel().showCycleStats(true);
 
     EntryGridPageViewModel.Factory factory = new EntryGridPageViewModel.Factory(
         requireActivity().getApplication(),
@@ -131,6 +133,14 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
     });
 
     return view;
+  }
+
+  @Override
+  public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+    if (item.getItemId() == R.id.action_toggle_stats) {
+      mViewModel.toggleStats();
+    }
+    return super.onOptionsItemSelected(item);
   }
 
   @Override

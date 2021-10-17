@@ -76,6 +76,7 @@ public class EntryListFragment extends Fragment {
     Cycle cycle = Parcels.unwrap(arguments.getParcelable(Extras.CURRENT_CYCLE.name()));
 
     CycleListViewModel cycleListViewModel = new ViewModelProvider(getParentFragment()).get(CycleListViewModel.class);
+    cycleListViewModel.showCycleStats(false);
 
     ViewMode viewMode = ViewMode.values()[arguments.getInt(Extras.VIEW_MODE.name())];
     EntryListViewModel.Factory factory = new EntryListViewModel.Factory(

@@ -13,7 +13,6 @@ import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -39,7 +38,9 @@ import androidx.lifecycle.ViewModel;
 import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
+import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.ReplaySubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
@@ -49,6 +50,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Optional<Exercise> mExercise;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
+  private final Subject<Boolean> mStatToggles = ReplaySubject.create(100);
   private final RWStickerSelectionRepo mStickerSelectionRepo;
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
@@ -65,9 +67,11 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
     }
-    mCycleListViewModel.viewStateStream()
-        .toObservable()
-        .map(cycleListViewState -> {
+    Observable.combineLatest(
+        mCycleListViewModel.viewStateStream().toObservable().distinctUntilChanged(),
+        mStatToggles.scan(0, (a, b) -> a++)
+            .map(i -> Stat.values()[i % Stat.values().length]),
+        (cycleListViewState, statSelection) -> {
           List<List<RenderedEntry>> lofl = new ArrayList<>(cycleListViewState.renderableCycles().size());
           List<CycleRenderer.RenderableCycle> renderableCycles = cycleListViewState.viewMode() == ViewMode.TRAINING
               ? cycleListViewState.renderableCycles()
@@ -80,12 +84,17 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             }
             lofl.add(renderedEntries);
           }
+          StatView statView = getStatViews(renderableCycles).get(statSelection);
           return ViewState.create(
               lofl,
-              getSubtitle(cycleListViewState, getStatViews(renderableCycles)),
+              getSubtitle(cycleListViewState, statView),
               cycleListViewState.viewMode());
         })
         .subscribe(mViewStates);
+  }
+
+  void toggleStats() {
+    mStatToggles.onNext(true);
   }
 
   public enum Stat {
@@ -164,7 +173,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     return new StatView(summaryPrefix + getStatSummary(days), days);
   }
 
-  private String getSubtitle(CycleListViewModel.ViewState viewState, ImmutableMap<Stat, StatView> statViews) {
+  private String getSubtitle(CycleListViewModel.ViewState viewState, StatView statView) {
     switch (viewState.viewMode()) {
       case TRAINING:
         int entriesWithCorrectAnswer = 0;
@@ -188,10 +197,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
-        List<String> statSummaries = statViews.values().stream()
-            .map(sv -> sv.summary)
-            .collect(Collectors.toList());
-        return Joiner.on(", ").join(statSummaries);
+        return statView.summary;
     }
   }
 
