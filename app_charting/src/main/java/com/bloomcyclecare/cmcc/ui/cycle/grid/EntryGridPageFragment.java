@@ -9,6 +9,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.navigation.NavDirections;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
@@ -19,12 +26,6 @@ import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 
 import java.util.Optional;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.lifecycle.ViewModelProvider;
-import androidx.navigation.NavDirections;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import timber.log.Timber;
 
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
@@ -138,7 +139,7 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
   @Override
   public boolean onOptionsItemSelected(@NonNull MenuItem item) {
     if (item.getItemId() == R.id.action_toggle_stats) {
-      mViewModel.toggleStats();
+      cycleListViewModel().toggleStats();
     }
     return super.onOptionsItemSelected(item);
   }

@@ -2,6 +2,13 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 
 import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -14,31 +21,16 @@ import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
-import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
-import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
-import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.ReplaySubject;
 import io.reactivex.subjects.Subject;
@@ -67,11 +59,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
     }
-    Observable.combineLatest(
-        mCycleListViewModel.viewStateStream().toObservable().distinctUntilChanged(),
-        mStatToggles.scan(0, (a, b) -> a++)
-            .map(i -> Stat.values()[i % Stat.values().length]),
-        (cycleListViewState, statSelection) -> {
+    mCycleListViewModel.viewStateStream()
+        .toObservable()
+        .distinctUntilChanged()
+        .map(cycleListViewState -> {
           List<List<RenderedEntry>> lofl = new ArrayList<>(cycleListViewState.renderableCycles().size());
           List<CycleRenderer.RenderableCycle> renderableCycles = cycleListViewState.viewMode() == ViewMode.TRAINING
               ? cycleListViewState.renderableCycles()
@@ -84,10 +75,9 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             }
             lofl.add(renderedEntries);
           }
-          StatView statView = getStatViews(renderableCycles).get(statSelection);
           return ViewState.create(
               lofl,
-              getSubtitle(cycleListViewState, statView),
+              getSubtitle(cycleListViewState, cycleListViewState.subtitle()),
               cycleListViewState.viewMode());
         })
         .subscribe(mViewStates);
@@ -97,83 +87,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     mStatToggles.onNext(true);
   }
 
-  public enum Stat {
-    FLOW,
-    POC,
-    PEAK,
-    END
-  }
-
-  static class StatView {
-    public final String summary;
-    public final ImmutableSet<Integer> days;
-
-    StatView(String summary, ImmutableSet<Integer> days) {
-      this.summary = summary;
-      this.days = days;
-    }
-  }
-
-  private ImmutableMap<Stat, StatView> getStatViews(Collection<CycleRenderer.RenderableCycle> renderableCycles) {
-    int maxCycleLength = 35;
-    List<CycleRenderer.RenderableCycle> cycles = new ArrayList<>();
-    Timber.v("Getting stats for %d cycles", renderableCycles.size());
-    for (CycleRenderer.RenderableCycle cycle : renderableCycles.stream()
-        .sorted((c1, c2) -> c2.cycle().compareTo(c1.cycle()))
-        .collect(Collectors.toList())) {
-      if (cycle.entries().size() <= maxCycleLength) {
-        cycles.add(cycle);
-      } else {
-        Timber.v("Cycle starting %s had %d entries which exceeded the limit of %d", cycle.cycle().startDateStr, cycle.entries().size(), maxCycleLength);
-        break;
-      }
-    }
-    Timber.v("Only considering last %d cycles", cycles.size());
-    ImmutableMap.Builder<Stat, StatView> builder = ImmutableMap.builder();
-
-    builder.put(Stat.FLOW, getStatView(
-        "Typical flow length: ", cycles,
-        (c) -> c.stats().daysOfFlow() < c.entries().size(),  // Only look at cases where we are "past" the flow
-        (c) -> c.stats().daysOfFlow()));
-    //noinspection OptionalGetWithoutIsPresent
-    builder.put(Stat.POC, getStatView(
-        "Typical PoC: ", cycles,
-        (c) -> c.stats().daysBeforePoC().isPresent(),  // Only look at cases where we are "past" the PoC
-        (c) -> c.stats().daysBeforePoC().get() + 1));
-    //noinspection OptionalGetWithoutIsPresent
-    builder.put(Stat.PEAK, getStatView(
-        "Typical peak day: ", cycles,
-        (c) -> c.stats().daysPrePeak().isPresent(),  // Only consider cycles which have had a peak day
-        (c) -> c.stats().daysPrePeak().get() + 1));
-    builder.put(Stat.END, getStatView(
-        "Typical cycle length: ", cycles,
-        (c) -> c.cycle().endDate != null,  // Only consider cycles which have ended
-        (c) -> c.entries().size()));
-
-    return builder.build();
-  }
-
-  private String getStatSummary(Collection<Integer> days) {
-    SummaryStatistics stats = new SummaryStatistics();
-    days.forEach(stats::addValue);
-    long mean = Math.round(stats.getMean());
-    double ci95 = 1.960 * stats.getStandardDeviation() / Math.sqrt(stats.getN());
-    return String.format(Locale.getDefault(), "%d±%.1f", mean, ci95);
-  }
-
-  private StatView getStatView(
-      String summaryPrefix,
-      Collection<CycleRenderer.RenderableCycle> cycles,
-      Predicate<CycleRenderer.RenderableCycle> filterFn,
-      Function<CycleRenderer.RenderableCycle, Integer> mapperFn) {
-    ImmutableSet<Integer> days = ImmutableSet.copyOf(cycles.stream()
-        .filter(filterFn)
-        .map(mapperFn)
-        .collect(Collectors.toSet()));
-    return new StatView(summaryPrefix + getStatSummary(days), days);
-  }
-
-  private String getSubtitle(CycleListViewModel.ViewState viewState, StatView statView) {
+  private String getSubtitle(CycleListViewModel.ViewState viewState, String subtitle) {
     switch (viewState.viewMode()) {
       case TRAINING:
         int entriesWithCorrectAnswer = 0;
@@ -197,7 +111,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
-        return statView.summary;
+        return subtitle;
     }
   }
 
