@@ -19,8 +19,11 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.utils.HeatMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.joda.time.LocalDate;
@@ -44,6 +47,11 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
   private final Subject<Boolean> mStatToggles = ReplaySubject.create(100);
   private final RWStickerSelectionRepo mStickerSelectionRepo;
+
+
+  private static final String HEADER_COLOR_EMPTY = "#FFFFFF";
+  private static final List<String> HEADER_COLORS = ImmutableList.of(
+      "#CBDAF5", "#A9C2F0", "#759FE5", "#477AD1", "#1F59C4");
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
     super(application);
@@ -75,10 +83,15 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             }
             lofl.add(renderedEntries);
           }
+
+          HeatMap heatMap = cycleListViewState.statView()
+              .map(sv -> new HeatMap(sv.dayCounts, HEADER_COLOR_EMPTY, HEADER_COLORS))
+              .orElse(new HeatMap(ImmutableMap.of(), HEADER_COLOR_EMPTY, HEADER_COLORS));
           return ViewState.create(
               lofl,
               getSubtitle(cycleListViewState, cycleListViewState.subtitle()),
-              cycleListViewState.viewMode());
+              cycleListViewState.viewMode(),
+              heatMap);
         })
         .subscribe(mViewStates);
   }
@@ -133,9 +146,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     public abstract List<List<RenderedEntry>> renderedEntries();
     public abstract String subtitle();
     public abstract ViewMode viewMode();
+    public abstract HeatMap headerColors();
 
-    public static ViewState create(List<List<RenderedEntry>> renderedEntries, String subtitle, ViewMode viewMode) {
-      return new AutoValue_EntryGridPageViewModel_ViewState(renderedEntries, subtitle, viewMode);
+    public static ViewState create(List<List<RenderedEntry>> renderedEntries, String subtitle, ViewMode viewMode, HeatMap headerColors) {
+      return new AutoValue_EntryGridPageViewModel_ViewState(renderedEntries, subtitle, viewMode, headerColors);
     }
 
   }

@@ -148,9 +148,10 @@ public class CycleListViewModel extends AndroidViewModel {
           renderableCycleStream.map(CycleStatProvider::new),
           (renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections, showCycleStats, activeStat, statProvider) -> {
             String subtitle = "";
+            CycleStatProvider.StatView stat = null;
             if (showCycleStats) {
               Timber.v("Showing stat: %s", activeStat.name());
-              CycleStatProvider.StatView stat = statProvider.get(activeStat);
+              stat = statProvider.get(activeStat);
               if (stat == null) {
                 Timber.w("Failed to find stat for %s", activeStat.name());
               } else {
@@ -158,7 +159,7 @@ public class CycleListViewModel extends AndroidViewModel {
               }
             }
             return ViewState.create(
-                viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle);
+                viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle, stat);
           })
           .toObservable();
     }).subscribe(mViewStateSubject);
@@ -211,9 +212,10 @@ public class CycleListViewModel extends AndroidViewModel {
     public abstract boolean showCycleStats();
     public abstract Map<LocalDate, StickerSelection> stickerSelections();
     public abstract String subtitle();
+    public abstract Optional<CycleStatProvider.StatView> statView();
 
-    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, boolean monitorReadingsEnabled, boolean showMonitorReadings, boolean showCycleStats, Map<LocalDate, StickerSelection> stickerSelections, String subtitle) {
-      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle);
+    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, boolean monitorReadingsEnabled, boolean showMonitorReadings, boolean showCycleStats, Map<LocalDate, StickerSelection> stickerSelections, String subtitle, CycleStatProvider.StatView statView) {
+      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle, Optional.ofNullable(statView));
     }
   }
 

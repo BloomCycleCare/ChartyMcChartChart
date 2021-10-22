@@ -2,14 +2,15 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -37,11 +38,11 @@ public class CycleStatProvider {
 
   public static class StatView {
     public final String summary;
-    public final ImmutableSet<Integer> days;
+    public final ImmutableMap<Integer, Integer> dayCounts;
 
-    StatView(String summary, ImmutableSet<Integer> days) {
+    StatView(String summary, ImmutableMap<Integer, Integer> dayCounts) {
       this.summary = summary;
-      this.days = days;
+      this.dayCounts = dayCounts;
     }
   }
 
@@ -84,9 +85,13 @@ public class CycleStatProvider {
     return builder.build();
   }
 
-  private static String getStatSummary(Collection<Integer> days) {
+  private static String getStatSummary(Map<Integer, Integer> dayCounts) {
     SummaryStatistics stats = new SummaryStatistics();
-    days.forEach(stats::addValue);
+    dayCounts.entrySet().forEach(e -> {
+      for (int i=0; i<e.getValue(); i++) {
+        stats.addValue(e.getKey());
+      }
+    });
     long mean = Math.round(stats.getMean());
     double ci95 = 1.960 * stats.getStandardDeviation() / Math.sqrt(stats.getN());
     return String.format(Locale.getDefault(), "%d±%.1f", mean, ci95);
@@ -97,10 +102,17 @@ public class CycleStatProvider {
       Collection<CycleRenderer.RenderableCycle> cycles,
       Predicate<CycleRenderer.RenderableCycle> filterFn,
       Function<CycleRenderer.RenderableCycle, Integer> mapperFn) {
-    ImmutableSet<Integer> days = ImmutableSet.copyOf(cycles.stream()
+    Map<Integer, Integer> dayCounts = new HashMap<>();
+    for (Integer day : cycles.stream()
         .filter(filterFn)
         .map(mapperFn)
-        .collect(Collectors.toSet()));
-    return new StatView(summaryPrefix + getStatSummary(days), days);
+        .collect(Collectors.toList())) {
+      Integer count = dayCounts.get(day);
+      if (count == null) {
+        count = 0;
+      }
+      dayCounts.put(day, ++count);
+    }
+    return new StatView(summaryPrefix + getStatSummary(dayCounts), ImmutableMap.copyOf(dayCounts));
   }
 }
