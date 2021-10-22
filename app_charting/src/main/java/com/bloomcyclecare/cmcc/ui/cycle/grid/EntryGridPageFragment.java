@@ -26,6 +26,7 @@ import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.google.common.collect.ImmutableMap;
 
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
@@ -142,7 +143,14 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
           Timber.w("Could not find view for cell %d", i+1);
           continue;
         }
+        Integer value = viewState.headerColors().getValue(i);
         cellView.setBackgroundColor(Color.parseColor(viewState.headerColors().getColor(i)));
+        cellView.setOnClickListener(v -> {
+          if (value != null) {
+            String toastText = String.format(Locale.getDefault(), "%d cycles", value);
+            Toast.makeText(requireContext(), toastText, Toast.LENGTH_SHORT).show();
+          }
+        });
       }
     });
 

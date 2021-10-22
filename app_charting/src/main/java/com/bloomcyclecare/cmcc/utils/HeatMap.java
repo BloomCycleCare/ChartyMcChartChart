@@ -30,6 +30,10 @@ public class HeatMap {
     mValueRange = maxValue - mMinValue;
   }
 
+  public Integer getValue(int index) {
+    return mValues.get(index);
+  }
+
   public String getColor(int index) {
     Integer value = mValues.get(index);
     if (mColors.isEmpty() || value == null) {
