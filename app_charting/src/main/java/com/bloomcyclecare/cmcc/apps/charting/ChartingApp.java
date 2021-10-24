@@ -86,8 +86,7 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
   private MedicationRepoFactory mMedicationRepoFactory;
 
   private WorkerManager mWorkerManager;
-
-  private final ShowcaseManager mShowcaseManager = new ShowcaseManager();
+  private ShowcaseManager mShowcaseManager;
 
   public void registerDriveService(Optional<DriveServiceHelper> driveService) {
     mDriveSubject.onSuccess(driveService);
@@ -124,6 +123,8 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
         //.fallbackToDestructiveMigration()  // I'm sure this will bite me in the end...
         .build();
 
+    mShowcaseManager = new ShowcaseManager(getApplicationContext());
+
     mInstructionsRepoFactory = new InstructionsRepoFactory(db, FALLBACK_VIEW_MODE);
     mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(db, FALLBACK_VIEW_MODE);
     mExerciseRepoFactory = new ExerciseRepoFactory(FALLBACK_VIEW_MODE);
@@ -139,6 +140,9 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     });
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
+    if (BuildConfig.DEBUG) {
+      mPreferenceRepo.setDebugDefaults();
+    }
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 

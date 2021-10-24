@@ -2,6 +2,13 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 
 import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -12,8 +19,11 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.utils.HeatMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import org.joda.time.LocalDate;
@@ -22,15 +32,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
-import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.ReplaySubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
@@ -40,7 +45,13 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Optional<Exercise> mExercise;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
+  private final Subject<Boolean> mStatToggles = ReplaySubject.create(100);
   private final RWStickerSelectionRepo mStickerSelectionRepo;
+
+
+  private static final String HEADER_COLOR_EMPTY = "#FFFFFF";
+  private static final List<String> HEADER_COLORS = ImmutableList.of(
+      "#CBDAF5", "#A9C2F0", "#759FE5", "#477AD1", "#1F59C4");
 
   private EntryGridPageViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, Optional<Exercise.ID> exerciseID) {
     super(application);
@@ -58,6 +69,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     }
     mCycleListViewModel.viewStateStream()
         .toObservable()
+        .distinctUntilChanged()
         .map(cycleListViewState -> {
           List<List<RenderedEntry>> lofl = new ArrayList<>(cycleListViewState.renderableCycles().size());
           List<CycleRenderer.RenderableCycle> renderableCycles = cycleListViewState.viewMode() == ViewMode.TRAINING
@@ -71,15 +83,24 @@ public class EntryGridPageViewModel extends AndroidViewModel {
             }
             lofl.add(renderedEntries);
           }
+
+          HeatMap heatMap = cycleListViewState.statView()
+              .map(sv -> new HeatMap(sv.dayCounts, HEADER_COLOR_EMPTY, HEADER_COLORS))
+              .orElse(new HeatMap(ImmutableMap.of(), HEADER_COLOR_EMPTY, HEADER_COLORS));
           return ViewState.create(
               lofl,
-              getSubtitle(cycleListViewState),
-              cycleListViewState.viewMode());
+              getSubtitle(cycleListViewState, cycleListViewState.subtitle()),
+              cycleListViewState.viewMode(),
+              heatMap);
         })
         .subscribe(mViewStates);
   }
 
-  private String getSubtitle(CycleListViewModel.ViewState viewState) {
+  void toggleStats() {
+    mStatToggles.onNext(true);
+  }
+
+  private String getSubtitle(CycleListViewModel.ViewState viewState, String subtitle) {
     switch (viewState.viewMode()) {
       case TRAINING:
         int entriesWithCorrectAnswer = 0;
@@ -103,7 +124,7 @@ public class EntryGridPageViewModel extends AndroidViewModel {
         long percentComplete = 100 * entriesWithCorrectAnswer / entriesWithMarker;
         return String.format("%d%% complete", percentComplete);
       default:
-        return "";
+        return subtitle;
     }
   }
 
@@ -125,9 +146,10 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     public abstract List<List<RenderedEntry>> renderedEntries();
     public abstract String subtitle();
     public abstract ViewMode viewMode();
+    public abstract HeatMap headerColors();
 
-    public static ViewState create(List<List<RenderedEntry>> renderedEntries, String subtitle, ViewMode viewMode) {
-      return new AutoValue_EntryGridPageViewModel_ViewState(renderedEntries, subtitle, viewMode);
+    public static ViewState create(List<List<RenderedEntry>> renderedEntries, String subtitle, ViewMode viewMode, HeatMap headerColors) {
+      return new AutoValue_EntryGridPageViewModel_ViewState(renderedEntries, subtitle, viewMode, headerColors);
     }
 
   }

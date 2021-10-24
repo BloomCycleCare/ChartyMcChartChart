@@ -2,6 +2,12 @@ package com.bloomcyclecare.cmcc.backup.drive;
 
 import android.content.Context;
 
+import androidx.annotation.NonNull;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.RxWorker;
+import androidx.work.WorkerParameters;
+
+import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
@@ -15,10 +21,6 @@ import org.joda.time.LocalDate;
 
 import java.io.File;
 
-import androidx.annotation.NonNull;
-import androidx.work.OneTimeWorkRequest;
-import androidx.work.RxWorker;
-import androidx.work.WorkerParameters;
 import io.reactivex.Single;
 import timber.log.Timber;
 
@@ -26,7 +28,6 @@ import timber.log.Timber;
 public class BackupWorker extends RxWorker {
 
   public static final String BACKUP_DIRECTORY_NAME_IN_DRIVE = "My Charts";
-  public static final String BACKUP_FILE_NAME_IN_DRIVE = "cmcc_backup.json";
   private static final String LOCAL_BACKUP_FILE_NAME = "local_cmcc_backup.json";
 
   private final Context mContext;
@@ -41,6 +42,10 @@ public class BackupWorker extends RxWorker {
     super(context, workerParams);
     mApp = ChartingApp.getInstance();
     mContext = context;
+  }
+
+  public static String filename() {
+    return BuildConfig.DEBUG ? "cmcc_debug_backup.json" : "cmcc_backup.json";
   }
 
   @NonNull
@@ -65,11 +70,11 @@ public class BackupWorker extends RxWorker {
                     Timber.v("Uploading file to Drive");
                     com.google.api.services.drive.model.File driveFile =
                         new com.google.api.services.drive.model.File();
-                    driveFile.setName(BACKUP_FILE_NAME_IN_DRIVE);
+                    driveFile.setName(filename());
                     driveFile.setProperties(appState.properties());
                     FileContent mediaContent = new FileContent("application/json", file);
                     return driveService
-                        .deleteFileFromFolder(folder, BACKUP_FILE_NAME_IN_DRIVE)
+                        .deleteFileFromFolder(folder, filename())
                         .andThen(Single.defer(() -> driveService.addFileToFolder(folder, driveFile, mediaContent)));
                   })
                   .doOnSuccess(driveFile -> file.delete())

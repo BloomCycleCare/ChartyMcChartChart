@@ -1,48 +1,62 @@
 package com.bloomcyclecare.cmcc.ui.restore;
 
+import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.util.Pair;
+
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateImporter;
 import com.bloomcyclecare.cmcc.backup.AppStateParser;
 import com.bloomcyclecare.cmcc.backup.drive.BackupWorker;
 import com.bloomcyclecare.cmcc.backup.drive.DriveServiceHelper;
+import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
 import com.google.api.services.drive.model.File;
 import com.google.auto.value.AutoValue;
 import com.google.common.collect.ImmutableList;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.util.Optional;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
-public class RestoreFromDriveViewModel extends AndroidViewModel {
+public class RestoreFromDriveViewModel extends AndroidViewModel implements Disposable {
 
   private final Subject<ViewState> mViewModelSubject = BehaviorSubject.create();
   private final Subject<Optional<GoogleSignInAccount>> mAccountSubject = BehaviorSubject.create();
 
-  private final Context mContext;
+  @SuppressLint("StaticFieldLeak") // Disposed
+  private Context mContext;
+  private final ShowcaseManager mShowcaseManager;
+  private final CompositeDisposable mDisposables = new CompositeDisposable();
 
-  public RestoreFromDriveViewModel(@NonNull Application application) {
+  public RestoreFromDriveViewModel(@NonNull Application application, Activity activity) {
     super(application);
-    mContext = application.getApplicationContext();
+    mContext = activity;
+    mShowcaseManager = ChartingApp.cast(application).showcaseManager();
 
     Observable<Pair<Optional<File>, Boolean>> backupFile = mAccountSubject.distinctUntilChanged()
         .flatMapSingle(account -> {
@@ -52,11 +66,11 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
           }
           Timber.d(
               "Checking for backup file %s in directory %s",
-              BackupWorker.BACKUP_FILE_NAME_IN_DRIVE, BackupWorker.BACKUP_DIRECTORY_NAME_IN_DRIVE);
+              BackupWorker.filename(), BackupWorker.BACKUP_DIRECTORY_NAME_IN_DRIVE);
           DriveServiceHelper driveService = DriveServiceHelper.forAccount(account.get(), mContext);
           return driveService
               .getFolder(BackupWorker.BACKUP_DIRECTORY_NAME_IN_DRIVE)
-              .flatMap(folder -> driveService.getFilesInFolder(folder, BackupWorker.BACKUP_FILE_NAME_IN_DRIVE))
+              .flatMap(folder -> driveService.getFilesInFolder(folder, BackupWorker.filename()))
               .switchIfEmpty(Single.just(ImmutableList.of()))
               .map(files -> {
                 Timber.v("Found %d files", files.size());
@@ -75,12 +89,23 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
         .subscribe(mViewModelSubject);
   }
 
+  @Override
+  public void dispose() {
+    mContext = null;
+    mDisposables.dispose();
+  }
+
+  @Override
+  public boolean isDisposed() {
+    return mContext == null && mDisposables.isDisposed();
+  }
+
   public void checkAccount() {
     Timber.d("Checking for account");
-    GoogleAuthHelper.googleAccount(mContext)
+    mDisposables.add(GoogleAuthHelper.googleAccount(mContext)
         .map(Optional::of)
         .switchIfEmpty(Single.just(Optional.empty()))
-        .subscribe(account -> mAccountSubject.onNext(account));
+        .subscribe(mAccountSubject::onNext));
   }
 
   public Single<Intent> switchAccount() {
@@ -107,6 +132,11 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
             AppStateImporter importer = new AppStateImporter(ChartingApp.getInstance());
             return importer.importAppState(appState);
           })
+          .doOnComplete(() -> {
+            Timber.d("Preempting all showcase prompts");
+            mShowcaseManager.preemptAllMatching(p -> true);
+          })
+          .doOnError(Timber::e)
           .subscribeOn(Schedulers.io());
     });
   }
@@ -126,5 +156,20 @@ public class RestoreFromDriveViewModel extends AndroidViewModel {
       return new AutoValue_RestoreFromDriveViewModel_ViewState(account, backupFile, noneFound);
     }
 
+  }
+
+  public static class Factory implements ViewModelProvider.Factory {
+    private final Activity activity;
+
+    public Factory(Activity activity) {
+      this.activity = activity;
+    }
+
+    @NonNull
+    @NotNull
+    @Override
+    public <T extends ViewModel> T create(@NonNull @NotNull Class<T> modelClass) {
+      return (T) new RestoreFromDriveViewModel(activity.getApplication(), activity);
+    }
   }
 }

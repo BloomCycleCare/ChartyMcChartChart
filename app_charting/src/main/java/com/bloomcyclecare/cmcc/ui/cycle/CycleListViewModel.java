@@ -3,7 +3,12 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Intent;
-import android.net.Uri;
+
+import androidx.annotation.NonNull;
+import androidx.fragment.app.Fragment;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
 
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
@@ -13,30 +18,17 @@ import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
-import com.bloomcyclecare.cmcc.data.utils.GsonUtil;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
 import com.google.auto.value.AutoValue;
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
 
 import org.joda.time.LocalDate;
 
-import java.io.File;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import androidx.annotation.NonNull;
-import androidx.core.app.ShareCompat;
-import androidx.core.content.FileProvider;
-import androidx.fragment.app.Fragment;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
@@ -52,9 +44,13 @@ public class CycleListViewModel extends AndroidViewModel {
 
   private final Subject<RWStickerSelectionRepo> mStickerSelectionRepoSubject = BehaviorSubject.create();
   private final Subject<ViewState> mViewStateSubject = BehaviorSubject.create();
-  private final Subject<Boolean> mToggles = PublishSubject.create();
+  private final Subject<Boolean> mViewModeToggles = PublishSubject.create();
   private final Subject<Boolean> mShowMonitorReadingsToggles = BehaviorSubject.create();
   private final Subject<Boolean> mShowMonitorReadings = BehaviorSubject.create();
+  private final Subject<Boolean> mShowCycleStats = BehaviorSubject.createDefault(false);
+
+  private final Subject<Boolean> mStatToggles = PublishSubject.create();
+  private final Subject<CycleStatProvider.Stat> mActiveStat = BehaviorSubject.create();
 
   private final Activity mActivity;
   private final ChartingApp mApplication;
@@ -72,7 +68,7 @@ public class CycleListViewModel extends AndroidViewModel {
     mApplication = ChartingApp.cast(application);
     mActivity = activity;
 
-    Observable<ViewMode> viewModeStream = mToggles
+    Observable<ViewMode> viewModeStream = mViewModeToggles
         .scan(initialViewMode, (previousVideMode, toggle) -> {
           if (previousVideMode == ViewMode.CHARTING) {
             return ViewMode.DEMO;
@@ -82,6 +78,10 @@ public class CycleListViewModel extends AndroidViewModel {
         })
         .doOnNext(vm -> Timber.d("Switching to ViewMode = %s", vm.name()))
         .cache();
+
+    mStatToggles.scan(0, (a, b) -> ++a)
+        .map(i -> CycleStatProvider.Stat.values()[i % CycleStatProvider.Stat.values().length])
+        .subscribe(mActiveStat);
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
@@ -132,7 +132,9 @@ public class CycleListViewModel extends AndroidViewModel {
               .sequential()
               .toList()
               .toFlowable()
-              .map(RxUtil::combineLatest))));
+              .map(RxUtil::combineLatest))))
+              .distinctUntilChanged()
+              .cache();
 
       return Flowable.combineLatest(
           renderableCycleStream,
@@ -141,8 +143,24 @@ public class CycleListViewModel extends AndroidViewModel {
               .map(PreferenceRepo.PreferenceSummary::clearblueMachineMeasurementEnabled),
           showMonitorReadings(),
           stickerSelectionStream,
-          (renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections) -> ViewState.create(
-              viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections))
+          mShowCycleStats.toFlowable(BackpressureStrategy.BUFFER),
+          mActiveStat.toFlowable(BackpressureStrategy.BUFFER),
+          renderableCycleStream.map(CycleStatProvider::new),
+          (renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections, showCycleStats, activeStat, statProvider) -> {
+            String subtitle = "";
+            CycleStatProvider.StatView stat = null;
+            if (showCycleStats) {
+              Timber.v("Showing stat: %s", activeStat.name());
+              stat = statProvider.get(activeStat);
+              if (stat == null) {
+                Timber.w("Failed to find stat for %s", activeStat.name());
+              } else {
+                subtitle = stat.summary;
+              }
+            }
+            return ViewState.create(
+                viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle, stat);
+          })
           .toObservable();
     }).subscribe(mViewStateSubject);
   }
@@ -163,6 +181,10 @@ public class CycleListViewModel extends AndroidViewModel {
     return mShowMonitorReadings.toFlowable(BackpressureStrategy.BUFFER);
   }
 
+  public void showCycleStats(boolean value) {
+    mShowCycleStats.onNext(value);
+  }
+
   public Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
     return mStickerSelectionRepoSubject
         .flatMapCompletable(repo -> repo.recordSelection(selection, date));
@@ -175,6 +197,11 @@ public class CycleListViewModel extends AndroidViewModel {
         mApplication.entryRepo(ViewMode.CHARTING).deleteAll());
   }
 
+  public void toggleStats() {
+    Timber.v("Toggling stat");
+    mStatToggles.onNext(true);
+  }
+
   @AutoValue
   public static abstract class ViewState {
     public abstract ViewMode viewMode();
@@ -182,12 +209,14 @@ public class CycleListViewModel extends AndroidViewModel {
     public abstract boolean autoStickeringEnabled();
     public abstract boolean monitorReadingsEnabled();
     public abstract boolean showMonitorReadings();
+    public abstract boolean showCycleStats();
     public abstract Map<LocalDate, StickerSelection> stickerSelections();
+    public abstract String subtitle();
+    public abstract Optional<CycleStatProvider.StatView> statView();
 
-    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, boolean monitorReadingsEnabled, boolean showMonitorReadings, Map<LocalDate, StickerSelection> stickerSelections) {
-      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections);
+    public static ViewState create(ViewMode viewMode, List<CycleRenderer.RenderableCycle> renderableCycles, boolean autoStickeringEnabled, boolean monitorReadingsEnabled, boolean showMonitorReadings, boolean showCycleStats, Map<LocalDate, StickerSelection> stickerSelections, String subtitle, CycleStatProvider.StatView statView) {
+      return new AutoValue_CycleListViewModel_ViewState(viewMode, renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, showCycleStats, stickerSelections, subtitle, Optional.ofNullable(statView));
     }
-
   }
 
   public void toggleShowMonitorReadings() {
@@ -195,7 +224,7 @@ public class CycleListViewModel extends AndroidViewModel {
   }
 
   public void toggleViewMode() {
-    mToggles.onNext(true);
+    mViewModeToggles.onNext(true);
   }
 
   Single<Intent> export() {
