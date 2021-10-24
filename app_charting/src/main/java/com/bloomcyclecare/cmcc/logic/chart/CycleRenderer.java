@@ -390,6 +390,7 @@ public class CycleRenderer {
           .cycleStartDate(mCycle.startDate)
           .isPregnancy(mCycle.isPregnancy())
           .daysWithAnObservation(daysWithAnObservation.size())
+          .daysOfFlow(daysOfFlow.size())
           .mcs(MccScorer.getScore(mEntries, peakDays.isEmpty() ? Optional.empty() : Optional.of(peakDays.last())));
       if (!peakDays.isEmpty()) {
         statsBuilder.daysPrePeak(Optional.of(Days.daysBetween(mCycle.startDate, peakDays.last()).getDays()));
@@ -397,6 +398,10 @@ public class CycleRenderer {
           statsBuilder.daysPostPeak(Optional.of(Days.daysBetween(peakDays.last(), mCycle.endDate).getDays()));
         }
       }
+
+      effectivePointOfChange(pointsOfChangeToward, pointsOfChangeAway)
+          .map(pointOfChange -> Days.daysBetween(mCycle.startDate, pointOfChange).getDays())
+          .ifPresent(daysBeforePoC -> statsBuilder.daysBeforePoC(Optional.of(daysBeforePoC)));
 
       return RenderableCycle.builder()
           .cycle(mCycle)
@@ -606,10 +611,12 @@ public class CycleRenderer {
   public abstract static class CycleStats implements Comparable<CycleStats> {
     public abstract LocalDate cycleStartDate();
     public abstract Integer daysWithAnObservation();
+    public abstract Integer daysOfFlow();
     public abstract boolean isPregnancy ();
     public abstract Optional<Float> mcs();
     public abstract Optional<Integer> daysPrePeak();
     public abstract Optional<Integer> daysPostPeak();
+    public abstract Optional<Integer> daysBeforePoC();
 
     @Override
     public int compareTo(CycleStats other) {
@@ -622,7 +629,9 @@ public class CycleRenderer {
           .isPregnancy(false)
           .daysWithAnObservation(0)
           .daysPrePeak(Optional.empty())
-          .daysPostPeak(Optional.empty());
+          .daysPostPeak(Optional.empty())
+          .daysBeforePoC(Optional.empty())
+          .daysOfFlow(0);
     }
 
     @AutoValue.Builder
@@ -635,9 +644,13 @@ public class CycleRenderer {
 
       public abstract Builder mcs(Optional<Float> mcs);
 
-      public abstract Builder daysPrePeak(Optional<Integer> daysPrePeak);
+      public abstract Builder daysPrePeak(Optional<Integer> days);
 
-      public abstract Builder daysPostPeak(Optional<Integer> daysPostPeak);
+      public abstract Builder daysPostPeak(Optional<Integer> days);
+
+      public abstract Builder daysBeforePoC(Optional<Integer> days);
+
+      public abstract Builder daysOfFlow(Integer daysOfFlow);
 
       public abstract CycleStats build();
     }

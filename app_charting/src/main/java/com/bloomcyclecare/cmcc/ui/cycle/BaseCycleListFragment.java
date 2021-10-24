@@ -72,21 +72,21 @@ public abstract class BaseCycleListFragment extends Fragment {
 
   private static void pruneMenuOptions(@NonNull Menu menu, @NonNull CycleListViewModel.ViewState viewState) {
     ViewMode viewMode = viewState.viewMode();
-    boolean runningDebugBuild = BuildConfig.BUILD_TYPE.equals("debug");
     if (viewMode != ViewMode.CHARTING) {
       menu.findItem(R.id.action_export).setVisible(false);
       menu.findItem(R.id.action_trigger_sync).setVisible(false);
       menu.findItem(R.id.action_show_monitor_readings).setVisible(false);
     } else {
       menu.findItem(R.id.action_export).setVisible(true);
-      menu.findItem(R.id.action_trigger_sync).setVisible(runningDebugBuild);
+      menu.findItem(R.id.action_trigger_sync).setVisible(BuildConfig.DEBUG);
       menu.findItem(R.id.action_show_monitor_readings).setVisible(viewState.monitorReadingsEnabled());
     }
     menu.findItem(R.id.action_print).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_layout).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_demo).setVisible(viewMode != ViewMode.TRAINING);
     menu.findItem(R.id.action_toggle_demo).setChecked(viewMode == ViewMode.DEMO);
-    menu.findItem(R.id.action_clear_data).setVisible(runningDebugBuild);
+    menu.findItem(R.id.action_clear_data).setVisible(BuildConfig.DEBUG);
+    menu.findItem(R.id.action_toggle_stats).setVisible(viewState.showCycleStats());
   }
 
   @Override
