@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.ui.cycle.grid;
 import android.annotation.SuppressLint;
 import android.content.pm.ActivityInfo;
 import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -12,6 +13,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.graphics.drawable.DrawableCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavDirections;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -143,8 +145,10 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
           Timber.w("Could not find view for cell %d", i+1);
           continue;
         }
+        int backgroundColor = Color.parseColor(viewState.headerColors().getColor(i));
+        DrawableCompat.setTintMode(cellView.getBackground(), PorterDuff.Mode.DST_OVER);
+        DrawableCompat.setTint(cellView.getBackground(), backgroundColor);
         Integer value = viewState.headerColors().getValue(i);
-        cellView.setBackgroundColor(Color.parseColor(viewState.headerColors().getColor(i)));
         cellView.setOnClickListener(v -> {
           if (value != null) {
             String toastText = String.format(Locale.getDefault(), "%d cycles", value);
