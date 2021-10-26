@@ -6,7 +6,7 @@ import android.os.Parcelable;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
@@ -21,7 +21,7 @@ import java.util.Map;
  * Created by parkeroth on 9/18/17.
  */
 @Entity
-public class WellnessEntry extends BaseEntry implements Parcelable {
+public class WellnessEntry extends Entry implements Parcelable {
 
   public BoolMapping wellnessItems;
 
@@ -36,7 +36,7 @@ public class WellnessEntry extends BaseEntry implements Parcelable {
   }
 
   @Ignore
-  public WellnessEntry(BaseEntry entry, Map<String, Boolean> wellnessItems) {
+  public WellnessEntry(Entry entry, Map<String, Boolean> wellnessItems) {
     super(entry);
     this.wellnessItems = new BoolMapping(wellnessItems);
   }

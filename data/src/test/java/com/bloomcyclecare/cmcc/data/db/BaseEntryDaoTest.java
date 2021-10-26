@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.data.db;
 import androidx.arch.core.util.Function;
 import androidx.sqlite.db.SupportSQLiteQuery;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -19,7 +19,7 @@ import static com.google.common.truth.Truth.assertThat;
 
 public class BaseEntryDaoTest {
 
-  private static class TestEntry extends BaseEntry {
+  private static class TestEntry extends Entry {
 
     @Override
     public List<String> getSummaryLines() {
@@ -27,7 +27,7 @@ public class BaseEntryDaoTest {
     }
   }
 
-  private static abstract class StubEntryDao<E extends BaseEntry> extends BaseEntryDao<E> {
+  private static abstract class StubEntryDao<E extends Entry> extends BaseEntryDao<E> {
 
     private final E e;
 

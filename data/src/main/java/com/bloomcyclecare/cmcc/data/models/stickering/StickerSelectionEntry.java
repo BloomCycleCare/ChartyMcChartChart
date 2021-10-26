@@ -2,7 +2,7 @@ package com.bloomcyclecare.cmcc.data.models.stickering;
 
 import androidx.room.Entity;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Entity
-public class StickerSelectionEntry extends BaseEntry {
+public class StickerSelectionEntry extends Entry {
 
   public StickerSelection selection;
 
@@ -19,7 +19,7 @@ public class StickerSelectionEntry extends BaseEntry {
     super();
   }
 
-  public StickerSelectionEntry(BaseEntry entry, StickerSelection selection) {
+  public StickerSelectionEntry(Entry entry, StickerSelection selection) {
     super(entry);
     this.selection = selection;
   }

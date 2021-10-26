@@ -3,10 +3,8 @@ package com.bloomcyclecare.cmcc.data.models.charting;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
-import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -26,20 +24,19 @@ import java.util.List;
  */
 @Parcel
 public class ChartEntry implements Comparable<ChartEntry> {
-  public BaseEntry baseEntry;
+  public LocalDate entryDate;
   public ObservationEntry observationEntry;
   public WellnessEntry wellnessEntry;
   public SymptomEntry symptomEntry;
   public MeasurementEntry measurementEntry;
   public BreastfeedingEntry breastfeedingEntry;
-  public MedicationEntry medicationEntry;
   @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
 
   public ChartEntry() {}
 
-  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, MeasurementEntry measurementEntry, BreastfeedingEntry breastfeedingEntry, MedicationEntry medicationEntry, @Nullable StickerSelection stickerSelection) {
+  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, MeasurementEntry measurementEntry, BreastfeedingEntry breastfeedingEntry, @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
         observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
@@ -49,12 +46,11 @@ public class ChartEntry implements Comparable<ChartEntry> {
     this.measurementEntry = measurementEntry;
     this.breastfeedingEntry = breastfeedingEntry;
     this.stickerSelection = stickerSelection;
-    this.medicationEntry = medicationEntry;
   }
 
   public static ChartEntry emptyEntry(LocalDate entryDate) {
     return new ChartEntry(
-        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), MeasurementEntry.emptyEntry(entryDate), BreastfeedingEntry.emptyEntry(entryDate), MedicationEntry.emptyEntry(entryDate), null);
+        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), MeasurementEntry.emptyEntry(entryDate), BreastfeedingEntry.emptyEntry(entryDate), null);
   }
 
   @NonNull

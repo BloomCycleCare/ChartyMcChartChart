@@ -13,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -139,10 +140,11 @@ public abstract class BaseEntryDao<E extends Entry> {
 
   public final Completable insert(E entry) {
     DateTime now = DateTime.now();
-    if (entry.timeCreated() == null) {
-      entry.setTimeCreated(now);
+    if (entry.mTimeCreated == null) {
+      entry.mTimeCreated = now;
     }
-    entry.setTimeUpdated(now);
+    entry.mTimeUpdated = now;
+    entry.mTimesUpdated = ++entry.mTimesUpdated;
     return insertInternal(entry);
   }
 
@@ -169,13 +171,14 @@ public abstract class BaseEntryDao<E extends Entry> {
   abstract Completable updateInternal(E entry);
 
   public final Completable update(E entry) {
-    if (entry.timeCreated() == null) {
+    if (entry.mTimeCreated == null) {
       return Completable.error(new IllegalArgumentException("timeCreated == null"));
     }
-    if (entry.timesUpdated() <= 0) {
+    if (entry.mTimesUpdated <= 0) {
       return Completable.error(new IllegalArgumentException("timesUpdated <= 0"));
     }
-    entry.setTimeUpdated(DateTime.now());
+    entry.mTimeUpdated = DateTime.now();
+    entry.mTimesUpdated = ++entry.mTimesUpdated;
     return updateInternal(entry);
   }
 
@@ -186,7 +189,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      BaseMedicationEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
@@ -197,7 +200,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      BaseMedicationEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
 
@@ -208,7 +211,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
-      BaseMedicationEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

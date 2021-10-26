@@ -3,7 +3,7 @@ package com.bloomcyclecare.cmcc.data.models.measurement;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
@@ -14,14 +14,14 @@ import java.util.Objects;
 
 @Entity
 @Parcel
-public class MeasurementEntry extends BaseEntry {
+public class MeasurementEntry extends Entry {
 
   public MonitorReading monitorReading;
   public LHTestResult lhTestResult;
 
   @Ignore
   public MeasurementEntry(
-      BaseEntry entry, MonitorReading monitorReading, LHTestResult lhTestResult) {
+      Entry entry, MonitorReading monitorReading, LHTestResult lhTestResult) {
     super(entry);
 
     this.monitorReading = monitorReading;

@@ -4,7 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Duration;
@@ -15,14 +15,14 @@ import java.util.List;
 
 @Parcel
 @Entity
-public class BreastfeedingEntry extends BaseEntry {
+public class BreastfeedingEntry extends Entry {
 
   public int numDayFeedings;
   public int numNightFeedings;
   @Nullable
   public Duration maxGapBetweenFeedings;
 
-  public BreastfeedingEntry(@NonNull BaseEntry entry, int numDayFeedings, int numNightFeedings, @Nullable Duration maxGapBetweenFeedings) {
+  public BreastfeedingEntry(@NonNull Entry entry, int numDayFeedings, int numNightFeedings, @Nullable Duration maxGapBetweenFeedings) {
     super(entry);
     this.numDayFeedings = numDayFeedings;
     this.numNightFeedings = numNightFeedings;

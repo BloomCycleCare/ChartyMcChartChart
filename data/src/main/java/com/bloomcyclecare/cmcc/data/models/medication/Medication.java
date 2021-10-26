@@ -11,7 +11,7 @@ import java.util.Objects;
 @Entity
 public class Medication {
   @PrimaryKey(autoGenerate = true)
-  public long medicationId;
+  public long id;
   public boolean active;
   public String name = "";
   public String description = "";
@@ -21,7 +21,7 @@ public class Medication {
   public Medication() {}
 
   public Medication(Medication that) {
-    this.medicationId = that.medicationId;
+    this.id = that.id;
     this.active = that.active;
     this.name = that.name;
     this.description = that.description;
@@ -34,7 +34,7 @@ public class Medication {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     Medication that = (Medication) o;
-    return medicationId == that.medicationId &&
+    return id == that.id &&
         active == that.active &&
         name.equals(that.name) &&
         description.equals(that.description) &&
@@ -44,6 +44,6 @@ public class Medication {
 
   @Override
   public int hashCode() {
-    return Objects.hash(medicationId, name, description, dosage, frequency, active);
+    return Objects.hash(id, name, description, dosage, frequency, active);
   }
 }

@@ -13,6 +13,7 @@ import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
@@ -38,7 +39,7 @@ import java.util.List;
         BreastfeedingEntry.class,
         Pregnancy.class,
         Medication.class,
-        BaseMedicationEntry.class,
+        MedicationEntry.class,
         MedicationRef.class,
     },
     version = 23)

@@ -7,7 +7,6 @@ import androidx.core.util.Pair;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.BreastfeedingEntryDao;
 import com.bloomcyclecare.cmcc.data.db.MeasurementEntryDao;
-import com.bloomcyclecare.cmcc.data.db.MedicationEntryDao;
 import com.bloomcyclecare.cmcc.data.db.ObservationEntryDao;
 import com.bloomcyclecare.cmcc.data.db.SymptomEntryDao;
 import com.bloomcyclecare.cmcc.data.db.WellnessEntryDao;
@@ -42,8 +41,6 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
   private final SymptomEntryDao symptomEntryDao;
   private final MeasurementEntryDao measurementEntryDao;
   private final BreastfeedingEntryDao breastfeedingEntryDao;
-  private final MedicationEntryDao medicationEntryDao;
-
   private final RWStickerSelectionRepo stickerSelectionRepo;
   private final AtomicBoolean batchUpdate = new AtomicBoolean();
 
@@ -53,7 +50,6 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
     symptomEntryDao = db.symptomEntryDao();
     measurementEntryDao = db.measurementEntryDao();
     breastfeedingEntryDao = db.breastfeedingEntryDao();
-    medicationEntryDao = db.medicationEntryDao();
 
     this.stickerSelectionRepo = stickerSelectionRepo;
   }
@@ -99,13 +95,12 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         symptomEntryDao.getAllEntries(),
         measurementEntryDao.getAllEntries(),
         breastfeedingEntryDao.getAllEntries(),
-        medicationEntryDao.getAllEntries(),
         stickerSelectionRepo.getSelections().firstOrError(),
-        (observationEntries, wellnessEntries, symptomEntries, measurementEntries, breastfeedingEntries, medicationEntries, stickerSelections) -> {
+        (observationEntries, wellnessEntries, symptomEntries, measurementEntries, breastfeedingEntries, stickerSelections) -> {
           List<ChartEntry> out = new ArrayList<>(observationEntries.size());
           for (ObservationEntry observationEntry : observationEntries.values()) {
             LocalDate date = observationEntry.getDate();
-            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date), measurementEntries.get(date), breastfeedingEntries.get(date), medicationEntries.get(date), stickerSelections.get(date)));
+            out.add(new ChartEntry(date, observationEntry, wellnessEntries.get(date), symptomEntries.get(date), measurementEntries.get(date), breastfeedingEntries.get(date), stickerSelections.get(date)));
           }
           return out;
         });
@@ -156,14 +151,12 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             .doOnNext(n -> Timber.v("Got new measurement stream for cycle starting %s", start)),
         breastfeedingEntryDao.getIndexedStream(start, endInclusive)
             .doOnNext(n -> Timber.v("Got new breastfeeding stream for cycle starting %s", start)),
-        medicationEntryDao.getIndexedStream(start, endInclusive)
-            .doOnNext(n -> Timber.v("Got new medication stream for cycle starting %s", start)),
         stickerSelectionRepo.getSelections(Range.create(start, endInclusive))
             .doOnNext(n -> Timber.v("Got new selections for cycle starting %s", start)),
-        (observationStream, wellnessStream, symptomStream, measurementStream, breastfeedingStream, medicationStream, stickerSelections) -> {
+        (observationStream, wellnessStream, symptomStream, measurementStream, breastfeedingStream, stickerSelections) -> {
           List<ChartEntry> out = new ArrayList<>();
           for (LocalDate d : DateUtil.daysBetween(start, endInclusive, false)) {
-            out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), measurementStream.get(d), breastfeedingStream.get(d), medicationStream.get(d), stickerSelections.get(d)));
+            out.add(new ChartEntry(d, observationStream.get(d), wellnessStream.get(d), symptomStream.get(d), measurementStream.get(d), breastfeedingStream.get(d), stickerSelections.get(d)));
           }
           return out;
         });
@@ -215,8 +208,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
             symptomEntryDao.getStream(entryDate),
             measurementEntryDao.getStream(entryDate),
             breastfeedingEntryDao.getStream(entryDate),
-            medicationEntryDao.getStream(entryDate),
             stickerSelectionRepo.getSelectionStream(entryDate),
-            (d, o, w, s, m, b, med, ss) -> new ChartEntry(d, o, w, s, m, b, med, ss.orElse(null)));
+            (d, o, w, s, m, b, ss) -> new ChartEntry(d, o, w, s, m, b, ss.orElse(null)));
   }
 }

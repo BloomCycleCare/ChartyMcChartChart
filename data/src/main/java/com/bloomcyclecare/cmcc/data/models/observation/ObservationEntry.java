@@ -4,7 +4,7 @@ import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.Ignore;
 
-import com.bloomcyclecare.cmcc.data.models.BaseEntry;
+import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
@@ -21,7 +21,7 @@ import java.util.Optional;
  */
 @Entity
 @Parcel
-public class ObservationEntry extends BaseEntry implements Copyable<ObservationEntry> {
+public class ObservationEntry extends Entry implements Copyable<ObservationEntry> {
 
   @Nullable public Observation observation;
   public boolean peakDay;
@@ -40,7 +40,7 @@ public class ObservationEntry extends BaseEntry implements Copyable<ObservationE
 
   @Ignore
   public ObservationEntry(
-      BaseEntry entry,
+      Entry entry,
       @Nullable Observation observation,
       boolean peakDay,
       boolean intercourse,
