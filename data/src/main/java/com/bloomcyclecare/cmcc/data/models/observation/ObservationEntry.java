@@ -1,5 +1,9 @@
 package com.bloomcyclecare.cmcc.data.models.observation;
 
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.google.common.base.Joiner;
@@ -11,10 +15,6 @@ import org.parceler.Parcel;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
-import androidx.room.Ignore;
 
 /**
  * Created by parkeroth on 4/22/17.

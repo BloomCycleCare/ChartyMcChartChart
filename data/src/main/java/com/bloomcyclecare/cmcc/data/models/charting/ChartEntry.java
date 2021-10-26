@@ -1,5 +1,8 @@
 package com.bloomcyclecare.cmcc.data.models.charting;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
@@ -14,9 +17,6 @@ import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 
 
 /**

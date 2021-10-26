@@ -2,6 +2,11 @@ package com.bloomcyclecare.cmcc.data.models;
 
 import android.os.Parcel;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.ColumnInfo;
+import androidx.room.PrimaryKey;
+
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 
 import org.joda.time.DateTime;
@@ -9,11 +14,6 @@ import org.joda.time.LocalDate;
 
 import java.util.List;
 import java.util.Objects;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.room.ColumnInfo;
-import androidx.room.PrimaryKey;
 
 /**
  * Created by parkeroth on 9/20/17.

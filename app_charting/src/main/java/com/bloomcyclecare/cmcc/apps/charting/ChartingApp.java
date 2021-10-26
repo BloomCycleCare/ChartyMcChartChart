@@ -30,6 +30,8 @@ import com.bloomcyclecare.cmcc.data.repos.exercise.ExerciseRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.exercise.RWExerciseRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.InstructionsRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
+import com.bloomcyclecare.cmcc.data.repos.medication.MedicationRepoFactory;
+import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.PregnancyRepoFactory;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
@@ -81,6 +83,7 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
   private PreferenceRepo mPreferenceRepo;
   private StickerSelectionRepoFactory mStickerSelectionRepoFactory;
   private ExerciseRepoFactory mExerciseRepoFactory;
+  private MedicationRepoFactory mMedicationRepoFactory;
 
   private WorkerManager mWorkerManager;
   private ShowcaseManager mShowcaseManager;
@@ -125,6 +128,7 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     mInstructionsRepoFactory = new InstructionsRepoFactory(db, FALLBACK_VIEW_MODE);
     mStickerSelectionRepoFactory = new StickerSelectionRepoFactory(db, FALLBACK_VIEW_MODE);
     mExerciseRepoFactory = new ExerciseRepoFactory(FALLBACK_VIEW_MODE);
+    mMedicationRepoFactory = new MedicationRepoFactory(db, FALLBACK_VIEW_MODE);
     mCycleRepoFactory = new CycleRepoFactory(db, FALLBACK_VIEW_MODE);
     mChartEntryRepoFactory = new ChartEntryRepoFactory(db, mStickerSelectionRepoFactory, FALLBACK_VIEW_MODE, (observation) -> {
       try {
@@ -239,6 +243,11 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
   @Override
   public RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise) {
     return mStickerSelectionRepoFactory.forExercise(exercise);
+  }
+
+  @Override
+  public RWMedicationRepo medicationRepo(ViewMode viewMode) {
+    return mMedicationRepoFactory.forViewMode(viewMode);
   }
 
   @Override

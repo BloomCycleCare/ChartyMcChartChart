@@ -1,8 +1,19 @@
 package com.bloomcyclecare.cmcc.data.db;
 
+import androidx.arch.core.util.Function;
+import androidx.room.Dao;
+import androidx.room.Delete;
+import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
+import androidx.room.RawQuery;
+import androidx.room.Update;
+import androidx.sqlite.db.SimpleSQLiteQuery;
+import androidx.sqlite.db.SupportSQLiteQuery;
+
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
@@ -23,15 +34,6 @@ import java.util.TreeMap;
 
 import javax.annotation.Nullable;
 
-import androidx.arch.core.util.Function;
-import androidx.room.Dao;
-import androidx.room.Delete;
-import androidx.room.Insert;
-import androidx.room.OnConflictStrategy;
-import androidx.room.RawQuery;
-import androidx.room.Update;
-import androidx.sqlite.db.SimpleSQLiteQuery;
-import androidx.sqlite.db.SupportSQLiteQuery;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Maybe;
@@ -187,6 +189,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
@@ -197,6 +200,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
 
@@ -207,6 +211,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       MeasurementEntry.class,
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
+      MedicationEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

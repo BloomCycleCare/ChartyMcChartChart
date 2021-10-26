@@ -1,5 +1,9 @@
 package com.bloomcyclecare.cmcc.data.models.breastfeeding;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.room.Entity;
+
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.google.common.collect.ImmutableList;
 
@@ -8,10 +12,6 @@ import org.joda.time.LocalDate;
 import org.parceler.Parcel;
 
 import java.util.List;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.room.Entity;
 
 @Parcel
 @Entity

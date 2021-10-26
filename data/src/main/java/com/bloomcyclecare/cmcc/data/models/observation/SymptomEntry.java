@@ -8,7 +8,6 @@ import androidx.room.Ignore;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.utils.BoolMapping;
-import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.base.Objects;
 import com.google.common.base.Predicates;
 import com.google.common.collect.Collections2;
