@@ -2,6 +2,8 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 
 import android.util.Range;
 
+import androidx.core.util.Pair;
+
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.BreastfeedingEntryDao;
 import com.bloomcyclecare.cmcc.data.db.MeasurementEntryDao;
@@ -24,7 +26,6 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import androidx.core.util.Pair;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;

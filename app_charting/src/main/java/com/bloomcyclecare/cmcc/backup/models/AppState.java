@@ -1,10 +1,11 @@
 package com.bloomcyclecare.cmcc.backup.models;
 
+import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.logic.profile.Profile;
-import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.collect.ImmutableMap;
 
@@ -23,6 +24,7 @@ public class AppState {
   public final Profile profile;
   public final List<Instructions> instructions;
   public final List<Pregnancy> pregnancies;
+  public final List<Medication> medications;
 
   private enum Property {
     NUM_ENTRIES,
@@ -30,14 +32,22 @@ public class AppState {
     NUM_CYCLES,
     NUM_INSTRUCTIONS,
     LAST_INSTRUCTION_START,
+    NUM_MEDICATIONS,
   }
 
-  public AppState(List<Cycle> cycles, List<ChartEntry> entries, Profile profile, List<Instructions> instructions, List<Pregnancy> pregnancies) {
+  public AppState(
+      List<Cycle> cycles,
+      List<ChartEntry> entries,
+      Profile profile,
+      List<Instructions> instructions,
+      List<Pregnancy> pregnancies,
+      List<Medication> medications) {
     this.cycles = cycles;
     this.entries = entries;
     this.profile = profile;
     this.instructions = instructions;
     this.pregnancies = pregnancies;
+    this.medications = medications;
   }
 
   public Map<String, String> properties() {
@@ -62,6 +72,7 @@ public class AppState {
     builder.put(Property.LAST_ENTRY.name(), DateUtil.toWireStr(lastEntry));
     builder.put(Property.NUM_INSTRUCTIONS.name(), String.valueOf(instructions.size()));
     builder.put(Property.LAST_INSTRUCTION_START.name(), DateUtil.toWireStr(lastInstructionStart));
+    builder.put(Property.NUM_MEDICATIONS.name(), String.valueOf(medications.size()));
     return builder.build();
   }
 }

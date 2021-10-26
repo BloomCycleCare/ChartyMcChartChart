@@ -228,5 +228,30 @@
             app:destination="@id/pregnancy_detail"
             app:popUpTo="@id/main_nav_graph" />
     </fragment>
+    <fragment
+        android:id="@+id/medicationList"
+        android:name="com.bloomcyclecare.cmcc.ui.medication.list.MedicationListFragment"
+        android:label="fragment_medication_list"
+        tools:layout="@layout/fragment_medication_list" >
+        <action
+            android:id="@+id/action_add_medication"
+            app:destination="@id/medicationDetail" />
+        <action
+            android:id="@+id/action_edit_medication"
+            app:destination="@id/medicationDetail" />
+    </fragment>
+    <fragment
+        android:id="@+id/medicationDetail"
+        android:name="com.bloomcyclecare.cmcc.ui.medication.detail.MedicationDetailFragment"
+        android:label="fragment_medication_detail"
+        tools:layout="@layout/fragment_medication_detail" >
+
+        <argument
+            android:name="medication"
+            app:argType="com.bloomcyclecare.cmcc.data.models.medication.WrappedMedication"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+    </fragment>
 
 </navigation>

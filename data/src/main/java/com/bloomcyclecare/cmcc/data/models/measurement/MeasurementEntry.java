@@ -1,5 +1,8 @@
 package com.bloomcyclecare.cmcc.data.models.measurement;
 
+import androidx.room.Entity;
+import androidx.room.Ignore;
+
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.google.common.collect.ImmutableList;
 
@@ -8,9 +11,6 @@ import org.parceler.Parcel;
 
 import java.util.List;
 import java.util.Objects;
-
-import androidx.room.Entity;
-import androidx.room.Ignore;
 
 @Entity
 @Parcel
