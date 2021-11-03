@@ -35,6 +35,16 @@
         />
 
     <TextView
+        android:id="@+id/sticker_lower_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toTopOf="@id/cell_text_view"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        android:text="POC"
+        />
+
+    <TextView
         android:id="@+id/cell_text_view"
         android:background="@drawable/border"
         android:layout_width="@dimen/sticker_width"
@@ -53,6 +63,7 @@
         android:layout_marginTop="2dp"
         android:layout_marginEnd="4dp"
         android:text="H"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 

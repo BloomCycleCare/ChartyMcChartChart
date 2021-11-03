@@ -66,6 +66,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
     private final TextView textView;
     private final TextView stickerView;
     private final TextView measurementView;
+    private final TextView stickerLowerText;
     private final View strikeThroughView;
     private final Consumer<RenderedEntry> stickerClickListener;
 
@@ -78,6 +79,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       textView.setOnClickListener(v -> textClickListener.accept(boundEntry));
       stickerView = cellLayout.findViewById(R.id.cell_sticker_view);
       strikeThroughView = cellLayout.findViewById(R.id.cell_sticker_strike_through);
+      stickerLowerText = cellLayout.findViewById(R.id.sticker_lower_text);
       measurementView = cellLayout.findViewById(R.id.cell_measurement_indicator);
       measurementView.setText("");
     }
@@ -116,6 +118,8 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
 
       stickerView.setBackground(context.getDrawable(renderedEntry.stickerBackgroundResource()));
       stickerView.setText(renderedEntry.stickerText());
+
+      stickerLowerText.setText(renderedEntry.rightSummary());
 
       strikeThroughView.setVisibility(
           renderedEntry.showStickerStrike() ? View.VISIBLE : View.GONE);
