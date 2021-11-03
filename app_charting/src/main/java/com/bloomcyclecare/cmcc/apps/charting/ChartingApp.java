@@ -8,6 +8,7 @@ import android.widget.Toast;
 import androidx.preference.PreferenceManager;
 import androidx.room.Room;
 import androidx.room.migration.Migration;
+import androidx.work.WorkManager;
 
 import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
@@ -39,6 +40,7 @@ import com.bloomcyclecare.cmcc.data.repos.sticker.StickerSelectionRepoFactory;
 import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.notifications.ChartingReceiver;
+import com.bloomcyclecare.cmcc.reminder.ReminderManager;
 import com.bloomcyclecare.cmcc.ui.showcase.ShowcaseManager;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -143,6 +145,8 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     if (BuildConfig.DEBUG) {
       mPreferenceRepo.setDebugDefaults();
     }
+
+    ReminderManager reminderManager = ReminderManager.create(WorkManager.getInstance(getApplicationContext()));
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 
