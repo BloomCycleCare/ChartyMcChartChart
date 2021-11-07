@@ -50,7 +50,7 @@ public class CycleListViewModel extends AndroidViewModel {
   private final Subject<Boolean> mShowCycleStats = BehaviorSubject.createDefault(false);
 
   private final Subject<Boolean> mStatToggles = PublishSubject.create();
-  private final Subject<CycleStatProvider.Stat> mActiveStat = BehaviorSubject.create();
+  private final Observable<Integer> mNumStatToggles = mStatToggles.scan(0, (a, b) -> ++a);
 
   private final Activity mActivity;
   private final ChartingApp mApplication;
@@ -78,10 +78,6 @@ public class CycleListViewModel extends AndroidViewModel {
         })
         .doOnNext(vm -> Timber.d("Switching to ViewMode = %s", vm.name()))
         .cache();
-
-    mStatToggles.scan(0, (a, b) -> ++a)
-        .map(i -> CycleStatProvider.Stat.values()[i % CycleStatProvider.Stat.values().length])
-        .subscribe(mActiveStat);
 
     viewModeStream.map(mApplication::stickerSelectionRepo).subscribe(mStickerSelectionRepoSubject);
 
@@ -136,6 +132,26 @@ public class CycleListViewModel extends AndroidViewModel {
               .distinctUntilChanged()
               .cache();
 
+      Flowable<CycleStatProvider.Stat> activeStatStream = renderableCycleStream
+          .map(cycles -> cycles.iterator().next())
+          .distinctUntilChanged()
+          .map(cycle -> {
+            if (cycle.stats().daysPrePeak().isPresent()) {
+              return CycleStatProvider.Stat.END;
+            }
+            if (cycle.stats().daysBeforePoC().isPresent()) {
+              return CycleStatProvider.Stat.PEAK;
+            }
+            if (cycle.stats().daysOfFlow() < cycle.entries().size()) {
+              return CycleStatProvider.Stat.POC;
+            }
+            return CycleStatProvider.Stat.FLOW;
+          })
+          .flatMap(initialSat -> mNumStatToggles
+              .map(i -> (initialSat.ordinal() + i) % CycleStatProvider.Stat.values().length)
+              .map(i -> CycleStatProvider.Stat.values()[i])
+              .toFlowable(BackpressureStrategy.BUFFER));
+
       return Flowable.combineLatest(
           renderableCycleStream,
           autoStickeringStream,
@@ -144,7 +160,7 @@ public class CycleListViewModel extends AndroidViewModel {
           showMonitorReadings(),
           stickerSelectionStream,
           mShowCycleStats.toFlowable(BackpressureStrategy.BUFFER),
-          mActiveStat.toFlowable(BackpressureStrategy.BUFFER),
+          activeStatStream,
           renderableCycleStream.map(CycleStatProvider::new),
           (renderableCycles, autoStickeringEnabled, monitorReadingsEnabled, showMonitorReadings, stickerSelections, showCycleStats, activeStat, statProvider) -> {
             String subtitle = "";
