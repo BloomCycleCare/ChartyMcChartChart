@@ -5,6 +5,9 @@ import android.content.Context;
 import android.view.View;
 import android.widget.TextView;
 
+import androidx.core.util.Consumer;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
@@ -13,9 +16,6 @@ import com.google.common.base.Joiner;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import androidx.core.util.Consumer;
-import androidx.recyclerview.widget.RecyclerView;
 
 /**
  * Created by parkeroth on 7/1/17.
@@ -92,8 +92,7 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mStickerView.setBackgroundResource(re.stickerBackgroundResource());
       mStrikeView.setVisibility(re.showStickerStrike() ? View.VISIBLE : View.GONE);
       mEntryPeakTextView.setText(re.stickerText());
-      mLeftSummary.setText(re.leftSummary());
-      mLeftSummary.setVisibility(View.VISIBLE);
+      mLeftSummary.setVisibility(View.GONE);
       mRightSummary.setText(re.rightSummary());
 
       if (re.showWeekTransition()) {
