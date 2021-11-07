@@ -133,6 +133,7 @@ class GridRowViewHolder extends RecyclerView.ViewHolder {
       stickerView.setBackground(context.getDrawable(R.drawable.sticker_grey));
       measurementView.setText("");
       strikeThroughView.setVisibility(View.GONE);
+      stickerLowerText.setText("");
     }
   }
 
