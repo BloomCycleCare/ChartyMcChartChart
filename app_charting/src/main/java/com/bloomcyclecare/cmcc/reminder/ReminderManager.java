@@ -1,7 +1,5 @@
 package com.bloomcyclecare.cmcc.reminder;
 
-import androidx.work.WorkManager;
-
 import com.google.common.collect.ImmutableList;
 
 import org.jetbrains.annotations.NotNull;
@@ -14,24 +12,21 @@ import io.reactivex.Observable;
 import io.reactivex.Single;
 import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
 public class ReminderManager implements Disposable {
 
+  private final Subject<DateTime> mTimeTriggers = PublishSubject.create();
   private final CompositeDisposable mDisposables = new CompositeDisposable();
   private final ReminderStore mReminderStore;
 
-  public static ReminderManager create(WorkManager workManager) {
-    return new ReminderManager(new TimeTrigger(workManager, 2));
-  }
-
-  ReminderManager(Observable<DateTime> timeTriggers) {
+  ReminderManager() {
     mReminderStore = new DummyReminderStore();
 
-    mDisposables.add(timeTriggers
+    mDisposables.add(mTimeTriggers
         .doOnNext(t -> Timber.v("Got time trigger: %v", t))
-        // Shift the time back a bit to account for delays
-        .map(triggerTime -> triggerTime.minusMinutes(5))
         // Find the rules which are currently active and should be triggered
         .flatMap(time -> mReminderStore.getActiveRules()
             .doOnSuccess(rules -> Timber.v("Found %d active rules", rules.size()))
@@ -56,6 +51,11 @@ public class ReminderManager implements Disposable {
         .doOnNext(r -> Timber.d("Triggering run for rule %d", r.reminderId))
         // Run the rule
         .subscribe(this::run));
+  }
+
+  public void trigger(DateTime value) {
+    Timber.d("Got time trigger %v", value);
+    mTimeTriggers.onNext(value);
   }
 
   private void run(ReminderRule rule) {
