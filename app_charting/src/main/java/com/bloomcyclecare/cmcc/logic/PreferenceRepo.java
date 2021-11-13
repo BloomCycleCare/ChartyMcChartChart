@@ -63,8 +63,8 @@ public class PreferenceRepo {
     setBoolean(Key.ENABLE_PUBLISH_CHARTS_TO_DRIVE, false);
   }
 
-  public void setDebugDefaults() {
-    setBoolean(Key.CHARTING_REMINDER, false);
+  public void setDefaults(boolean isDebug) {
+    setBoolean(Key.CHARTING_REMINDER, !isDebug);
   }
 
   private void setBoolean(Key key, boolean value) {

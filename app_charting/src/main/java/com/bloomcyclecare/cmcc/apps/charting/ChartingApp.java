@@ -140,9 +140,7 @@ public class ChartingApp extends Application implements DataRepos, WorkerManager
     });
     mPregnancyRepoFactory = new PregnancyRepoFactory(db, mCycleRepoFactory, FALLBACK_VIEW_MODE);
     mPreferenceRepo = PreferenceRepo.create(this);
-    if (BuildConfig.DEBUG) {
-      mPreferenceRepo.setDebugDefaults();
-    }
+    mPreferenceRepo.setDefaults(BuildConfig.DEBUG);
 
     mWorkerManager = WorkerManager.create(getApplicationContext());
 

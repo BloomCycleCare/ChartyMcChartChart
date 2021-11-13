@@ -13,6 +13,9 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
+import androidx.core.app.NotificationCompat;
+
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
@@ -29,8 +32,6 @@ import org.joda.time.MutableDateTime;
 
 import java.util.Optional;
 
-import androidx.annotation.Nullable;
-import androidx.core.app.NotificationCompat;
 import io.reactivex.Flowable;
 import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
@@ -244,13 +245,13 @@ public class ChartingService extends Service {
             .setStyle(new NotificationCompat.BigTextStyle().bigText(text))
             .setPriority(NotificationCompat.PRIORITY_DEFAULT);
     PendingIntent contentPendingIntent = PendingIntent.getActivity(context, 0,
-        new Intent(context, MainActivity.class), PendingIntent.FLAG_UPDATE_CURRENT);
+        new Intent(context, MainActivity.class), PendingIntent.FLAG_IMMUTABLE);
     builder.setContentIntent(contentPendingIntent);
 
     Intent remindShortIntent = new Intent(context, ReminderReceiver.class);
     remindShortIntent.putExtra(ReminderDelay.class.getCanonicalName(), ReminderDelay.SOON.name());
     PendingIntent remindShortPendingIntent = PendingIntent.getBroadcast(context, 1,
-        remindShortIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remindShortIntent, PendingIntent.FLAG_IMMUTABLE);
     builder.setDeleteIntent(remindShortPendingIntent);
     builder.addAction(R.drawable.ic_assignment_black_24dp, "Remind me later", remindShortPendingIntent);
 
@@ -266,7 +267,7 @@ public class ChartingService extends Service {
     Intent remindLongIntent = new Intent(context, ReminderReceiver.class);
     remindLongIntent.putExtra(ReminderDelay.class.getCanonicalName(), reminderDelay.name());
     PendingIntent remindLongPendingIntent = PendingIntent.getBroadcast(context, 2,
-        remindLongIntent, PendingIntent.FLAG_UPDATE_CURRENT);
+        remindLongIntent, PendingIntent.FLAG_IMMUTABLE);
     builder.addAction(R.drawable.ic_assignment_black_24dp, remindLongText, remindLongPendingIntent);
     return builder.build();
   }
