@@ -60,15 +60,18 @@
             </intent-filter>
         </activity>
         <activity
+            android:exported="false"
             android:name=".ui.entry.EntryDetailActivity"
             android:label="@string/title_activity_entry_detail"
             android:theme="@style/AppTheme.NoActionBar"
             android:windowSoftInputMode="adjustPan">
         </activity>
         <activity
+            android:exported="false"
             android:name=".ui.profile.ProfileActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
+            android:exported="false"
             android:name=".features.instructions.ui.InstructionsListActivity"
             android:theme="@style/AppTheme.NoActionBar" />
 
@@ -83,6 +86,7 @@
         </provider>
 
         <activity
+            android:exported="false"
             android:name=".ui.goals.create.CreateGoalActivity"
             android:theme="@style/AppTheme.NoActionBar" />
     </application>

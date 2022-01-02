@@ -110,7 +110,7 @@ public abstract class RenderedEntry {
 
     LocalDate today = LocalDate.now();
     LocalDate entryDate = re.modificationContext().entry.entryDate;
-    String dateStr = today.getYear() == entryDate.getYear()
+    String dateStr = today.minusDays(30).isBefore(entryDate)
         ? DateUtil.toUiStr(entryDate) : DateUtil.toNewUiStr(entryDate);
     return create(
         String.valueOf(re.entryNum()),
