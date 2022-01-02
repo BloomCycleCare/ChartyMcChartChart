@@ -7,6 +7,8 @@ import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nullable;
+
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
 import io.reactivex.Single;
@@ -22,7 +24,10 @@ public class RoomMedicationRepo implements RWMedicationRepo {
   }
 
   @Override
-  public Completable importAll(List<Medication> medications) {
+  public Completable importAll(@Nullable List<Medication> medications) {
+    if (medications == null) {
+      return Completable.complete();
+    }
     return Completable.merge(medications.stream()
         .map(medication -> medicationDao.insert(medication).ignoreElement())
         .collect(Collectors.toSet()));
