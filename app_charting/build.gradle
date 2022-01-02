@@ -97,9 +97,9 @@ dependencies {
 
 
     implementation "androidx.appcompat:appcompat:$rootProject.ext.appCompatVersion"
-    implementation 'androidx.constraintlayout:constraintlayout:2.1.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.2'
 
-    implementation "com.google.code.gson:gson:2.8.5"
+    implementation "com.google.code.gson:gson:2.8.6"
 
     implementation "com.firebaseui:firebase-ui-auth:3.3.1"
 
@@ -135,9 +135,9 @@ dependencies {
 
     implementation "org.apache.commons:commons-collections4:4.0"
     implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
-    implementation "androidx.lifecycle:lifecycle-reactivestreams:2.3.1"
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:2.4.0"
 
-    def room_version = "2.3.0"
+    def room_version = "2.4.0"
     implementation "androidx.room:room-runtime:$room_version"
     annotationProcessor "androidx.room:room-compiler:$room_version" // use kapt for Kotlin
     implementation "androidx.room:room-rxjava2:$room_version"
@@ -152,7 +152,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.0'
 
     // g drive libs
-    implementation 'com.google.android.gms:play-services-auth:19.2.0'
+    implementation 'com.google.android.gms:play-services-auth:20.0.0'
     implementation('com.google.http-client:google-http-client-gson:1.26.0') {
         exclude group: 'org.apache.httpcomponents'
     }
@@ -163,7 +163,7 @@ dependencies {
         exclude group: 'org.apache.httpcomponents'
     }
 
-    def work_version = "2.7.0"
+    def work_version = "2.7.1"
     implementation "androidx.work:work-runtime:$work_version"
     implementation "androidx.work:work-rxjava2:$work_version"
 
