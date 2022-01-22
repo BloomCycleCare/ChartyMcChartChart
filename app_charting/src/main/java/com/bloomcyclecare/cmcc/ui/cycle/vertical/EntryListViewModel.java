@@ -15,6 +15,7 @@ import com.bloomcyclecare.cmcc.logic.PreferenceRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerSelectionViewModel;
 import com.google.auto.value.AutoValue;
 
 import org.joda.time.LocalDate;
@@ -47,7 +48,7 @@ class EntryListViewModel extends AndroidViewModel {
   private final Subject<ScrollState> mScrollEventsFromUI = BehaviorSubject.create();
   public final Subject<Boolean> mShowMachineReadings = BehaviorSubject.create();
 
-  private final RWStickerSelectionRepo mStickerSelectionRepo;
+  private final StickerSelectionViewModel mStickerSelectionViewModel;
   private final ViewMode mViewMode;
 
   private EntryListViewModel(@NonNull Application application, CycleListViewModel cycleListViewModel, ViewMode viewMode, Cycle cycle) {
@@ -57,7 +58,7 @@ class EntryListViewModel extends AndroidViewModel {
     ROInstructionsRepo instructionsRepo = myApp.instructionsRepo(viewMode);
     ROChartEntryRepo entryRepo = myApp.entryRepo(viewMode);
     PreferenceRepo preferenceRepo = myApp.preferenceRepo();
-    mStickerSelectionRepo = myApp.stickerSelectionRepo(viewMode);
+    mStickerSelectionViewModel = StickerSelectionViewModel.forViewMode(viewMode, myApp);
     mViewMode = viewMode;
 
     Flowable<CycleRenderer.RenderableCycle> cycleStream  = cycleListViewModel.viewStateStream().map(vs -> {
@@ -78,9 +79,6 @@ class EntryListViewModel extends AndroidViewModel {
 
     Flowable<Boolean> autoStickeringStream =
         preferenceRepo.summaries().map(PreferenceRepo.PreferenceSummary::autoStickeringEnabled);
-
-    Flowable<Map<LocalDate, StickerSelection>> stickerSelectionStream =
-        mStickerSelectionRepo.getSelections(Range.create(cycle.startDate, Optional.ofNullable(cycle.endDate).orElse(LocalDate.now())));
 
     Flowable.combineLatest(
         cycleStream.distinctUntilChanged().doOnNext(rc -> Timber.v("Got new RenderableCycle")),
@@ -116,12 +114,12 @@ class EntryListViewModel extends AndroidViewModel {
         .subscribe(mViewState);
   }
 
-  public ViewMode viewMode() {
-    return mViewMode;
+  public StickerSelectionViewModel stickerSelectionViewModel() {
+    return mStickerSelectionViewModel;
   }
 
-  Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
-    return mStickerSelectionRepo.recordSelection(selection, date);
+  public ViewMode viewMode() {
+    return mViewMode;
   }
 
   void updateScrollState(ScrollState scrollState) {

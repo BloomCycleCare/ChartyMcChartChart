@@ -19,6 +19,7 @@ import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
 import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerSelectionViewModel;
 import com.bloomcyclecare.cmcc.utils.HeatMap;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Strings;
@@ -46,8 +47,8 @@ public class EntryGridPageViewModel extends AndroidViewModel {
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
   private final Subject<RWChartEntryRepo> mEntryRepoSubject = BehaviorSubject.create();
   private final Subject<Boolean> mStatToggles = ReplaySubject.create(100);
-  private final RWStickerSelectionRepo mStickerSelectionRepo;
 
+  private final StickerSelectionViewModel mStickerSelectionViewModel;
 
   private static final String HEADER_COLOR_EMPTY = "#FFFFFF";
   private static final List<String> HEADER_COLORS = ImmutableList.of(
@@ -60,9 +61,9 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     mCycleListViewModel = cycleListViewModel;
     mExercise = exerciseID.flatMap(Exercise::forID);
     if (mExercise.isPresent()) {
-      mStickerSelectionRepo = myApp.stickerSelectionRepo(mExercise.get());
+      mStickerSelectionViewModel = StickerSelectionViewModel.forExercise(mExercise.get(), myApp);
     } else {
-      mStickerSelectionRepo = myApp.stickerSelectionRepo(ViewMode.CHARTING);
+      mStickerSelectionViewModel = StickerSelectionViewModel.forViewMode(ViewMode.CHARTING, myApp);
     }
     if (exerciseID.isPresent() && !mExercise.isPresent()) {
       Timber.w("Failed to find Exercise for ID: %s", exerciseID.get().name());
@@ -132,8 +133,8 @@ public class EntryGridPageViewModel extends AndroidViewModel {
     return mCycleListViewModel.currentViewMode();
   }
 
-  Completable updateSticker(LocalDate entryDate, StickerSelection selection) {
-    return mStickerSelectionRepo.recordSelection(selection, entryDate);
+  StickerSelectionViewModel stickerSelectionViewModel() {
+    return mStickerSelectionViewModel;
   }
 
   LiveData<ViewState> viewStates() {

@@ -12,9 +12,10 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
-import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.google.common.collect.Maps;
 
@@ -26,6 +27,7 @@ import java.util.Map;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
+import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.lifecycle.ViewModelProviders;
@@ -131,23 +133,9 @@ public class EntryListFragment extends Fragment {
                 .show();
             return;
           }
-          StickerDialogFragment fragment = new StickerDialogFragment(result -> {
-            Timber.i("Selection: %s", result.selection);
-            mDisposables.add(mViewModel.updateStickerSelection(re.entryDate(), result.selection).subscribe(
-                () -> Timber.d("Done updating selection"),
-                t -> Timber.e(t, "Error updating selection")));
-            if (!result.ok()) {
-              Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
-            }
-          });
-          if (!re.expectedStickerSelection().isPresent()) {
-            Timber.w("Expected to have a sticker selection");
-            return;
-          }
-          fragment.setArguments(StickerDialogFragment.fillArgs(
-              new Bundle(), re.stickerSelectionContext(), re.manualStickerSelection(),
-              mViewModel.viewMode(), re.canSelectYellowStamps()));
-          fragment.show(getChildFragmentManager(), "tag");
+          StickerDialogFragment
+              .create(mViewModel.stickerSelectionViewModel(), re, requireContext(), mDisposables)
+              .show(getChildFragmentManager(), "tag");
         },
         ChartingApp.cast(requireActivity().getApplication()).showcaseManager());
     // TODO: enable layer stream

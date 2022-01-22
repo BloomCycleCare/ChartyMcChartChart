@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.cycle;
+package com.bloomcyclecare.cmcc.ui.cycle.stickers;
 
 import android.app.Dialog;
 import android.content.Context;
@@ -10,6 +10,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
@@ -18,9 +19,11 @@ import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.SelectionChecker;
+import com.bloomcyclecare.cmcc.ui.cycle.RenderedEntry;
 import com.bloomcyclecare.cmcc.utils.StickerUtil;
 import com.jakewharton.rxbinding2.widget.RxAdapterView;
 
+import org.joda.time.LocalDate;
 import org.parceler.Parcels;
 
 import java.util.ArrayList;
@@ -41,22 +44,38 @@ import static android.view.View.GONE;
 
 public class StickerDialogFragment extends DialogFragment {
 
+  public static DialogFragment create(
+      StickerSelectionViewModel viewModel,
+      RenderedEntry renderedEntry,
+      Context context,
+      CompositeDisposable disposables) {
+    StickerDialogFragment fragment = new StickerDialogFragment(result -> {
+      Timber.i("Selection: %s", result.selection);
+      disposables.add(viewModel.updateSticker(renderedEntry.entryDate(), result.selection).subscribe(
+          () -> Timber.d("Done updating selection"),
+          t -> Timber.e(t, "Error updating selection")));
+      if (!result.ok()) {
+        Toast.makeText(context, "Incorrect selection", Toast.LENGTH_SHORT).show();
+      }
+    });
+
+    Bundle args = new Bundle();
+    renderedEntry.manualStickerSelection().ifPresent(
+        selection -> args.putParcelable(Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
+    args.putInt(Args.VIEW_MODE.name(), viewModel.viewMode().ordinal());
+    args.putParcelable(
+        Args.SELECTION_CONTEXT.name(), Parcels.wrap(renderedEntry.stickerSelectionContext()));
+    args.putBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name(), renderedEntry.canSelectYellowStamps());
+
+    fragment.setArguments(args);
+    return fragment;
+  }
+
   private enum Args {
     SELECTION_CONTEXT,
     PREVIOUS_SELECTION,
     VIEW_MODE,
     CAN_SELECT_YELLOW_STAMPS
-  }
-
-  public static Bundle fillArgs(
-      Bundle args, CycleRenderer.StickerSelectionContext selectionContext, Optional<StickerSelection> previousSelection, ViewMode viewMode, boolean canSelectYellowStamps) {
-    args.putInt(Args.VIEW_MODE.name(), viewMode.ordinal());
-    args.putParcelable(
-        Args.SELECTION_CONTEXT.name(), Parcels.wrap(selectionContext));
-    args.putBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name(), canSelectYellowStamps);
-    previousSelection.ifPresent(selection -> args.putParcelable(
-        Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
-    return args;
   }
 
   private final Subject<StickerSelection> selectionSubject = BehaviorSubject.create();

@@ -21,9 +21,10 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
+import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
-import com.bloomcyclecare.cmcc.ui.cycle.StickerDialogFragment;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.google.common.collect.ImmutableMap;
@@ -32,12 +33,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
+import io.reactivex.disposables.CompositeDisposable;
 import timber.log.Timber;
 
 import static android.content.res.Configuration.ORIENTATION_PORTRAIT;
 
 public class EntryGridPageFragment extends BaseCycleListFragment {
 
+  private CompositeDisposable mDisposables = new CompositeDisposable();
   private MainViewModel mMainViewModel;
   private EntryGridPageViewModel mViewModel;
   private GridRowAdapter mGridRowAdapter;
@@ -90,20 +93,9 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
 
     mViewModel = new ViewModelProvider(this, factory).get(EntryGridPageViewModel.class);
     mGridRowAdapter = new GridRowAdapter(re -> {// Sticker Click
-      /*if (mViewModel.currentViewMode() != ViewMode.TRAINING || Strings.isNullOrEmpty(re.trainingMarker())) {
-        Timber.d("Not prompting for ViewMode: %s", mViewModel.currentViewMode().name());
-        return;
-      }*/
-      StickerDialogFragment fragment = new StickerDialogFragment(result -> {
-        mViewModel.updateSticker(re.entryDate(), result.selection).subscribe();
-        if (!result.ok()) {
-          Toast.makeText(requireContext(), "Incorrect selection", Toast.LENGTH_SHORT).show();
-        }
-      });
-      fragment.setArguments(StickerDialogFragment.fillArgs(
-          new Bundle(), re.stickerSelectionContext(), re.manualStickerSelection(),
-          mViewModel.currentViewMode(), re.canSelectYellowStamps()));
-      fragment.show(getChildFragmentManager(), "tag");
+      StickerDialogFragment
+          .create(mViewModel.stickerSelectionViewModel(), re, requireContext(), mDisposables)
+          .show(getChildFragmentManager(), "tag");
     }, re -> {// Text click
       if (mViewModel.currentViewMode() != ViewMode.CHARTING) {
         Timber.d("Not navigating to detail activity for ViewMode: %s", mViewModel.currentViewMode().name());
