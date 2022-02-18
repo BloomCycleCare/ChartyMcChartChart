@@ -15,6 +15,7 @@ import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.cycle.CycleListViewModel;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFactory;
 import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.google.common.collect.Maps;
@@ -133,7 +134,7 @@ public class EntryListFragment extends Fragment {
                 .show();
             return;
           }
-          StickerDialogFragment
+          StickerDialogFactory
               .create(mViewModel.stickerSelectionViewModel(), re, requireContext(), mDisposables)
               .show(getChildFragmentManager(), "tag");
         },

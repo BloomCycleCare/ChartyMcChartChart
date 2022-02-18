@@ -44,34 +44,7 @@ import static android.view.View.GONE;
 
 public class StickerDialogFragment extends DialogFragment {
 
-  public static DialogFragment create(
-      StickerSelectionViewModel viewModel,
-      RenderedEntry renderedEntry,
-      Context context,
-      CompositeDisposable disposables) {
-    StickerDialogFragment fragment = new StickerDialogFragment(result -> {
-      Timber.i("Selection: %s", result.selection);
-      disposables.add(viewModel.updateSticker(renderedEntry.entryDate(), result.selection).subscribe(
-          () -> Timber.d("Done updating selection"),
-          t -> Timber.e(t, "Error updating selection")));
-      if (!result.ok()) {
-        Toast.makeText(context, "Incorrect selection", Toast.LENGTH_SHORT).show();
-      }
-    });
-
-    Bundle args = new Bundle();
-    renderedEntry.manualStickerSelection().ifPresent(
-        selection -> args.putParcelable(Args.PREVIOUS_SELECTION.name(), Parcels.wrap(selection)));
-    args.putInt(Args.VIEW_MODE.name(), viewModel.viewMode().ordinal());
-    args.putParcelable(
-        Args.SELECTION_CONTEXT.name(), Parcels.wrap(renderedEntry.stickerSelectionContext()));
-    args.putBoolean(Args.CAN_SELECT_YELLOW_STAMPS.name(), renderedEntry.canSelectYellowStamps());
-
-    fragment.setArguments(args);
-    return fragment;
-  }
-
-  private enum Args {
+  enum Args {
     SELECTION_CONTEXT,
     PREVIOUS_SELECTION,
     VIEW_MODE,

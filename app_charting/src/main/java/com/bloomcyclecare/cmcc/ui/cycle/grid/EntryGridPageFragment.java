@@ -24,6 +24,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.ui.cycle.BaseCycleListFragment;
+import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFactory;
 import com.bloomcyclecare.cmcc.ui.cycle.stickers.StickerDialogFragment;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailActivity;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
@@ -93,7 +94,7 @@ public class EntryGridPageFragment extends BaseCycleListFragment {
 
     mViewModel = new ViewModelProvider(this, factory).get(EntryGridPageViewModel.class);
     mGridRowAdapter = new GridRowAdapter(re -> {// Sticker Click
-      StickerDialogFragment
+      StickerDialogFactory
           .create(mViewModel.stickerSelectionViewModel(), re, requireContext(), mDisposables)
           .show(getChildFragmentManager(), "tag");
     }, re -> {// Text click

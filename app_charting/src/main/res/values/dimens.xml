@@ -11,4 +11,5 @@
     <dimen name="sticker_width">48dp</dimen>
     <dimen name="sticker_height">72dp</dimen>
     <dimen name="sticker_border_width">0.5dip</dimen>
+    <dimen name="selected_sticker_border_width">2dip</dimen>
 </resources>
