@@ -2,10 +2,13 @@ package com.bloomcyclecare.cmcc.ui.main;
 
 import android.os.Bundle;
 import android.view.Menu;
+import android.widget.Toast;
 
+import com.bloomcyclecare.cmcc.BuildConfig;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.google.android.material.navigation.NavigationView;
+import com.google.common.collect.ImmutableSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -102,8 +105,20 @@ public class MainActivity extends AppCompatActivity {
     // Handle Navigation item clicks
     NavigationUI.setupWithNavController(navView, navController);
 
+    navView.setNavigationItemSelectedListener(item -> {
+      boolean disableForRelease = !BuildConfig.DEBUG && DISABLE_FOR_RELEASE.contains(item.getItemId());
+      if (disableForRelease || !NavigationUI.onNavDestinationSelected(item, navController)) {
+        Toast.makeText(this, item.getTitle() + "coming soon!", Toast.LENGTH_SHORT).show();
+      }
+      drawerLayout.closeDrawer(navView);
+      return true;
+    });
+
     mViewModel.viewState().observe(this, this::render);
   }
+
+  private static final ImmutableSet<Integer> DISABLE_FOR_RELEASE =
+      ImmutableSet.of(R.id.medicationList);
 
   @Override
   public boolean onSupportNavigateUp() {
