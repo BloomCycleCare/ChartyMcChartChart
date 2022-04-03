@@ -58,7 +58,7 @@ public class InitCycleViewModel extends AndroidViewModel {
           if (initCycleType == InitCycleType.PREGNANT) {
             return mPregnancyRepo.startPregnancy(date);
           }
-          Cycle firstCycle = new Cycle("first", date.plusDays(1), null, null);
+          Cycle firstCycle = new Cycle("first", date, null, null);
           return mCycleRepo.insertOrUpdate(firstCycle);
         });
   }
