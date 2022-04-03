@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity {
     navView.setNavigationItemSelectedListener(item -> {
       boolean disableForRelease = !BuildConfig.DEBUG && DISABLE_FOR_RELEASE.contains(item.getItemId());
       if (disableForRelease || !NavigationUI.onNavDestinationSelected(item, navController)) {
-        Toast.makeText(this, item.getTitle() + "coming soon!", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, item.getTitle() + " coming soon!", Toast.LENGTH_SHORT).show();
       }
       drawerLayout.closeDrawer(navView);
       return true;

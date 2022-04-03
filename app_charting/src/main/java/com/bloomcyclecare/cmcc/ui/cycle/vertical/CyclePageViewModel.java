@@ -182,7 +182,17 @@ public class CyclePageViewModel extends AndroidViewModel {
     public final ImmutableList<CycleRenderer.RenderableCycle> renderableCycles;
 
     ViewState(int currentPage, String subtitle, List<CycleRenderer.RenderableCycle> renderableCycles, ViewMode viewMode) {
-      this.title = currentPage == 0 ? "Current Cycle" : String.format("%d Cycles Ago", currentPage);
+      switch (currentPage) {
+        case 0:
+          this.title = "Current Cycle";
+          break;
+        case 1:
+          this.title = "Previous Cycle";
+          break;
+        default:
+          this.title = String.format("%d Cycles Ago", currentPage);
+          break;
+      }
       this.subtitle = subtitle;
       this.showFab = currentPage == renderableCycles.size() - 1;
       this.viewMode = viewMode;
