@@ -36,6 +36,11 @@ public class CycleStatProvider {
     END
   }
 
+  public static Stat getActiveStat(Stat initialStat, int numToggles) {
+    int index = (initialStat.ordinal() + numToggles) % Stat.values().length;
+    return Stat.values()[index];
+  }
+
   public static class StatView {
     public final String summary;
     public final ImmutableMap<Integer, Integer> dayCounts;
