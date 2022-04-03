@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
+import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
@@ -25,6 +26,9 @@ import com.google.auto.value.AutoValue;
 
 import org.joda.time.LocalDate;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +64,23 @@ public class CycleListViewModel extends AndroidViewModel {
     return new ViewModelProvider(fragment, factory).get(CycleListViewModel.class);
   }
 
+  private static CycleStatProvider.Stat getInitialStat(List<CycleRenderer.RenderableCycle> renderableCycles) {
+    if (renderableCycles.isEmpty()) {
+      throw new IllegalArgumentException("At least one renderable cycle is required!");
+    }
+    CycleRenderer.RenderableCycle currentCycle = renderableCycles.get(0);
+    if (currentCycle.stats().daysPrePeak().isPresent()) {
+      return CycleStatProvider.Stat.END;
+    }
+    if (currentCycle.stats().daysBeforePoC().isPresent()) {
+      return CycleStatProvider.Stat.PEAK;
+    }
+    if (currentCycle.stats().daysOfFlow() < currentCycle.entries().size()) {
+      return CycleStatProvider.Stat.POC;
+    }
+    return CycleStatProvider.Stat.FLOW;
+  }
+
   public CycleListViewModel(@NonNull Application application,
                             @NonNull Activity activity,
                             @NonNull ViewMode initialViewMode,
@@ -90,7 +111,7 @@ public class CycleListViewModel extends AndroidViewModel {
         .doOnNext(v -> Timber.v("Show monitor readings %b", v))
         .subscribe(mShowMonitorReadings);
 
-    viewModeStream.flatMap(viewMode -> {
+    viewModeStream.switchMap(viewMode -> {
       if (viewMode == ViewMode.TRAINING && !exerciseID.isPresent()) {
         Timber.w("Need exercise ID for TRAINING mode!, defaulting to regular cycle");
       }
@@ -106,51 +127,28 @@ public class CycleListViewModel extends AndroidViewModel {
       Flowable<Map<LocalDate, StickerSelection>> stickerSelectionStream = mApplication.stickerSelectionRepo(viewMode)
           .getSelections().distinctUntilChanged();
 
-      Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
-          mApplication.instructionsRepo(viewMode).getAll()
-              .distinctUntilChanged(),
-          cycleRepo.getStream()
-              .distinctUntilChanged(),
-          (instructions, cycles) -> Flowable.merge(Flowable
-              .fromIterable(cycles)
-              .observeOn(Schedulers.computation())
-              .parallel()
-              .map(cycle -> Flowable.combineLatest(
-                  entryRepo.getStreamForCycle(Flowable.just(cycle))
-                      .doOnNext(ces -> Timber.v("Got new stream for cycle starting %s", cycle.startDate)),
-                  cycleRepo.getPreviousCycle(cycle)
-                      .map(Optional::of).defaultIfEmpty(Optional.empty())
-                      .toFlowable(),
-                  (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions))
-                  .doOnNext(r -> Timber.v("Triggering render for cycle starting %s", r.cycle().startDate))
-                  .map(CycleRenderer::render)
-              )
-              .sequential()
-              .toList()
-              .toFlowable()
-              .map(RxUtil::combineLatest))))
-              .distinctUntilChanged()
-              .cache();
-
-      Flowable<CycleStatProvider.Stat> activeStatStream = renderableCycleStream
-          .map(cycles -> cycles.iterator().next())
+      Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = cycleRepo.getStream()
           .distinctUntilChanged()
-          .map(cycle -> {
-            if (cycle.stats().daysPrePeak().isPresent()) {
-              return CycleStatProvider.Stat.END;
-            }
-            if (cycle.stats().daysBeforePoC().isPresent()) {
-              return CycleStatProvider.Stat.PEAK;
-            }
-            if (cycle.stats().daysOfFlow() < cycle.entries().size()) {
-              return CycleStatProvider.Stat.POC;
-            }
-            return CycleStatProvider.Stat.FLOW;
-          })
-          .flatMap(initialSat -> mNumStatToggles
-              .map(i -> (initialSat.ordinal() + i) % CycleStatProvider.Stat.values().length)
-              .map(i -> CycleStatProvider.Stat.values()[i])
-              .toFlowable(BackpressureStrategy.BUFFER));
+          .doOnNext(cycles -> Timber.d("Got new cycle list: %d", cycles.size()))
+          .switchMap(cycles -> mApplication.instructionsRepo(viewMode).getAll()
+              .distinctUntilChanged()
+              .doOnNext(instructions -> Timber.d("Got new instruction list: %d", instructions.size()))
+              .switchMap(instructions -> {
+                List<Flowable<CycleRenderer.RenderableCycle>> renderableCycleStreams = new ArrayList<>(cycles.size());
+                for (Cycle cycle : cycles) {
+                  renderableCycleStreams.add(Flowable.combineLatest(
+                      entryRepo.getStreamForCycle(Flowable.just(cycle))
+                          .distinctUntilChanged()
+                          .doOnNext(ces -> Timber.v("Cycle %s: Got new entry stream", cycle.startDate)),
+                      cycleRepo.getPreviousCycle(cycle)
+                          .toFlowable()
+                          .distinctUntilChanged()
+                          .doOnNext(ces -> Timber.v("Cycle %s: Got new previous cycle", cycle.startDate))
+                          .map(Optional::of).defaultIfEmpty(Optional.empty()),
+                      (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render()));
+                }
+                return Flowable.merge(Flowable.just(renderableCycleStreams).map(RxUtil::combineLatest));
+              }));
 
       return Flowable.combineLatest(
           renderableCycleStream,
@@ -203,7 +201,7 @@ public class CycleListViewModel extends AndroidViewModel {
 
   public Completable updateStickerSelection(LocalDate date, StickerSelection selection) {
     return mStickerSelectionRepoSubject
-        .flatMapCompletable(repo -> repo.recordSelection(selection, date));
+        .switchMapCompletable(repo -> repo.recordSelection(selection, date));
   }
 
   Completable clearData() {
