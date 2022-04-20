@@ -17,8 +17,6 @@ import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.google.common.collect.ImmutableList;
@@ -34,8 +32,6 @@ import java.util.List;
         Instructions.class,
         ObservationEntry.class,
         StickerSelectionEntry.class,
-        SymptomEntry.class,
-        WellnessEntry.class,
         MeasurementEntry.class,
         BreastfeedingEntry.class,
         Pregnancy.class,
@@ -44,7 +40,7 @@ import java.util.List;
         MedicationRef.class,
         LifestyleEntry.class,
     },
-    version = 24)
+    version = 25)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -54,11 +50,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
   public abstract ObservationEntryDao observationEntryDao();
 
-  public abstract WellnessEntryDao wellnessEntryDao();
-
   public abstract StickerSelectionEntryDao stickerSelectionEntryDao();
-
-  public abstract SymptomEntryDao symptomEntryDao();
 
   public abstract MeasurementEntryDao measurementEntryDao();
 
@@ -231,6 +223,11 @@ public abstract class AppDatabase extends RoomDatabase {
       QuerySet.of("CREATE TABLE IF NOT EXISTS `LifestyleEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, `painObservationMorning` INTEGER, `painObservationAfternoon` INTEGER, `painObservationEvening` INTEGER, `painObservationNight` INTEGER, PRIMARY KEY(`entryDate`))"),
       QuerySet.of("DROP TABLE `LifestyleEntry`"));
 
+  static final BwCompatMigration MIGRATION_24_25 = new BwCompatMigration(
+      24, 25,
+      QuerySet.of("DROP TABLE `WellnessEntry`", "DROP TABLE `SymptomEntry`"),
+      QuerySet.of());
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -243,6 +240,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_21_22.migrations())
       .addAll(MIGRATION_22_23.migrations())
       .addAll(MIGRATION_23_24.migrations())
+      .addAll(MIGRATION_24_25.migrations())
       .build();
 
   public static class QuerySet {

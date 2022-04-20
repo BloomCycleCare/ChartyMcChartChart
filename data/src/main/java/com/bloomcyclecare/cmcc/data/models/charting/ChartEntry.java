@@ -8,8 +8,6 @@ import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
@@ -29,8 +27,6 @@ import java.util.List;
 public class ChartEntry implements Comparable<ChartEntry> {
   public LocalDate entryDate;
   public ObservationEntry observationEntry;
-  public WellnessEntry wellnessEntry;
-  public SymptomEntry symptomEntry;
   public MeasurementEntry measurementEntry;
   public BreastfeedingEntry breastfeedingEntry;
   public LifestyleEntry lifestyleEntry;
@@ -42,8 +38,6 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
   public ChartEntry(LocalDate entryDate,
                     ObservationEntry observationEntry,
-                    WellnessEntry wellnessEntry,
-                    SymptomEntry symptomEntry,
                     MeasurementEntry measurementEntry,
                     BreastfeedingEntry breastfeedingEntry,
                     LifestyleEntry lifestyleEntry,
@@ -52,8 +46,6 @@ public class ChartEntry implements Comparable<ChartEntry> {
     Preconditions.checkArgument(
         observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
     this.observationEntry = observationEntry;
-    this.wellnessEntry = wellnessEntry;
-    this.symptomEntry = symptomEntry;
     this.measurementEntry = measurementEntry;
     this.breastfeedingEntry = breastfeedingEntry;
     this.lifestyleEntry = lifestyleEntry;
@@ -64,8 +56,6 @@ public class ChartEntry implements Comparable<ChartEntry> {
     return new ChartEntry(
         entryDate,
         ObservationEntry.emptyEntry(entryDate),
-        WellnessEntry.emptyEntry(entryDate),
-        SymptomEntry.emptyEntry(entryDate),
         MeasurementEntry.emptyEntry(entryDate),
         BreastfeedingEntry.emptyEntry(entryDate),
         LifestyleEntry.emptyEntry(entryDate),
@@ -84,7 +74,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
     if (!chartEntryLines.isEmpty()) {
       lines.addAll(chartEntryLines);
     }
-    List<Entry> entries = ImmutableList.of(wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, lifestyleEntry);
+    List<Entry> entries = ImmutableList.of(measurementEntry, breastfeedingEntry, lifestyleEntry);
     for (Entry entry : entries) {
       List<String> entryLines = entry.getSummaryLines();
       if (!entryLines.isEmpty()) {
@@ -109,8 +99,6 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
       return Objects.equal(this.entryDate, that.entryDate)
           && Objects.equal(this.observationEntry, that.observationEntry)
-          && Objects.equal(this.wellnessEntry, that.wellnessEntry)
-          && Objects.equal(this.symptomEntry, that.symptomEntry)
           && Objects.equal(this.measurementEntry, that.measurementEntry)
           && Objects.equal(this.breastfeedingEntry, that.breastfeedingEntry)
           && Objects.equal(this.lifestyleEntry, that.lifestyleEntry)
@@ -121,7 +109,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, lifestyleEntry, stickerSelection);
+    return Objects.hashCode(entryDate, observationEntry, measurementEntry, breastfeedingEntry, lifestyleEntry, stickerSelection);
   }
 
   @Override
