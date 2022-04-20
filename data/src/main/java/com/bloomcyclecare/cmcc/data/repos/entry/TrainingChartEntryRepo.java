@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
@@ -62,6 +63,7 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
             WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate),
             MeasurementEntry.emptyEntry(entryDate),
             BreastfeedingEntry.emptyEntry(entryDate),
+            LifestyleEntry.emptyEntry(entryDate),
             populateStickerSelections ? stickerSelection : null);
         entry.marker = trainingEntry.marker().orElse("");
         initialEntries.put(entryDate, entry);

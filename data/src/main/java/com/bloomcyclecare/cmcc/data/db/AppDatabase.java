@@ -11,6 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
@@ -41,8 +42,9 @@ import java.util.List;
         Medication.class,
         MedicationEntry.class,
         MedicationRef.class,
+        LifestyleEntry.class,
     },
-    version = 23)
+    version = 24)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -67,6 +69,8 @@ public abstract class AppDatabase extends RoomDatabase {
   public abstract MedicationEntryDao medicationEntryDao();
 
   public abstract MedicationDao medicationDao();
+
+  public abstract LifestyleEntryDao lifestyleEntryDao();
 
   private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
     @Override
@@ -222,6 +226,11 @@ public abstract class AppDatabase extends RoomDatabase {
           "DROP INDEX `index_MedicationRef_medicationId`"
       ));
 
+  static final BwCompatMigration MIGRATION_23_24 = new BwCompatMigration(
+      23, 24,
+      QuerySet.of("CREATE TABLE IF NOT EXISTS `LifestyleEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, `painObservationMorning` INTEGER, `painObservationAfternoon` INTEGER, `painObservationEvening` INTEGER, `painObservationNight` INTEGER, PRIMARY KEY(`entryDate`))"),
+      QuerySet.of("DROP TABLE `LifestyleEntry`"));
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -233,6 +242,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_20_21.migrations())
       .addAll(MIGRATION_21_22.migrations())
       .addAll(MIGRATION_22_23.migrations())
+      .addAll(MIGRATION_23_24.migrations())
       .build();
 
   public static class QuerySet {

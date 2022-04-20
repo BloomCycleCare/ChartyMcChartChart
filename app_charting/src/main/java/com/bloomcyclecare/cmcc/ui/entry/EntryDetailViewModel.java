@@ -7,6 +7,7 @@ import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
@@ -78,6 +79,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
   public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
+  public final Subject<LifestyleEntry> lifestyleEntrySubject = BehaviorSubject.create();
 
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
@@ -115,6 +117,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
     wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
     measurementEntries.onNext(context.entry.measurementEntry);
     breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
+    lifestyleEntrySubject.onNext(context.entry.lifestyleEntry);
 
     Observable.combineLatest(
         intercourseUpdates,
@@ -243,16 +246,19 @@ public class EntryDetailViewModel extends AndroidViewModel {
         breastfeedingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW breastfeeding entry")),
+        lifestyleEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
+            .distinctUntilChanged()
+            .doOnNext(i -> Timber.d("NEW lifestyle entry")),
         stickerSelectionStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW sticker selection")),
         clarifyingQuestionRenderUpdates
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW clarifying quesiton render updates")),
-        (observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
+        (observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, lifestyleEntry, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               context,
-              new ChartEntry(entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
+              new ChartEntry(entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, lifestyleEntry, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);

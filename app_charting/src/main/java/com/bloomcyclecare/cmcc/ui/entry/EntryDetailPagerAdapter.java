@@ -5,6 +5,7 @@ import android.util.Pair;
 
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.breastfeeding.BreastfeedingEntryFragment;
+import com.bloomcyclecare.cmcc.ui.entry.lifestyle.LifestyleEntryFragment;
 import com.bloomcyclecare.cmcc.ui.entry.measurement.MeasurementEntryFragment;
 import com.bloomcyclecare.cmcc.ui.entry.observation.ObservationEntryFragment;
 import com.google.common.collect.ImmutableList;
@@ -41,6 +42,8 @@ public class EntryDetailPagerAdapter extends FragmentStatePagerAdapter {
     if (shouldShowBreastfeedingPage) {
       builder.add(Pair.create("Breastfeeding", BreastfeedingEntryFragment::new));
     }
+
+    builder.add(Pair.create("Lifestyle", LifestyleEntryFragment::new));
 
     // TODO: add Wellness and Symptom
 
