@@ -1,5 +1,6 @@
 package com.bloomcyclecare.cmcc.data.models.medication;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
@@ -16,7 +17,9 @@ public class Medication {
   public String name = "";
   public String description = "";
   public String dosage = "";
-  public String frequency = "";
+  @Deprecated public String frequency = "";
+  @ColumnInfo(defaultValue = "0")
+  public int timesPerDay = 0;
 
   public Medication() {}
 
@@ -27,6 +30,7 @@ public class Medication {
     this.description = that.description;
     this.dosage = that.dosage;
     this.frequency = that.frequency;
+    this.timesPerDay = that.timesPerDay;
   }
 
   @Override
@@ -36,6 +40,7 @@ public class Medication {
     Medication that = (Medication) o;
     return id == that.id &&
         active == that.active &&
+        timesPerDay == that.timesPerDay &&
         name.equals(that.name) &&
         description.equals(that.description) &&
         dosage.equals(that.dosage) &&
@@ -44,6 +49,6 @@ public class Medication {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, description, dosage, frequency, active);
+    return Objects.hash(id, name, description, dosage, frequency, active, timesPerDay);
   }
 }

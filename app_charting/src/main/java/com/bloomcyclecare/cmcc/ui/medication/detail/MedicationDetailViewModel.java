@@ -36,7 +36,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   final Subject<String> nameSubject;
   final Subject<String> descriptionSubject;
   final Subject<String> dosageSubject;
-  final Subject<String> frequencySubject;
+  final Subject<Optional<Integer>> timesPerDaySubject;
   final Subject<Boolean> activeSubject;
 
   public MedicationDetailViewModel(@NonNull Application application,
@@ -47,7 +47,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     nameSubject = BehaviorSubject.createDefault(mInitialValue.name);
     descriptionSubject = BehaviorSubject.createDefault(mInitialValue.description);
     dosageSubject = BehaviorSubject.createDefault(mInitialValue.dosage);
-    frequencySubject = BehaviorSubject.createDefault(mInitialValue.frequency);
+    timesPerDaySubject = BehaviorSubject.createDefault(Optional.of(mInitialValue.timesPerDay));
     activeSubject = BehaviorSubject.createDefault(mInitialValue.active);
 
     String title = initialMedication == null ? "New Medication" : "Edit Medication";
@@ -55,14 +55,14 @@ public class MedicationDetailViewModel extends AndroidViewModel {
         nameSubject.distinctUntilChanged(),
         descriptionSubject.distinctUntilChanged(),
         dosageSubject.distinctUntilChanged(),
-        frequencySubject.distinctUntilChanged(),
+        timesPerDaySubject.distinctUntilChanged(),
         activeSubject.distinctUntilChanged(),
-        (name, description, dosage, frequency, active) -> {
+        (name, description, dosage, timesPerDay, active) -> {
           Medication medication = new Medication(mInitialValue);
           medication.name = name;
           medication.description = description;
           medication.dosage = dosage;
-          medication.frequency = frequency;
+          medication.timesPerDay = timesPerDay.orElse(0);
           medication.active = active;
           return medication;
         })

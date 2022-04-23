@@ -25,6 +25,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -132,7 +133,7 @@ public class MedicationDetailFragment extends Fragment {
       maybeUpdate(nameView, viewState.medication.name);
       maybeUpdate(descriptionView, viewState.medication.description);
       maybeUpdate(dosageView, viewState.medication.dosage);
-      maybeUpdate(frequencyView, viewState.medication.frequency);
+      maybeUpdate(frequencyView, viewState.medication.timesPerDay == 0 ? "" : String.valueOf(viewState.medication.timesPerDay));
 
       if (activeView.isChecked() != viewState.medication.active) {
         activeView.setChecked(viewState.medication.active);
@@ -145,8 +146,12 @@ public class MedicationDetailFragment extends Fragment {
             .subscribe(mMedicationDetailViewModel.descriptionSubject);
         RxTextView.textChanges(dosageView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.dosageSubject);
-        RxTextView.textChanges(frequencyView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.frequencySubject);
+        RxTextView.textChanges(frequencyView).map(value -> {
+          if (value.length() == 0) {
+            return Optional.<Integer>empty();
+          }
+          return Optional.of(Integer.valueOf(value.toString()));
+        }).subscribe(mMedicationDetailViewModel.timesPerDaySubject);
         //TODO: hook up switch
       }
     });
