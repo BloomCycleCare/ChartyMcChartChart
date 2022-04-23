@@ -12,7 +12,7 @@
         android:layout_height="wrap_content"
         android:nestedScrollingEnabled="false"
         tools:itemCount="4"
-        tools:listitem="@layout/lifestyle_item_pain_list_item" />
+        tools:listitem="@layout/wellbeing_section_pain_list_item" />
 
 
 </androidx.appcompat.widget.LinearLayoutCompat>

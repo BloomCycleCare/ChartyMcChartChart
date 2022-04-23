@@ -21,6 +21,7 @@ public class WellbeingEntry extends Entry implements Copyable<WellbeingEntry> {
   @Nullable public Integer painObservationAfternoon;
   @Nullable public Integer painObservationEvening;
   @Nullable public Integer painObservationNight;
+  @Nullable public Integer energyLevel;
 
   public WellbeingEntry() {}
 
@@ -30,6 +31,7 @@ public class WellbeingEntry extends Entry implements Copyable<WellbeingEntry> {
     this.painObservationAfternoon = unBox(other.painObservationAfternoon);
     this.painObservationEvening = unBox(other.painObservationEvening);
     this.painObservationNight = unBox(other.painObservationNight);
+    this.energyLevel = unBox(other.energyLevel);
   }
 
   private static Integer unBox(Integer i) {
@@ -63,6 +65,9 @@ public class WellbeingEntry extends Entry implements Copyable<WellbeingEntry> {
     if (painObservationNight != null) {
       lines.add("Night pain observation: " + painObservationNight);
     }
+    if (energyLevel != null) {
+      lines.add("Energy level: " + energyLevel);
+    }
     return lines.build();
   }
 
@@ -72,12 +77,12 @@ public class WellbeingEntry extends Entry implements Copyable<WellbeingEntry> {
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
     WellbeingEntry that = (WellbeingEntry) o;
-    return Objects.equals(painObservationMorning, that.painObservationMorning) && Objects.equals(painObservationAfternoon, that.painObservationAfternoon) && Objects.equals(painObservationEvening, that.painObservationEvening) && Objects.equals(painObservationNight, that.painObservationNight);
+    return Objects.equals(painObservationMorning, that.painObservationMorning) && Objects.equals(painObservationAfternoon, that.painObservationAfternoon) && Objects.equals(painObservationEvening, that.painObservationEvening) && Objects.equals(painObservationNight, that.painObservationNight) && Objects.equals(energyLevel, that.energyLevel);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), painObservationMorning, painObservationAfternoon, painObservationEvening, painObservationNight);
+    return Objects.hash(super.hashCode(), painObservationMorning, painObservationAfternoon, painObservationEvening, painObservationNight, energyLevel);
   }
 
   @Nullable

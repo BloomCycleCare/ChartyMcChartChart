@@ -40,7 +40,7 @@ import java.util.List;
         MedicationRef.class,
         WellbeingEntry.class,
     },
-    version = 25)
+    version = 26)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -228,6 +228,11 @@ public abstract class AppDatabase extends RoomDatabase {
       QuerySet.of("DROP TABLE `WellnessEntry`", "DROP TABLE `SymptomEntry`"),
       QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_25_26 = new BwCompatMigration(
+      25, 26,
+      QuerySet.of("ALTER TABLE WellbeingEntry ADD COLUMN energyLevel INTEGER"),
+      QuerySet.of());
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -241,6 +246,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_22_23.migrations())
       .addAll(MIGRATION_23_24.migrations())
       .addAll(MIGRATION_24_25.migrations())
+      .addAll(MIGRATION_25_26.migrations())
       .build();
 
   public static class QuerySet {

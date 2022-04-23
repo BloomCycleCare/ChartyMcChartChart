@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.wellbeing;
+package com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -18,22 +18,23 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
+import com.bloomcyclecare.cmcc.ui.entry.wellbeing.WellbeingEntryViewModel;
 
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
-public class WellbeingSectionPain {
+public class PainSection {
 
   public static View inflate(@NonNull LayoutInflater inflater,
                              @NonNull Context context,
                              @NonNull WellbeingEntryViewModel viewModel) {
-    View item = inflater.inflate(R.layout.lifestyle_item, null);
+    View item = inflater.inflate(R.layout.wellbeing_item, null);
 
-    ImageView iconView = item.findViewById(R.id.lifestyle_item_icon);
+    ImageView iconView = item.findViewById(R.id.wellbeing_section_icon);
     iconView.setImageResource(R.drawable.ic_baseline_mood_bad_24);
 
-    LinearLayoutCompat content = item.findViewById(R.id.lifestyle_item_content);
-    inflater.inflate(R.layout.lifestyle_item_pain, content);
+    LinearLayoutCompat content = item.findViewById(R.id.wellbeing_section_content);
+    inflater.inflate(R.layout.wellbeing_section_pain, content);
 
     RecyclerView painLevelViews = content.findViewById(R.id.pain_level_items);
     painLevelViews.setAdapter(new PainItemAdapter(viewModel));
@@ -59,7 +60,7 @@ public class WellbeingSectionPain {
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
       View view = LayoutInflater.from(parent.getContext())
-          .inflate(R.layout.lifestyle_item_pain_list_item, parent, false);
+          .inflate(R.layout.wellbeing_section_pain_list_item, parent, false);
       return new ViewHolder(view, parent.getContext(), mViewModel.painUpdateSubject);
     }
 
@@ -142,6 +143,9 @@ public class WellbeingSectionPain {
       private boolean confirmClear(@Nullable WellbeingEntry.PainObservationTime time, Context context) {
         if (time == null) {
           throw new IllegalStateException();
+        }
+        if (!mSeekBar.isEnabled()) {
+          return true;
         }
         new AlertDialog.Builder(context)
             .setTitle("Clear Pain Entry?")

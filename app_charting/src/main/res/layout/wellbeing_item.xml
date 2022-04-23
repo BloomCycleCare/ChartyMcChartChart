@@ -9,7 +9,7 @@
     android:layout_height="match_parent">
 
     <ImageView
-        android:id="@+id/lifestyle_item_icon"
+        android:id="@+id/wellbeing_section_icon"
         android:layout_width="60dp"
         android:layout_height="wrap_content"
         android:layout_gravity="top"
@@ -20,7 +20,7 @@
         tools:ignore="ContentDescription" />
 
     <androidx.appcompat.widget.LinearLayoutCompat
-        android:id="@+id/lifestyle_item_content"
+        android:id="@+id/wellbeing_section_content"
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"/>
