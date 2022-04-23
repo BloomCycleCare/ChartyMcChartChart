@@ -7,7 +7,7 @@ import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
@@ -73,7 +73,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
   public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
   public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
-  public final Subject<LifestyleEntry> lifestyleEntrySubject = BehaviorSubject.create();
+  public final Subject<WellbeingEntry> lifestyleEntrySubject = BehaviorSubject.create();
 
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
@@ -109,7 +109,7 @@ public class EntryDetailViewModel extends AndroidViewModel {
 
     measurementEntries.onNext(context.entry.measurementEntry);
     breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
-    lifestyleEntrySubject.onNext(context.entry.lifestyleEntry);
+    lifestyleEntrySubject.onNext(context.entry.wellbeingEntry);
 
     Observable.combineLatest(
         intercourseUpdates,

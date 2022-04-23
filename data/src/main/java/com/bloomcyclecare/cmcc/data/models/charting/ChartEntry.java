@@ -5,7 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -29,7 +29,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
   public ObservationEntry observationEntry;
   public MeasurementEntry measurementEntry;
   public BreastfeedingEntry breastfeedingEntry;
-  public LifestyleEntry lifestyleEntry;
+  public WellbeingEntry wellbeingEntry;
   @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
@@ -40,7 +40,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
                     ObservationEntry observationEntry,
                     MeasurementEntry measurementEntry,
                     BreastfeedingEntry breastfeedingEntry,
-                    LifestyleEntry lifestyleEntry,
+                    WellbeingEntry wellbeingEntry,
                     @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
@@ -48,7 +48,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
     this.observationEntry = observationEntry;
     this.measurementEntry = measurementEntry;
     this.breastfeedingEntry = breastfeedingEntry;
-    this.lifestyleEntry = lifestyleEntry;
+    this.wellbeingEntry = wellbeingEntry;
     this.stickerSelection = stickerSelection;
   }
 
@@ -58,7 +58,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
         ObservationEntry.emptyEntry(entryDate),
         MeasurementEntry.emptyEntry(entryDate),
         BreastfeedingEntry.emptyEntry(entryDate),
-        LifestyleEntry.emptyEntry(entryDate),
+        WellbeingEntry.emptyEntry(entryDate),
         null);
   }
 
@@ -74,7 +74,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
     if (!chartEntryLines.isEmpty()) {
       lines.addAll(chartEntryLines);
     }
-    List<Entry> entries = ImmutableList.of(measurementEntry, breastfeedingEntry, lifestyleEntry);
+    List<Entry> entries = ImmutableList.of(measurementEntry, breastfeedingEntry, wellbeingEntry);
     for (Entry entry : entries) {
       List<String> entryLines = entry.getSummaryLines();
       if (!entryLines.isEmpty()) {
@@ -101,7 +101,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
           && Objects.equal(this.observationEntry, that.observationEntry)
           && Objects.equal(this.measurementEntry, that.measurementEntry)
           && Objects.equal(this.breastfeedingEntry, that.breastfeedingEntry)
-          && Objects.equal(this.lifestyleEntry, that.lifestyleEntry)
+          && Objects.equal(this.wellbeingEntry, that.wellbeingEntry)
           && Objects.equal(this.stickerSelection, that.stickerSelection);
     }
     return false;
@@ -109,7 +109,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(entryDate, observationEntry, measurementEntry, breastfeedingEntry, lifestyleEntry, stickerSelection);
+    return Objects.hashCode(entryDate, observationEntry, measurementEntry, breastfeedingEntry, wellbeingEntry, stickerSelection);
   }
 
   @Override

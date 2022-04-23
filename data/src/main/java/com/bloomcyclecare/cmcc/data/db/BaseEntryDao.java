@@ -12,7 +12,7 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
@@ -187,7 +187,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
       MedicationEntry.class,
-      LifestyleEntry.class,
+      WellbeingEntry.class,
   })
   protected abstract Maybe<E> doMaybeT(SupportSQLiteQuery query);
 
@@ -197,7 +197,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
       MedicationEntry.class,
-      LifestyleEntry.class,
+      WellbeingEntry.class,
   })
   protected abstract Flowable<E> doFlowableT(SupportSQLiteQuery query);
 
@@ -207,7 +207,7 @@ public abstract class BaseEntryDao<E extends Entry> {
       BreastfeedingEntry.class,
       StickerSelectionEntry.class,
       MedicationEntry.class,
-      LifestyleEntry.class,
+      WellbeingEntry.class,
   })
   protected abstract Flowable<List<E>> doFlowableList(SupportSQLiteQuery query);
 }

@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.data.models.lifestyle;
+package com.bloomcyclecare.cmcc.data.models.wellbeing;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,15 +16,15 @@ import java.util.Objects;
 
 @Entity
 @Parcel
-public class LifestyleEntry extends Entry implements Copyable<LifestyleEntry> {
+public class WellbeingEntry extends Entry implements Copyable<WellbeingEntry> {
   @Nullable public Integer painObservationMorning;
   @Nullable public Integer painObservationAfternoon;
   @Nullable public Integer painObservationEvening;
   @Nullable public Integer painObservationNight;
 
-  public LifestyleEntry() {}
+  public WellbeingEntry() {}
 
-  public LifestyleEntry(LifestyleEntry other) {
+  public WellbeingEntry(WellbeingEntry other) {
     super(other);
     this.painObservationMorning = unBox(other.painObservationMorning);
     this.painObservationAfternoon = unBox(other.painObservationAfternoon);
@@ -40,11 +40,11 @@ public class LifestyleEntry extends Entry implements Copyable<LifestyleEntry> {
     return unboxed;
   }
 
-  public static LifestyleEntry emptyEntry(LocalDate localDate) {
-    return new LifestyleEntry(localDate);
+  public static WellbeingEntry emptyEntry(LocalDate localDate) {
+    return new WellbeingEntry(localDate);
   }
 
-  public LifestyleEntry(@NonNull LocalDate entryDate) {
+  public WellbeingEntry(@NonNull LocalDate entryDate) {
     super(entryDate);
   }
 
@@ -71,7 +71,7 @@ public class LifestyleEntry extends Entry implements Copyable<LifestyleEntry> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     if (!super.equals(o)) return false;
-    LifestyleEntry that = (LifestyleEntry) o;
+    WellbeingEntry that = (WellbeingEntry) o;
     return Objects.equals(painObservationMorning, that.painObservationMorning) && Objects.equals(painObservationAfternoon, that.painObservationAfternoon) && Objects.equals(painObservationEvening, that.painObservationEvening) && Objects.equals(painObservationNight, that.painObservationNight);
   }
 
@@ -116,8 +116,8 @@ public class LifestyleEntry extends Entry implements Copyable<LifestyleEntry> {
   }
 
   @Override
-  public LifestyleEntry copy() {
-    return new LifestyleEntry(this);
+  public WellbeingEntry copy() {
+    return new WellbeingEntry(this);
   }
 
   public enum PainObservationTime {

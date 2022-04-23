@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
@@ -38,7 +38,7 @@ import java.util.List;
         Medication.class,
         MedicationEntry.class,
         MedicationRef.class,
-        LifestyleEntry.class,
+        WellbeingEntry.class,
     },
     version = 25)
 @TypeConverters({Converters.class})
@@ -62,7 +62,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
   public abstract MedicationDao medicationDao();
 
-  public abstract LifestyleEntryDao lifestyleEntryDao();
+  public abstract WellbeingEntryDao lifestyleEntryDao();
 
   private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
     @Override
@@ -220,8 +220,8 @@ public abstract class AppDatabase extends RoomDatabase {
 
   static final BwCompatMigration MIGRATION_23_24 = new BwCompatMigration(
       23, 24,
-      QuerySet.of("CREATE TABLE IF NOT EXISTS `LifestyleEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, `painObservationMorning` INTEGER, `painObservationAfternoon` INTEGER, `painObservationEvening` INTEGER, `painObservationNight` INTEGER, PRIMARY KEY(`entryDate`))"),
-      QuerySet.of("DROP TABLE `LifestyleEntry`"));
+      QuerySet.of("CREATE TABLE IF NOT EXISTS `WellbeingEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, `painObservationMorning` INTEGER, `painObservationAfternoon` INTEGER, `painObservationEvening` INTEGER, `painObservationNight` INTEGER, PRIMARY KEY(`entryDate`))"),
+      QuerySet.of("DROP TABLE `WellbeingEntry`"));
 
   static final BwCompatMigration MIGRATION_24_25 = new BwCompatMigration(
       24, 25,

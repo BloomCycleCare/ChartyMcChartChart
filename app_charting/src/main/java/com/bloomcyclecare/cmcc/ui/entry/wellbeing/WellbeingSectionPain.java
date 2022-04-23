@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.lifestyle;
+package com.bloomcyclecare.cmcc.ui.entry.wellbeing;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -6,7 +6,6 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowId;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -18,16 +17,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
 
-public class LifestyleSectionPain {
+public class WellbeingSectionPain {
 
   public static View inflate(@NonNull LayoutInflater inflater,
                              @NonNull Context context,
-                             @NonNull LifestyleEntryViewModel viewModel) {
+                             @NonNull WellbeingEntryViewModel viewModel) {
     View item = inflater.inflate(R.layout.lifestyle_item, null);
 
     ImageView iconView = item.findViewById(R.id.lifestyle_item_icon);
@@ -50,9 +49,9 @@ public class LifestyleSectionPain {
 
   private static class PainItemAdapter extends RecyclerView.Adapter<PainItemAdapter.ViewHolder> {
 
-    private final LifestyleEntryViewModel mViewModel;
+    private final WellbeingEntryViewModel mViewModel;
 
-    private PainItemAdapter(@NonNull LifestyleEntryViewModel viewModel) {
+    private PainItemAdapter(@NonNull WellbeingEntryViewModel viewModel) {
       mViewModel = viewModel;
     }
 
@@ -69,7 +68,7 @@ public class LifestyleSectionPain {
       if (position > 3) {
         throw new IllegalArgumentException();
       }
-      holder.bind(LifestyleEntry.PainObservationTime.values()[position], mViewModel.updatedEntry().blockingFirst());
+      holder.bind(WellbeingEntry.PainObservationTime.values()[position], mViewModel.updatedEntry().blockingFirst());
     }
 
     @Override
@@ -78,16 +77,16 @@ public class LifestyleSectionPain {
     }
 
     private static class ViewHolder extends RecyclerView.ViewHolder {
-      private final Subject<Pair<LifestyleEntry.PainObservationTime, Integer>> mUpdateSubject;
+      private final Subject<Pair<WellbeingEntry.PainObservationTime, Integer>> mUpdateSubject;
       private final TextView mHeaderTextView;
       private final TextView mValueTextView;
       private final SeekBar mSeekBar;
 
-      private LifestyleEntry.PainObservationTime mBoundTime;
+      private WellbeingEntry.PainObservationTime mBoundTime;
 
       public ViewHolder(
           @NonNull View itemView, @NonNull Context context,
-          Subject<Pair<LifestyleEntry.PainObservationTime, Integer>> updateSubject) {
+          Subject<Pair<WellbeingEntry.PainObservationTime, Integer>> updateSubject) {
         super(itemView);
         mUpdateSubject = updateSubject;
         mHeaderTextView = itemView.findViewById(R.id.pain_level_header);
@@ -113,7 +112,7 @@ public class LifestyleSectionPain {
         });
       }
 
-      public void bind(@NonNull LifestyleEntry.PainObservationTime observationTime, @NonNull LifestyleEntry initialEntry) {
+      public void bind(@NonNull WellbeingEntry.PainObservationTime observationTime, @NonNull WellbeingEntry initialEntry) {
         mBoundTime = observationTime;
         mHeaderTextView.setText("Pain Level " + observationTime.name() + ":");
 
@@ -140,7 +139,7 @@ public class LifestyleSectionPain {
         mUpdateSubject.onNext(Pair.create(mBoundTime, null));
       }
 
-      private boolean confirmClear(@Nullable LifestyleEntry.PainObservationTime time, Context context) {
+      private boolean confirmClear(@Nullable WellbeingEntry.PainObservationTime time, Context context) {
         if (time == null) {
           throw new IllegalStateException();
         }

@@ -1,4 +1,4 @@
-package com.bloomcyclecare.cmcc.ui.entry.lifestyle;
+package com.bloomcyclecare.cmcc.ui.entry.wellbeing;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -12,17 +12,11 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 
 import com.bloomcyclecare.cmcc.R;
-import com.bloomcyclecare.cmcc.data.models.lifestyle.LifestyleEntry;
-import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailViewModel;
 
-import org.parceler.Parcels;
+public class WellbeingEntryFragment extends Fragment {
 
-import timber.log.Timber;
-
-public class LifestyleEntryFragment extends Fragment {
-
-  private LifestyleEntryViewModel mViewModel;
+  private WellbeingEntryViewModel mViewModel;
   private EntryDetailViewModel mEntryViewModel;
 
   @Nullable
@@ -32,14 +26,14 @@ public class LifestyleEntryFragment extends Fragment {
 
     mEntryViewModel = new ViewModelProvider(requireActivity()).get(EntryDetailViewModel.class);
 
-    LifestyleEntryViewModel.Factory factory = new LifestyleEntryViewModel.Factory(
+    WellbeingEntryViewModel.Factory factory = new WellbeingEntryViewModel.Factory(
         requireActivity().getApplication(), mEntryViewModel.lifestyleEntrySubject.blockingFirst());
-    mViewModel = new ViewModelProvider(requireActivity(), factory).get(LifestyleEntryViewModel.class);
+    mViewModel = new ViewModelProvider(requireActivity(), factory).get(WellbeingEntryViewModel.class);
 
     mViewModel.updatedEntry().subscribe(mEntryViewModel.lifestyleEntrySubject);
 
     LinearLayoutCompat lifestyleItems = view.findViewById(R.id.lifestyle_items);
-    lifestyleItems.addView(LifestyleSectionPain.inflate(inflater, requireContext(), mViewModel));
+    lifestyleItems.addView(WellbeingSectionPain.inflate(inflater, requireContext(), mViewModel));
 
     return view;
   }
