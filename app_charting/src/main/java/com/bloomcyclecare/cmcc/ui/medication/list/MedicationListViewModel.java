@@ -12,6 +12,7 @@ import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 
+import java.util.Collections;
 import java.util.List;
 
 import io.reactivex.BackpressureStrategy;
@@ -31,6 +32,18 @@ public class MedicationListViewModel extends AndroidViewModel {
     mMedicationRepo = ChartingApp.cast(application).medicationRepo(ViewMode.CHARTING);
 
     mMedicationRepo.getAll(true)
+        .map(medications -> {
+          Collections.sort(medications, (a, b) -> {
+            if (a.active && b.active) {
+              return 0;
+            } else if (b.active) {
+              return 1;
+            } else {
+              return -1;
+            }
+          });
+          return medications;
+        })
         .map(ViewState::new)
         .toObservable()
         .subscribe(mViewStates);

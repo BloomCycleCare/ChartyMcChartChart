@@ -9,6 +9,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -152,7 +153,9 @@ public class MedicationDetailFragment extends Fragment {
           }
           return Optional.of(Integer.valueOf(value.toString()));
         }).subscribe(mMedicationDetailViewModel.timesPerDaySubject);
-        //TODO: hook up switch
+        activeView.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.activeSubject.onNext(isChecked);
+        });
       }
     });
     return view;
