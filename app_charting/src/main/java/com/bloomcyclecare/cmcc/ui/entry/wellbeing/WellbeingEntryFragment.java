@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModelProvider;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.entry.EntryDetailViewModel;
 import com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections.EnergySection;
+import com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections.MedicationSection;
 import com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections.PainSection;
 
 public class WellbeingEntryFragment extends Fragment {
@@ -37,6 +38,7 @@ public class WellbeingEntryFragment extends Fragment {
     LinearLayoutCompat lifestyleItems = view.findViewById(R.id.lifestyle_items);
     lifestyleItems.addView(PainSection.inflate(inflater, requireContext(), mViewModel));
     lifestyleItems.addView(EnergySection.inflate(inflater, requireContext(), mViewModel));
+    lifestyleItems.addView(MedicationSection.inflate(inflater, requireContext(), mViewModel));
 
     return view;
   }
