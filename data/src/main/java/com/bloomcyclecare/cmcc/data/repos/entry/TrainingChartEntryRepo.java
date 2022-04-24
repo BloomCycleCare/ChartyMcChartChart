@@ -11,12 +11,15 @@ import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.units.qual.A;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -60,7 +63,7 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
         ChartEntry entry = new ChartEntry(entryDate, observationEntry,
             MeasurementEntry.emptyEntry(entryDate),
             BreastfeedingEntry.emptyEntry(entryDate),
-            WellbeingEntry.emptyEntry(entryDate),
+            WellbeingEntryWithRelations.create(WellbeingEntry.emptyEntry(entryDate), new ArrayList<>()),
             populateStickerSelections ? stickerSelection : null);
         entry.marker = trainingEntry.marker().orElse("");
         initialEntries.put(entryDate, entry);

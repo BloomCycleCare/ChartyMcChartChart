@@ -52,7 +52,7 @@ public class EnergySection {
       return null;
     };
 
-    Integer initialEnergyLevel = viewModel.updatedEntry().blockingFirst().energyLevel;
+    Integer initialEnergyLevel = viewModel.updatedEntry().blockingFirst().wellbeingEntry.energyLevel;
     if (initialEnergyLevel != null) {
       enableAndSetSeekbar.apply(initialEnergyLevel);
     } else {

@@ -1,18 +1,14 @@
 package com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections;
 
-import android.app.AlertDialog;
 import android.content.Context;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.SeekBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -20,13 +16,14 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
-import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.ui.entry.wellbeing.WellbeingEntryViewModel;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import io.reactivex.subjects.Subject;
-import timber.log.Timber;
 
 public class MedicationSection {
 
@@ -56,11 +53,18 @@ public class MedicationSection {
   private static class MedicationItemAdapter extends RecyclerView.Adapter<MedicationItemAdapter.ViewHolder> {
 
     private final WellbeingEntryViewModel mViewModel;
-    private final List<Medication> mMedications;
+    private final List<MedicationItem> mMedications = new ArrayList<>();
 
     private MedicationItemAdapter(@NonNull WellbeingEntryViewModel viewModel) {
       mViewModel = viewModel;
-      mMedications = mViewModel.medications().blockingFirst();
+      for (Medication medication : viewModel.medications().blockingFirst()) {
+        for (Medication.TimeOfDay time : Medication.TimeOfDay.values()) {
+          if (medication.shouldTake(time)) {
+            mMedications.add(new MedicationItem(medication, time));
+          }
+        }
+      }
+      mMedications.sort(Comparator.comparing(m -> m.time));
     }
 
     @NonNull
@@ -73,7 +77,7 @@ public class MedicationSection {
 
     @Override
     public void onBindViewHolder(@NonNull MedicationItemAdapter.ViewHolder holder, int position) {
-      holder.bind(mMedications.get(position));
+      holder.bind(mMedications.get(position), mViewModel.updatedEntry().blockingFirst().medicationRefs);
     }
 
     @Override
@@ -81,23 +85,35 @@ public class MedicationSection {
       return mMedications.size();
     }
 
+    private static class MedicationItem {
+      public final Medication.TimeOfDay time;
+      public final Medication medication;
+
+      private MedicationItem(Medication medication, Medication.TimeOfDay time) {
+        this.time = time;
+        this.medication = medication;
+      }
+    }
+
     private static class ViewHolder extends RecyclerView.ViewHolder {
       private final TextView mMedicationName;
+      private final SwitchCompat mMedicationSwitch;
 
-      private Medication mBoundMedication;
+      private MedicationItem mBoundItem;
 
-      public ViewHolder(@NonNull View itemView, Subject<Pair<Medication, Boolean>> updateSubject) {
+      public ViewHolder(@NonNull View itemView, Subject<WellbeingEntryViewModel.MedicationUpdate> updateSubject) {
         super(itemView);
         mMedicationName = itemView.findViewById(R.id.medication_header);
-        SwitchCompat medicationSwitch = itemView.findViewById(R.id.medication_value);
-        medicationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          updateSubject.onNext(Pair.create(mBoundMedication, isChecked));
-        });
+        mMedicationSwitch = itemView.findViewById(R.id.medication_value);
+        mMedicationSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> updateSubject.onNext(
+            new WellbeingEntryViewModel.MedicationUpdate(
+                mBoundItem.medication, mBoundItem.time, isChecked)));
       }
 
-      public void bind(@NonNull Medication medication) {
-        mBoundMedication = medication;
-        mMedicationName.setText(medication.name);
+      public void bind(@NonNull MedicationItem item, List<MedicationRef> initialRefs) {
+        mBoundItem = item;
+        mMedicationName.setText(String.format("%s - %s", item.medication.name, item.time.name()));
+        mMedicationSwitch.setChecked(initialRefs.stream().anyMatch(r -> r.medicationId == item.medication.id && r.time == item.time));
       }
     }
   }

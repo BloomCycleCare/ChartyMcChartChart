@@ -12,6 +12,7 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;

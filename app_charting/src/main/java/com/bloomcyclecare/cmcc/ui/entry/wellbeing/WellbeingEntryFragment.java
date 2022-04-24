@@ -30,10 +30,10 @@ public class WellbeingEntryFragment extends Fragment {
     mEntryViewModel = new ViewModelProvider(requireActivity()).get(EntryDetailViewModel.class);
 
     WellbeingEntryViewModel.Factory factory = new WellbeingEntryViewModel.Factory(
-        requireActivity().getApplication(), mEntryViewModel.lifestyleEntrySubject.blockingFirst());
+        requireActivity().getApplication(), mEntryViewModel.wellbeingEntrySubject.blockingFirst());
     mViewModel = new ViewModelProvider(requireActivity(), factory).get(WellbeingEntryViewModel.class);
 
-    mViewModel.updatedEntry().subscribe(mEntryViewModel.lifestyleEntrySubject);
+    mViewModel.updatedEntry().subscribe(mEntryViewModel.wellbeingEntrySubject);
 
     LinearLayoutCompat lifestyleItems = view.findViewById(R.id.lifestyle_items);
     lifestyleItems.addView(PainSection.inflate(inflater, requireContext(), mViewModel));

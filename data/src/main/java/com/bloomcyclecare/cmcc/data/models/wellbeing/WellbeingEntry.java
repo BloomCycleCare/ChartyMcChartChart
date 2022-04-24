@@ -3,14 +3,18 @@ package com.bloomcyclecare.cmcc.data.models.wellbeing;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.room.Entity;
+import androidx.room.Relation;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.units.qual.A;
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 

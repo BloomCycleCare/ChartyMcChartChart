@@ -4,11 +4,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.Sumarizable;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
@@ -29,7 +31,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
   public ObservationEntry observationEntry;
   public MeasurementEntry measurementEntry;
   public BreastfeedingEntry breastfeedingEntry;
-  public WellbeingEntry wellbeingEntry;
+  public WellbeingEntryWithRelations wellbeingEntry;
   @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
@@ -40,7 +42,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
                     ObservationEntry observationEntry,
                     MeasurementEntry measurementEntry,
                     BreastfeedingEntry breastfeedingEntry,
-                    WellbeingEntry wellbeingEntry,
+                    WellbeingEntryWithRelations wellbeingEntry,
                     @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
@@ -58,7 +60,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
         ObservationEntry.emptyEntry(entryDate),
         MeasurementEntry.emptyEntry(entryDate),
         BreastfeedingEntry.emptyEntry(entryDate),
-        WellbeingEntry.emptyEntry(entryDate),
+        WellbeingEntryWithRelations.create(WellbeingEntry.emptyEntry(entryDate), new ArrayList<>()),
         null);
   }
 
@@ -74,14 +76,13 @@ public class ChartEntry implements Comparable<ChartEntry> {
     if (!chartEntryLines.isEmpty()) {
       lines.addAll(chartEntryLines);
     }
-    List<Entry> entries = ImmutableList.of(measurementEntry, breastfeedingEntry, wellbeingEntry);
-    for (Entry entry : entries) {
+    ImmutableList.of(measurementEntry, breastfeedingEntry, wellbeingEntry).forEach(entry -> {
       List<String> entryLines = entry.getSummaryLines();
       if (!entryLines.isEmpty()) {
         lines.add(" ");
         lines.addAll(entryLines);
       }
-    }
+    });
     return lines;
   }
 

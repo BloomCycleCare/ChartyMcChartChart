@@ -69,7 +69,7 @@ public class PainSection {
       if (position > 3) {
         throw new IllegalArgumentException();
       }
-      holder.bind(WellbeingEntry.PainObservationTime.values()[position], mViewModel.updatedEntry().blockingFirst());
+      holder.bind(WellbeingEntry.PainObservationTime.values()[position], mViewModel.updatedEntry().blockingFirst().wellbeingEntry);
     }
 
     @Override

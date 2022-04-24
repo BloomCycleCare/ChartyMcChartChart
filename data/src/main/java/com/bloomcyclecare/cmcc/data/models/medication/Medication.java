@@ -17,9 +17,11 @@ public class Medication {
   public String name = "";
   public String description = "";
   public String dosage = "";
+  public boolean takeInMorning;
+  public boolean takeAtNoon;
+  public boolean takeInEvening;
+  public boolean takeAtNight;
   @Deprecated public String frequency = "";
-  @ColumnInfo(defaultValue = "0")
-  public int timesPerDay = 0;
 
   public Medication() {}
 
@@ -29,8 +31,10 @@ public class Medication {
     this.name = that.name;
     this.description = that.description;
     this.dosage = that.dosage;
-    this.frequency = that.frequency;
-    this.timesPerDay = that.timesPerDay;
+    this.takeInMorning = that.takeInMorning;
+    this.takeInEvening = that.takeInEvening;
+    this.takeAtNoon = that.takeAtNoon;
+    this.takeAtNight = that.takeAtNight;
   }
 
   @Override
@@ -40,15 +44,35 @@ public class Medication {
     Medication that = (Medication) o;
     return id == that.id &&
         active == that.active &&
-        timesPerDay == that.timesPerDay &&
+        takeAtNight == that.takeAtNight &&
+        takeAtNoon == that.takeAtNoon &&
+        takeInMorning == that.takeInMorning &&
+        takeInEvening == that.takeInEvening &&
         name.equals(that.name) &&
         description.equals(that.description) &&
-        dosage.equals(that.dosage) &&
-        frequency.equals(that.frequency);
+        dosage.equals(that.dosage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, description, dosage, frequency, active, timesPerDay);
+    return Objects.hash(id, name, description, dosage, active, takeInMorning, takeInEvening, takeAtNight, takeAtNoon);
+  }
+
+  public enum TimeOfDay {
+    MORNING, NOON, EVENING, NIGHT
+  }
+
+  public boolean shouldTake(TimeOfDay timeOfDay) {
+    switch (timeOfDay) {
+      case MORNING:
+        return takeInMorning;
+      case NOON:
+        return takeAtNoon;
+      case EVENING:
+        return takeInEvening;
+      case NIGHT:
+        return takeAtNight;
+    }
+    throw new IllegalStateException();
   }
 }

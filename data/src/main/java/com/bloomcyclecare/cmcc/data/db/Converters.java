@@ -133,6 +133,16 @@ public class Converters {
   }
 
   @TypeConverter
+  public String fromTimeOfDay(Medication.TimeOfDay in) {
+    return in.name();
+  }
+
+  @TypeConverter
+  public Medication.TimeOfDay toMedicationTimeOfDay(String in) {
+    return Medication.TimeOfDay.valueOf(in);
+  }
+
+  @TypeConverter
   public String fromLHTestResult(LHTestResult in) {
     return in.name();
   }
