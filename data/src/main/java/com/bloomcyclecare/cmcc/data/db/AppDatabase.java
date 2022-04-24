@@ -14,7 +14,6 @@ import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
-import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
@@ -36,11 +35,10 @@ import java.util.List;
         BreastfeedingEntry.class,
         Pregnancy.class,
         Medication.class,
-        MedicationEntry.class,
         MedicationRef.class,
         WellbeingEntry.class,
     },
-    version = 28)
+    version = 29)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -57,8 +55,6 @@ public abstract class AppDatabase extends RoomDatabase {
   public abstract BreastfeedingEntryDao breastfeedingEntryDao();
 
   public abstract PregnancyDao pregnancyDao();
-
-  public abstract MedicationEntryDao medicationEntryDao();
 
   public abstract MedicationDao medicationDao();
 
@@ -247,6 +243,15 @@ public abstract class AppDatabase extends RoomDatabase {
       QuerySet.of("ALTER TABLE MedicationRef ADD COLUMN time TEXT"),
       QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_28_29 = new BwCompatMigration(
+      28, 29,
+      QuerySet.of(
+          "DROP TABLE MedicationEntry",
+          "DROP TABLE MedicationRef",
+          "CREATE TABLE IF NOT EXISTS `MedicationRef` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, `time` TEXT NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`, `time`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+          "CREATE INDEX IF NOT EXISTS `index_MedicationRef_medicationId` ON `MedicationRef` (`medicationId`)"
+      ), QuerySet.of());
+
 
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
@@ -264,6 +269,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_25_26.migrations())
       .addAll(MIGRATION_26_27.migrations())
       .addAll(MIGRATION_27_28.migrations())
+      .addAll(MIGRATION_28_29.migrations())
       .build();
 
   public static class QuerySet {

@@ -12,7 +12,7 @@ import org.parceler.Parcel;
 
 @Parcel
 @Entity(
-    primaryKeys = {"entryDate", "medicationId"},
+    primaryKeys = {"entryDate", "medicationId", "time"},
     foreignKeys = {
         @ForeignKey(
             entity = Medication.class,
@@ -26,7 +26,7 @@ import org.parceler.Parcel;
 public class MedicationRef {
   @NonNull public LocalDate entryDate;
   public int medicationId;
-  public Medication.TimeOfDay time;
+  @NonNull public Medication.TimeOfDay time;
 
   public static MedicationRef create(Entry entry, Medication medication, Medication.TimeOfDay time) {
     MedicationRef ref = new MedicationRef();

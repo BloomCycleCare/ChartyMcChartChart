@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 28,
-    "identityHash": "83a9c0cbb18909f4e31cc14f3ece7f5e",
+    "version": 29,
+    "identityHash": "ad6020c9685f2d11a821b7f42f0a0a5f",
     "entities": [
       {
         "tableName": "Cycle",
@@ -498,44 +498,6 @@
         "foreignKeys": []
       },
       {
-        "tableName": "MedicationEntry",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, PRIMARY KEY(`entryDate`))",
-        "fields": [
-          {
-            "fieldPath": "mEntryDate",
-            "columnName": "entryDate",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
-            "fieldPath": "mTimeCreated",
-            "columnName": "timeCreated",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "mTimeUpdated",
-            "columnName": "timeUpdated",
-            "affinity": "INTEGER",
-            "notNull": false
-          },
-          {
-            "fieldPath": "mTimesUpdated",
-            "columnName": "timesUpdated",
-            "affinity": "INTEGER",
-            "notNull": true
-          }
-        ],
-        "primaryKey": {
-          "columnNames": [
-            "entryDate"
-          ],
-          "autoGenerate": false
-        },
-        "indices": [],
-        "foreignKeys": []
-      },
-      {
         "tableName": "MedicationRef",
         "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, `time` TEXT NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`, `time`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
@@ -662,7 +624,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '83a9c0cbb18909f4e31cc14f3ece7f5e')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'ad6020c9685f2d11a821b7f42f0a0a5f')"
     ]
   }
 }
