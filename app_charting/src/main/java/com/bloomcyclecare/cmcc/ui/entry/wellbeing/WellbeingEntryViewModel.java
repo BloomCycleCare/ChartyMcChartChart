@@ -16,7 +16,9 @@ import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.medication.ROMedicationRepo;
 import com.google.common.base.Joiner;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.units.qual.A;
 
@@ -42,6 +44,8 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
 
   private final Subject<WellbeingEntryWithRelations> mUpdatedEntry = BehaviorSubject.create();
   private final ROMedicationRepo mMedicationRepo;
+
+  private final ImmutableSet<Medication> mMedications;
 
   public static class MedicationUpdate {
     public final Medication medication;
@@ -73,11 +77,11 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
     super(application);
     mMedicationRepo = ChartingApp.cast(application).medicationRepo(ViewMode.CHARTING);
 
-    Set<Medication> medications = new HashSet<>(mMedicationRepo.getAll(false).blockingFirst());
+    mMedications = ImmutableSet.copyOf(mMedicationRepo.getAll(false).blockingFirst());
 
-    Observable<List<MedicationRef>> medicationStream = medicationUpdateSubject.scan(initMap(medications), (map, update) -> {
+    Observable<List<MedicationRef>> medicationStream = medicationUpdateSubject.scan(initMap(mMedications), (map, update) -> {
       Timber.v("Updating medications %s %s %b", update.medication.name, update.time.name(), update.checked);
-      if (!medications.contains(update.medication)) {
+      if (!mMedications.contains(update.medication)) {
         throw new IllegalArgumentException("Update for unknown medications: " + update.medication.name);
       }
       ImmutableMap.Builder<Medication, Map<Medication.TimeOfDay, Boolean>> copyBuilder = ImmutableMap.builder();
@@ -148,7 +152,7 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
     energyUpdateSubject.onNext(Optional.ofNullable(initialEntry.wellbeingEntry.energyLevel));
 
     Map<Long, Medication> medicationIndex = new HashMap<>();
-    medications.forEach(medication -> medicationIndex.put(medication.id, medication));
+    mMedications.forEach(medication -> medicationIndex.put(medication.id, medication));
     initialEntry.medicationRefs.forEach(ref -> {
       Medication medication = medicationIndex.get((long) ref.medicationId);
       medicationUpdateSubject.onNext(new MedicationUpdate(medication, ref.time, true));
@@ -163,6 +167,10 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
       lines.add(String.format("%s [%s]", medication.name, Joiner.on(", ").join(parts)));
     });
     Timber.d("Medication: %s", Joiner.on(", ").join(lines));
+  }
+
+  public boolean shouldShowMedicationSection() {
+    return !mMedications.isEmpty();
   }
 
   public Observable<List<Medication>> medications() {

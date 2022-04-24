@@ -38,7 +38,9 @@ public class WellbeingEntryFragment extends Fragment {
     LinearLayoutCompat lifestyleItems = view.findViewById(R.id.lifestyle_items);
     lifestyleItems.addView(PainSection.inflate(inflater, requireContext(), mViewModel));
     lifestyleItems.addView(EnergySection.inflate(inflater, requireContext(), mViewModel));
-    lifestyleItems.addView(MedicationSection.inflate(inflater, requireContext(), mViewModel));
+    if (mViewModel.shouldShowMedicationSection()) {
+      lifestyleItems.addView(MedicationSection.inflate(inflater, requireContext(), mViewModel));
+    }
 
     return view;
   }
