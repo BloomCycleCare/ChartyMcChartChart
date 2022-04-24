@@ -149,6 +149,7 @@ public class EntryDetailActivity extends AppCompatActivity {
         return true;
 
       case R.id.action_save:
+        Timber.v("Triggering save logic");
         mDisposables.add(mViewModel.getSaveSummary(this::resolveQuestion, this::addressIssue).subscribe(summaryLines -> {
           LayoutInflater inflater = getLayoutInflater();
           View dialogView = inflater.inflate(R.layout.dialog_save_entry, null);

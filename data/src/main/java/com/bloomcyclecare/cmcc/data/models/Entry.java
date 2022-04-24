@@ -18,7 +18,7 @@ import java.util.Objects;
 /**
  * Created by parkeroth on 9/20/17.
  */
-public abstract class Entry {
+public abstract class Entry implements Sumarizable {
 
   @PrimaryKey
   @NonNull
@@ -77,8 +77,6 @@ public abstract class Entry {
   public String getDateStr() {
     return DateUtil.toWireStr(mEntryDate);
   }
-
-  public abstract List<String> getSummaryLines();
 
   @Override
   public boolean equals(Object o) {

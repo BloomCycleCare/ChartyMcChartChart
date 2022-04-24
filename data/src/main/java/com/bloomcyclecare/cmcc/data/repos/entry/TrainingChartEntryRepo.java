@@ -3,21 +3,23 @@ package com.bloomcyclecare.cmcc.data.repos.entry;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.StickerExpectations;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingCycle;
 import com.bloomcyclecare.cmcc.data.models.training.TrainingEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.google.common.collect.ImmutableList;
 
+import org.checkerframework.checker.units.qual.A;
 import org.joda.time.LocalDate;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
@@ -59,9 +61,9 @@ public class TrainingChartEntryRepo implements RWChartEntryRepo {
         ObservationEntry observationEntry = trainingEntry.asChartEntry(entryDate, observationParser);
         StickerSelection stickerSelection = mapEntry.getValue().map(e -> e.stickerSelection).orElse(null);
         ChartEntry entry = new ChartEntry(entryDate, observationEntry,
-            WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate),
             MeasurementEntry.emptyEntry(entryDate),
             BreastfeedingEntry.emptyEntry(entryDate),
+            WellbeingEntryWithRelations.create(WellbeingEntry.emptyEntry(entryDate), new ArrayList<>()),
             populateStickerSelections ? stickerSelection : null);
         entry.marker = trainingEntry.marker().orElse("");
         initialEntries.put(entryDate, entry);

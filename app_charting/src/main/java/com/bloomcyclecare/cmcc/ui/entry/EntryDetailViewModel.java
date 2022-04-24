@@ -7,22 +7,21 @@ import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.cycle.RWCycleRepo;
 import com.bloomcyclecare.cmcc.data.repos.entry.RWChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.logic.chart.ObservationParser;
 import com.bloomcyclecare.cmcc.ui.entry.observation.ClarifyingQuestionUpdate;
-import com.bloomcyclecare.cmcc.utils.BoolMapping;
 import com.bloomcyclecare.cmcc.utils.Copyable;
 import com.bloomcyclecare.cmcc.utils.ErrorOr;
 import com.bloomcyclecare.cmcc.utils.RxUtil;
@@ -73,11 +72,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
   public final Subject<String> noteUpdates = BehaviorSubject.createDefault("");
   public final Subject<ClarifyingQuestionUpdate> clarifyingQuestionUpdates = PublishSubject.create();
 
-  public final Subject<BoolMapping> symptomUpdates = BehaviorSubject.createDefault(new BoolMapping());
-  public final Subject<BoolMapping> wellnessUpdates = BehaviorSubject.createDefault(new BoolMapping());
-
   public final Subject<MeasurementEntry> measurementEntries = BehaviorSubject.create();
   public final Subject<BreastfeedingEntry> breastfeedingEntrySubject = BehaviorSubject.create();
+  public final Subject<WellbeingEntryWithRelations> wellbeingEntrySubject = BehaviorSubject.create();
 
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
@@ -111,10 +108,9 @@ public class EntryDetailViewModel extends AndroidViewModel {
     timeOfDayUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.intercourseTimeOfDay).orElse(IntercourseTimeOfDay.NONE));
     noteUpdates.onNext(Optional.ofNullable(context.entry.observationEntry.note).orElse(""));
 
-    symptomUpdates.onNext(context.entry.symptomEntry.symptoms);
-    wellnessUpdates.onNext(context.entry.wellnessEntry.wellnessItems);
     measurementEntries.onNext(context.entry.measurementEntry);
     breastfeedingEntrySubject.onNext(context.entry.breastfeedingEntry);
+    wellbeingEntrySubject.onNext(context.entry.wellbeingEntry);
 
     Observable.combineLatest(
         intercourseUpdates,
@@ -208,18 +204,6 @@ public class EntryDetailViewModel extends AndroidViewModel {
           return builder.build();
         });
 
-    Flowable<SymptomEntry> symptomEntryStream = symptomUpdates
-        .toFlowable(BackpressureStrategy.BUFFER)
-        .distinctUntilChanged()
-        .doOnNext(i -> Timber.v("New symptom updates"))
-        .map(activeSymptoms -> new SymptomEntry(context.entry.symptomEntry, activeSymptoms));
-
-    Flowable<WellnessEntry> wellnessEntryStream = wellnessUpdates
-        .toFlowable(BackpressureStrategy.BUFFER)
-        .distinctUntilChanged()
-        .doOnNext(i -> Timber.v("New wellness updates"))
-        .map(activeItems -> new WellnessEntry(context.entry.wellnessEntry, activeItems));
-
     Flowable<Optional<StickerSelection>> stickerSelectionStream =
         Flowable.just(Optional.ofNullable(context.entry.stickerSelection));
 
@@ -231,28 +215,25 @@ public class EntryDetailViewModel extends AndroidViewModel {
         observationEntryStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW observation entry")),
-        symptomEntryStream
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.d("NEW symptom entry")),
-        wellnessEntryStream
-            .distinctUntilChanged()
-            .doOnNext(i -> Timber.d("NEW wellness entry")),
         measurementEntries.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW measurement entry")),
         breastfeedingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW breastfeeding entry")),
+        wellbeingEntrySubject.toFlowable(BackpressureStrategy.BUFFER)
+            .distinctUntilChanged()
+            .doOnNext(i -> Timber.d("NEW wellbeing entry")),
         stickerSelectionStream
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW sticker selection")),
         clarifyingQuestionRenderUpdates
             .distinctUntilChanged()
             .doOnNext(i -> Timber.d("NEW clarifying quesiton render updates")),
-        (observationError, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection, clarifyingQuestionUpdates) -> {
+        (observationError, observationEntry, measurementEntry, breastfeedingEntry, wellbeingEntryWithRelations, stickerSelection, clarifyingQuestionUpdates) -> {
           ViewState state = new ViewState(
               context,
-              new ChartEntry(entryDate, observationEntry, wellnessEntry, symptomEntry, measurementEntry, breastfeedingEntry, stickerSelection.orElse(null)),
+              new ChartEntry(entryDate, observationEntry, measurementEntry, breastfeedingEntry, wellbeingEntryWithRelations, stickerSelection.orElse(null)),
               observationError);
 
           state.clarifyingQuestionState.addAll(clarifyingQuestionUpdates);

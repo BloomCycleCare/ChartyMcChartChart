@@ -9,6 +9,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +26,7 @@ import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -119,7 +121,10 @@ public class MedicationDetailFragment extends Fragment {
     TextView nameView = view.findViewById(R.id.tv_medication_name_value);
     TextView descriptionView = view.findViewById(R.id.tv_medication_description_value);
     TextView dosageView = view.findViewById(R.id.tv_medication_dosage_value);
-    TextView frequencyView = view.findViewById(R.id.tv_medication_frequency_value);
+    SwitchCompat takeMorningSwitch = view.findViewById(R.id.take_in_morning_switch);
+    SwitchCompat takeNoonSwitch = view.findViewById(R.id.take_at_noon_switch);
+    SwitchCompat takeEveningSwitch = view.findViewById(R.id.take_in_evening_switch);
+    SwitchCompat takeNightSwitch = view.findViewById(R.id.take_at_night_switch);
     SwitchCompat activeView = view.findViewById(R.id.tv_medication_active_value);
 
     AtomicBoolean initialized = new AtomicBoolean();
@@ -132,11 +137,15 @@ public class MedicationDetailFragment extends Fragment {
       maybeUpdate(nameView, viewState.medication.name);
       maybeUpdate(descriptionView, viewState.medication.description);
       maybeUpdate(dosageView, viewState.medication.dosage);
-      maybeUpdate(frequencyView, viewState.medication.frequency);
 
       if (activeView.isChecked() != viewState.medication.active) {
         activeView.setChecked(viewState.medication.active);
       }
+
+      takeMorningSwitch.setChecked(viewState.medication.takeInMorning);
+      takeNoonSwitch.setChecked(viewState.medication.takeAtNoon);
+      takeEveningSwitch.setChecked(viewState.medication.takeInEvening);
+      takeNightSwitch.setChecked(viewState.medication.takeAtNight);
 
       if (initialized.compareAndSet(false, true)) {
         RxTextView.textChanges(nameView).map(CharSequence::toString)
@@ -145,9 +154,21 @@ public class MedicationDetailFragment extends Fragment {
             .subscribe(mMedicationDetailViewModel.descriptionSubject);
         RxTextView.textChanges(dosageView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.dosageSubject);
-        RxTextView.textChanges(frequencyView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.frequencySubject);
-        //TODO: hook up switch
+        takeMorningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.takeMorningSubject.onNext(isChecked);
+        });
+        takeNoonSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.takeNoonSubject.onNext(isChecked);
+        });
+        takeEveningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.takeEveningSubject.onNext(isChecked);
+        });
+        takeNightSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.takeNightSubject.onNext(isChecked);
+        });
+        activeView.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.activeSubject.onNext(isChecked);
+        });
       }
     });
     return view;

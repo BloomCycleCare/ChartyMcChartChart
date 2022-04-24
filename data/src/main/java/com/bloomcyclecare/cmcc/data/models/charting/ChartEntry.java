@@ -3,14 +3,17 @@ package com.bloomcyclecare.cmcc.data.models.charting;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.bloomcyclecare.cmcc.data.models.Entry;
+import com.bloomcyclecare.cmcc.data.models.Sumarizable;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
@@ -26,31 +29,39 @@ import java.util.List;
 public class ChartEntry implements Comparable<ChartEntry> {
   public LocalDate entryDate;
   public ObservationEntry observationEntry;
-  public WellnessEntry wellnessEntry;
-  public SymptomEntry symptomEntry;
   public MeasurementEntry measurementEntry;
   public BreastfeedingEntry breastfeedingEntry;
+  public WellbeingEntryWithRelations wellbeingEntry;
   @Nullable public StickerSelection stickerSelection;
 
   public String marker = "";
 
   public ChartEntry() {}
 
-  public ChartEntry(LocalDate entryDate, ObservationEntry observationEntry, WellnessEntry wellnessEntry, SymptomEntry symptomEntry, MeasurementEntry measurementEntry, BreastfeedingEntry breastfeedingEntry, @Nullable StickerSelection stickerSelection) {
+  public ChartEntry(LocalDate entryDate,
+                    ObservationEntry observationEntry,
+                    MeasurementEntry measurementEntry,
+                    BreastfeedingEntry breastfeedingEntry,
+                    WellbeingEntryWithRelations wellbeingEntry,
+                    @Nullable StickerSelection stickerSelection) {
     this.entryDate = entryDate;
     Preconditions.checkArgument(
         observationEntry.getDate().equals(entryDate), entryDate + " != " + observationEntry.getDate());
     this.observationEntry = observationEntry;
-    this.wellnessEntry = wellnessEntry;
-    this.symptomEntry = symptomEntry;
     this.measurementEntry = measurementEntry;
     this.breastfeedingEntry = breastfeedingEntry;
+    this.wellbeingEntry = wellbeingEntry;
     this.stickerSelection = stickerSelection;
   }
 
   public static ChartEntry emptyEntry(LocalDate entryDate) {
     return new ChartEntry(
-        entryDate, ObservationEntry.emptyEntry(entryDate), WellnessEntry.emptyEntry(entryDate), SymptomEntry.emptyEntry(entryDate), MeasurementEntry.emptyEntry(entryDate), BreastfeedingEntry.emptyEntry(entryDate), null);
+        entryDate,
+        ObservationEntry.emptyEntry(entryDate),
+        MeasurementEntry.emptyEntry(entryDate),
+        BreastfeedingEntry.emptyEntry(entryDate),
+        WellbeingEntryWithRelations.create(WellbeingEntry.emptyEntry(entryDate), new ArrayList<>()),
+        null);
   }
 
   @NonNull
@@ -65,26 +76,13 @@ public class ChartEntry implements Comparable<ChartEntry> {
     if (!chartEntryLines.isEmpty()) {
       lines.addAll(chartEntryLines);
     }
-    List<String> wellnessLines = wellnessEntry.getSummaryLines();
-    if (!wellnessLines.isEmpty()) {
-      lines.add(" ");
-      lines.addAll(wellnessLines);
-    }
-    List<String> symptomLines = symptomEntry.getSummaryLines();
-    if (!symptomLines.isEmpty()) {
-      lines.add(" ");
-      lines.addAll(symptomLines);
-    }
-    List<String> measurementLines = measurementEntry.getSummaryLines();
-    if (!measurementLines.isEmpty()) {
-      lines.add(" ");
-      lines.addAll(measurementLines);
-    }
-    List<String> breastFeedingLines = breastfeedingEntry.getSummaryLines();
-    if (!breastFeedingLines.isEmpty()) {
-      lines.add(" ");
-      lines.addAll(breastFeedingLines);
-    }
+    ImmutableList.of(measurementEntry, breastfeedingEntry, wellbeingEntry).forEach(entry -> {
+      List<String> entryLines = entry.getSummaryLines();
+      if (!entryLines.isEmpty()) {
+        lines.add(" ");
+        lines.addAll(entryLines);
+      }
+    });
     return lines;
   }
 
@@ -102,10 +100,9 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
       return Objects.equal(this.entryDate, that.entryDate)
           && Objects.equal(this.observationEntry, that.observationEntry)
-          && Objects.equal(this.wellnessEntry, that.wellnessEntry)
-          && Objects.equal(this.symptomEntry, that.symptomEntry)
           && Objects.equal(this.measurementEntry, that.measurementEntry)
           && Objects.equal(this.breastfeedingEntry, that.breastfeedingEntry)
+          && Objects.equal(this.wellbeingEntry, that.wellbeingEntry)
           && Objects.equal(this.stickerSelection, that.stickerSelection);
     }
     return false;
@@ -113,7 +110,7 @@ public class ChartEntry implements Comparable<ChartEntry> {
 
   @Override
   public int hashCode() {
-    return Objects.hashCode(entryDate, observationEntry, symptomEntry, wellnessEntry, measurementEntry, breastfeedingEntry, stickerSelection);
+    return Objects.hashCode(entryDate, observationEntry, measurementEntry, breastfeedingEntry, wellbeingEntry, stickerSelection);
   }
 
   @Override

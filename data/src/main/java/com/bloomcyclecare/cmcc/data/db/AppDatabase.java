@@ -11,13 +11,11 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
-import com.bloomcyclecare.cmcc.data.models.medication.MedicationEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.SymptomEntry;
-import com.bloomcyclecare.cmcc.data.models.observation.WellnessEntry;
 import com.bloomcyclecare.cmcc.data.models.pregnancy.Pregnancy;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelectionEntry;
 import com.google.common.collect.ImmutableList;
@@ -33,16 +31,14 @@ import java.util.List;
         Instructions.class,
         ObservationEntry.class,
         StickerSelectionEntry.class,
-        SymptomEntry.class,
-        WellnessEntry.class,
         MeasurementEntry.class,
         BreastfeedingEntry.class,
         Pregnancy.class,
         Medication.class,
-        MedicationEntry.class,
         MedicationRef.class,
+        WellbeingEntry.class,
     },
-    version = 23)
+    version = 29)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -52,11 +48,7 @@ public abstract class AppDatabase extends RoomDatabase {
 
   public abstract ObservationEntryDao observationEntryDao();
 
-  public abstract WellnessEntryDao wellnessEntryDao();
-
   public abstract StickerSelectionEntryDao stickerSelectionEntryDao();
-
-  public abstract SymptomEntryDao symptomEntryDao();
 
   public abstract MeasurementEntryDao measurementEntryDao();
 
@@ -64,9 +56,9 @@ public abstract class AppDatabase extends RoomDatabase {
 
   public abstract PregnancyDao pregnancyDao();
 
-  public abstract MedicationEntryDao medicationEntryDao();
-
   public abstract MedicationDao medicationDao();
+
+  public abstract WellbeingEntryDao lifestyleEntryDao();
 
   private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
     @Override
@@ -222,6 +214,45 @@ public abstract class AppDatabase extends RoomDatabase {
           "DROP INDEX `index_MedicationRef_medicationId`"
       ));
 
+  static final BwCompatMigration MIGRATION_23_24 = new BwCompatMigration(
+      23, 24,
+      QuerySet.of("CREATE TABLE IF NOT EXISTS `WellbeingEntry` (`entryDate` TEXT NOT NULL, `timeCreated` INTEGER, `timeUpdated` INTEGER, `timesUpdated` INTEGER NOT NULL, `painObservationMorning` INTEGER, `painObservationAfternoon` INTEGER, `painObservationEvening` INTEGER, `painObservationNight` INTEGER, PRIMARY KEY(`entryDate`))"),
+      QuerySet.of("DROP TABLE `WellbeingEntry`"));
+
+  static final BwCompatMigration MIGRATION_24_25 = new BwCompatMigration(
+      24, 25,
+      QuerySet.of("DROP TABLE `WellnessEntry`", "DROP TABLE `SymptomEntry`"),
+      QuerySet.of());
+
+  static final BwCompatMigration MIGRATION_25_26 = new BwCompatMigration(
+      25, 26,
+      QuerySet.of("ALTER TABLE WellbeingEntry ADD COLUMN energyLevel INTEGER"),
+      QuerySet.of());
+
+  static final BwCompatMigration MIGRATION_26_27 = new BwCompatMigration(
+      26, 27,
+      QuerySet.of(
+          "ALTER TABLE Medication ADD COLUMN takeInMorning INTEGER NOT NULL DEFAULT (0)",
+          "ALTER TABLE Medication ADD COLUMN takeAtNoon INTEGER NOT NULL DEFAULT (0)",
+          "ALTER TABLE Medication ADD COLUMN takeInEvening INTEGER NOT NULL DEFAULT (0)",
+          "ALTER TABLE Medication ADD COLUMN takeAtNight INTEGER NOT NULL DEFAULT (0)"),
+      QuerySet.of());
+
+  static final BwCompatMigration MIGRATION_27_28 = new BwCompatMigration(
+      27, 28,
+      QuerySet.of("ALTER TABLE MedicationRef ADD COLUMN time TEXT"),
+      QuerySet.of());
+
+  static final BwCompatMigration MIGRATION_28_29 = new BwCompatMigration(
+      28, 29,
+      QuerySet.of(
+          "DROP TABLE MedicationEntry",
+          "DROP TABLE MedicationRef",
+          "CREATE TABLE IF NOT EXISTS `MedicationRef` (`entryDate` TEXT NOT NULL, `medicationId` INTEGER NOT NULL, `time` TEXT NOT NULL, PRIMARY KEY(`entryDate`, `medicationId`, `time`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+          "CREATE INDEX IF NOT EXISTS `index_MedicationRef_medicationId` ON `MedicationRef` (`medicationId`)"
+      ), QuerySet.of());
+
+
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
           MIGRATION_10_11, MIGRATION_11_12, MIGRATION_12_13, MIGRATION_13_14, MIGRATION_14_15)
@@ -233,6 +264,12 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_20_21.migrations())
       .addAll(MIGRATION_21_22.migrations())
       .addAll(MIGRATION_22_23.migrations())
+      .addAll(MIGRATION_23_24.migrations())
+      .addAll(MIGRATION_24_25.migrations())
+      .addAll(MIGRATION_25_26.migrations())
+      .addAll(MIGRATION_26_27.migrations())
+      .addAll(MIGRATION_27_28.migrations())
+      .addAll(MIGRATION_28_29.migrations())
       .build();
 
   public static class QuerySet {
