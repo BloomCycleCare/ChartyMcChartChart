@@ -117,8 +117,7 @@ public class MainActivity extends AppCompatActivity {
     mViewModel.viewState().observe(this, this::render);
   }
 
-  private static final ImmutableSet<Integer> DISABLE_FOR_RELEASE =
-      ImmutableSet.of(R.id.medicationList);
+  private static final ImmutableSet<Integer> DISABLE_FOR_RELEASE = ImmutableSet.of();
 
   @Override
   public boolean onSupportNavigateUp() {
