@@ -2,12 +2,18 @@ package com.bloomcyclecare.cmcc.ui.entry;
 
 import android.app.Application;
 
+import androidx.annotation.NonNull;
+import androidx.lifecycle.AndroidViewModel;
+import androidx.lifecycle.LiveData;
+import androidx.lifecycle.LiveDataReactiveStreams;
+import androidx.lifecycle.ViewModel;
+import androidx.lifecycle.ViewModelProvider;
+
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
-import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.observation.ClarifyingQuestion;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
@@ -36,12 +42,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-import androidx.annotation.NonNull;
-import androidx.lifecycle.AndroidViewModel;
-import androidx.lifecycle.LiveData;
-import androidx.lifecycle.LiveDataReactiveStreams;
-import androidx.lifecycle.ViewModel;
-import androidx.lifecycle.ViewModelProvider;
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Flowable;
