@@ -10,6 +10,7 @@ import org.parceler.Parcel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Parcel
 public class WellbeingEntryWithRelations implements Sumarizable {
@@ -34,5 +35,18 @@ public class WellbeingEntryWithRelations implements Sumarizable {
       lines.add(String.format("Took %d medications", medicationRefs.size()));
     }
     return lines;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    WellbeingEntryWithRelations that = (WellbeingEntryWithRelations) o;
+    return wellbeingEntry.equals(that.wellbeingEntry) && medicationRefs.equals(that.medicationRefs);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(wellbeingEntry, medicationRefs);
   }
 }
