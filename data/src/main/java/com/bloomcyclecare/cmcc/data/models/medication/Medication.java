@@ -37,6 +37,10 @@ public class Medication {
     this.takeAtNight = that.takeAtNight;
   }
 
+  public boolean expected() {
+    return takeInMorning || takeAtNoon || takeInEvening || takeAtNight;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;

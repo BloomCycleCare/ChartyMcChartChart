@@ -12,6 +12,7 @@ import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.bloomcyclecare.cmcc.utils.GoogleAuthHelper;
 import com.google.api.client.http.FileContent;
 import com.google.api.services.drive.model.File;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
 import org.joda.time.LocalDate;
@@ -79,7 +80,7 @@ public class PublishWorker extends RxWorker {
                 .getStreamForCycle(Flowable.just(cycle))
                 .doOnSubscribe(d -> Timber.d("Fetching entries for cycle"))
                 .firstOrError()
-                .map(entries -> new CycleRenderer(cycle, Optional.empty(), entries, instructions)))
+                .map(entries -> new CycleRenderer(cycle, Optional.empty(), entries, instructions, ImmutableMap.of())))
             .toList()
             .map(PageRenderer::new)
             .map(pageRenderer -> new ChartPrinter(pageRenderer, null, mContext))));
