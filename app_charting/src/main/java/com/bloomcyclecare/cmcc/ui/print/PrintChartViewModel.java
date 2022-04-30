@@ -11,6 +11,7 @@ import com.bloomcyclecare.cmcc.data.repos.entry.ROChartEntryRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.ROInstructionsRepo;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.google.auto.value.AutoValue;
+import com.google.common.collect.ImmutableMap;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +58,7 @@ public class PrintChartViewModel extends AndroidViewModel {
         .flatMap(cycle -> Single.zip(
             mEntryRepo.getStreamForCycle(Flowable.just(cycle)).firstOrError(),
             mInstructionsRepo.getAll().firstOrError(),
-            (entries, instructions) -> new CycleRenderer(cycle, Optional.empty(), entries, instructions))
+            (entries, instructions) -> new CycleRenderer(cycle, Optional.empty(), entries, instructions, ImmutableMap.of()))
             .toObservable());
   }
 

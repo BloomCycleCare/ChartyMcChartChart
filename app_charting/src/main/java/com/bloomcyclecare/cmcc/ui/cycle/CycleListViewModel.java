@@ -14,6 +14,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.backup.AppStateExporter;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.training.Exercise;
 import com.bloomcyclecare.cmcc.data.repos.cycle.ROCycleRepo;
@@ -29,6 +30,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -127,28 +129,28 @@ public class CycleListViewModel extends AndroidViewModel {
       Flowable<Map<LocalDate, StickerSelection>> stickerSelectionStream = mApplication.stickerSelectionRepo(viewMode)
           .getSelections().distinctUntilChanged();
 
-      Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = cycleRepo.getStream()
-          .distinctUntilChanged()
-          .doOnNext(cycles -> Timber.d("Got new cycle list: %d", cycles.size()))
-          .switchMap(cycles -> mApplication.instructionsRepo(viewMode).getAll()
-              .distinctUntilChanged()
-              .doOnNext(instructions -> Timber.d("Got new instruction list: %d", instructions.size()))
-              .switchMap(instructions -> {
-                List<Flowable<CycleRenderer.RenderableCycle>> renderableCycleStreams = new ArrayList<>(cycles.size());
-                for (Cycle cycle : cycles) {
-                  renderableCycleStreams.add(Flowable.combineLatest(
-                      entryRepo.getStreamForCycle(Flowable.just(cycle))
-                          .distinctUntilChanged()
-                          .doOnNext(ces -> Timber.v("Cycle %s: Got new entry stream", cycle.startDate)),
-                      cycleRepo.getPreviousCycle(cycle)
-                          .toFlowable()
-                          .distinctUntilChanged()
-                          .doOnNext(ces -> Timber.v("Cycle %s: Got new previous cycle", cycle.startDate))
-                          .map(Optional::of).defaultIfEmpty(Optional.empty()),
-                      (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions).render()));
-                }
-                return Flowable.merge(Flowable.just(renderableCycleStreams).map(RxUtil::combineLatest));
-              }));
+      Flowable<List<CycleRenderer.RenderableCycle>> renderableCycleStream = Flowable.merge(Flowable.combineLatest(
+          cycleRepo.getStream().distinctUntilChanged(),
+          mApplication.instructionsRepo(viewMode).getAll().distinctUntilChanged(),
+          mApplication.medicationRepo(viewMode).getAll(false).distinctUntilChanged(),
+          (cycles, instructions, medications) -> {
+            Map<Integer, Medication> medicationIndex = new HashMap<>();
+            medications.forEach(medication -> medicationIndex.put((int) medication.id, medication));
+            List<Flowable<CycleRenderer.RenderableCycle>> renderableCycleStreams = new ArrayList<>(cycles.size());
+            for (Cycle cycle : cycles) {
+              renderableCycleStreams.add(Flowable.combineLatest(
+                  entryRepo.getStreamForCycle(Flowable.just(cycle))
+                      .distinctUntilChanged()
+                      .doOnNext(ces -> Timber.v("Cycle %s: Got new entry stream", cycle.startDate)),
+                  cycleRepo.getPreviousCycle(cycle)
+                      .toFlowable()
+                      .distinctUntilChanged()
+                      .doOnNext(ces -> Timber.v("Cycle %s: Got new previous cycle", cycle.startDate))
+                      .map(Optional::of).defaultIfEmpty(Optional.empty()),
+                  (entries, previousCycle) -> new CycleRenderer(cycle, previousCycle, entries, instructions, medicationIndex).render()));
+            }
+            return Flowable.merge(Flowable.just(renderableCycleStreams).map(RxUtil::combineLatest));
+          }));
 
       return Flowable.combineLatest(
           renderableCycleStream

@@ -125,7 +125,7 @@ public class MedicationDetailFragment extends Fragment {
     SwitchCompat takeNoonSwitch = view.findViewById(R.id.take_at_noon_switch);
     SwitchCompat takeEveningSwitch = view.findViewById(R.id.take_in_evening_switch);
     SwitchCompat takeNightSwitch = view.findViewById(R.id.take_at_night_switch);
-    SwitchCompat activeView = view.findViewById(R.id.tv_medication_active_value);
+    SwitchCompat takeAsNeededSwitch = view.findViewById(R.id.take_as_needed_value);
 
     AtomicBoolean initialized = new AtomicBoolean();
 
@@ -138,14 +138,16 @@ public class MedicationDetailFragment extends Fragment {
       maybeUpdate(descriptionView, viewState.medication.description);
       maybeUpdate(dosageView, viewState.medication.dosage);
 
-      if (activeView.isChecked() != viewState.medication.active) {
-        activeView.setChecked(viewState.medication.active);
-      }
-
       takeMorningSwitch.setChecked(viewState.medication.takeInMorning);
       takeNoonSwitch.setChecked(viewState.medication.takeAtNoon);
       takeEveningSwitch.setChecked(viewState.medication.takeInEvening);
       takeNightSwitch.setChecked(viewState.medication.takeAtNight);
+      takeAsNeededSwitch.setChecked(viewState.medication.takeAsNeeded);
+
+      takeMorningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
+      takeNoonSwitch.setEnabled(!viewState.medication.takeAsNeeded);
+      takeEveningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
+      takeNightSwitch.setEnabled(!viewState.medication.takeAsNeeded);
 
       if (initialized.compareAndSet(false, true)) {
         RxTextView.textChanges(nameView).map(CharSequence::toString)
@@ -166,8 +168,8 @@ public class MedicationDetailFragment extends Fragment {
         takeNightSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
           mMedicationDetailViewModel.takeNightSubject.onNext(isChecked);
         });
-        activeView.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.activeSubject.onNext(isChecked);
+        takeAsNeededSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+          mMedicationDetailViewModel.takeAsNeededSubject.onNext(isChecked);
         });
       }
     });

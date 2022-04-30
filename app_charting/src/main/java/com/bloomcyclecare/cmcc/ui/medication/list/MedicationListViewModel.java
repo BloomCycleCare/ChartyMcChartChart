@@ -34,9 +34,9 @@ public class MedicationListViewModel extends AndroidViewModel {
     mMedicationRepo.getAll(true)
         .map(medications -> {
           Collections.sort(medications, (a, b) -> {
-            if (a.active && b.active) {
+            if (a.active() && b.active()) {
               return 0;
-            } else if (b.active) {
+            } else if (b.active()) {
               return 1;
             } else {
               return -1;

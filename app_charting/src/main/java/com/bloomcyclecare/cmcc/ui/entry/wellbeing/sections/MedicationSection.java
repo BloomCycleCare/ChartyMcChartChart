@@ -9,6 +9,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.appcompat.widget.SwitchCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -86,10 +87,10 @@ public class MedicationSection {
     }
 
     private static class MedicationItem {
-      public final Medication.TimeOfDay time;
+      @Nullable public final Medication.TimeOfDay time;
       public final Medication medication;
 
-      private MedicationItem(Medication medication, Medication.TimeOfDay time) {
+      private MedicationItem(Medication medication, @Nullable Medication.TimeOfDay time) {
         this.time = time;
         this.medication = medication;
       }

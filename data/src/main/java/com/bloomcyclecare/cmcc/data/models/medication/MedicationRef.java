@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.data.models.medication;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
@@ -24,9 +25,11 @@ import org.parceler.Parcel;
     indices = {@Index("medicationId")}
 )
 public class MedicationRef {
-  @NonNull public LocalDate entryDate;
+  @NonNull
+  public LocalDate entryDate;
   public int medicationId;
-  @NonNull public Medication.TimeOfDay time;
+  @NonNull
+  public Medication.TimeOfDay time;
 
   public static MedicationRef create(Entry entry, Medication medication, Medication.TimeOfDay time) {
     MedicationRef ref = new MedicationRef();
