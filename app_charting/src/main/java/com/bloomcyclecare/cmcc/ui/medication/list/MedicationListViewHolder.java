@@ -27,7 +27,7 @@ public class MedicationListViewHolder extends RecyclerView.ViewHolder {
   public void bind(Medication medication) {
     mBoundMedication = medication;
     String name = medication.name;
-    if (!medication.active) {
+    if (!medication.active()) {
       name += " (Inactive)";
     }
     mNameView.setText(name);

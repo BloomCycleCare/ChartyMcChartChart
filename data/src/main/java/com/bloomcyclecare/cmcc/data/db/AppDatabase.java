@@ -38,7 +38,7 @@ import java.util.List;
         MedicationRef.class,
         WellbeingEntry.class,
     },
-    version = 29)
+    version = 30)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -252,6 +252,15 @@ public abstract class AppDatabase extends RoomDatabase {
           "CREATE INDEX IF NOT EXISTS `index_MedicationRef_medicationId` ON `MedicationRef` (`medicationId`)"
       ), QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_29_30 = new BwCompatMigration(
+      29, 30,
+      QuerySet.of(
+          "CREATE TABLE IF NOT EXISTS `Medication_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT, `dosage` TEXT, `takeInMorning` INTEGER NOT NULL, `takeAtNoon` INTEGER NOT NULL, `takeInEvening` INTEGER NOT NULL, `takeAtNight` INTEGER NOT NULL, `takeAsNeeded` INTEGER NOT NULL)",
+          "INSERT INTO `Medication_new` SELECT id, name, description, dosage, takeInMorning, takeAtNoon, takeInEvening, takeAtNight, active AND NOT (takeInMorning OR takeAtNoon OR takeInEvening OR takeAtNight) AS takeAsNeeded FROM `Medication`",
+          "DROP TABLE `Medication`",
+          "ALTER TABLE `Medication_new` RENAME TO `Medication`"
+      ), QuerySet.of());
+
 
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
@@ -270,6 +279,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_26_27.migrations())
       .addAll(MIGRATION_27_28.migrations())
       .addAll(MIGRATION_28_29.migrations())
+      .addAll(MIGRATION_29_30.migrations())
       .build();
 
   public static class QuerySet {

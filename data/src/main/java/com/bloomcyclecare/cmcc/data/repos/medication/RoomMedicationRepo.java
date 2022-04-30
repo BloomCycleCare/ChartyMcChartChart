@@ -63,7 +63,7 @@ public class RoomMedicationRepo implements RWMedicationRepo {
   public Flowable<List<Medication>> getAll(boolean includeInactive) {
     return medicationDao.get().map(medications -> medications
         .stream()
-        .filter(m -> m.active || includeInactive)
+        .filter(m -> includeInactive || m.active())
         .collect(Collectors.toList()))
         .subscribeOn(Schedulers.computation());
   }
