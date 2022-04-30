@@ -171,25 +171,25 @@
         app:layout_constraintVertical_bias="1.0" />
 
     <TextView
-        android:id="@+id/tv_medication_active_header"
+        android:id="@+id/take_as_needed_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
         android:paddingTop="16dp"
-        android:text="Show in menu: "
+        android:text="Take as_needed: "
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/take_at_night_header" />
 
     <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/tv_medication_active_value"
+        android:id="@+id/take_as_needed_value"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/tv_medication_active_header"
+        app:layout_constraintBottom_toBottomOf="@+id/take_as_needed_header"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/tv_medication_active_header"
-        app:layout_constraintTop_toTopOf="@+id/tv_medication_active_header"
+        app:layout_constraintStart_toEndOf="@id/take_as_needed_header"
+        app:layout_constraintTop_toTopOf="@+id/take_as_needed_header"
         app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

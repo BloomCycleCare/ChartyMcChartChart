@@ -13,7 +13,6 @@ import java.util.Objects;
 public class Medication {
   @PrimaryKey(autoGenerate = true)
   public long id;
-  public boolean active;
   public String name = "";
   public String description = "";
   public String dosage = "";
@@ -21,13 +20,12 @@ public class Medication {
   public boolean takeAtNoon;
   public boolean takeInEvening;
   public boolean takeAtNight;
-  @Deprecated public String frequency = "";
+  public boolean takeAsNeeded;
 
   public Medication() {}
 
   public Medication(Medication that) {
     this.id = that.id;
-    this.active = that.active;
     this.name = that.name;
     this.description = that.description;
     this.dosage = that.dosage;
@@ -35,6 +33,15 @@ public class Medication {
     this.takeInEvening = that.takeInEvening;
     this.takeAtNoon = that.takeAtNoon;
     this.takeAtNight = that.takeAtNight;
+    this.takeAsNeeded = that.takeAsNeeded;
+  }
+
+  public boolean active() {
+    return expected() || takeAsNeeded;
+  }
+
+  public boolean expected() {
+    return takeInMorning || takeAtNoon || takeInEvening || takeAtNight;
   }
 
   @Override
@@ -43,11 +50,11 @@ public class Medication {
     if (o == null || getClass() != o.getClass()) return false;
     Medication that = (Medication) o;
     return id == that.id &&
-        active == that.active &&
         takeAtNight == that.takeAtNight &&
         takeAtNoon == that.takeAtNoon &&
         takeInMorning == that.takeInMorning &&
         takeInEvening == that.takeInEvening &&
+        takeAsNeeded == that.takeAsNeeded &&
         name.equals(that.name) &&
         description.equals(that.description) &&
         dosage.equals(that.dosage);
@@ -55,11 +62,11 @@ public class Medication {
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, name, description, dosage, active, takeInMorning, takeInEvening, takeAtNight, takeAtNoon);
+    return Objects.hash(id, name, description, dosage, takeInMorning, takeInEvening, takeAtNight, takeAtNoon, takeAsNeeded);
   }
 
   public enum TimeOfDay {
-    MORNING, NOON, EVENING, NIGHT
+    MORNING, NOON, EVENING, NIGHT, AS_NEEDED
   }
 
   public boolean shouldTake(TimeOfDay timeOfDay) {
@@ -72,6 +79,8 @@ public class Medication {
         return takeInEvening;
       case NIGHT:
         return takeAtNight;
+      case AS_NEEDED:
+        return takeAsNeeded;
     }
     throw new IllegalStateException();
   }

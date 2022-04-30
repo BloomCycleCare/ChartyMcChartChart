@@ -83,8 +83,11 @@ interface ChartEntryViewHolder extends View.OnLongClickListener {
       mStickerView.setVisibility(View.VISIBLE);
 
       List<String> dataTextViewParts = new ArrayList<>();
-      dataTextViewParts.add(re.observationSummary().orElse("No observation"));
+      dataTextViewParts.add(re.observationSummary().orElse("TBD"));
       re.measurementSummary().ifPresent(dataTextViewParts::add);
+      if (!re.medicationSummary().isEmpty()) {
+        dataTextViewParts.add(re.medicationSummary());
+      }
 
       mEntryDataTextView.setText(Joiner.on(" - ").join(dataTextViewParts));
       mEntryNumTextView.setText(re.entryNum());

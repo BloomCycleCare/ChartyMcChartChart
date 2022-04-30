@@ -40,7 +40,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> takeNoonSubject;
   final Subject<Boolean> takeEveningSubject;
   final Subject<Boolean> takeNightSubject;
-  final Subject<Boolean> activeSubject;
+  final Subject<Boolean> takeAsNeededSubject;
 
   public MedicationDetailViewModel(@NonNull Application application,
                                    @Nullable Medication initialMedication) {
@@ -54,7 +54,7 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     takeNoonSubject = BehaviorSubject.createDefault(mInitialValue.takeAtNoon);
     takeEveningSubject = BehaviorSubject.createDefault(mInitialValue.takeInEvening);
     takeNightSubject = BehaviorSubject.createDefault(mInitialValue.takeAtNight);
-    activeSubject = BehaviorSubject.createDefault(mInitialValue.active);
+    takeAsNeededSubject = BehaviorSubject.createDefault(mInitialValue.takeAsNeeded);
 
     String title = initialMedication == null ? "New Medication" : "Edit Medication";
     Observable.combineLatest(
@@ -65,17 +65,17 @@ public class MedicationDetailViewModel extends AndroidViewModel {
         takeNoonSubject.distinctUntilChanged(),
         takeEveningSubject.distinctUntilChanged(),
         takeNightSubject.distinctUntilChanged(),
-        activeSubject.distinctUntilChanged(),
-        (name, description, dosage, takeMorning, takeNoon, takeEvening, takeNight, active) -> {
+        takeAsNeededSubject.distinctUntilChanged(),
+        (name, description, dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded) -> {
           Medication medication = new Medication(mInitialValue);
           medication.name = name;
           medication.description = description;
           medication.dosage = dosage;
-          medication.takeInMorning = takeMorning;
-          medication.takeAtNoon = takeNoon;
-          medication.takeInEvening = takeEvening;
-          medication.takeAtNight = takeNight;
-          medication.active = active;
+          medication.takeInMorning = takeMorning && !takeAsNeeded;
+          medication.takeAtNoon = takeNoon && !takeAsNeeded;
+          medication.takeInEvening = takeEvening && !takeAsNeeded;
+          medication.takeAtNight = takeNight && !takeAsNeeded;
+          medication.takeAsNeeded = takeAsNeeded;
           return medication;
         })
         .map(medication -> new ViewState(title, medication))

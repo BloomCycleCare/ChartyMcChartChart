@@ -3,6 +3,8 @@ package com.bloomcyclecare.cmcc.ui.cycle;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.data.models.charting.ChartEntry;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.logic.chart.CycleRenderer;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
@@ -16,6 +18,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import androidx.annotation.NonNull;
 
@@ -28,6 +31,7 @@ public abstract class RenderedEntry {
   @NonNull public abstract String entryDateShortStr();
   @NonNull public abstract Optional<String> observationSummary();
   @NonNull public abstract Optional<String> measurementSummary();
+  @NonNull public abstract String medicationSummary();
   @NonNull public abstract String stickerText();
   @NonNull public abstract String leftSummary();
   @NonNull public abstract String rightSummary();
@@ -47,8 +51,8 @@ public abstract class RenderedEntry {
   @NonNull public abstract Optional<StickerSelection> expectedStickerSelection();
   @NonNull public abstract Optional<StickerSelection> manualStickerSelection();
 
-  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, Optional<String> measurementSummary, String stickerText, String leftSummary, String rightSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean canSelectYellowStamps, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, CycleRenderer.StickerSelectionContext stickerSelectionContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
-    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, measurementSummary, stickerText, leftSummary, rightSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, canSelectYellowStamps, hasObservation, entryModificationContext, stickerSelectionContext, expectedStickerSelection, manualStickerSelection);
+  public static RenderedEntry create(String entryNum, LocalDate entryDate, String entryDateStr, String entryDateShortStr, Optional<String> observationSummary, Optional<String> measurementSummary, String medicationSummary, String stickerText, String leftSummary, String rightSummary, String instructionSummary, int stickerBackgroundResource, boolean showStickerStrike, boolean showWeekTransition, boolean canNavigateToDetailActivity, boolean canPromptForStickerSelection, boolean canSelectYellowStamps, boolean hasObservation, CycleRenderer.EntryModificationContext entryModificationContext, CycleRenderer.StickerSelectionContext stickerSelectionContext, Optional<StickerSelection> expectedStickerSelection, Optional<StickerSelection> manualStickerSelection) {
+    return new AutoValue_RenderedEntry(entryNum, entryDate, entryDateStr, entryDateShortStr, observationSummary, measurementSummary, medicationSummary, stickerText, leftSummary, rightSummary, instructionSummary, stickerBackgroundResource, showStickerStrike, showWeekTransition, canNavigateToDetailActivity, canPromptForStickerSelection, canSelectYellowStamps, hasObservation, entryModificationContext, stickerSelectionContext, expectedStickerSelection, manualStickerSelection);
   }
 
   @NonNull
@@ -108,6 +112,26 @@ public abstract class RenderedEntry {
     String leftSummary = Joiner.on("|").join(leftSummaryItems);
     String rightSummary = re.pocSummary();
 
+    long expectedMedications =
+        re.activeMedications().values().stream().filter(Medication::expected).count();
+    int takenMedications = 0;
+    int extraMedications = 0;
+    for (MedicationRef ref : re.wellbeingEntry().medicationRefs) {
+      Medication medication = re.activeMedications().get(ref.medicationId);
+      if (!medication.expected()) {
+        extraMedications++;
+      } else {
+        takenMedications++;
+      }
+    }
+    String medicationSummary = "";
+    if (expectedMedications > 0) {
+      medicationSummary = String.format("℞ %d/%d", takenMedications, expectedMedications);
+    }
+    if (extraMedications > 0) {
+      medicationSummary += " +" + extraMedications;
+    }
+
     LocalDate today = LocalDate.now();
     LocalDate entryDate = re.modificationContext().entry.entryDate;
     String dateStr = today.minusDays(30).isBefore(entryDate)
@@ -119,6 +143,7 @@ public abstract class RenderedEntry {
         re.dateSummaryShort(),
         re.entrySummary(),
         monitorReading,
+        medicationSummary,
         stickerText,
         leftSummary,
         rightSummary,

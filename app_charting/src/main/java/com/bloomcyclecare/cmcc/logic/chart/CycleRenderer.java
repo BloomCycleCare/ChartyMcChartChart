@@ -9,17 +9,21 @@ import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
 import com.bloomcyclecare.cmcc.data.models.instructions.SpecialInstruction;
 import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.observation.Flow;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.Sticker;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerText;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
+import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
 import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 
 import org.joda.time.Days;
@@ -51,14 +55,16 @@ public class CycleRenderer {
   private final Optional<Cycle> mPreviousCycle;
   private final TreeSet<ChartEntry> mEntries;
   private final TreeSet<Instructions> mInstructions;
+  private final Map<Integer, Medication> mActiveMedications;
 
-  public CycleRenderer(Cycle cycle, Optional<Cycle> previousCycle, Collection<ChartEntry> entries, Collection<Instructions> allInstructions) {
+  public CycleRenderer(Cycle cycle, Optional<Cycle> previousCycle, Collection<ChartEntry> entries, Collection<Instructions> allInstructions, Map<Integer, Medication> activeMedications) {
     mCycle = cycle;
     mPreviousCycle = previousCycle;
     mEntries = new TreeSet<>((a, b) -> a.entryDate.compareTo(b.entryDate));
     mEntries.addAll(entries);
     mInstructions = new TreeSet<>((a, b) -> a.startDate.compareTo(b.startDate));
     mInstructions.addAll(allInstructions);
+    mActiveMedications = ImmutableMap.copyOf(activeMedications);
   }
 
   public Cycle cycle() {
@@ -97,6 +103,8 @@ public class CycleRenderer {
         state.cycle = mCycle;
         state.previousCycle = mPreviousCycle;
         state.entry = e;
+        state.wellbeingEntry = e.wellbeingEntry;
+        state.activeMedications = mActiveMedications;
         state.entryDate = e.entryDate;
         state.entryNum = Days.daysBetween(mCycle.startDate, e.entryDate).getDays() + 1;
         state.previousEntry = previousEntry;
@@ -425,6 +433,8 @@ public class CycleRenderer {
     public Cycle cycle;
     public Optional<Cycle> previousCycle;
     @Deprecated  ChartEntry entry;
+    public WellbeingEntryWithRelations wellbeingEntry;
+    public Map<Integer, Medication> activeMedications;
     public LocalDate entryDate;
     public Instructions instructions;
     public int entryNum;
@@ -669,6 +679,8 @@ public class CycleRenderer {
     public abstract IntercourseTimeOfDay intercourseTimeOfDay();
     public abstract String pocSummary();
     public abstract EntryModificationContext modificationContext();
+    public abstract WellbeingEntryWithRelations wellbeingEntry();
+    public abstract Map<Integer, Medication> activeMedications();
     public abstract String trainingMarker();
     public abstract boolean canSelectYellowStamps();
     public abstract StickerSelectionContext stickerSelectionContext();
@@ -701,11 +713,13 @@ public class CycleRenderer {
           .dateSummary(DateUtil.toNewUiStr(state.entryDate))
           .dateSummaryShort(DateUtil.toPrintUiStr(state.entryDate))
           .entrySummary(state.entry.observationEntry.getListUiText())
+          .activeMedications(state.activeMedications)
           .intercourseTimeOfDay(Optional.ofNullable(state.entry.observationEntry.intercourseTimeOfDay)
               .orElse(IntercourseTimeOfDay.NONE))
           .pocSummary(pocSummary)
           .instructionSummary(state.getInstructionSummary())
           .modificationContext(state.entryModificationContext())
+          .wellbeingEntry(state.wellbeingEntry)
           .essentialSamenessSummary(essentialSamenessSummary)
           .trainingMarker(state.entry.marker)
           .canSelectYellowStamps(
@@ -763,6 +777,10 @@ public class CycleRenderer {
       public abstract Builder stickerSelectionContext(StickerSelectionContext context);
 
       public abstract Builder monitorReading(Optional<MonitorReading> monitorReading);
+
+      public abstract Builder wellbeingEntry(WellbeingEntryWithRelations wellbeingEntry);
+
+      public abstract Builder activeMedications(Map<Integer, Medication> activeMedications);
 
       public abstract RenderableEntry build();
     }
