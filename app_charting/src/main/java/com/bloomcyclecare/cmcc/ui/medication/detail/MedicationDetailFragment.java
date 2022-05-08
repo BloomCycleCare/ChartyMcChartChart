@@ -2,6 +2,7 @@ package com.bloomcyclecare.cmcc.ui.medication.detail;
 
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -21,11 +22,21 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
+import com.bloomcyclecare.cmcc.data.models.medication.WrappedMedication;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
+import com.bloomcyclecare.cmcc.ui.medication.list.MedicationListAdapter;
+import com.bloomcyclecare.cmcc.ui.medication.list.MedicationListFragmentDirections;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -120,66 +131,68 @@ public class MedicationDetailFragment extends Fragment {
 
     TextView nameView = view.findViewById(R.id.tv_medication_name_value);
     TextView descriptionView = view.findViewById(R.id.tv_medication_description_value);
-    TextView dosageView = view.findViewById(R.id.tv_medication_dosage_value);
-    SwitchCompat takeMorningSwitch = view.findViewById(R.id.take_in_morning_switch);
-    SwitchCompat takeNoonSwitch = view.findViewById(R.id.take_at_noon_switch);
-    SwitchCompat takeEveningSwitch = view.findViewById(R.id.take_in_evening_switch);
-    SwitchCompat takeNightSwitch = view.findViewById(R.id.take_at_night_switch);
-    SwitchCompat takeAsNeededSwitch = view.findViewById(R.id.take_as_needed_value);
+    RecyclerView prescriptionsView = view.findViewById(R.id.prescriptions);
+    prescriptionsView.setLayoutManager(new LinearLayoutManager(requireActivity()));
+    PrescriptionAdapter adapter = new PrescriptionAdapter();
+    prescriptionsView.setAdapter(adapter);
 
     AtomicBoolean initialized = new AtomicBoolean();
+
+
 
     mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       Timber.d("Rendering ViewState");
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
-      maybeUpdate(nameView, viewState.medication.name);
-      maybeUpdate(descriptionView, viewState.medication.description);
-      maybeUpdate(dosageView, viewState.medication.dosage);
-
-      takeMorningSwitch.setChecked(viewState.medication.takeInMorning);
-      takeNoonSwitch.setChecked(viewState.medication.takeAtNoon);
-      takeEveningSwitch.setChecked(viewState.medication.takeInEvening);
-      takeNightSwitch.setChecked(viewState.medication.takeAtNight);
-      takeAsNeededSwitch.setChecked(viewState.medication.takeAsNeeded);
-
-      takeMorningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeNoonSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeEveningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeNightSwitch.setEnabled(!viewState.medication.takeAsNeeded);
+      maybeUpdate(nameView, viewState.medication.name());
+      maybeUpdate(descriptionView, viewState.medication.description());
 
       if (initialized.compareAndSet(false, true)) {
         RxTextView.textChanges(nameView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.nameSubject);
         RxTextView.textChanges(descriptionView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.descriptionSubject);
-        RxTextView.textChanges(dosageView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.dosageSubject);
-        takeMorningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeMorningSubject.onNext(isChecked);
-        });
-        takeNoonSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeNoonSubject.onNext(isChecked);
-        });
-        takeEveningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeEveningSubject.onNext(isChecked);
-        });
-        takeNightSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeNightSubject.onNext(isChecked);
-        });
-        takeAsNeededSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeAsNeededSubject.onNext(isChecked);
-        });
       }
     });
+
+    FloatingActionButton fab = view.findViewById(R.id.prescription_fab);
+    fab.setOnClickListener(v -> {
+      Medication medication = mMedicationDetailViewModel.initialValue();
+      if (medication.id() > 0) {
+        navigateToDetailView(medication, null);
+        return;
+      }
+      new AlertDialog.Builder(requireContext())
+          .setTitle("Save Required")
+          .setMessage("Please save the medication before adding prescriptions. Would you like to do this now?")
+          .setPositiveButton("Yes", (dialog, which) -> {
+            mDisposable.add(mMedicationDetailViewModel.save().subscribe(savedMedication -> {
+              navigateToDetailView(savedMedication, null);
+            }));
+          })
+          .setNegativeButton("No", (dialog, which) -> {
+            dialog.dismiss();
+          })
+          .show();
+    });
     return view;
+  }
+
+  private void navigateToDetailView(@NonNull Medication medication, @Nullable Prescription prescription) {
+    MedicationDetailFragmentDirections.ActionEditPrescription action =
+        MedicationDetailFragmentDirections.actionEditPrescription();
+    action.setMedication(medication);
+    if (prescription != null) {
+      action.setPrescription(prescription);
+    }
+    Navigation.findNavController(requireView()).navigate(action);
   }
 
   private void doSave(Context context, NavController navController) {
     mDisposable.add(mMedicationDetailViewModel.save()
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(() -> {
+        .subscribe(medication -> {
           Toast.makeText(context, "Medication updated", Toast.LENGTH_SHORT).show();
           navController.popBackStack();
         }));
@@ -190,5 +203,37 @@ public class MedicationDetailFragment extends Fragment {
       return;
     }
     view.setText(value);
+  }
+
+  private static class PrescriptionAdapter extends RecyclerView.Adapter<PrescriptionAdapter.ViewHolder> {
+
+    private final List<Prescription> mPrescriptions = new ArrayList<>();
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+      return null;
+    }
+
+    @Override
+    public int getItemCount() {
+      return mPrescriptions.size();
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+      holder.bind(mPrescriptions.get(position));
+    }
+
+    private static class ViewHolder extends RecyclerView.ViewHolder {
+
+      public ViewHolder(@NonNull View itemView) {
+        super(itemView);
+      }
+
+      public void bind(Prescription prescription) {
+
+      }
+    }
   }
 }

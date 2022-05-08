@@ -29,12 +29,12 @@ public class MedicationRef {
   public LocalDate entryDate;
   public int medicationId;
   @NonNull
-  public Medication.TimeOfDay time;
+  public Prescription.TimeOfDay time;
 
-  public static MedicationRef create(Entry entry, Medication medication, Medication.TimeOfDay time) {
+  public static MedicationRef create(Entry entry, Medication medication, Prescription.TimeOfDay time) {
     MedicationRef ref = new MedicationRef();
     ref.entryDate = entry.getDate();
-    ref.medicationId = (int) medication.id;
+    ref.medicationId = (int) medication.id();
     ref.time = time;
     return ref;
   }

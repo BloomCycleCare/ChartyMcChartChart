@@ -10,6 +10,7 @@ import com.bloomcyclecare.cmcc.data.repos.exercise.RWExerciseRepo;
 import com.bloomcyclecare.cmcc.data.repos.instructions.RWInstructionsRepo;
 import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 import com.bloomcyclecare.cmcc.data.repos.pregnancy.RWPregnancyRepo;
+import com.bloomcyclecare.cmcc.data.repos.prescription.RWPrescriptionRepo;
 import com.bloomcyclecare.cmcc.data.repos.sticker.RWStickerSelectionRepo;
 import com.google.common.collect.Range;
 
@@ -39,6 +40,8 @@ public interface DataRepos {
   RWStickerSelectionRepo stickerSelectionRepo(Exercise exercise);
 
   RWMedicationRepo medicationRepo(ViewMode viewMode);
+
+  RWPrescriptionRepo prescriptionRepo(ViewMode viewMode);
 
   Flowable<Range<LocalDate>> updateStream(int pauseWindowSecs);
 

@@ -5,6 +5,7 @@ import androidx.room.Delete;
 import androidx.room.Insert;
 import androidx.room.Query;
 import androidx.room.RawQuery;
+import androidx.room.Transaction;
 import androidx.room.TypeConverters;
 import androidx.room.Update;
 import androidx.sqlite.db.SimpleSQLiteQuery;
@@ -12,6 +13,7 @@ import androidx.sqlite.db.SupportSQLiteQuery;
 
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationWithRelations;
 import com.bloomcyclecare.cmcc.data.models.observation.ObservationEntry;
 import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.common.collect.Sets;
@@ -34,6 +36,10 @@ public abstract class MedicationDao {
 
   @Query("SELECT * FROM Medication")
   public abstract Flowable<List<Medication>> get();
+
+  @Transaction
+  @Query("SELECT * FROM Medication")
+  public abstract Flowable<List<MedicationWithRelations>> getDecorated();
 
   @Delete
   public abstract Completable delete(Medication medication);

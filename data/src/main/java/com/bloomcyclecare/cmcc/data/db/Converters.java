@@ -6,6 +6,7 @@ import com.bloomcyclecare.cmcc.data.models.instructions.YellowStampInstruction;
 import com.bloomcyclecare.cmcc.data.models.measurement.LHTestResult;
 import com.bloomcyclecare.cmcc.data.models.measurement.MonitorReading;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.data.models.observation.IntercourseTimeOfDay;
 import com.bloomcyclecare.cmcc.data.models.observation.Observation;
 import com.bloomcyclecare.cmcc.data.models.stickering.StickerSelection;
@@ -133,13 +134,13 @@ public class Converters {
   }
 
   @TypeConverter
-  public String fromTimeOfDay(Medication.TimeOfDay in) {
+  public String fromTimeOfDay(Prescription.TimeOfDay in) {
     return in.name();
   }
 
   @TypeConverter
-  public Medication.TimeOfDay toMedicationTimeOfDay(String in) {
-    return Medication.TimeOfDay.valueOf(in);
+  public Prescription.TimeOfDay toMedicationTimeOfDay(String in) {
+    return Prescription.TimeOfDay.valueOf(in);
   }
 
   @TypeConverter

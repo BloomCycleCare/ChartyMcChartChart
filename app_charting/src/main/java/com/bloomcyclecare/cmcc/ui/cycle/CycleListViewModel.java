@@ -135,7 +135,7 @@ public class CycleListViewModel extends AndroidViewModel {
           mApplication.medicationRepo(viewMode).getAll(false).distinctUntilChanged(),
           (cycles, instructions, medications) -> {
             Map<Integer, Medication> medicationIndex = new HashMap<>();
-            medications.forEach(medication -> medicationIndex.put((int) medication.id, medication));
+            medications.forEach(medication -> medicationIndex.put((int) medication.id(), medication));
             List<Flowable<CycleRenderer.RenderableCycle>> renderableCycleStreams = new ArrayList<>(cycles.size());
             for (Cycle cycle : cycles) {
               renderableCycleStreams.add(Flowable.combineLatest(

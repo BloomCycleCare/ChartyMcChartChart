@@ -32,33 +32,6 @@
         app:layout_constraintVertical_bias="0.0" />
 
     <TextView
-        android:id="@+id/tv_medication_dosage_header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Dosage: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_medication_name_header" />
-
-    <com.google.android.material.textfield.TextInputEditText
-        android:id="@+id/tv_medication_dosage_value"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        android:maxLines="1"
-        app:layout_constraintBottom_toBottomOf="@+id/tv_medication_dosage_header"
-        app:layout_constraintTop_toTopOf="@+id/tv_medication_dosage_header"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/tv_medication_dosage_header"
-        app:layout_constraintVertical_bias="0.0" />
-
-
-
-    <TextView
         android:id="@+id/tv_medication_description_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -67,7 +40,7 @@
         android:text="Description: "
         android:textAppearance="@android:style/TextAppearance.Material.Medium"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_medication_dosage_header" />
+        app:layout_constraintTop_toBottomOf="@id/tv_medication_name_header" />
 
     <com.google.android.material.textfield.TextInputEditText
         android:id="@+id/tv_medication_description_value"
@@ -82,114 +55,35 @@
         app:layout_constraintStart_toEndOf="@id/tv_medication_description_header"
         app:layout_constraintVertical_bias="0.0" />
 
-    <TextView
-        android:id="@+id/take_in_morning_header"
-        android:layout_width="wrap_content"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/prescriptions"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Take in morning: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintTop_toBottomOf="@id/tv_medication_description_header"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tv_medication_description_header" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/take_in_morning_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/take_in_morning_header"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/take_in_morning_header"
-        app:layout_constraintTop_toTopOf="@+id/take_in_morning_header"
-        app:layout_constraintVertical_bias="1.0" />
+        tools:listitem="@layout/list_item_prescription"
+        tools:itemCount="3"
+        />
 
     <TextView
-        android:id="@+id/take_at_noon_header"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Take at noon: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:text="No prescriptions."
+        app:layout_constraintTop_toBottomOf="@id/prescriptions"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/take_in_morning_header" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/take_at_noon_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/take_at_noon_header"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/take_at_noon_header"
-        app:layout_constraintTop_toTopOf="@+id/take_at_noon_header"
-        app:layout_constraintVertical_bias="1.0" />
+        />
 
-    <TextView
-        android:id="@+id/take_in_evening_header"
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/prescription_fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Take in evening: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/take_at_noon_header" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/take_in_evening_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/take_in_evening_header"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/take_in_evening_header"
-        app:layout_constraintTop_toTopOf="@+id/take_in_evening_header"
-        app:layout_constraintVertical_bias="1.0" />
-
-    <TextView
-        android:id="@+id/take_at_night_header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Take at night: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/take_in_evening_header" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/take_at_night_switch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/take_at_night_header"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/take_at_night_header"
-        app:layout_constraintTop_toTopOf="@+id/take_at_night_header"
-        app:layout_constraintVertical_bias="1.0" />
-
-    <TextView
-        android:id="@+id/take_as_needed_header"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="center_vertical"
-        android:paddingTop="16dp"
-        android:text="Take as_needed: "
-        android:textAppearance="@android:style/TextAppearance.Material.Medium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/take_at_night_header" />
-
-    <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/take_as_needed_value"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="@+id/take_as_needed_header"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toEndOf="@id/take_as_needed_header"
-        app:layout_constraintTop_toTopOf="@+id/take_as_needed_header"
-        app:layout_constraintVertical_bias="1.0" />
+        app:srcCompat="@drawable/ic_baseline_add_24"
+        android:contentDescription="Add a prescription" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

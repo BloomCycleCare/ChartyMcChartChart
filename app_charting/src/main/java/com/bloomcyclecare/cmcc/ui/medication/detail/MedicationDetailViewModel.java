@@ -13,7 +13,10 @@ import androidx.lifecycle.ViewModelProvider;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
+import com.bloomcyclecare.cmcc.data.repos.prescription.RWPrescriptionRepo;
+import com.google.common.collect.ImmutableList;
 
 import java.util.Optional;
 
@@ -29,80 +32,66 @@ import timber.log.Timber;
 public class MedicationDetailViewModel extends AndroidViewModel {
 
   @NonNull
-  private final Medication mInitialValue;
+  private final Subject<Medication> mInitialValue;
   private final RWMedicationRepo mMedicationRepo;
+  private final RWPrescriptionRepo mPrescriptionRepo;
   private final Subject<ViewState> mViewStates = BehaviorSubject.create();
 
   final Subject<String> nameSubject;
   final Subject<String> descriptionSubject;
-  final Subject<String> dosageSubject;
-  final Subject<Boolean> takeMorningSubject;
-  final Subject<Boolean> takeNoonSubject;
-  final Subject<Boolean> takeEveningSubject;
-  final Subject<Boolean> takeNightSubject;
-  final Subject<Boolean> takeAsNeededSubject;
 
   public MedicationDetailViewModel(@NonNull Application application,
                                    @Nullable Medication initialMedication) {
     super(application);
     mMedicationRepo = ChartingApp.cast(application).medicationRepo(ViewMode.CHARTING);
-    mInitialValue = initialMedication == null ? new Medication() : initialMedication;
-    nameSubject = BehaviorSubject.createDefault(mInitialValue.name);
-    descriptionSubject = BehaviorSubject.createDefault(mInitialValue.description);
-    dosageSubject = BehaviorSubject.createDefault(mInitialValue.dosage);
-    takeMorningSubject = BehaviorSubject.createDefault(mInitialValue.takeInMorning);
-    takeNoonSubject = BehaviorSubject.createDefault(mInitialValue.takeAtNoon);
-    takeEveningSubject = BehaviorSubject.createDefault(mInitialValue.takeInEvening);
-    takeNightSubject = BehaviorSubject.createDefault(mInitialValue.takeAtNight);
-    takeAsNeededSubject = BehaviorSubject.createDefault(mInitialValue.takeAsNeeded);
+    mPrescriptionRepo = ChartingApp.cast(application).prescriptionRepo(ViewMode.CHARTING);
+    mInitialValue = BehaviorSubject.createDefault(
+        initialMedication == null ? Medication.create(0, "", "") : initialMedication);
+    nameSubject = BehaviorSubject.createDefault(mInitialValue.blockingFirst().name());
+    descriptionSubject = BehaviorSubject.createDefault(mInitialValue.blockingFirst().description());
 
-    String title = initialMedication == null ? "New Medication" : "Edit Medication";
-    Observable.combineLatest(
+    Observable.merge(Observable.combineLatest(
+        mInitialValue.distinctUntilChanged(),
         nameSubject.distinctUntilChanged(),
         descriptionSubject.distinctUntilChanged(),
-        dosageSubject.distinctUntilChanged(),
-        takeMorningSubject.distinctUntilChanged(),
-        takeNoonSubject.distinctUntilChanged(),
-        takeEveningSubject.distinctUntilChanged(),
-        takeNightSubject.distinctUntilChanged(),
-        takeAsNeededSubject.distinctUntilChanged(),
-        (name, description, dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded) -> {
-          Medication medication = new Medication(mInitialValue);
-          medication.name = name;
-          medication.description = description;
-          medication.dosage = dosage;
-          medication.takeInMorning = takeMorning && !takeAsNeeded;
-          medication.takeAtNoon = takeNoon && !takeAsNeeded;
-          medication.takeInEvening = takeEvening && !takeAsNeeded;
-          medication.takeAtNight = takeNight && !takeAsNeeded;
-          medication.takeAsNeeded = takeAsNeeded;
-          return medication;
-        })
-        .map(medication -> new ViewState(title, medication))
-        .subscribe(mViewStates);
+        (medication, name, description) -> mPrescriptionRepo.getPrescriptions(medication)
+            .map(prescriptions -> new ViewState(
+                medication.id() > 0 ? "Edit Medication" : "New Medication",
+                Medication.create(medication.id(), name, description),
+                prescriptions)))).subscribe(mViewStates);
   }
 
   public LiveData<ViewState> viewState() {
     return LiveDataReactiveStreams.fromPublisher(mViewStates.toFlowable(BackpressureStrategy.BUFFER));
   }
 
-  public Single<Boolean> dirty() {
-    return mViewStates.firstOrError().map(vs -> vs.dirty(mInitialValue));
+  public Medication initialValue() {
+    return mInitialValue.blockingFirst();
   }
 
-  public Completable save() {
-    return mViewStates.firstOrError().flatMapCompletable(vs -> {
-      if (!vs.dirty(mInitialValue)) {
-        Timber.d("Not saving, ViewStats is clean");
-        return Completable.complete();
+  public Single<Boolean> dirty() {
+    return Single.zip(
+        mViewStates.firstOrError(),
+        mInitialValue.firstOrError(),
+        ViewState::dirty);
+  }
+
+  public Single<Medication> save() {
+    return dirty().flatMap(isDirty -> {
+      if (!isDirty) {
+        Timber.d("Not saving, not dirty");
+        return mInitialValue.firstOrError();
       }
-      return mMedicationRepo.save(vs.medication).ignoreElement();
+      return mViewStates.firstOrError()
+          .flatMap(viewState -> mMedicationRepo
+              .save(viewState.medication)
+              .doOnSuccess(mInitialValue::onNext));
     });
   }
 
   public Completable delete() {
     return mViewStates.firstOrError().flatMapCompletable(vs -> {
-      if (vs.medication.id <= 0) {
+      if (vs.medication.id() <= 0) {
         Timber.d("Not deleting, medication hasn't yet been saved");
         return Completable.complete();
       }
@@ -114,10 +103,12 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     public final String title;
     public final String subtitle = "";
     public final Medication medication;
+    public final ImmutableList<Prescription> prescriptions;
 
-    ViewState(String title, Medication medication) {
+    ViewState(String title, Medication medication, ImmutableList<Prescription> prescriptions) {
       this.title = title;
       this.medication = medication;
+      this.prescriptions = prescriptions;
     }
 
     boolean dirty(Medication medication) {

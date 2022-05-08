@@ -12,6 +12,7 @@ import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntryWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.medication.ROMedicationRepo;
@@ -49,24 +50,26 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
 
   public static class MedicationUpdate {
     public final Medication medication;
-    public final Medication.TimeOfDay time;
+    public final Prescription.TimeOfDay time;
     public final boolean checked;
 
-    public MedicationUpdate(Medication medication, Medication.TimeOfDay time, boolean checked) {
+    public MedicationUpdate(Medication medication, Prescription.TimeOfDay time, boolean checked) {
       this.medication = medication;
       this.time = time;
       this.checked = checked;
     }
   }
 
-  private static Map<Medication, Map<Medication.TimeOfDay, Boolean>> initMap(Collection<Medication> medications) {
-    ImmutableMap.Builder<Medication, Map<Medication.TimeOfDay, Boolean>> builder = ImmutableMap.builder();
+  private static Map<Medication, Map<Prescription.TimeOfDay, Boolean>> initMap(Collection<Medication> medications) {
+    ImmutableMap.Builder<Medication, Map<Prescription.TimeOfDay, Boolean>> builder = ImmutableMap.builder();
     medications.forEach(medication -> {
-      ImmutableMap.Builder<Medication.TimeOfDay, Boolean> innerBuilder = ImmutableMap.builder();
-      for (Medication.TimeOfDay timeOfDay : Medication.TimeOfDay.values()) {
+      ImmutableMap.Builder<Prescription.TimeOfDay, Boolean> innerBuilder = ImmutableMap.builder();
+      for (Prescription.TimeOfDay timeOfDay : Prescription.TimeOfDay.values()) {
+        /*
         if (medication.shouldTake(timeOfDay)) {
           innerBuilder.put(timeOfDay, false);
         }
+        */
       }
       builder.put(medication, innerBuilder.build());
     });
@@ -80,16 +83,16 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
     mMedications = ImmutableSet.copyOf(mMedicationRepo.getAll(false).blockingFirst());
 
     Observable<List<MedicationRef>> medicationStream = medicationUpdateSubject.scan(initMap(mMedications), (map, update) -> {
-      Timber.v("Updating medications %s %s %b", update.medication.name, update.time.name(), update.checked);
+      Timber.v("Updating medications %s %s %b", update.medication.name(), update.time.name(), update.checked);
       if (!mMedications.contains(update.medication)) {
-        throw new IllegalArgumentException("Update for unknown medications: " + update.medication.name);
+        throw new IllegalArgumentException("Update for unknown medications: " + update.medication.name());
       }
-      ImmutableMap.Builder<Medication, Map<Medication.TimeOfDay, Boolean>> copyBuilder = ImmutableMap.builder();
+      ImmutableMap.Builder<Medication, Map<Prescription.TimeOfDay, Boolean>> copyBuilder = ImmutableMap.builder();
       map.forEach((medication, timeMap) -> {
         if (!medication.equals(update.medication)) {
           copyBuilder.put(medication, timeMap);
         } else {
-          ImmutableMap.Builder<Medication.TimeOfDay, Boolean> timeMapBuilder = ImmutableMap.builder();
+          ImmutableMap.Builder<Prescription.TimeOfDay, Boolean> timeMapBuilder = ImmutableMap.builder();
           timeMap.forEach((time, value) -> {
             if (time != update.time) {
               timeMapBuilder.put(time, value);
@@ -152,19 +155,19 @@ public class WellbeingEntryViewModel extends AndroidViewModel {
     energyUpdateSubject.onNext(Optional.ofNullable(initialEntry.wellbeingEntry.energyLevel));
 
     Map<Long, Medication> medicationIndex = new HashMap<>();
-    mMedications.forEach(medication -> medicationIndex.put(medication.id, medication));
+    mMedications.forEach(medication -> medicationIndex.put(medication.id(), medication));
     initialEntry.medicationRefs.forEach(ref -> {
       Medication medication = medicationIndex.get((long) ref.medicationId);
       medicationUpdateSubject.onNext(new MedicationUpdate(medication, ref.time, true));
     });
   }
 
-  private static void logMedications(Map<Medication, Map<Medication.TimeOfDay, Boolean>> map) {
+  private static void logMedications(Map<Medication, Map<Prescription.TimeOfDay, Boolean>> map) {
     List<String> lines = new ArrayList<>();
     map.forEach((medication, timeMap) -> {
       List<String> parts = new ArrayList<>();
       timeMap.forEach((time, value) -> parts.add(String.format("%s:%b", time.name(), value)));
-      lines.add(String.format("%s [%s]", medication.name, Joiner.on(", ").join(parts)));
+      lines.add(String.format("%s [%s]", medication.name(), Joiner.on(", ").join(parts)));
     });
     Timber.d("Medication: %s", Joiner.on(", ").join(lines));
   }
