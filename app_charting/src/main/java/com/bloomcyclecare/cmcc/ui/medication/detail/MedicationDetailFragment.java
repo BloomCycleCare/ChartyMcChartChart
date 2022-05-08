@@ -2,7 +2,6 @@ package com.bloomcyclecare.cmcc.ui.medication.detail;
 
 import android.app.AlertDialog;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -10,14 +9,12 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
@@ -28,19 +25,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
-import com.bloomcyclecare.cmcc.data.models.medication.WrappedMedication;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
-import com.bloomcyclecare.cmcc.ui.medication.list.MedicationListAdapter;
-import com.bloomcyclecare.cmcc.ui.medication.list.MedicationListFragmentDirections;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -142,7 +135,8 @@ public class MedicationDetailFragment extends Fragment {
     TextView noPastPrescriptions = view.findViewById(R.id.tv_no_past_prescriptions);
     RecyclerView pastPrescriptionsView = view.findViewById(R.id.prescriptions);
     pastPrescriptionsView.setLayoutManager(new LinearLayoutManager(requireActivity()));
-    PrescriptionAdapter pastPrescriptionAdapter = new PrescriptionAdapter();
+    PrescriptionAdapter pastPrescriptionAdapter = new PrescriptionAdapter(
+        p -> navigateToDetailView(mMedicationDetailViewModel.initialValue(), p));
     pastPrescriptionsView.setAdapter(pastPrescriptionAdapter);
 
     FloatingActionButton fab = view.findViewById(R.id.prescription_fab);
@@ -236,6 +230,12 @@ public class MedicationDetailFragment extends Fragment {
   private static class PrescriptionAdapter extends RecyclerView.Adapter<PrescriptionAdapter.ViewHolder> {
 
     private final List<Prescription> mPrescriptions = new ArrayList<>();
+    private final Consumer<Prescription> editClickConsumer;
+
+    private PrescriptionAdapter(Consumer<Prescription> editClickConsumer) {
+      this.editClickConsumer = editClickConsumer;
+    }
+
 
     public void updatePrescriptions(List<Prescription> prescriptions) {
       if (prescriptions.size() != mPrescriptions.size()) {
@@ -268,7 +268,7 @@ public class MedicationDetailFragment extends Fragment {
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
       View view = LayoutInflater.from(parent.getContext())
           .inflate(R.layout.list_item_prescription, parent, false);
-      return new ViewHolder(view);
+      return new ViewHolder(view, editClickConsumer);
     }
 
     @Override
@@ -284,14 +284,21 @@ public class MedicationDetailFragment extends Fragment {
     private static class ViewHolder extends RecyclerView.ViewHolder {
 
       private final TextView text;
+      private final View editButton;
+      private final Consumer<Prescription> editClickConsumer;
 
-      public ViewHolder(@NonNull View itemView) {
+      public ViewHolder(@NonNull View itemView, Consumer<Prescription> editClickConsumer) {
         super(itemView);
         text = itemView.findViewById(R.id.tv_prescription_summary);
+        editButton = itemView.findViewById(R.id.iv_edit_medication);
+        this.editClickConsumer = editClickConsumer;
       }
 
       public void bind(Prescription prescription) {
         text.setText(prescription.getSummary());
+        editButton.setOnClickListener(v -> {
+          editClickConsumer.accept(prescription);
+        });
       }
     }
   }

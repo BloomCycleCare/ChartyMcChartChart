@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.medication.prescription;
 
 import android.app.AlertDialog;
+import android.app.DatePickerDialog;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,6 +10,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -23,8 +25,12 @@ import androidx.navigation.Navigation;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
+import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import org.joda.time.LocalDate;
+
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -122,12 +128,58 @@ public class PrescriptionDetailFragment extends Fragment {
     SwitchCompat takeNightSwitch = view.findViewById(R.id.take_at_night_switch);
     SwitchCompat takeAsNeededSwitch = view.findViewById(R.id.take_as_needed_value);
 
-    AtomicBoolean initialized = new AtomicBoolean();
+    LocalDate today = LocalDate.now();
+    EditText startDateValue = view.findViewById(R.id.start_date_value);
+    startDateValue.setOnClickListener(v -> {
+      DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
+        LocalDate startDate = new LocalDate(year, month + 1, day);
+        Timber.v("New start date: %s", startDate);
+        mFragmentViewModel.startDateSubject.onNext(startDate);
+      }, today.getYear(), today.getMonthOfYear() - 1, today.getDayOfMonth());
+      dialog.setTitle("Select Start Date");
+      dialog.show();
+    });
 
+    EditText endDateValue = view.findViewById(R.id.end_date_value);
+    endDateValue.setOnLongClickListener(v -> {
+      new AlertDialog.Builder(requireContext())
+          .setTitle("Clear End Date")
+          .setMessage("Would you like to clear the end date?")
+          .setPositiveButton("Yes", (d, w) -> {
+            mFragmentViewModel.endDateSubject.onNext(Optional.empty());
+            d.dismiss();
+          })
+          .setNegativeButton("No", (d, w) -> {
+            d.dismiss();
+          })
+          .show();
+      return true;
+    });
+
+    AtomicBoolean initialized = new AtomicBoolean();
     mFragmentViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       Timber.d("Rendering ViewState");
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
+
+      startDateValue.setText(DateUtil.toUiStr(viewState.prescription.startDate()));
+      LocalDate endDate = viewState.prescription.endDate();
+      if (endDate == null) {
+        endDateValue.setText("TBD");
+      } else {
+        endDateValue.setText(DateUtil.toUiStr(endDate));
+      }
+
+      endDateValue.setOnClickListener(v -> {
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
+          LocalDate date = new LocalDate(year, month + 1, day);
+          Timber.v("New start date: %s", date);
+          mFragmentViewModel.endDateSubject.onNext(Optional.of(date));
+        }, today.getYear(), today.getMonthOfYear() - 1, today.getDayOfMonth());
+        dialog.setTitle("Select End Date");
+        dialog.getDatePicker().setMinDate(viewState.prescription.startDate().toDate().getTime());
+        dialog.show();
+      });
 
       String dosage = viewState.prescription.dosage();
       if (dosage == null) {

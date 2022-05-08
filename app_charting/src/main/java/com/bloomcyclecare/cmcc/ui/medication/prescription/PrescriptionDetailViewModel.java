@@ -45,6 +45,8 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
   final Subject<Boolean> takeEveningSubject;
   final Subject<Boolean> takeNightSubject;
   final Subject<Boolean> takeAsNeededSubject;
+  final Subject<LocalDate> startDateSubject;
+  final Subject<Optional<LocalDate>> endDateSubject;
 
   public static String withDefault(@Nullable Prescription p, Function<Prescription, String> fn, String defaultValue) {
     return Optional.ofNullable(p).map(fn).orElse(defaultValue);
@@ -62,6 +64,11 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
 
     mInitialValue = initialPrescription;
 
+    startDateSubject = BehaviorSubject.createDefault(
+        Optional.ofNullable(initialPrescription).map(Prescription::startDate).orElse(LocalDate.now()));
+    endDateSubject = BehaviorSubject.createDefault(
+        Optional.ofNullable(initialPrescription).map(Prescription::endDate));
+
     dosageSubject = BehaviorSubject.createDefault(
         withDefault(initialPrescription, Prescription::dosage, ""));
     takeMorningSubject = BehaviorSubject.createDefault(
@@ -77,17 +84,19 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
 
     String title = initialMedication == null ? "New Prescription" : "Edit Prescription";
     Observable.combineLatest(
+        startDateSubject.distinctUntilChanged(),
+        endDateSubject.distinctUntilChanged(),
         dosageSubject.distinctUntilChanged(),
         takeMorningSubject.distinctUntilChanged(),
         takeNoonSubject.distinctUntilChanged(),
         takeEveningSubject.distinctUntilChanged(),
         takeNightSubject.distinctUntilChanged(),
         takeAsNeededSubject.distinctUntilChanged(),
-        (dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded) -> {
+        (startDate, endDate, dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded) -> {
           Prescription prescription = Prescription.create(
               (int) initialMedication.id(),
-              LocalDate.now(),
-              null,
+              startDate,
+              endDate.orElse(null),
               dosage,
               takeMorning && !takeAsNeeded,
               takeNoon && !takeAsNeeded,
@@ -113,7 +122,11 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
         Timber.d("Not saving, ViewStats is clean");
         return Completable.complete();
       }
-      return mPrescriptionRepo.save(vs.prescription).ignoreElement();
+      Completable deleteAction = Completable.complete();
+      if (mInitialValue != null && !mInitialValue.startDate().equals(vs.prescription.startDate())) {
+        deleteAction = mPrescriptionRepo.delete(mInitialValue);
+      }
+      return deleteAction.andThen(mPrescriptionRepo.save(vs.prescription).ignoreElement());
     });
   }
 
