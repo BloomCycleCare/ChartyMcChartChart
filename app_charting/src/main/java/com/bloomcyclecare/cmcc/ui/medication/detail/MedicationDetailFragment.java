@@ -36,8 +36,10 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -131,30 +133,17 @@ public class MedicationDetailFragment extends Fragment {
 
     TextView nameView = view.findViewById(R.id.tv_medication_name_value);
     TextView descriptionView = view.findViewById(R.id.tv_medication_description_value);
-    RecyclerView prescriptionsView = view.findViewById(R.id.prescriptions);
-    prescriptionsView.setLayoutManager(new LinearLayoutManager(requireActivity()));
-    PrescriptionAdapter adapter = new PrescriptionAdapter();
-    prescriptionsView.setAdapter(adapter);
 
-    AtomicBoolean initialized = new AtomicBoolean();
+    TextView noCurrentPrescription = view.findViewById(R.id.tv_no_current_prescription);
+    View currentPrescriptionContainer = view.findViewById(R.id.current_prescription_container);
+    TextView currentPrescriptionSummary = currentPrescriptionContainer.findViewById(R.id.tv_prescription_summary);
+    View currentPrescriptionEditButton = currentPrescriptionContainer.findViewById(R.id.iv_edit_medication);
 
-
-
-    mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
-      Timber.d("Rendering ViewState");
-      mMainViewModel.updateTitle(viewState.title);
-      mMainViewModel.updateSubtitle(viewState.subtitle);
-
-      maybeUpdate(nameView, viewState.medication.name());
-      maybeUpdate(descriptionView, viewState.medication.description());
-
-      if (initialized.compareAndSet(false, true)) {
-        RxTextView.textChanges(nameView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.nameSubject);
-        RxTextView.textChanges(descriptionView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.descriptionSubject);
-      }
-    });
+    TextView noPastPrescriptions = view.findViewById(R.id.tv_no_past_prescriptions);
+    RecyclerView pastPrescriptionsView = view.findViewById(R.id.prescriptions);
+    pastPrescriptionsView.setLayoutManager(new LinearLayoutManager(requireActivity()));
+    PrescriptionAdapter pastPrescriptionAdapter = new PrescriptionAdapter();
+    pastPrescriptionsView.setAdapter(pastPrescriptionAdapter);
 
     FloatingActionButton fab = view.findViewById(R.id.prescription_fab);
     fab.setOnClickListener(v -> {
@@ -167,15 +156,54 @@ public class MedicationDetailFragment extends Fragment {
           .setTitle("Save Required")
           .setMessage("Please save the medication before adding prescriptions. Would you like to do this now?")
           .setPositiveButton("Yes", (dialog, which) -> {
-            mDisposable.add(mMedicationDetailViewModel.save().subscribe(savedMedication -> {
-              navigateToDetailView(savedMedication, null);
-            }));
+            mDisposable.add(mMedicationDetailViewModel.save()
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(savedMedication -> navigateToDetailView(savedMedication, null)));
           })
           .setNegativeButton("No", (dialog, which) -> {
             dialog.dismiss();
           })
           .show();
     });
+
+    AtomicBoolean initialized = new AtomicBoolean();
+    mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
+      Timber.d("Rendering ViewState");
+      mMainViewModel.updateTitle(viewState.title);
+      mMainViewModel.updateSubtitle(viewState.subtitle);
+
+      maybeUpdate(nameView, viewState.medication.name());
+      maybeUpdate(descriptionView, viewState.medication.description());
+
+      Optional<Prescription> currentPrescription = viewState.currentPrescription;
+      if (currentPrescription.isPresent()) {
+        noCurrentPrescription.setVisibility(View.GONE);
+        currentPrescriptionContainer.setVisibility(View.VISIBLE);
+        currentPrescriptionSummary.setText(currentPrescription.get().getSummary());
+        currentPrescriptionEditButton.setOnClickListener(v -> {
+          navigateToDetailView(viewState.medication, currentPrescription.get());
+        });
+        fab.setVisibility(View.GONE);
+      } else {
+        noCurrentPrescription.setVisibility(View.VISIBLE);
+        currentPrescriptionContainer.setVisibility(View.GONE);
+        currentPrescriptionSummary.setText("");
+        fab.setVisibility(View.VISIBLE);
+      }
+
+      pastPrescriptionAdapter.updatePrescriptions(viewState.pastPrescriptions);
+      boolean hasPastPrescriptions = !viewState.pastPrescriptions.isEmpty();
+      noPastPrescriptions.setVisibility(hasPastPrescriptions ? View.GONE : View.VISIBLE);
+      pastPrescriptionsView.setVisibility(hasPastPrescriptions ? View.VISIBLE : View.GONE);
+
+      if (initialized.compareAndSet(false, true)) {
+        RxTextView.textChanges(nameView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.nameSubject);
+        RxTextView.textChanges(descriptionView).map(CharSequence::toString)
+            .subscribe(mMedicationDetailViewModel.descriptionSubject);
+      }
+    });
+
     return view;
   }
 
@@ -209,10 +237,38 @@ public class MedicationDetailFragment extends Fragment {
 
     private final List<Prescription> mPrescriptions = new ArrayList<>();
 
+    public void updatePrescriptions(List<Prescription> prescriptions) {
+      if (prescriptions.size() != mPrescriptions.size()) {
+        mPrescriptions.clear();
+        mPrescriptions.addAll(prescriptions);
+        notifyDataSetChanged();
+        return;
+      }
+      List<Prescription> toRemove = new ArrayList<>();
+      List<Prescription> toAdd = new ArrayList<>();
+      for (int i=0; i < mPrescriptions.size(); i++) {
+        Prescription prescription = mPrescriptions.get(i);
+        Prescription newPrescription = prescriptions.get(i);
+        if (prescription.equals(newPrescription)) {
+          continue;
+        }
+        toRemove.add(prescription);
+        toAdd.add(newPrescription);
+      }
+      if (toRemove.isEmpty() && toAdd.isEmpty()) {
+        return;
+      }
+      mPrescriptions.removeAll(toRemove);
+      mPrescriptions.addAll(toAdd);
+      notifyDataSetChanged();
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-      return null;
+      View view = LayoutInflater.from(parent.getContext())
+          .inflate(R.layout.list_item_prescription, parent, false);
+      return new ViewHolder(view);
     }
 
     @Override
@@ -227,12 +283,15 @@ public class MedicationDetailFragment extends Fragment {
 
     private static class ViewHolder extends RecyclerView.ViewHolder {
 
+      private final TextView text;
+
       public ViewHolder(@NonNull View itemView) {
         super(itemView);
+        text = itemView.findViewById(R.id.tv_prescription_summary);
       }
 
       public void bind(Prescription prescription) {
-
+        text.setText(prescription.getSummary());
       }
     }
   }

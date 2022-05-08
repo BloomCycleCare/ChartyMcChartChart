@@ -8,11 +8,16 @@ import androidx.room.Entity;
 import androidx.room.ForeignKey;
 import androidx.room.Index;
 
+import com.bloomcyclecare.cmcc.utils.DateUtil;
 import com.google.auto.value.AutoValue;
+import com.google.common.base.Joiner;
 
 import org.checkerframework.checker.interning.qual.CompareToMethod;
 import org.joda.time.LocalDate;
 import org.parceler.Parcel;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @AutoValue
 @Entity(
@@ -50,6 +55,29 @@ public abstract class Prescription implements Parcelable, Comparable<Prescriptio
 
   public boolean expected() {
     return takeInMorning() || takeAtNoon() || takeInEvening() || takeAtNight();
+  }
+
+  public String getSummary() {
+    String takeSummary = "";
+    if (takeAsNeeded()) {
+      takeSummary = "as needed";
+    } else {
+      List<String> parts = new ArrayList<>();
+      if (takeInMorning()) {
+        parts.add("in the morning");
+      }
+      if (takeAtNoon()) {
+        parts.add("at noon");
+      }
+      if (takeInEvening()) {
+        parts.add("in the evening");
+      }
+      if (takeAtNight()) {
+        parts.add("at night");
+      }
+      takeSummary = Joiner.on(", ").join(parts);
+    }
+    return String.format("Starting %s, take %s", DateUtil.toUiStr(startDate()), takeSummary);
   }
 
   public static Prescription create(int medicationId, LocalDate startDate, LocalDate endDate, String dosage, boolean takeInMorning, boolean takeAtNoon, boolean takeInEvening, boolean takeAtNight, boolean takeAsNeeded) {

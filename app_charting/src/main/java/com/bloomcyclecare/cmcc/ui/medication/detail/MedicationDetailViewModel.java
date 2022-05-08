@@ -19,6 +19,7 @@ import com.bloomcyclecare.cmcc.data.repos.prescription.RWPrescriptionRepo;
 import com.google.common.collect.ImmutableList;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
@@ -50,15 +51,18 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     nameSubject = BehaviorSubject.createDefault(mInitialValue.blockingFirst().name());
     descriptionSubject = BehaviorSubject.createDefault(mInitialValue.blockingFirst().description());
 
-    Observable.merge(Observable.combineLatest(
+    Observable<ImmutableList<Prescription>> prescriptionStream = mInitialValue.distinctUntilChanged()
+        .switchMap(mPrescriptionRepo::getPrescriptions);
+
+    Observable.combineLatest(
         mInitialValue.distinctUntilChanged(),
         nameSubject.distinctUntilChanged(),
         descriptionSubject.distinctUntilChanged(),
-        (medication, name, description) -> mPrescriptionRepo.getPrescriptions(medication)
-            .map(prescriptions -> new ViewState(
+        prescriptionStream.distinctUntilChanged(),
+        (medication, name, description, prescriptions) -> new ViewState(
                 medication.id() > 0 ? "Edit Medication" : "New Medication",
                 Medication.create(medication.id(), name, description),
-                prescriptions)))).subscribe(mViewStates);
+                prescriptions)).subscribe(mViewStates);
   }
 
   public LiveData<ViewState> viewState() {
@@ -103,12 +107,15 @@ public class MedicationDetailViewModel extends AndroidViewModel {
     public final String title;
     public final String subtitle = "";
     public final Medication medication;
-    public final ImmutableList<Prescription> prescriptions;
+    public final Optional<Prescription> currentPrescription;
+    public final ImmutableList<Prescription> pastPrescriptions;
 
     ViewState(String title, Medication medication, ImmutableList<Prescription> prescriptions) {
       this.title = title;
       this.medication = medication;
-      this.prescriptions = prescriptions;
+      this.currentPrescription = prescriptions.stream().filter(p -> p.endDate() == null).findAny();
+      this.pastPrescriptions = ImmutableList.copyOf(
+          prescriptions.stream().filter(p -> p.endDate() != null).collect(Collectors.toList()));
     }
 
     boolean dirty(Medication medication) {

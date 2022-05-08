@@ -55,25 +55,72 @@
         app:layout_constraintStart_toEndOf="@id/tv_medication_description_header"
         app:layout_constraintVertical_bias="0.0" />
 
+    <TextView
+        android:id="@+id/tv_current_prescription_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="Current Prescription"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_medication_description_header"
+        />
+
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/current_prescription_layout"
+        app:layout_constraintTop_toBottomOf="@id/tv_current_prescription_header"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <include
+            layout="@layout/list_item_prescription"
+            android:id="@+id/current_prescription_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            />
+
+        <TextView
+            android:id="@+id/tv_no_current_prescription"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="No current prescription."
+            android:padding="20dp"
+            />
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <TextView
+        android:id="@+id/tv_past_prescriptions_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Past Prescriptions"
+        android:layout_marginTop="10dp"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/current_prescription_layout"
+        />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/prescriptions"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/tv_medication_description_header"
+        app:layout_constraintTop_toBottomOf="@id/tv_past_prescriptions_header"
         app:layout_constraintStart_toStartOf="parent"
         tools:listitem="@layout/list_item_prescription"
         tools:itemCount="3"
         />
 
     <TextView
+        android:id="@+id/tv_no_past_prescriptions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="No prescriptions."
-        app:layout_constraintTop_toBottomOf="@id/prescriptions"
+        android:text="No past prescriptions"
+        android:layout_marginTop="10dp"
+        android:paddingStart="20dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_past_prescriptions_header"
         />
+
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/prescription_fab"
