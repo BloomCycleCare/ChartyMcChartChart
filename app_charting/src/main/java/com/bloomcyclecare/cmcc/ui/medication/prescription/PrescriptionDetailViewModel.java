@@ -20,6 +20,7 @@ import com.bloomcyclecare.cmcc.ui.medication.detail.MedicationDetailFragmentArgs
 
 import org.joda.time.LocalDate;
 
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -64,8 +65,38 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
 
     mInitialValue = initialPrescription;
 
-    startDateSubject = BehaviorSubject.createDefault(
-        Optional.ofNullable(initialPrescription).map(Prescription::startDate).orElse(LocalDate.now()));
+    Observable<Optional<Prescription>> previousPrescriptionStream = mPrescriptionRepo
+        .getPrescriptions(initialMedication)
+        .map(prescriptions -> {
+          if (prescriptions.isEmpty()) {
+            return Optional.empty();
+          }
+          Prescription previousPrescription = null;
+          for (Prescription p : prescriptions) {
+            if (initialPrescription != null && p.startDate().equals(initialPrescription.startDate())) {
+              continue;
+            }
+            if (previousPrescription == null || p.startDate().isAfter(previousPrescription.startDate())) {
+              previousPrescription = p;
+            }
+          }
+          return Optional.ofNullable(previousPrescription);
+        });
+
+    startDateSubject = BehaviorSubject.create();
+    previousPrescriptionStream.firstOrError()
+        .map(pp -> {
+          if (initialPrescription != null) {
+            return initialPrescription.startDate();
+          }
+          LocalDate now = LocalDate.now();
+          if (pp.isPresent() && pp.get().endDate().equals(now)) {
+            return LocalDate.now().plusDays(1);
+          }
+          return now;
+        })
+        .toObservable()
+        .subscribe(startDateSubject);
     endDateSubject = BehaviorSubject.createDefault(
         Optional.ofNullable(initialPrescription).map(Prescription::endDate));
 
@@ -92,7 +123,8 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
         takeEveningSubject.distinctUntilChanged(),
         takeNightSubject.distinctUntilChanged(),
         takeAsNeededSubject.distinctUntilChanged(),
-        (startDate, endDate, dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded) -> {
+        previousPrescriptionStream.distinctUntilChanged(),
+        (startDate, endDate, dosage, takeMorning, takeNoon, takeEvening, takeNight, takeAsNeeded, previousPrescription) -> {
           Prescription prescription = Prescription.create(
               (int) initialMedication.id(),
               startDate,
@@ -103,7 +135,7 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
               takeEvening && !takeAsNeeded,
               takeNight && !takeAsNeeded,
               takeAsNeeded);
-          return new ViewState(title, initialMedication, prescription);
+          return new ViewState(title, initialMedication, prescription, previousPrescription);
         })
         .subscribe(mViewStates);
   }
@@ -145,11 +177,18 @@ public class PrescriptionDetailViewModel extends AndroidViewModel {
     public final String subtitle = "";
     public final Medication medication;
     public final Prescription prescription;
+    public final Optional<LocalDate> minStartDate;
 
-    ViewState(String title, Medication medication, Prescription prescription) {
+    ViewState(String title, Medication medication, Prescription prescription, Optional<Prescription> previousPrescription) {
       this.title = title;
       this.medication = medication;
       this.prescription = prescription;
+      this.minStartDate = previousPrescription.map(p -> {
+        if (p.endDate() == null) {
+          throw new IllegalArgumentException("Previous prescription should have an end date");
+        }
+        return p.endDate().plusDays(1);
+      });
     }
 
     boolean dirty(Prescription prescription) {

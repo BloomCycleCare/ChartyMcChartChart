@@ -140,25 +140,7 @@ public class MedicationDetailFragment extends Fragment {
     pastPrescriptionsView.setAdapter(pastPrescriptionAdapter);
 
     FloatingActionButton fab = view.findViewById(R.id.prescription_fab);
-    fab.setOnClickListener(v -> {
-      Medication medication = mMedicationDetailViewModel.initialValue();
-      if (medication.id() > 0) {
-        navigateToDetailView(medication, null);
-        return;
-      }
-      new AlertDialog.Builder(requireContext())
-          .setTitle("Save Required")
-          .setMessage("Please save the medication before adding prescriptions. Would you like to do this now?")
-          .setPositiveButton("Yes", (dialog, which) -> {
-            mDisposable.add(mMedicationDetailViewModel.save()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(savedMedication -> navigateToDetailView(savedMedication, null)));
-          })
-          .setNegativeButton("No", (dialog, which) -> {
-            dialog.dismiss();
-          })
-          .show();
-    });
+    FancyFab fancyFab = new FancyFab(fab);
 
     AtomicBoolean initialized = new AtomicBoolean();
     mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
@@ -170,6 +152,7 @@ public class MedicationDetailFragment extends Fragment {
       maybeUpdate(descriptionView, viewState.medication.description());
 
       Optional<Prescription> currentPrescription = viewState.currentPrescription;
+      fancyFab.confirm(viewState.medication.id() > 0, currentPrescription.isPresent());
       if (currentPrescription.isPresent()) {
         noCurrentPrescription.setVisibility(View.GONE);
         currentPrescriptionContainer.setVisibility(View.VISIBLE);
@@ -177,12 +160,10 @@ public class MedicationDetailFragment extends Fragment {
         currentPrescriptionEditButton.setOnClickListener(v -> {
           navigateToDetailView(viewState.medication, currentPrescription.get());
         });
-        fab.setVisibility(View.GONE);
       } else {
         noCurrentPrescription.setVisibility(View.VISIBLE);
         currentPrescriptionContainer.setVisibility(View.GONE);
         currentPrescriptionSummary.setText("");
-        fab.setVisibility(View.VISIBLE);
       }
 
       pastPrescriptionAdapter.updatePrescriptions(viewState.pastPrescriptions);
@@ -300,6 +281,66 @@ public class MedicationDetailFragment extends Fragment {
           editClickConsumer.accept(prescription);
         });
       }
+    }
+  }
+
+  private class FancyFab {
+    private final FloatingActionButton mFab;
+
+    private FancyFab(FloatingActionButton mFab) {
+      this.mFab = mFab;
+    }
+
+    public void confirm(boolean hasSaved, boolean hasCurrentPrescription) {
+      if (!hasSaved) {
+        mFab.setOnClickListener(v -> {
+          Medication medication = mMedicationDetailViewModel.initialValue();
+          if (medication.id() > 0) {
+            navigateToDetailView(medication, null);
+            return;
+          }
+          new AlertDialog.Builder(requireContext())
+              .setTitle("Save Required")
+              .setMessage("Please save the medication before adding prescriptions. Would you like to do this now?")
+              .setPositiveButton("Yes", (dialog, which) -> {
+                mDisposable.add(mMedicationDetailViewModel.save()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(savedMedication -> navigateToDetailView(savedMedication, null)));
+              })
+              .setNegativeButton("No", (dialog, which) -> {
+                dialog.dismiss();
+              })
+              .show();
+        });
+        return;
+      }
+      if (hasCurrentPrescription) {
+        // This might screw up the logic that was supposed to happen above...
+        mFab.setOnClickListener(v -> {
+          new AlertDialog.Builder(requireContext())
+              .setTitle("End Current Prescription")
+              .setMessage("You currently have an active prescription. Would you like to end this prescription and add a new one?")
+              .setPositiveButton("Yes", (dialog, which) -> {
+                Medication medication = mMedicationDetailViewModel.initialValue();
+                mDisposable.add(mMedicationDetailViewModel.endCurrentPrescription(medication)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(() -> navigateToDetailView(medication, null)));
+                dialog.dismiss();
+              })
+              .setNegativeButton("No", (dialog, which) -> {
+                dialog.dismiss();
+              })
+              .show();
+        });
+        return;
+      }
+      mFab.setOnClickListener(v -> {
+        Medication medication = mMedicationDetailViewModel.initialValue();
+        if (medication.id() <= 0) {
+          throw new IllegalStateException("Medication must be saved prior to added a prescription");
+        }
+        navigateToDetailView(medication, null);
+      });
     }
   }
 }

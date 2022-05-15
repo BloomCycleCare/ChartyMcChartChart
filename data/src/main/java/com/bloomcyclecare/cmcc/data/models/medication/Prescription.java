@@ -14,6 +14,8 @@ import com.google.common.base.Joiner;
 
 import org.checkerframework.checker.interning.qual.CompareToMethod;
 import org.joda.time.LocalDate;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.parceler.Parcel;
 
 import java.util.ArrayList;
@@ -57,8 +59,18 @@ public abstract class Prescription implements Parcelable, Comparable<Prescriptio
     return takeInMorning() || takeAtNoon() || takeInEvening() || takeAtNight();
   }
 
+  private static final DateTimeFormatter WIRE_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd");
+
   public String getSummary() {
-    String takeSummary = "";
+    DateTimeFormatter dateFormat = DateTimeFormat.forPattern("d MMM");
+    String intervalSummary;
+    if (endDate() == null) {
+      intervalSummary = String.format("Starting %s", dateFormat.print(startDate()));
+    } else {
+      intervalSummary = String.format("From %s to %s", dateFormat.print(startDate()), dateFormat.print(endDate()));
+    }
+
+    String takeSummary;
     if (takeAsNeeded()) {
       takeSummary = "as needed";
     } else {
@@ -77,7 +89,7 @@ public abstract class Prescription implements Parcelable, Comparable<Prescriptio
       }
       takeSummary = Joiner.on(", ").join(parts);
     }
-    return String.format("Starting %s, take %s", DateUtil.toUiStr(startDate()), takeSummary);
+    return String.format("%s, take %s", intervalSummary, takeSummary);
   }
 
   public static Prescription create(int medicationId, LocalDate startDate, LocalDate endDate, String dosage, boolean takeInMorning, boolean takeAtNoon, boolean takeInEvening, boolean takeAtNight, boolean takeAsNeeded) {

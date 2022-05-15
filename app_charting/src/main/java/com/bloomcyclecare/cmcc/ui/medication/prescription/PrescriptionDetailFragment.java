@@ -130,15 +130,6 @@ public class PrescriptionDetailFragment extends Fragment {
 
     LocalDate today = LocalDate.now();
     EditText startDateValue = view.findViewById(R.id.start_date_value);
-    startDateValue.setOnClickListener(v -> {
-      DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
-        LocalDate startDate = new LocalDate(year, month + 1, day);
-        Timber.v("New start date: %s", startDate);
-        mFragmentViewModel.startDateSubject.onNext(startDate);
-      }, today.getYear(), today.getMonthOfYear() - 1, today.getDayOfMonth());
-      dialog.setTitle("Select Start Date");
-      dialog.show();
-    });
 
     EditText endDateValue = view.findViewById(R.id.end_date_value);
     endDateValue.setOnLongClickListener(v -> {
@@ -169,6 +160,17 @@ public class PrescriptionDetailFragment extends Fragment {
       } else {
         endDateValue.setText(DateUtil.toUiStr(endDate));
       }
+
+      startDateValue.setOnClickListener(v -> {
+        DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {
+          LocalDate startDate = new LocalDate(year, month + 1, day);
+          Timber.v("New start date: %s", startDate);
+          mFragmentViewModel.startDateSubject.onNext(startDate);
+        }, today.getYear(), today.getMonthOfYear() - 1, today.getDayOfMonth());
+        dialog.setTitle("Select Start Date");
+        viewState.minStartDate.ifPresent(localDate -> dialog.getDatePicker().setMinDate(localDate.toDate().getTime()));
+        dialog.show();
+      });
 
       endDateValue.setOnClickListener(v -> {
         DatePickerDialog dialog = new DatePickerDialog(requireContext(), (d, year, month, day) -> {

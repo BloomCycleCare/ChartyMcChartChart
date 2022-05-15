@@ -18,6 +18,8 @@ import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 import com.bloomcyclecare.cmcc.data.repos.prescription.RWPrescriptionRepo;
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.LocalDate;
+
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -25,6 +27,7 @@ import io.reactivex.BackpressureStrategy;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
+import io.reactivex.internal.operators.completable.CompletableAmb;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import timber.log.Timber;
@@ -78,6 +81,27 @@ public class MedicationDetailViewModel extends AndroidViewModel {
         mViewStates.firstOrError(),
         mInitialValue.firstOrError(),
         ViewState::dirty);
+  }
+
+  public Completable endCurrentPrescription(Medication medication) {
+    return  mPrescriptionRepo.getPrescriptions(medication)
+        .firstOrError()
+        .flatMapCompletable(prescriptions -> {
+          Optional<Prescription> currentPrescription = prescriptions.stream().filter(p -> p.endDate() == null).findAny();
+          if (!currentPrescription.isPresent()) {
+            return Completable.complete();
+          }
+          return mPrescriptionRepo.save(Prescription.create(
+              currentPrescription.get().medicationId(),
+              currentPrescription.get().startDate(),
+              LocalDate.now(),
+              currentPrescription.get().dosage(),
+              currentPrescription.get().takeInMorning(),
+              currentPrescription.get().takeAtNoon(),
+              currentPrescription.get().takeInEvening(),
+              currentPrescription.get().takeAtNight(),
+              currentPrescription.get().takeAsNeeded())).ignoreElement();
+        });
   }
 
   public Single<Medication> save() {
