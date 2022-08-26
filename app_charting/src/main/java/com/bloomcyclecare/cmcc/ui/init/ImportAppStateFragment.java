@@ -103,6 +103,11 @@ public class ImportAppStateFragment extends SplashFragment {
           startActivity(intent);
         }, throwable -> {
           showError("Error importing data");
+          new AlertDialog.Builder(requireContext())
+              .setTitle("Error Message")
+              .setMessage(throwable.getMessage())
+              .setPositiveButton("OK", (dialog, which) -> dialog.dismiss())
+              .show();
           Timber.e(throwable);
         }));
   }

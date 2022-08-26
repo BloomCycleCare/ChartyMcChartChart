@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="8dp">
+
+    <TextView
+        android:id="@+id/tv_medication_dosage_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Dosage: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.textfield.TextInputEditText
+        android:id="@+id/tv_medication_dosage_value"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        android:maxLines="1"
+        app:layout_constraintBottom_toBottomOf="@+id/tv_medication_dosage_header"
+        app:layout_constraintTop_toTopOf="@+id/tv_medication_dosage_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/tv_medication_dosage_header"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/tv_start_date_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Start Date: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_medication_dosage_header" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/start_date_value"
+        android:focusable="false"
+        android:text="TBD"
+        android:inputType="date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tv_start_date_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_start_date_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/tv_end_date_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="End Date: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_start_date_header" />
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/end_date_value"
+        android:focusable="false"
+        android:text="TBD"
+        android:inputType="date"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="@id/tv_end_date_header"
+        app:layout_constraintBottom_toBottomOf="@id/tv_end_date_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"/>
+
+    <TextView
+        android:id="@+id/take_in_morning_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Take in morning: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_end_date_header" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/take_in_morning_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/take_in_morning_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/take_in_morning_header"
+        app:layout_constraintTop_toTopOf="@+id/take_in_morning_header"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/take_at_noon_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Take at noon: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/take_in_morning_header" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/take_at_noon_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/take_at_noon_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/take_at_noon_header"
+        app:layout_constraintTop_toTopOf="@+id/take_at_noon_header"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/take_in_evening_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Take in evening: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/take_at_noon_header" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/take_in_evening_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/take_in_evening_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/take_in_evening_header"
+        app:layout_constraintTop_toTopOf="@+id/take_in_evening_header"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/take_at_night_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Take at night: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/take_in_evening_header" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/take_at_night_switch"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/take_at_night_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/take_at_night_header"
+        app:layout_constraintTop_toTopOf="@+id/take_at_night_header"
+        app:layout_constraintVertical_bias="1.0" />
+
+    <TextView
+        android:id="@+id/take_as_needed_header"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:paddingTop="16dp"
+        android:text="Take as_needed: "
+        android:textAppearance="@android:style/TextAppearance.Material.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/take_at_night_header" />
+
+    <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/take_as_needed_value"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="@+id/take_as_needed_header"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toEndOf="@id/take_as_needed_header"
+        app:layout_constraintTop_toTopOf="@+id/take_as_needed_header"
+        app:layout_constraintVertical_bias="1.0" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>

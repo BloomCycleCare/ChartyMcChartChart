@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationWithRelations;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,23 +22,23 @@ import io.reactivex.subjects.Subject;
 
 public class MedicationListAdapter extends RecyclerView.Adapter<MedicationListViewHolder> {
 
-  private final Subject<Medication> mEditClickSubject = PublishSubject.create();
+  private final Subject<MedicationWithRelations> mEditClickSubject = PublishSubject.create();
 
   private final Context mContext;
-  private List<Medication> mMedications = new ArrayList<>();
+  private List<MedicationWithRelations> mMedications = new ArrayList<>();
 
   public MedicationListAdapter(Context context) {
     mContext = context;
   }
 
-  public void updateMedications(List<Medication> medications) {
+  public void updateMedications(List<MedicationWithRelations> medications) {
     mMedications.clear();
     mMedications.addAll(medications);
     notifyDataSetChanged();
   }
 
   public Observable<Medication> editClicks() {
-    return mEditClickSubject;
+    return mEditClickSubject.map(MedicationWithRelations::medication);
   }
 
   @NonNull

@@ -3,6 +3,7 @@ package com.bloomcyclecare.cmcc.data.repos.medication;
 import com.bloomcyclecare.cmcc.data.db.AppDatabase;
 import com.bloomcyclecare.cmcc.data.db.MedicationDao;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationWithRelations;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -35,15 +36,14 @@ public class RoomMedicationRepo implements RWMedicationRepo {
 
   @Override
   public Single<Medication> save(Medication medication) {
-    if (medication.id <= 0) {
+    if (medication.id() <= 0) {
       Timber.v("Mediation has no ID, inserting");
       return medicationDao.insert(medication)
           .map(id -> {
-            Medication m = new Medication(medication);
-            m.id = id;
+            Medication m = Medication.create(id, medication.name(), medication.description());
             return m;
           })
-          .doOnSuccess(m -> Timber.v("New ID %d", m.id))
+          .doOnSuccess(m -> Timber.v("New ID %d", m.id()))
           .subscribeOn(Schedulers.computation());
     }
     Timber.v("Mediation has ID, updating");
@@ -54,17 +54,29 @@ public class RoomMedicationRepo implements RWMedicationRepo {
 
   @Override
   public Completable delete(Medication medication) {
-    Timber.v("Deleting Medication with ID: %d, name: %s", medication.id, medication.name);
+    Timber.v("Deleting Medication with ID: %d, name: %s", medication.id(), medication.name());
     return medicationDao.delete(medication)
         .subscribeOn(Schedulers.computation());
   }
 
   @Override
   public Flowable<List<Medication>> getAll(boolean includeInactive) {
-    return medicationDao.get().map(medications -> medications
-        .stream()
-        .filter(m -> includeInactive || m.active())
-        .collect(Collectors.toList()))
+    return getAllWithRelations(includeInactive)
+        .map(medications -> medications.stream()
+            .map(MedicationWithRelations::medication)
+            .collect(Collectors.toList()))
         .subscribeOn(Schedulers.computation());
+  }
+
+  @Override
+  public Flowable<List<MedicationWithRelations>> getAllWithRelations(boolean includeInactive) {
+    return medicationDao.getDecorated().map(medications -> {
+      if (includeInactive) {
+        return medications;
+      }
+      return medications.stream()
+          .filter(MedicationWithRelations::hasActivePrescription)
+          .collect(Collectors.toList());
+    }).subscribeOn(Schedulers.computation());
   }
 }

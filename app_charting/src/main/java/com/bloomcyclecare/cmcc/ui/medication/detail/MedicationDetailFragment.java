@@ -9,25 +9,31 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.CompoundButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.appcompat.widget.SwitchCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.navigation.NavController;
 import androidx.navigation.Navigation;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bloomcyclecare.cmcc.R;
+import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.ui.main.MainViewModel;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.jakewharton.rxbinding2.widget.RxTextView;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.CompositeDisposable;
@@ -120,66 +126,76 @@ public class MedicationDetailFragment extends Fragment {
 
     TextView nameView = view.findViewById(R.id.tv_medication_name_value);
     TextView descriptionView = view.findViewById(R.id.tv_medication_description_value);
-    TextView dosageView = view.findViewById(R.id.tv_medication_dosage_value);
-    SwitchCompat takeMorningSwitch = view.findViewById(R.id.take_in_morning_switch);
-    SwitchCompat takeNoonSwitch = view.findViewById(R.id.take_at_noon_switch);
-    SwitchCompat takeEveningSwitch = view.findViewById(R.id.take_in_evening_switch);
-    SwitchCompat takeNightSwitch = view.findViewById(R.id.take_at_night_switch);
-    SwitchCompat takeAsNeededSwitch = view.findViewById(R.id.take_as_needed_value);
+
+    TextView noCurrentPrescription = view.findViewById(R.id.tv_no_current_prescription);
+    View currentPrescriptionContainer = view.findViewById(R.id.current_prescription_container);
+    TextView currentPrescriptionSummary = currentPrescriptionContainer.findViewById(R.id.tv_prescription_summary);
+    View currentPrescriptionEditButton = currentPrescriptionContainer.findViewById(R.id.iv_edit_medication);
+
+    TextView noPastPrescriptions = view.findViewById(R.id.tv_no_past_prescriptions);
+    RecyclerView pastPrescriptionsView = view.findViewById(R.id.prescriptions);
+    pastPrescriptionsView.setLayoutManager(new LinearLayoutManager(requireActivity()));
+    PrescriptionAdapter pastPrescriptionAdapter = new PrescriptionAdapter(
+        p -> navigateToDetailView(mMedicationDetailViewModel.initialValue(), p));
+    pastPrescriptionsView.setAdapter(pastPrescriptionAdapter);
+
+    FloatingActionButton fab = view.findViewById(R.id.prescription_fab);
+    FancyFab fancyFab = new FancyFab(fab);
 
     AtomicBoolean initialized = new AtomicBoolean();
-
     mMedicationDetailViewModel.viewState().observe(getViewLifecycleOwner(), viewState -> {
       Timber.d("Rendering ViewState");
       mMainViewModel.updateTitle(viewState.title);
       mMainViewModel.updateSubtitle(viewState.subtitle);
 
-      maybeUpdate(nameView, viewState.medication.name);
-      maybeUpdate(descriptionView, viewState.medication.description);
-      maybeUpdate(dosageView, viewState.medication.dosage);
+      maybeUpdate(nameView, viewState.medication.name());
+      maybeUpdate(descriptionView, viewState.medication.description());
 
-      takeMorningSwitch.setChecked(viewState.medication.takeInMorning);
-      takeNoonSwitch.setChecked(viewState.medication.takeAtNoon);
-      takeEveningSwitch.setChecked(viewState.medication.takeInEvening);
-      takeNightSwitch.setChecked(viewState.medication.takeAtNight);
-      takeAsNeededSwitch.setChecked(viewState.medication.takeAsNeeded);
+      Optional<Prescription> currentPrescription = viewState.currentPrescription;
+      fancyFab.confirm(viewState.medication.id() > 0, currentPrescription.isPresent());
+      if (currentPrescription.isPresent()) {
+        noCurrentPrescription.setVisibility(View.GONE);
+        currentPrescriptionContainer.setVisibility(View.VISIBLE);
+        currentPrescriptionSummary.setText(currentPrescription.get().getSummary());
+        currentPrescriptionEditButton.setOnClickListener(v -> {
+          navigateToDetailView(viewState.medication, currentPrescription.get());
+        });
+      } else {
+        noCurrentPrescription.setVisibility(View.VISIBLE);
+        currentPrescriptionContainer.setVisibility(View.GONE);
+        currentPrescriptionSummary.setText("");
+      }
 
-      takeMorningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeNoonSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeEveningSwitch.setEnabled(!viewState.medication.takeAsNeeded);
-      takeNightSwitch.setEnabled(!viewState.medication.takeAsNeeded);
+      pastPrescriptionAdapter.updatePrescriptions(viewState.pastPrescriptions);
+      boolean hasPastPrescriptions = !viewState.pastPrescriptions.isEmpty();
+      noPastPrescriptions.setVisibility(hasPastPrescriptions ? View.GONE : View.VISIBLE);
+      pastPrescriptionsView.setVisibility(hasPastPrescriptions ? View.VISIBLE : View.GONE);
 
       if (initialized.compareAndSet(false, true)) {
         RxTextView.textChanges(nameView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.nameSubject);
         RxTextView.textChanges(descriptionView).map(CharSequence::toString)
             .subscribe(mMedicationDetailViewModel.descriptionSubject);
-        RxTextView.textChanges(dosageView).map(CharSequence::toString)
-            .subscribe(mMedicationDetailViewModel.dosageSubject);
-        takeMorningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeMorningSubject.onNext(isChecked);
-        });
-        takeNoonSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeNoonSubject.onNext(isChecked);
-        });
-        takeEveningSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeEveningSubject.onNext(isChecked);
-        });
-        takeNightSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeNightSubject.onNext(isChecked);
-        });
-        takeAsNeededSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
-          mMedicationDetailViewModel.takeAsNeededSubject.onNext(isChecked);
-        });
       }
     });
+
     return view;
+  }
+
+  private void navigateToDetailView(@NonNull Medication medication, @Nullable Prescription prescription) {
+    MedicationDetailFragmentDirections.ActionEditPrescription action =
+        MedicationDetailFragmentDirections.actionEditPrescription();
+    action.setMedication(medication);
+    if (prescription != null) {
+      action.setPrescription(prescription);
+    }
+    Navigation.findNavController(requireView()).navigate(action);
   }
 
   private void doSave(Context context, NavController navController) {
     mDisposable.add(mMedicationDetailViewModel.save()
         .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(() -> {
+        .subscribe(medication -> {
           Toast.makeText(context, "Medication updated", Toast.LENGTH_SHORT).show();
           navController.popBackStack();
         }));
@@ -190,5 +206,141 @@ public class MedicationDetailFragment extends Fragment {
       return;
     }
     view.setText(value);
+  }
+
+  private static class PrescriptionAdapter extends RecyclerView.Adapter<PrescriptionAdapter.ViewHolder> {
+
+    private final List<Prescription> mPrescriptions = new ArrayList<>();
+    private final Consumer<Prescription> editClickConsumer;
+
+    private PrescriptionAdapter(Consumer<Prescription> editClickConsumer) {
+      this.editClickConsumer = editClickConsumer;
+    }
+
+
+    public void updatePrescriptions(List<Prescription> prescriptions) {
+      if (prescriptions.size() != mPrescriptions.size()) {
+        mPrescriptions.clear();
+        mPrescriptions.addAll(prescriptions);
+        notifyDataSetChanged();
+        return;
+      }
+      List<Prescription> toRemove = new ArrayList<>();
+      List<Prescription> toAdd = new ArrayList<>();
+      for (int i=0; i < mPrescriptions.size(); i++) {
+        Prescription prescription = mPrescriptions.get(i);
+        Prescription newPrescription = prescriptions.get(i);
+        if (prescription.equals(newPrescription)) {
+          continue;
+        }
+        toRemove.add(prescription);
+        toAdd.add(newPrescription);
+      }
+      if (toRemove.isEmpty() && toAdd.isEmpty()) {
+        return;
+      }
+      mPrescriptions.removeAll(toRemove);
+      mPrescriptions.addAll(toAdd);
+      notifyDataSetChanged();
+    }
+
+    @NonNull
+    @Override
+    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+      View view = LayoutInflater.from(parent.getContext())
+          .inflate(R.layout.list_item_prescription, parent, false);
+      return new ViewHolder(view, editClickConsumer);
+    }
+
+    @Override
+    public int getItemCount() {
+      return mPrescriptions.size();
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+      holder.bind(mPrescriptions.get(position));
+    }
+
+    private static class ViewHolder extends RecyclerView.ViewHolder {
+
+      private final TextView text;
+      private final View editButton;
+      private final Consumer<Prescription> editClickConsumer;
+
+      public ViewHolder(@NonNull View itemView, Consumer<Prescription> editClickConsumer) {
+        super(itemView);
+        text = itemView.findViewById(R.id.tv_prescription_summary);
+        editButton = itemView.findViewById(R.id.iv_edit_medication);
+        this.editClickConsumer = editClickConsumer;
+      }
+
+      public void bind(Prescription prescription) {
+        text.setText(prescription.getSummary());
+        editButton.setOnClickListener(v -> {
+          editClickConsumer.accept(prescription);
+        });
+      }
+    }
+  }
+
+  private class FancyFab {
+    private final FloatingActionButton mFab;
+
+    private FancyFab(FloatingActionButton mFab) {
+      this.mFab = mFab;
+    }
+
+    public void confirm(boolean hasSaved, boolean hasCurrentPrescription) {
+      if (!hasSaved) {
+        mFab.setOnClickListener(v -> {
+          Medication medication = mMedicationDetailViewModel.initialValue();
+          if (medication.id() > 0) {
+            navigateToDetailView(medication, null);
+            return;
+          }
+          new AlertDialog.Builder(requireContext())
+              .setTitle("Save Required")
+              .setMessage("Please save the medication before adding prescriptions. Would you like to do this now?")
+              .setPositiveButton("Yes", (dialog, which) -> {
+                mDisposable.add(mMedicationDetailViewModel.save()
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(savedMedication -> navigateToDetailView(savedMedication, null)));
+              })
+              .setNegativeButton("No", (dialog, which) -> {
+                dialog.dismiss();
+              })
+              .show();
+        });
+        return;
+      }
+      if (hasCurrentPrescription) {
+        // This might screw up the logic that was supposed to happen above...
+        mFab.setOnClickListener(v -> {
+          new AlertDialog.Builder(requireContext())
+              .setTitle("End Current Prescription")
+              .setMessage("You currently have an active prescription. Would you like to end this prescription and add a new one?")
+              .setPositiveButton("Yes", (dialog, which) -> {
+                Medication medication = mMedicationDetailViewModel.initialValue();
+                mDisposable.add(mMedicationDetailViewModel.endCurrentPrescription(medication)
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe(() -> navigateToDetailView(medication, null)));
+                dialog.dismiss();
+              })
+              .setNegativeButton("No", (dialog, which) -> {
+                dialog.dismiss();
+              })
+              .show();
+        });
+        return;
+      }
+      mFab.setOnClickListener(v -> {
+        Medication medication = mMedicationDetailViewModel.initialValue();
+        if (medication.id() <= 0) {
+          throw new IllegalStateException("Medication must be saved prior to added a prescription");
+        }
+        navigateToDetailView(medication, null);
+      });
+    }
   }
 }

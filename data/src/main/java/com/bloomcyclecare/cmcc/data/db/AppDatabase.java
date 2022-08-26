@@ -11,6 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import com.bloomcyclecare.cmcc.data.models.breastfeeding.BreastfeedingEntry;
 import com.bloomcyclecare.cmcc.data.models.charting.Cycle;
 import com.bloomcyclecare.cmcc.data.models.instructions.Instructions;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.data.models.wellbeing.WellbeingEntry;
 import com.bloomcyclecare.cmcc.data.models.measurement.MeasurementEntry;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
@@ -37,8 +38,9 @@ import java.util.List;
         Medication.class,
         MedicationRef.class,
         WellbeingEntry.class,
+        Prescription.class,
     },
-    version = 30)
+    version = 31)
 @TypeConverters({Converters.class})
 public abstract class AppDatabase extends RoomDatabase {
 
@@ -59,6 +61,8 @@ public abstract class AppDatabase extends RoomDatabase {
   public abstract MedicationDao medicationDao();
 
   public abstract WellbeingEntryDao lifestyleEntryDao();
+
+  public abstract PrescriptionDao prescriptionDao();
 
   private static final Migration MIGRATION_2_3 = new Migration(2, 3) {
     @Override
@@ -261,6 +265,17 @@ public abstract class AppDatabase extends RoomDatabase {
           "ALTER TABLE `Medication_new` RENAME TO `Medication`"
       ), QuerySet.of());
 
+  static final BwCompatMigration MIGRATION_30_31 = new BwCompatMigration(
+      30, 31,
+      QuerySet.of(
+          "CREATE TABLE IF NOT EXISTS `Prescription` (`medicationId` INTEGER NOT NULL, `startDate` TEXT NOT NULL, `endDate` TEXT, `dosage` TEXT, `takeInMorning` INTEGER NOT NULL, `takeAtNoon` INTEGER NOT NULL, `takeInEvening` INTEGER NOT NULL, `takeAtNight` INTEGER NOT NULL, `takeAsNeeded` INTEGER NOT NULL, PRIMARY KEY(`medicationId`, `startDate`), FOREIGN KEY(`medicationId`) REFERENCES `Medication`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+          "CREATE INDEX IF NOT EXISTS `index_Prescription_medicationId` ON `Prescription` (`medicationId`)",
+          "CREATE TABLE IF NOT EXISTS `Medication_new` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT, `description` TEXT)",
+          "INSERT INTO `Medication_new` SELECT id, name, description FROM `Medication`",
+          "DROP TABLE `Medication`",
+          "ALTER TABLE `Medication_new` RENAME TO `Medication`"
+      ),
+      QuerySet.of("DROP TABLE `Prescription`"));
 
   public static List<Migration> MIGRATIONS = ImmutableList.<Migration>builder()
       .add(MIGRATION_2_3, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10,
@@ -280,6 +295,7 @@ public abstract class AppDatabase extends RoomDatabase {
       .addAll(MIGRATION_27_28.migrations())
       .addAll(MIGRATION_28_29.migrations())
       .addAll(MIGRATION_29_30.migrations())
+      .addAll(MIGRATION_30_31.migrations())
       .build();
 
   public static class QuerySet {

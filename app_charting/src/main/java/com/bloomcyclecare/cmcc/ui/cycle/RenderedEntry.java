@@ -112,7 +112,7 @@ public abstract class RenderedEntry {
     String leftSummary = Joiner.on("|").join(leftSummaryItems);
     String rightSummary = re.pocSummary();
 
-    long expectedMedications =
+    /*long expectedMedications =
         re.activeMedications().values().stream().filter(Medication::expected).count();
     int takenMedications = 0;
     int extraMedications = 0;
@@ -123,14 +123,14 @@ public abstract class RenderedEntry {
       } else {
         takenMedications++;
       }
-    }
+    }*/
     String medicationSummary = "";
-    if (expectedMedications > 0) {
+    /*if (expectedMedications > 0) {
       medicationSummary = String.format("℞ %d/%d", takenMedications, expectedMedications);
     }
     if (extraMedications > 0) {
       medicationSummary += " +" + extraMedications;
-    }
+    }*/
 
     LocalDate today = LocalDate.now();
     LocalDate entryDate = re.modificationContext().entry.entryDate;

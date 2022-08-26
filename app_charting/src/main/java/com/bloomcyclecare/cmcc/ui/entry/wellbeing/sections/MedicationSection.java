@@ -1,6 +1,7 @@
 package com.bloomcyclecare.cmcc.ui.entry.wellbeing.sections;
 
 import android.content.Context;
+import android.os.Parcelable;
 import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bloomcyclecare.cmcc.R;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
 import com.bloomcyclecare.cmcc.data.models.medication.MedicationRef;
+import com.bloomcyclecare.cmcc.data.models.medication.Prescription;
 import com.bloomcyclecare.cmcc.ui.entry.wellbeing.WellbeingEntryViewModel;
 
 import java.util.ArrayList;
@@ -59,10 +61,10 @@ public class MedicationSection {
     private MedicationItemAdapter(@NonNull WellbeingEntryViewModel viewModel) {
       mViewModel = viewModel;
       for (Medication medication : viewModel.medications().blockingFirst()) {
-        for (Medication.TimeOfDay time : Medication.TimeOfDay.values()) {
-          if (medication.shouldTake(time)) {
+        for (Prescription.TimeOfDay time : Prescription.TimeOfDay.values()) {
+          /* if (medication.shouldTake(time)) {
             mMedications.add(new MedicationItem(medication, time));
-          }
+          }*/
         }
       }
       mMedications.sort(Comparator.comparing(m -> m.time));
@@ -87,10 +89,10 @@ public class MedicationSection {
     }
 
     private static class MedicationItem {
-      @Nullable public final Medication.TimeOfDay time;
+      @Nullable public final Prescription.TimeOfDay time;
       public final Medication medication;
 
-      private MedicationItem(Medication medication, @Nullable Medication.TimeOfDay time) {
+      private MedicationItem(Medication medication, @Nullable Prescription.TimeOfDay time) {
         this.time = time;
         this.medication = medication;
       }
@@ -113,8 +115,8 @@ public class MedicationSection {
 
       public void bind(@NonNull MedicationItem item, List<MedicationRef> initialRefs) {
         mBoundItem = item;
-        mMedicationName.setText(String.format("%s - %s", item.medication.name, item.time.name()));
-        mMedicationSwitch.setChecked(initialRefs.stream().anyMatch(r -> r.medicationId == item.medication.id && r.time == item.time));
+        mMedicationName.setText(String.format("%s - %s", item.medication.name(), item.time.name()));
+        mMedicationSwitch.setChecked(initialRefs.stream().anyMatch(r -> r.medicationId == item.medication.id() && r.time == item.time));
       }
     }
   }
