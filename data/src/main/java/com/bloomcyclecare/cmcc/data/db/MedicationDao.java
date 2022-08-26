@@ -69,6 +69,13 @@ public abstract class MedicationDao {
         });
   }
 
+  public Completable deleteAllMedications() {
+    return get().firstOrError().flatMapCompletable(this::deleteMedications);
+  }
+
+  @Delete
+  public abstract Completable deleteMedications(List<Medication> medications);
+
   @Query("DELETE FROM MedicationRef WHERE entryDate=:entryDate")
   public abstract Completable deleteRefs(LocalDate entryDate);
 
