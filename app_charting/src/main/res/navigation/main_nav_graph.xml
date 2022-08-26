@@ -252,6 +252,32 @@
             app:nullable="true"
             android:defaultValue="@null" />
 
+        <action
+            android:id="@+id/action_add_prescription"
+            app:destination="@+id/prescriptionDetail" />
+        <action
+            android:id="@+id/action_edit_prescription"
+            app:destination="@+id/prescriptionDetail" />
+
+    </fragment>
+    <fragment
+        android:id="@+id/prescriptionDetail"
+        android:name="com.bloomcyclecare.cmcc.ui.medication.prescription.PrescriptionDetailFragment"
+        android:label="fragment_prescription"
+        tools:layout="@layout/fragment_prescription_detail" >
+
+        <argument
+            android:name="medication"
+            app:argType="com.bloomcyclecare.cmcc.data.models.medication.Medication"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
+        <argument
+            android:name="prescription"
+            app:argType="com.bloomcyclecare.cmcc.data.models.medication.Prescription"
+            app:nullable="true"
+            android:defaultValue="@null" />
+
     </fragment>
 
 </navigation>

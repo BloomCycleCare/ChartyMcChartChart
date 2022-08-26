@@ -10,6 +10,7 @@ import androidx.lifecycle.LiveDataReactiveStreams;
 import com.bloomcyclecare.cmcc.ViewMode;
 import com.bloomcyclecare.cmcc.apps.charting.ChartingApp;
 import com.bloomcyclecare.cmcc.data.models.medication.Medication;
+import com.bloomcyclecare.cmcc.data.models.medication.MedicationWithRelations;
 import com.bloomcyclecare.cmcc.data.repos.medication.RWMedicationRepo;
 
 import java.util.Collections;
@@ -31,17 +32,9 @@ public class MedicationListViewModel extends AndroidViewModel {
     super(application);
     mMedicationRepo = ChartingApp.cast(application).medicationRepo(ViewMode.CHARTING);
 
-    mMedicationRepo.getAll(true)
+    mMedicationRepo.getAllWithRelations(true)
         .map(medications -> {
-          Collections.sort(medications, (a, b) -> {
-            if (a.active() && b.active()) {
-              return 0;
-            } else if (b.active()) {
-              return 1;
-            } else {
-              return -1;
-            }
-          });
+          Collections.sort(medications);
           return medications;
         })
         .map(ViewState::new)
@@ -60,9 +53,9 @@ public class MedicationListViewModel extends AndroidViewModel {
   static class ViewState {
     public final String title = "Your Medications";
     public final String subtitle = "";
-    public final List<Medication> medications;
+    public final List<MedicationWithRelations> medications;
 
-    ViewState(List<Medication> medications) {
+    ViewState(List<MedicationWithRelations> medications) {
       this.medications = medications;
     }
   }

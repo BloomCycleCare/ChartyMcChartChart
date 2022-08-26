@@ -183,6 +183,7 @@ class RoomChartEntryRepo implements RWChartEntryRepo {
         stickerSelectionRepo.deleteAll(),
         measurementEntryDao.deleteAll(),
         breastfeedingEntryDao.deleteAll(),
+        medicationDao.deleteAllMedications(),
         medicationDao.deleteAllRefs(),
         wellbeingEntryDao.deleteAll())
         .doOnSubscribe(s -> Timber.i("Deleting all entries"))
